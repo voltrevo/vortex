@@ -8,24 +8,32 @@
 })()
 
 // blah
+(() => {
+  foo := {
+    a: 0,
+    b: 2,
+  };
 
-foo := {
-  a: 0,
-  b: 2,
-};
+  foo.a = 1;
+  foo.c := 3;
 
-foo.a = 1;
-foo.c := 3;
-
-foo.d.e.f := 42; // ?
+  foo.d.e.f := 42; // ?
+})()
 
 // pair class
 class Pair {
   first: f64;
   second: f64;
 
+  // Static method - invoked as Pair::zero()
+  ::zero() => Pair({ first: 0, second: 0 });
+
   :product() => first * second;
-  :swap() => (DoublePair){ first: second, second: first };
+
+  :swap() => {
+    [first, second] = [second, first];
+    return this;
+  }
 
   :surpriseMe() {
     fig1 := first + second;
@@ -39,11 +47,20 @@ class Pair {
   }
 }
 
-// factorial.vlt
-import 'test';
+// Error.vlt (in core?)
+class Error: string {}
 
-func factorial(n: i32) => match(n) {
+// factorial.vlt
+import Error from 'core';
+
+func factorial(n: i32) => match {
   n < 0  => Error('Invalid input'); // ?
   n == 0 => 1;
-  true   => n * module(n - 1);
+  true   => n * factorial(n - 1);
 }
+
+// factorial5.vlt
+(import factorial)(5)
+
+// double.vlt
+(x: f64) => 2 * x

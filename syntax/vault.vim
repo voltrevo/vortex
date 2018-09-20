@@ -10,7 +10,7 @@ endif
 
 syn case match
 
-syn keyword     vltDirective         import
+syn keyword     vltDirective         import from
 syn keyword     vltDeclType          class
 syn keyword     vltDeclaration       func
 
