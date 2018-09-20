@@ -1,0 +1,49 @@
+// hello.vlt
+'Hello world'
+
+// stuff.vlt
+(() => {
+  foo := 'bar';
+  return foo:length();
+})()
+
+// blah
+
+foo := {
+  a: 0,
+  b: 2,
+};
+
+foo.a = 1;
+foo.c := 3;
+
+foo.d.e.f := 42; // ?
+
+// pair class
+class Pair {
+  first: f64;
+  second: f64;
+
+  :product() => first * second;
+  :swap() => (DoublePair){ first: second, second: first };
+
+  :surpriseMe() {
+    fig1 := first + second;
+    fig2 := this:product();
+
+    fig1++;
+
+    fig1 += this:product();
+
+    return 2 * fig1 + fig2;
+  }
+}
+
+// factorial.vlt
+import 'test';
+
+func factorial(n: i32) => match(n) {
+  n < 0  => Error('Invalid input'); // ?
+  n == 0 => 1;
+  true   => n * module(n - 1);
+}
