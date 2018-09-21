@@ -83,9 +83,7 @@ syn region      vltParen             start='(' end=')' transparent
 
 " Functions
 syn match       vltMethod            "\(:\)\@<=\<[a-zA-Z]\w*\>"
-syn match       vltFunction          "\(func \)\@<=\<[a-zA-Z]\w*\>"
 hi def link     vltMethod            Function
-hi def link     vltFunction          Function
 
 " Operators
 syn match       vltOperator          "\(^\|[a-zA-Z0-9 ()]\)\@<=\(:=\|++\|--\|in\|delete\|\(+\|-\|\*\*\?\|\/\|%\|\^\|||\?\|&&\?\|=\|!\|<<\?\|>>\?\|\~\)=\?\)\($\|[a-zA-Z0-9 ()]\)\@="
@@ -93,6 +91,7 @@ hi def link     vltOperator          Operator
 
 " Variable creation
 syn match       vltVariableCreation  "\<\([a-zA-Z]\w*\)\(\.[a-zA-Z]\w*\)*\>\( *\(:=\|of\)\)\@="
+syn match       vltVariableCreation  "\(\(import\|class\|func\) *\)\@<=\<[a-zA-Z]\w*\>"
 hi def link     vltVariableCreation  Define
 
 " Integers
