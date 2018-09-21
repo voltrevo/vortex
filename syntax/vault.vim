@@ -86,7 +86,7 @@ syn match       vltMethod            "\(:\)\@<=\<[a-zA-Z]\w*\>"
 hi def link     vltMethod            Function
 
 " Operators
-syn match       vltOperator          "\(^\|[a-zA-Z0-9 ()]\)\@<=\(=>\|:=\|++\|--\|in\|delete\|\(+\|-\|\*\*\?\|\/\|%\|\^\|||\?\|&&\?\|=\|!\|<<\?\|>>\?\|\~\)=\?\)\($\|[a-zA-Z0-9 ()]\)\@="
+syn match       vltOperator          "\(^\|[a-zA-Z0-9; ()]\)\@<=\(=>\|:=\|++\|--\|in\|delete\|\(+\|-\|\*\*\?\|\/\|%\|\^\|||\?\|&&\?\|=\|!\|<<\?\|>>\?\|\~\)=\?\)\($\|[a-zA-Z0-9; ()]\)\@="
 hi def link     vltOperator          Operator
 
 " Name creation
