@@ -89,10 +89,10 @@ hi def link     vltMethod            Function
 syn match       vltOperator          "\(^\|[a-zA-Z0-9 ()]\)\@<=\(=>\|:=\|++\|--\|in\|delete\|\(+\|-\|\*\*\?\|\/\|%\|\^\|||\?\|&&\?\|=\|!\|<<\?\|>>\?\|\~\)=\?\)\($\|[a-zA-Z0-9 ()]\)\@="
 hi def link     vltOperator          Operator
 
-" Variable creation
-syn match       vltVariableCreation  "\<\([a-zA-Z]\w*\)\(\.[a-zA-Z]\w*\)*\>\( *\(:=\|of\)\)\@="
-syn match       vltVariableCreation  "\(\(import\|class\|func\) *\)\@<=\<[a-zA-Z]\w*\>"
-hi def link     vltVariableCreation  Define
+" Name creation
+syn match       vltNameCreation      "\<\([a-zA-Z]\w*\)\(\.[a-zA-Z]\w*\)*\>\( *\(:=\|of\)\)\@="
+syn match       vltNameCreation      "\(\(import\|class\|func\) *\)\@<=\<[a-zA-Z]\w*\>"
+hi def link     vltNameCreation      Define
 
 " Integers
 syn match       vltDecimalInt        "\<\d\+\([Ee]\d\+\)\?\>"
