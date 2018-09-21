@@ -92,6 +92,7 @@ hi def link     vltOperator          Operator
 " Name creation
 syn match       vltNameCreation      "\<\([a-zA-Z]\w*\)\(\.[a-zA-Z]\w*\)*\>\( *\(:=\|of\)\)\@="
 syn match       vltNameCreation      "\(\(import\|class\|func\) *\)\@<=\<[a-zA-Z]\w*\>"
+syn match       vltNameCreation      "\<[a-zA-Z]\w*\>\(: \)\@="
 hi def link     vltNameCreation      Define
 
 " Integers
