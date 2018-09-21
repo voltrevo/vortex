@@ -10,7 +10,7 @@ endif
 
 syn case match
 
-syn keyword     vltDirective         import from
+syn keyword     vltDirective         import from of
 syn keyword     vltDeclType          class
 syn keyword     vltDeclaration       func static
 
@@ -87,8 +87,12 @@ syn match       vltFunction          "\(func \)\@<=\<[a-zA-Z]\w*\>"
 hi def link     vltMethod            Function
 hi def link     vltFunction          Function
 
+" Operators
+syn match       vltOperator          "\(^\|[a-zA-Z0-9 ()]\)\@<=\(:=\|++\|--\|in\|delete\|\(+\|-\|\*\*\?\|\/\|%\|\^\|||\?\|&&\?\|=\|!\|<<\?\|>>\?\|\~\)=\?\)\($\|[a-zA-Z0-9 ()]\)\@="
+hi def link     vltOperator          Operator
+
 " Variable creation
-syn match       vltVariableCreation  "\<\([a-zA-Z]\w*\)\(\.[a-zA-Z]\w*\)*\>\( *:=\)\@="
+syn match       vltVariableCreation  "\<\([a-zA-Z]\w*\)\(\.[a-zA-Z]\w*\)*\>\( *\(:=\|of\)\)\@="
 hi def link     vltVariableCreation  Define
 
 " Integers
