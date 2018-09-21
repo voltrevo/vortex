@@ -1,0 +1,18 @@
+import Math from 'core';
+
+n := 600851475143;
+i := 2;
+p := 1;
+
+for {
+  for (n % i == 0) {
+    n /= i;
+    p = i;
+  }
+
+  i++;
+
+  if (i * i > n) {
+    return Math.max(p, n);
+  }
+}
