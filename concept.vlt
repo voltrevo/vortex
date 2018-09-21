@@ -10,7 +10,7 @@
 // blah
 (() => {
   foo := {
-    a: 0,
+    a: 10,
     b: 2,
   };
 
@@ -25,8 +25,8 @@ class Pair {
   first: f64;
   second: f64;
 
-  // Static method - invoked as Pair::zero()
-  ::zero() => Pair({ first: 0, second: 0 });
+  // Static method - invoked as Pair:zero()
+  static :zero() => Pair({ first: 0, second: 0 });
 
   :product() => first * second;
 
