@@ -13,8 +13,8 @@ foo := {
 
 foo.a = 1;
 foo.c := 3;
-
-foo.d.e.f := 42; // ?
+foo.d := {};
+foo.d.e := 42;
 
 // pair class
 return class Pair {
