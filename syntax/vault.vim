@@ -87,9 +87,9 @@ syn match       vltHexadecimalInt    "\<0x\x\+\>"
 syn match       vltOctalInt          "\<0\o\+\>"
 syn match       vltOctalError        "\<0\o*[89]\d*\>"
 
-hi def link     vltDecimalInt        Integer
-hi def link     vltHexadecimalInt    Integer
-hi def link     vltOctalInt          Integer
+hi def link     vltDecimalInt        Number
+hi def link     vltHexadecimalInt    Number
+hi def link     vltOctalInt          Number
 hi def link     vltOctalError        Error
 
 " Floating point
