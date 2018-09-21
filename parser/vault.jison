@@ -10,13 +10,11 @@
 "="                   return '='
 ";"                   return ';'
 [0-9]+("."[0-9]+)?\b  return 'NUMBER'
+"**"                  return '**'
 "*"                   return '*'
 "/"                   return '/'
 "-"                   return '-'
 "+"                   return '+'
-"^"                   return '^'
-"!"                   return '!'
-"%"                   return '%'
 "("                   return '('
 ")"                   return ')'
 <<EOF>>               return 'EOF'
@@ -28,9 +26,7 @@
 
 %left '+' '-'
 %left '*' '/'
-%left '^'
-%right '!'
-%right '%'
+%right '**'
 %left UMINUS
 %right ':=' '='
 
@@ -40,7 +36,7 @@
 
 program
     : statements EOF
-        { console.log($1); }
+        { console.log(require('util').inspect($1, { depth: 4, colors: true })); }
     ;
 
 statements
@@ -57,27 +53,21 @@ statement
 
 e
     : e '+' e
-        {$$ = $1+$3;}
+        {$$ = ['+', $1, $3];}
     | e '-' e
-        {$$ = $1-$3;}
+        {$$ = ['-', $1, $3];}
     | e '*' e
-        {$$ = $1*$3;}
+        {$$ = ['*', $1, $3];}
     | e '/' e
-        {$$ = $1/$3;}
-    | e '^' e
-        {$$ = Math.pow($1, $3);}
-    | e '!'
-        {{
-          $$ = (function fact (n) { return n==0 ? 1 : fact(n-1) * n })($1);
-        }}
-    | e '%'
-        {$$ = $1/100;}
+        {$$ = ['/', $1, $3];}
+    | e '**' e
+        {$$ = ['**', $1, $3];}
     | '-' e %prec UMINUS
-        {$$ = -$2;}
+        {$$ = ['-', $2];}
     | '(' e ')'
         {$$ = $2;}
     | NUMBER
-        {$$ = Number(yytext);}
+        {$$ = ['NUMBER', yytext];}
     | IDENTIFIER
         {$$ = ['IDENTIFIER', $1];}
     | e ':=' e
