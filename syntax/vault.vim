@@ -12,7 +12,7 @@ syn case match
 
 syn keyword     vltDirective         import from
 syn keyword     vltDeclType          class
-syn keyword     vltDeclaration       func
+syn keyword     vltDeclaration       func static
 
 hi def link     vltDirective         Statement
 hi def link     vltDeclType          Keyword
@@ -81,6 +81,16 @@ hi def link     vltString            String
 syn region      vltBlock             start="{" end="}" transparent fold
 syn region      vltParen             start='(' end=')' transparent
 
+" Functions
+syn match       vltMethod            "\(:\)\@<=\<[a-zA-Z]\w*\>"
+syn match       vltFunction          "\(func \)\@<=\<[a-zA-Z]\w*\>"
+hi def link     vltMethod            Function
+hi def link     vltFunction          Function
+
+" Variable creation
+syn match       vltVariableCreation  "\<\([a-zA-Z]\w*\)\(\.[a-zA-Z]\w*\)*\>\( *:=\)\@="
+hi def link     vltVariableCreation  Define
+
 " Integers
 syn match       vltDecimalInt        "\<\d\+\([Ee]\d\+\)\?\>"
 syn match       vltHexadecimalInt    "\<0x\x\+\>"
@@ -117,3 +127,8 @@ syn sync minlines=500
 let b:current_syntax = 'vlt'
 
 " vim: sw=2 sts=2 et
+
+if g:colors_name == 'dracula'
+  hi! link Function DraculaOrange
+  hi! link Define DraculaGreen
+endif
