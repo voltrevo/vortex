@@ -25,7 +25,7 @@ return class Pair {
 
   :product() => first * second;
 
-  :swap() => {
+  :swap() {
     [first, second] = [second, first];
     return this;
   }
