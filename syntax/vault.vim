@@ -40,7 +40,7 @@ hi def link     vltFloats            Type
 
 " Predefined functions and values
 syn keyword     vltConstants         true false null
-hi def link     vltConstants         Keyword
+hi def link     vltConstants         Constant
 
 " Comments; their contents
 syn keyword     vltTodo              contained TODO FIXME XXX BUG
