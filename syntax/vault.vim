@@ -20,7 +20,7 @@ hi def link     vltDeclaration       Keyword
 
 " Keywords within functions
 syn keyword     vltStatement         return break continue
-syn keyword     vltConditional       if else switch match
+syn keyword     vltConditional       if else switch
 syn keyword     vltRepeat            for
 
 hi def link     vltStatement         Statement

@@ -48,10 +48,10 @@ return class Error: string {};
 // factorial.vlt
 import Error from 'core';
 
-return func factorial(n: i32) => match {
-  n < 0  => Error('Invalid input'); // ?
-  n == 0 => 1;
-  true   => n * factorial(n - 1);
+return func factorial(n: i32) => switch {
+  (n < 0) => Error('Invalid input'); // ?
+  (n == 0) => 1;
+  (true) => n * factorial(n - 1);
 };
 
 // factorial5.vlt
