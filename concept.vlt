@@ -25,7 +25,6 @@ class Pair {
   first: f64;
   second: f64;
 
-  // Static method - invoked as Pair:zero()
   static :zero() => Pair({ first: 0, second: 0 });
 
   :product() => first * second;
