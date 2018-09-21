@@ -1,0 +1,7 @@
+return {
+  init: 0,
+  update: ({ state: f64, action: 'increment' }) => ({
+    state: state + 1,
+    output: state,
+  }),
+};
