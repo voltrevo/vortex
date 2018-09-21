@@ -32,6 +32,7 @@
 %right '!'
 %right '%'
 %left UMINUS
+%right ':=' '='
 
 %start program
 
@@ -44,9 +45,9 @@ program
 
 statements
     : statement
-        {$$ = [($1)]}
+        {$$ = [$1]}
     | statements statement
-        {$$ = $1.concat($2)}
+        {$$ = [...$1, $2]}
     ;
 
 statement
@@ -78,5 +79,9 @@ e
     | NUMBER
         {$$ = Number(yytext);}
     | IDENTIFIER
-        {$$ = 37;}
+        {$$ = ['IDENTIFIER', $1];}
+    | e ':=' e
+        {$$ = [':=', $1, $3]}
+    | e '=' e
+        {$$ = ['=', $1, $3]}
     ;
