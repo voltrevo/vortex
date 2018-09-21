@@ -1,0 +1,14 @@
+{
+  "name": "parser",
+  "version": "0.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "jison vault.jison && node vault.js input.vlt"
+  },
+  "author": "",
+  "license": "unlicensed",
+  "dependencies": {
+    "jison": "^0.4.18"
+  }
+}
