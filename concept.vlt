@@ -1,27 +1,23 @@
 // hello.vlt
-'Hello world'
+return 'Hello world';
 
 // stuff.vlt
-(() => {
-  foo := 'bar';
-  return foo:length();
-})()
+foo := 'bar';
+return foo:length();
 
 // blah
-(() => {
-  foo := {
-    a: 10,
-    b: 2,
-  };
+foo := {
+  a: 10,
+  b: 2,
+};
 
-  foo.a = 1;
-  foo.c := 3;
+foo.a = 1;
+foo.c := 3;
 
-  foo.d.e.f := 42; // ?
-})()
+foo.d.e.f := 42; // ?
 
 // pair class
-class Pair {
+return class Pair {
   first: f64;
   second: f64;
 
@@ -44,22 +40,22 @@ class Pair {
 
     return 2 * fig1 + fig2;
   }
-}
+};
 
 // Error.vlt (in core?)
-class Error: string {}
+return class Error: string {};
 
 // factorial.vlt
 import Error from 'core';
 
-func factorial(n: i32) => match {
+return func factorial(n: i32) => match {
   n < 0  => Error('Invalid input'); // ?
   n == 0 => 1;
   true   => n * factorial(n - 1);
-}
+};
 
 // factorial5.vlt
-(import factorial)(5)
+return (import factorial)(5);
 
 // double.vlt
-(x: f64) => 2 * x
+return (x: f64) => 2 * x;
