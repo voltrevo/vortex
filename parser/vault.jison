@@ -1,5 +1,4 @@
-
-/* description: Parses and executes mathematical expressions. */
+/* description: Parses the vault language and generates the syntax tree. */
 
 /* lexical grammar */
 %lex
@@ -7,8 +6,8 @@
 
 \s+                   /* skip whitespace */
 [a-zA-Z]\w*           return 'IDENTIFIER'
-":="                  return 'CREATE'
-"="                   return 'ASSIGN'
+":="                  return ':='
+"="                   return '='
 ";"                   return ';'
 [0-9]+("."[0-9]+)?\b  return 'NUMBER'
 "*"                   return '*'
@@ -34,14 +33,25 @@
 %right '%'
 %left UMINUS
 
-%start body
+%start program
 
 %% /* language grammar */
 
-body
-    : e EOF
-        { typeof console !== 'undefined' ? console.log($1) : print($1);
-          return $1; }
+program
+    : statements EOF
+        { console.log($1); }
+    ;
+
+statements
+    : statement
+        {$$ = [($1)]}
+    | statements statement
+        {$$ = $1.concat($2)}
+    ;
+
+statement
+    : e ';'
+        {$$ = $1}
     ;
 
 e
