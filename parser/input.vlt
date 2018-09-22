@@ -9,7 +9,12 @@ func main(n: i32) {
   if (1 + 1) {
     foo = foo + 1;
   }
+
+  return n * 2;
 }
+
+continue;
+break;
 
 func() {}
 

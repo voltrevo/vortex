@@ -9,6 +9,9 @@
 '}'                   return '}'
 'if'                  return 'IF'
 'func'                return 'FUNC'
+'return'              return 'RETURN'
+'break'               return 'BREAK'
+'continue'            return 'CONTINUE'
 [a-zA-Z]\w*           return 'IDENTIFIER'
 ";"                   return ';'
 [0-9]+("."[0-9]+)?\b  return 'NUMBER'
@@ -56,6 +59,12 @@ statement
         {$$ = $1}
     | e ';'
         {$$ = $1}
+    | RETURN e ';'
+        {$$ = ['return', $2]}
+    | BREAK ';'
+        {$$ = ['break']}
+    | CONTINUE ';'
+        {$$ = ['continue']}
     | if
         {$$ = $1}
     ;
