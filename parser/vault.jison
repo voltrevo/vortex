@@ -41,12 +41,12 @@
 
 program
     : statements EOF
-        { console.log(require('util').inspect($1, { depth: 6, colors: true })); }
+        { console.log(require('util').inspect($1, { depth: 8, colors: true })); }
     ;
 
 statements
-    : statement
-        {$$ = [$1]}
+    :
+        {$$ = []}
     | statements statement
         {$$ = [...$1, $2]}
     ;
@@ -71,8 +71,8 @@ func
     ;
 
 params
-    : param
-        {$$ = ['params', [$1.slice(1)]]}
+    :
+        {$$ = ['params', []]}
     | params param
         {$$ = ['params', [...$1[1], $2.slice(1)]]}
     ;
