@@ -67,7 +67,7 @@ e
     | '(' e ')'
         {$$ = $2;}
     | NUMBER
-        {$$ = ['NUMBER', yytext];}
+        {$$ = ['NUMBER', $1];}
     | IDENTIFIER
         {$$ = ['IDENTIFIER', $1];}
     | e ':=' e
