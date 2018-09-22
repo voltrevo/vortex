@@ -12,3 +12,5 @@ func main(n: i32) {
 }
 
 func() {}
+
+foo := func() {};
