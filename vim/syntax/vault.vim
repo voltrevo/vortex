@@ -136,3 +136,6 @@ if g:colors_name == 'dracula'
   hi! link Function DraculaOrange
   hi! link Define DraculaGreen
 endif
+
+" TODO: This should be in an ftplugin?
+let b:ale_linters = ['vault-parse']

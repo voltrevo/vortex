@@ -1,0 +1,30 @@
+#!/usr/bin/env node
+
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
+
+const { parse } = require('./vault.js');
+
+const tmpFilename = path.join(os.tmpdir(), Math.random().toString().slice(2));
+const tmpFile = fs.createWriteStream(tmpFilename);
+
+const pipeline = process.stdin.pipe(tmpFile);
+
+pipeline.on('finish', () => {
+  const bufferText = fs.readFileSync(tmpFilename).toString();
+  fs.unlinkSync(tmpFilename);
+
+  try {
+    parse(bufferText);
+  } catch (e) {
+    console.error(JSON.stringify({
+      lnum: e.hash.loc.first_line,
+      end_lnum: e.hash.loc.last_line,
+      col: e.hash.loc.first_column,
+      end_col: e.hash.loc.last_column,
+      text: e.message.split('\n')[3],
+      type: 'error',
+    }));
+  }
+});
