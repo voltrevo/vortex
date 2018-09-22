@@ -8,6 +8,7 @@
 '{'                   return '{'
 '}'                   return '}'
 'if'                  return 'IF'
+'func'                return 'FUNC'
 [a-zA-Z]\w*           return 'IDENTIFIER'
 ";"                   return ';'
 [0-9]+("."[0-9]+)?\b  return 'NUMBER'
@@ -20,6 +21,7 @@
 ")"                   return ')'
 ":="                  return ':='
 "="                   return '='
+":"                   return ':'
 <<EOF>>               return 'EOF'
 .                     return 'INVALID'
 
@@ -54,11 +56,30 @@ statement
         {$$ = $1}
     | if
         {$$ = $1}
+    | func
+        {$$ = $1}
     ;
 
 if
     : IF '(' e ')' block
         {$$ = ['if', $3, $5]}
+    ;
+
+func
+    : FUNC IDENTIFIER '(' params ')' block
+        {$$ = ['func', $2, $4, $6]}
+    ;
+
+params
+    : param
+        {$$ = ['params', [$1.slice(1)]]}
+    | params param
+        {$$ = ['params', [...$1[1], $2.slice(1)]]}
+    ;
+
+param
+    : IDENTIFIER ':' IDENTIFIER
+        {$$ = ['param', $1, $3]}
     ;
 
 block
