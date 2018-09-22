@@ -5,9 +5,10 @@
 %%
 
 \s+                   /* skip whitespace */
+'{'                   return '{'
+'}'                   return '}'
+'if'                  return 'IF'
 [a-zA-Z]\w*           return 'IDENTIFIER'
-":="                  return ':='
-"="                   return '='
 ";"                   return ';'
 [0-9]+("."[0-9]+)?\b  return 'NUMBER'
 "**"                  return '**'
@@ -17,6 +18,8 @@
 "+"                   return '+'
 "("                   return '('
 ")"                   return ')'
+":="                  return ':='
+"="                   return '='
 <<EOF>>               return 'EOF'
 .                     return 'INVALID'
 
@@ -24,11 +27,11 @@
 
 /* operator associations and precedence */
 
+%right ':=' '='
 %left '+' '-'
 %left '*' '/'
 %right '**'
 %left UMINUS
-%right ':=' '='
 
 %start program
 
@@ -36,7 +39,7 @@
 
 program
     : statements EOF
-        { console.log(require('util').inspect($1, { depth: 4, colors: true })); }
+        { console.log(require('util').inspect($1, { depth: 6, colors: true })); }
     ;
 
 statements
@@ -49,6 +52,18 @@ statements
 statement
     : e ';'
         {$$ = $1}
+    | if
+        {$$ = $1}
+    ;
+
+if
+    : IF '(' e ')' block
+        {$$ = ['if', $3, $5]}
+    ;
+
+block
+    : '{' statements '}'
+        {$$ = ['block', $2]}
     ;
 
 e
