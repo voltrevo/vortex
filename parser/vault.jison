@@ -8,6 +8,8 @@
 '{'                   return '{'
 '}'                   return '}'
 'if'                  return 'IF'
+'for'                 return 'FOR'
+'of'                  return 'OF'
 'func'                return 'FUNC'
 'return'              return 'RETURN'
 'break'               return 'BREAK'
@@ -67,11 +69,24 @@ statement
         {$$ = ['continue']}
     | if
         {$$ = $1}
+    | for
+        {$$ = $1}
     ;
 
 if
     : IF '(' e ')' block
         {$$ = ['if', $3, $5]}
+    ;
+
+for
+    : FOR block
+        {$$ = ['for', ['loop'], $2]}
+    | FOR '(' e ')' block
+        {$$ = ['for', ['condition', $3], $5]}
+    | FOR '(' IDENTIFIER OF e ')' block
+        {$$ = ['for', ['of', $3, $5], $7]}
+    | FOR '(' e ';' e ';' e ')' block
+        {$$ = ['for', ['traditional', $3, $5, $7], $9]}
     ;
 
 func
