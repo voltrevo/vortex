@@ -11,6 +11,4 @@ func main(n: i32) {
   }
 }
 
-func blah() {
-  3;
-}
+func() {}

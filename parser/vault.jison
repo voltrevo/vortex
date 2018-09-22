@@ -66,8 +66,15 @@ if
     ;
 
 func
-    : FUNC IDENTIFIER '(' params ')' block
+    : FUNC funcName '(' params ')' block
         {$$ = ['func', $2, $4, $6]}
+    ;
+
+funcName
+    :
+        {$$ = null}
+    | IDENTIFIER
+        {$$ = $1}
     ;
 
 params
