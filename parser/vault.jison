@@ -19,6 +19,7 @@
 'import'              return 'IMPORT'
 'from'                return 'FROM'
 'class'               return 'CLASS'
+'static'              return 'STATIC'
 [a-zA-Z]\w*           return 'IDENTIFIER'
 ";"                   return ';'
 [0-9]+("."[0-9]+)?\b  return 'NUMBER'
@@ -368,8 +369,20 @@ classMethods
     ;
 
 classMethod
-    : ':' IDENTIFIER '(' params ')' block
-        {$$ = [$2, $4, $6]}
-    | ':' IDENTIFIER '(' params ')' '=>' e ';'
-        {$$ = [$2, $4, ['expBody', $7]]}
+    : classMethodModifiers ':' IDENTIFIER '(' params ')' classMethodBody
+        {$$ = { modifiers: $1, name: $3, args: $5[1], body: $7 }}
+    ;
+
+classMethodModifiers
+    :
+        {$$ = []}
+    | STATIC
+        {$$ = ['static']}
+    ;
+
+classMethodBody
+    : block
+        {$$ = $1}
+    | '=>' e ';'
+        {$$ = ['expBody', $2]}
     ;
