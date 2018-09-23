@@ -255,8 +255,6 @@ e
         {$$ = ['methodCall', $1, $3, $5]}
     | e '[' e ']'
         {$$ = ['subscript', $1, $3]}
-    | '[' eList ']'
-        {$$ = ['array', $2]}
     | NUMBER
         {$$ = ['NUMBER', $1]}
     | IDENTIFIER
@@ -265,26 +263,44 @@ e
         {$$ = ['STRING', $1]}
     | func
         {$$ = $1}
+    | array
+        {$$ = $1}
     | object
         {$$ = $1}
+    ;
+
+array
+    : '[' eList ']'
+        {$$ = ['array', $2]}
+    | '[' eListNonEmpty ',' ']'
+        {$$ = ['array', $2]}
     ;
 
 eList
     :
         {$$ = []}
-    | eListNonEmpty
+    | eListA
+        {$$ = $1}
+    | eListB
         {$$ = $1}
     ;
 
-eListNonEmpty
+eListA
     : e
         {$$ = [$1]}
-    | eList ',' e
-        {$$ = [...$1, $3]}
+    | eListB e
+        {$$ = [...$1, $2]}
+    ;
+
+eListB
+    : eListA ','
+        {$$ = $1}
     ;
 
 object
     : '{' propList '}'
+        {$$ = ['object', $1]}
+    | '{' propListNonEmpty ',' '}'
         {$$ = ['object', $1]}
     ;
 
