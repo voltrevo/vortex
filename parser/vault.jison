@@ -67,6 +67,7 @@
 /* operator associations and precedence */
 
 %right ':=' '=' '+=' '-=' '*=' '/=' '%=' '<<=' '>>=' '&=' '|=' '^='
+%left ':'
 %left '||'
 %left '&&'
 %left '|'
@@ -245,6 +246,8 @@ e
         {$$ = $2;}
     | e args
         {$$ = ['functionCall', $1, $2[1]]}
+    | e ':' IDENTIFIER args
+        {$$ = ['methodCall', $1, $3, $4]}
     | NUMBER
         {$$ = ['NUMBER', $1]}
     | IDENTIFIER
