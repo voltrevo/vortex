@@ -18,6 +18,7 @@
 'continue'            return 'CONTINUE'
 'import'              return 'IMPORT'
 'from'                return 'FROM'
+'class'               return 'CLASS'
 [a-zA-Z]\w*           return 'IDENTIFIER'
 ";"                   return ';'
 [0-9]+("."[0-9]+)?\b  return 'NUMBER'
@@ -284,6 +285,8 @@ e
         {$$ = $1}
     | '(' import ')'
         {$$ = $2}
+    | class
+        {$$ = $1}
     ;
 
 array
@@ -338,4 +341,35 @@ propListNonEmpty
 prop
     : IDENTIFIER ':' e
         {$$ = [$1, $3]}
+    ;
+
+class
+    : CLASS IDENTIFIER '{' classMembers classMethods '}'
+        {$$ = ['class', { name: $2, members: $4, methods: $5 }]}
+    ;
+
+classMembers
+    :
+        {$$ = []}
+    | classMembers classMember
+        {$$ = [...$1, $2]}
+    ;
+
+classMember
+    : IDENTIFIER ':' IDENTIFIER ';'
+        {$$ = [$1, $3]}
+    ;
+
+classMethods
+    :
+        {$$ = []}
+    | classMethods classMethod
+        {$$ = [...$1, $2]}
+    ;
+
+classMethod
+    : ':' IDENTIFIER '(' params ')' block
+        {$$ = [$2, $4, $6]}
+    | ':' IDENTIFIER '(' params ')' '=>' e ';'
+        {$$ = [$2, $4, ['expBody', $7]]}
     ;
