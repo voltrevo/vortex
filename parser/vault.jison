@@ -23,6 +23,7 @@
 [0-9]+("."[0-9]+)?\b  return 'NUMBER'
 ["][^"]*["]           return 'STRING'
 ['][^']*[']           return 'STRING'
+'=>'                  return '=>'
 "**"                  return '**'
 ":="                  return ':='
 "++"                  return '++'
@@ -71,6 +72,7 @@
 
 /* operator associations and precedence */
 
+%right FUNC
 %right ':=' '=' '+=' '-=' '*=' '/=' '%=' '<<=' '>>=' '&=' '|=' '^='
 %left ':'
 %left '||'
@@ -146,6 +148,8 @@ import
 func
     : FUNC funcName '(' params ')' block
         {$$ = ['func', $2, $4, $6]}
+    | FUNC funcName '(' params ')' '=>' e %prec FUNC
+        {$$ = ['func', $2, $4, ['expBody', $7]]}
     ;
 
 funcName

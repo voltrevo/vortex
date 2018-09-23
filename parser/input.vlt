@@ -19,9 +19,7 @@ func main(n: i32) {
   return multiplyAdd(n, n, n) + 'hello';
 };
 
-func multiplyAdd(a: i32, b: i32, c: i32) {
-  return a * b + c;
-};
+func multiplyAdd(a: i32, b: i32, c: i32) => a * b + c;
 
 func methodCalls() {
   return getObject():method():method2();
