@@ -11,12 +11,12 @@ func main(n: i32) {
   }
 
   return n * 2;
-}
+};
 
 continue;
 break;
 
-func() {}
+func() {};
 
 foo := func() {};
 
@@ -28,4 +28,4 @@ func loops() {
   for (1) {}
   for (i := 1; 1; i = i + 1) {}
   for (i of values) {}
-}
+};

@@ -57,9 +57,7 @@ statements
     ;
 
 statement
-    : func
-        {$$ = $1}
-    | e ';'
+    : e ';'
         {$$ = $1}
     | RETURN e ';'
         {$$ = ['return', $2]}
