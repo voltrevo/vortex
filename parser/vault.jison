@@ -16,6 +16,8 @@
 'return'              return 'RETURN'
 'break'               return 'BREAK'
 'continue'            return 'CONTINUE'
+'import'              return 'IMPORT'
+'from'                return 'FROM'
 [a-zA-Z]\w*           return 'IDENTIFIER'
 ";"                   return ';'
 [0-9]+("."[0-9]+)?\b  return 'NUMBER'
@@ -114,6 +116,8 @@ statement
         {$$ = $1}
     | for
         {$$ = $1}
+    | import ';'
+        {$$ = $1}
     ;
 
 if
@@ -130,6 +134,13 @@ for
         {$$ = ['for', ['of', $3, $5], $7]}
     | FOR '(' e ';' e ';' e ')' block
         {$$ = ['for', ['traditional', $3, $5, $7], $9]}
+    ;
+
+import
+    : IMPORT IDENTIFIER
+        {$$ = ['import', $2]}
+    | IMPORT IDENTIFIER FROM STRING
+        {$$ = ['import', $2, $4]}
     ;
 
 func
@@ -267,6 +278,8 @@ e
         {$$ = $1}
     | object
         {$$ = $1}
+    | '(' import ')'
+        {$$ = $2}
     ;
 
 array
