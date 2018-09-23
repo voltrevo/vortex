@@ -6,17 +6,17 @@ const path = require('path');
 
 const { parse } = require('./vault.js');
 
-const tmpFilename = path.join(os.tmpdir(), Math.random().toString().slice(2));
-const tmpFile = fs.createWriteStream(tmpFilename);
+let stdinText = '';
 
-const pipeline = process.stdin.pipe(tmpFile);
+process.stdin.on('data', chunk => {
+  if (chunk !== null) {
+    stdinText += chunk;
+  }
+});
 
-pipeline.on('finish', () => {
-  const bufferText = fs.readFileSync(tmpFilename).toString();
-  fs.unlinkSync(tmpFilename);
-
+process.stdin.on('end', () => {
   try {
-    parse(bufferText);
+    parse(stdinText);
   } catch (e) {
     console.error(JSON.stringify({
       lnum: e.hash.loc.first_line,
