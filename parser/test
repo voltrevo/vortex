@@ -1,0 +1,10 @@
+#!/bin/bash -e
+
+jisonStdout=$(npx jison vault.jison)
+
+if [ ${#jisonStdout} -gt 0 ]; then
+  echo "$jisonStdout" 1>&2
+  exit 1
+fi
+
+node vault.js input.vlt

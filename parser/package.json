@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "jison vault.jison && node vault.js input.vlt"
+    "test": "./test"
   },
   "author": "",
   "license": "unlicensed",
