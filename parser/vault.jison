@@ -59,6 +59,9 @@
 "&"                   return '&'
 "^"                   return '^'
 "|"                   return '|'
+'['                   return '['
+']'                   return ']'
+'.'                   return '.'
 <<EOF>>               return 'EOF'
 .                     return 'INVALID'
 
@@ -79,8 +82,8 @@
 %left '+' '-'
 %left '*' '/'
 %right '**'
-%left PREFIX POSTFIX '!' '~' '++' '--'
-%left '(' ')'
+%left '!' '~' PREFIX POSTFIX '++' '--'
+%left '(' ')' '[' ']' '.'
 
 %start program
 
@@ -242,12 +245,18 @@ e
         {$$ = ['|', $1, $3]}
     | '-' e %prec UMINUS
         {$$ = ['-', $2]}
+    | e '.' IDENTIFIER
+        {$$ = ['.', $1, $3]}
     | '(' e ')'
         {$$ = $2;}
-    | e args
-        {$$ = ['functionCall', $1, $2[1]]}
-    | e ':' IDENTIFIER args
-        {$$ = ['methodCall', $1, $3, $4]}
+    | e '(' eList ')'
+        {$$ = ['functionCall', $1, $3]}
+    | e ':' IDENTIFIER '(' eList ')'
+        {$$ = ['methodCall', $1, $3, $5]}
+    | e '[' e ']'
+        {$$ = ['subscript', $1, $3]}
+    | '[' eList ']'
+        {$$ = ['array', $2]}
     | NUMBER
         {$$ = ['NUMBER', $1]}
     | IDENTIFIER
@@ -256,18 +265,44 @@ e
         {$$ = ['STRING', $1]}
     | func
         {$$ = $1}
+    | object
+        {$$ = $1}
     ;
 
-args
-    : '(' ')'
-        {$$ = ['args', []]}
-    | '(' argsContent ')'
-        {$$ = ['args', $2]}
+eList
+    :
+        {$$ = []}
+    | eListNonEmpty
+        {$$ = $1}
     ;
 
-argsContent
+eListNonEmpty
     : e
         {$$ = [$1]}
-    | argsContent ',' e
+    | eList ',' e
         {$$ = [...$1, $3]}
+    ;
+
+object
+    : '{' propList '}'
+        {$$ = ['object', $1]}
+    ;
+
+propList
+    :
+        {$$ = []}
+    | propListNonEmpty
+        {$$ = $1}
+    ;
+
+propListNonEmpty
+    : prop
+        {$$ = [$1]}
+    | propListNonEmpty ',' prop
+        {$$ = [...$1, $3]}
+    ;
+
+prop
+    : IDENTIFIER ':' e
+        {$$ = [$1, $3]}
     ;

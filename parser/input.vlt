@@ -22,6 +22,17 @@ func methodCalls() {
   return getObject():method():method2();
 };
 
+func arrays() {
+  literal := [1, 2, 3, 2 + 2];
+  subscript := literal[blah()];
+};
+
+func objects() {
+  x := { a: 1, b: 1 };
+  x.b++;
+  x.c := 3;
+};
+
 /*
   block comments work too
 */
