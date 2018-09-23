@@ -11,7 +11,11 @@ func main(n: i32) {
     foo = foo + 1;
   }
 
-  return n * 2 + 'hello';
+  return double(n) + 'hello';
+};
+
+func double(n: i32) {
+  return n * 2;
 };
 
 /*

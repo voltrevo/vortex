@@ -31,6 +31,7 @@
 ":="                  return ':='
 "="                   return '='
 ":"                   return ':'
+","                   return ','
 <<EOF>>               return 'EOF'
 .                     return 'INVALID'
 
@@ -38,6 +39,7 @@
 
 /* operator associations and precedence */
 
+%left '('
 %right ':=' '='
 %left '+' '-'
 %left '*' '/'
@@ -50,7 +52,7 @@
 
 program
     : statements EOF
-        { console.log(require('util').inspect($1, { depth: 8, colors: true })); }
+        { console.log(require('util').inspect($1, { depth: 10, colors: true })); }
     ;
 
 statements
@@ -135,6 +137,8 @@ e
         {$$ = ['-', $2]}
     | '(' e ')'
         {$$ = $2;}
+    | e args
+        {$$ = ['functionCall', $1, $2[1]]}
     | NUMBER
         {$$ = ['NUMBER', $1]}
     | IDENTIFIER
@@ -147,4 +151,18 @@ e
         {$$ = ['=', $1, $3]}
     | func
         {$$ = $1}
+    ;
+
+args
+    : '(' ')'
+        {$$ = ['args', []]}
+    | '(' argsContent ')'
+        {$$ = ['args', $2]}
+    ;
+
+argsContent
+    : e
+        {$$ = [$1]}
+    | argsContent ',' e
+        {$$ = [...$1, $3]}
     ;
