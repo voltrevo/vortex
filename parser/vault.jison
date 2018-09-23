@@ -108,12 +108,21 @@ funcName
 params
     :
         {$$ = ['params', []]}
-    | params param
-        {$$ = ['params', [...$1[1], $2.slice(1)]]}
+    | nonEmptyParams
+        {$$ = ['params', $1]}
+    ;
+
+nonEmptyParams
+    : param
+        {$$ = [$1]}
+    | nonEmptyParams ',' param
+        {$$ = [...$1, $3]}
     ;
 
 param
-    : IDENTIFIER ':' IDENTIFIER
+    : IDENTIFIER
+        {$$ = ['param', $1]}
+    | IDENTIFIER ':' IDENTIFIER
         {$$ = ['param', $1, $3]}
     ;
 
