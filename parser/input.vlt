@@ -1,3 +1,4 @@
+// main doesn't have special significance
 func main(n: i32) {
   2 ** 3 ** 4;
   1 + 1;
@@ -12,6 +13,10 @@ func main(n: i32) {
 
   return n * 2;
 };
+
+/*
+  block comments work too
+*/
 
 continue;
 break;

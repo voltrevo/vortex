@@ -4,6 +4,8 @@
 %lex
 %%
 
+"//".*                /* skip line comments */
+[/][*][^*]*[*]+([^/*][^*]*[*]+)*[/]   /* skip block comments */
 \s+                   /* skip whitespace */
 '{'                   return '{'
 '}'                   return '}'
