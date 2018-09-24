@@ -1,1 +1,1 @@
-let b:ale_linters = ['vault-parse']
+let b:ale_linters = ['vault-check']
