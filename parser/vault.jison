@@ -20,6 +20,7 @@
 'from'                return 'FROM'
 'class'               return 'CLASS'
 'static'              return 'STATIC'
+'switch'              return 'SWITCH'
 [a-zA-Z]\w*           return 'IDENTIFIER'
 ";"                   return ';'
 [0-9]+("."[0-9]+)?\b  return 'NUMBER'
@@ -288,6 +289,29 @@ e
         {$$ = $2}
     | class
         {$$ = $1}
+    | switch
+        {$$ = $1}
+    ;
+
+atomicExp
+    : NUMBER
+        {$$ = $1}
+    | IDENTIFIER
+        {$$ = $1}
+    | STRING
+        {$$ = $1}
+    | array
+        {$$ = $1}
+    | object
+        {$$ = $1}
+    | '(' import ')'
+        {$$ = $2}
+    | class
+        {$$ = $1}
+    | switch
+        {$$ = $1}
+    | '(' e ')'
+        {$$ = $2}
     ;
 
 array
@@ -346,7 +370,15 @@ prop
 
 class
     : CLASS IDENTIFIER '{' classMembers classMethods '}'
-        {$$ = ['class', { name: $2, members: $4, methods: $5 }]}
+        {$$ = ['class', { name: $2, type: ['members', $4], methods: $5 }]}
+    | CLASS IDENTIFIER classType '{' classMethods '}'
+        {$$ = ['class', { name: $2, type: ['whole', $3], methods: $5 }]}
+    ;
+
+/* TODO: proper type parsing (just IDENTIFIER right now) */
+classType
+    : ':' IDENTIFIER
+        {$$ = $2}
     ;
 
 classMembers
@@ -385,4 +417,28 @@ classMethodBody
         {$$ = $1}
     | '=>' e ';'
         {$$ = ['expBody', $2]}
+    ;
+
+switch
+    : SWITCH switchValueClause '{' switchCases '}'
+        {$$ = ['switch', $2, $4]}
+    ;
+
+switchValueClause
+    :
+        {$$ = null}
+    | '(' e ')'
+        {$$ = $2}
+    ;
+
+switchCases
+    :
+        {$$ = []}
+    | switchCases switchCase
+        {$$ = [...$1, $2]}
+    ;
+
+switchCase
+    : atomicExp '=>' e ';'
+        {$$ = [$1, $3]}
     ;

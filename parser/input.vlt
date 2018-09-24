@@ -36,6 +36,16 @@ func objects() {
   x.c := 3;
 };
 
+func immutableStuff() {
+  x := { a: 0, b: 0 };
+  y := x;
+
+  x.a++;
+
+  y == { a: 0, b: 0 };
+  x == { a: 1, b: 0 };
+};
+
 func trailing() {
   {
     a: 1,
@@ -79,4 +89,14 @@ class Point {
   :sum() {
     return x + y;
   }
+};
+
+class Error: string {
+  :message() { return this; }
+};
+
+return func factorial(n: i32) => switch {
+  (n < 0) => Error('Invalid input'); // ?
+  (n == 0) => 1;
+  (true) => n * factorial(n - 1);
 };
