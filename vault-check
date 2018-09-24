@@ -1,0 +1,14 @@
+#!/usr/bin/env node
+
+try {
+  require('./build/check.js');
+} catch (e) {
+  console.error(JSON.stringify({
+    lnum: 1,
+    end_lnum: 1,
+    col: 1,
+    end_col: 1,
+    text: e.message,
+    type: 'error',
+  }));
+}

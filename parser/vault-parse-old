@@ -1,0 +1,30 @@
+#!/usr/bin/env node
+
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
+
+const { parse } = require('./vault.js');
+
+let stdinText = '';
+
+process.stdin.on('data', chunk => {
+  if (chunk !== null) {
+    stdinText += chunk;
+  }
+});
+
+process.stdin.on('end', () => {
+  try {
+    parse(stdinText);
+  } catch (e) {
+    console.error(JSON.stringify({
+      lnum: e.hash.loc.first_line,
+      end_lnum: e.hash.loc.last_line,
+      col: e.hash.loc.first_column,
+      end_col: e.hash.loc.last_column,
+      text: e.message.split('\n')[3],
+      type: 'error',
+    }));
+  }
+});

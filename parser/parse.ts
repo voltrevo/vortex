@@ -1,6 +1,6 @@
 declare function require(name: string): any;
 
-const { parseUntyped } = require('./vault.js');
+const { parser: parserUntyped } = require('./vault.js');
 
 export namespace Syntax {
   export type CreationOperator = ':=';
@@ -19,6 +19,26 @@ export namespace Syntax {
     '=' |
     never
   );
+
+  export function isAssignmentOperator(
+    str: string
+  ): str is AssignmentOperator {
+    const operators = [
+      '+=',
+      '-=',
+      '*=',
+      '/=',
+      '%=',
+      '<<=',
+      '>>=',
+      '&=',
+      '^=',
+      '|=',
+      '=',
+    ];
+
+    return operators.indexOf(str) !== -1;
+  }
 
   export type VanillaOperator = (
     '**' |
@@ -65,30 +85,38 @@ export namespace Syntax {
     never
   );
 
-  export type Identifier = { t: 'IDENTIFIER', v: string };
-  export type NUMBER = { t: 'NUMBER', v: string };
-  export type STRING = { t: 'STRING', v: string };
+  export type Pos = {
+    first_line: number;
+    last_line: number;
+    first_column: number;
+    last_column: number;
+  };
 
-  type Expression = (
+  export type Identifier = { t: 'IDENTIFIER', v: string, p: Pos };
+  export type NUMBER = { t: 'NUMBER', v: string, p: Pos };
+  export type STRING = { t: 'STRING', v: string, p: Pos };
+
+  export type Expression = (
     NUMBER |
     Identifier |
     STRING |
-    { t: NonSpecialBinaryOperator, v: [Expression, Expression] } |
-    { t: UnaryOperator, v: Expression } |
-    { t: '.', v: [Expression, string] } |
-    { t: 'functionCall', v: [Expression, Expression[]] } |
-    { t: 'methodCall', v: [Expression, string, Expression[]] } |
-    { t: 'subscript', v: [Expression, Expression] } |
+    { t: NonSpecialBinaryOperator, v: [Expression, Expression], p: Pos } |
+    { t: UnaryOperator, v: Expression, p: Pos } |
+    { t: '.', v: [Expression, string], p: Pos } |
+    { t: 'functionCall', v: [Expression, Expression[]], p: Pos } |
+    { t: 'methodCall', v: [Expression, string, Expression[]], p: Pos } |
+    { t: 'subscript', v: [Expression, Expression], p: Pos } |
     {
       t: 'func',
       v: [
         string | null,
-        [string, string | null][],
-        BlockBody | ExpressionBody
-      ]
+        { t: 'arg', v: [string, string | null], p: Pos }[],
+        Block | ExpressionBody
+      ],
+      p: Pos,
     } |
-    { t: 'array', v: Expression[] } |
-    { t: 'object', v: [string, Expression][] } |
+    { t: 'array', v: Expression[], p: Pos } |
+    { t: 'object', v: [string, Expression][], p: Pos } |
     {
       t: 'class',
       v: {
@@ -101,38 +129,40 @@ export namespace Syntax {
         methods: {
           modifiers: 'static'[]
           name: string,
-          args: [string, string | null][],
-          body: BlockBody | ExpressionBody,
+          args: { t: 'arg', v: [string, string | null], p: Pos }[],
+          body: Block | ExpressionBody,
+          p: Pos,
         }[],
       },
+      p: Pos,
     } |
-    { t: 'switch', v: [Expression | null, [Expression, Expression][]] } |
+    { t: 'switch', v: [Expression | null, [Expression, Expression][]], p: Pos } |
     Import |
     never
   );
 
-  type ExpressionBody = { t: 'expBody', v: Expression };
-  type BlockBody = { t: 'block', v: Statement[] };
+  type ExpressionBody = { t: 'expBody', v: Expression, p: Pos };
+  export type Block = { t: 'block', v: Statement[], p: Pos };
 
-  export type ExpressionStatement = { t: 'e', v: Expression };
+  export type ExpressionStatement = { t: 'e', v: Expression, p: Pos };
 
   export type Statement = (
     ExpressionStatement |
-    { t: 'return', v: Expression } |
-    { t: 'break' } |
-    { t: 'continue' } |
+    { t: 'return', v: Expression, p: Pos } |
+    { t: 'break', p: Pos } |
+    { t: 'continue', p: Pos } |
     IfStatement |
     ForStatement |
     Import |
     never
   );
 
-  export type IfStatement = { t: 'if', v: [Expression, Block] };
-  export type ForStatement = { t: 'for', v: [ForTypeClause, Block] };
+  export type IfStatement = { t: 'if', v: [Expression, Block], p: Pos };
+  export type ForStatement = { t: 'for', v: [ForTypeClause, Block], p: Pos };
 
   export type Import = (
-    { t: 'import', v: [string] } |
-    { t: 'import', v: [string, STRING] } |
+    { t: 'import', v: [string], p: Pos } |
+    { t: 'import', v: [string, STRING], p: Pos } |
     never
   );
 
@@ -144,11 +174,9 @@ export namespace Syntax {
     never
   );
 
-  export type Block = Statement[];
-
-  export type Program = Statement[];
+  export type Program = Block;
 }
 
 export function parse(programText: string): Syntax.Program {
-  return parseUntyped(programText);
+  return parserUntyped.parse(programText);
 }

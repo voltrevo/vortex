@@ -7,10 +7,8 @@ if [ ${#jisonStdout} -gt 0 ]; then
   exit 1
 fi
 
-node vault.js input.vlt
-
 echo "import { Syntax } from './parse';" >testProgram.ts
 echo >>testProgram.ts
 echo "export const testProgram: Syntax.Program =" >>testProgram.ts
-DEPTH=100 node vault.js input.vlt >>testProgram.ts
+DEPTH=100 PRINT=1 node vault.js input.vlt >>testProgram.ts
 echo ";" >>testProgram.ts

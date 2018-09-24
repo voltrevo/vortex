@@ -98,8 +98,13 @@
 %% /* language grammar */
 
 program
-    : statements EOF
-        { console.log(require('util').inspect($1, { depth: Number(process.env.DEPTH) || 10, colors: require('tty').isatty(1) })); }
+    : programStatements EOF
+        {if (process.env.PRINT) { console.log(JSON.stringify($1, null, 2)); } else { return $1 }}
+    ;
+
+programStatements
+    : statements
+        {$$ = { t: 'block', v: $1, p: @$ }}
     ;
 
 statements
@@ -114,13 +119,13 @@ statement
        statements?
     */
     : e ';'
-        {$$ = { t: 'e', v: $1 }}
+        {$$ = { t: 'e', v: $1, p: @$ }}
     | RETURN e ';'
-        {$$ = { t: 'return', v: $2 }}
+        {$$ = { t: 'return', v: $2, p: @$ }}
     | BREAK ';'
-        {$$ = { t: 'break' }}
+        {$$ = { t: 'break', p: @$ }}
     | CONTINUE ';'
-        {$$ = { t: 'continue' }}
+        {$$ = { t: 'continue', p: @$ }}
     | if
         {$$ = $1}
     | for
@@ -131,37 +136,37 @@ statement
 
 if
     : IF '(' e ')' block
-        {$$ = { t: 'if', v: [$3, $5.v] }}
+        {$$ = { t: 'if', v: [$3, $5], p: @$ }}
     ;
 
 for
     : FOR block
-        {$$ = { t: 'for', v: [['loop'], $2.v] }}
+        {$$ = { t: 'for', v: [['loop'], $2], p: @$ }}
     | FOR '(' e ')' block
-        {$$ = { t: 'for', v: [['condition', $3], $5.v] }}
+        {$$ = { t: 'for', v: [['condition', $3], $5], p: @$ }}
     | FOR '(' IDENTIFIER OF e ')' block
-        {$$ = { t: 'for', v: [['of', $3, $5], $7.v] }}
+        {$$ = { t: 'for', v: [['of', $3, $5], $7], p: @$ }}
     | FOR '(' e ';' e ';' e ')' block
-        {$$ = { t: 'for', v: [['traditional', $3, $5, $7], $9.v] }}
+        {$$ = { t: 'for', v: [['traditional', $3, $5, $7], $9], p: @$ }}
     ;
 
 string
     : STRING
-        {$$ = { t: 'STRING', v: $1 }}
+        {$$ = { t: 'STRING', v: $1, p: @$ }}
     ;
 
 import
     : IMPORT IDENTIFIER
-        {$$ = { t: 'import', v: [$2] }}
+        {$$ = { t: 'import', v: [$2], p: @$ }}
     | IMPORT IDENTIFIER FROM string
-        {$$ = { t: 'import', v: [$2, $4] }}
+        {$$ = { t: 'import', v: [$2, $4], p: @$ }}
     ;
 
 func
-    : FUNC funcName '(' params ')' block
-        {$$ = { t: 'func', v: [$2, $4.map(p => p.v), $6] }}
-    | FUNC funcName '(' params ')' '=>' e %prec FUNC
-        {$$ = { t: 'func', v: [$2, $4.map(p => p.v), { t: 'expBody', v: $7 }] }}
+    : FUNC funcName '(' args ')' block
+        {$$ = { t: 'func', v: [$2, $4, $6], p: @$ }}
+    | FUNC funcName '(' args ')' '=>' e %prec FUNC
+        {$$ = { t: 'func', v: [$2, $4, { t: 'expBody', v: $7, p: @7 }], p: @$ }}
     ;
 
 funcName
@@ -171,126 +176,126 @@ funcName
         {$$ = $1}
     ;
 
-/* TODO: Check trailing commas for params */
-params
+/* TODO: Check trailing commas for args */
+args
     :
         {$$ = []}
-    | nonEmptyParams
+    | nonEmptyArgs
         {$$ = $1}
     ;
 
-nonEmptyParams
-    : param
+nonEmptyArgs
+    : arg
         {$$ = [$1]}
-    | nonEmptyParams ',' param
+    | nonEmptyArgs ',' arg
         {$$ = [...$1, $3]}
     ;
 
-param
+arg
     : IDENTIFIER
-        {$$ = { t: 'param', v: [$1, null] }}
+        {$$ = { t: 'arg', v: [$1, null], p: @$ }}
     | IDENTIFIER ':' IDENTIFIER
-        {$$ = { t: 'param', v: [$1, $3] }}
+        {$$ = { t: 'arg', v: [$1, $3], p: @$ }}
     ;
 
 block
     : '{' statements '}'
-        {$$ = { t: 'block', v: $2 }}
+        {$$ = { t: 'block', v: $2, p: @$ }}
     ;
 
 e
     : e '**' e
-        {$$ = { t: '**', v: [$1, $3] }}
+        {$$ = { t: '**', v: [$1, $3], p: @$ }}
     | e ':=' e
-        {$$ = { t: ':=', v: [$1, $3] }}
+        {$$ = { t: ':=', v: [$1, $3], p: @$ }}
     | '++' e %prec PREFIX
-        {$$ = { t: 'prefix ++', v: $2 }}
+        {$$ = { t: 'prefix ++', v: $2, p: @$ }}
     | '--' e %prec PREFIX
-        {$$ = { t: 'prefix --', v: $2 }}
+        {$$ = { t: 'prefix --', v: $2, p: @$ }}
     | e '++' %prec POSTFIX
-        {$$ = { t: 'postfix ++', v: $1 }}
+        {$$ = { t: 'postfix ++', v: $1, p: @$ }}
     | e '--' %prec POSTFIX
-        {$$ = { t: 'postfix --', v: $1 }}
+        {$$ = { t: 'postfix --', v: $1, p: @$ }}
     | e '<<' e
-        {$$ = { t: '<<', v: [$1, $3] }}
+        {$$ = { t: '<<', v: [$1, $3], p: @$ }}
     | e '>>' e
-        {$$ = { t: '>>', v: [$1, $3] }}
+        {$$ = { t: '>>', v: [$1, $3], p: @$ }}
     | e '<=' e
-        {$$ = { t: '<=', v: [$1, $3] }}
+        {$$ = { t: '<=', v: [$1, $3], p: @$ }}
     | e '>=' e
-        {$$ = { t: '>=', v: [$1, $3] }}
+        {$$ = { t: '>=', v: [$1, $3], p: @$ }}
     | e '==' e
-        {$$ = { t: '==', v: [$1, $3] }}
+        {$$ = { t: '==', v: [$1, $3], p: @$ }}
     | e '!=' e
-        {$$ = { t: '!=', v: [$1, $3] }}
+        {$$ = { t: '!=', v: [$1, $3], p: @$ }}
     | e '&&' e
-        {$$ = { t: '&&', v: [$1, $3] }}
+        {$$ = { t: '&&', v: [$1, $3], p: @$ }}
     | e '||' e
-        {$$ = { t: '||', v: [$1, $3] }}
+        {$$ = { t: '||', v: [$1, $3], p: @$ }}
     | e '+=' e
-        {$$ = { t: '+=', v: [$1, $3] }}
+        {$$ = { t: '+=', v: [$1, $3], p: @$ }}
     | e '-=' e
-        {$$ = { t: '-=', v: [$1, $3] }}
+        {$$ = { t: '-=', v: [$1, $3], p: @$ }}
     | e '*=' e
-        {$$ = { t: '*=', v: [$1, $3] }}
+        {$$ = { t: '*=', v: [$1, $3], p: @$ }}
     | e '/=' e
-        {$$ = { t: '/=', v: [$1, $3] }}
+        {$$ = { t: '/=', v: [$1, $3], p: @$ }}
     | e '%=' e
-        {$$ = { t: '%=', v: [$1, $3] }}
+        {$$ = { t: '%=', v: [$1, $3], p: @$ }}
     | e '<<=' e
-        {$$ = { t: '<<=', v: [$1, $3] }}
+        {$$ = { t: '<<=', v: [$1, $3], p: @$ }}
     | e '>>=' e
-        {$$ = { t: '>>=', v: [$1, $3] }}
+        {$$ = { t: '>>=', v: [$1, $3], p: @$ }}
     | e '&=' e
-        {$$ = { t: '&=', v: [$1, $3] }}
+        {$$ = { t: '&=', v: [$1, $3], p: @$ }}
     | e '^=' e
-        {$$ = { t: '^=', v: [$1, $3] }}
+        {$$ = { t: '^=', v: [$1, $3], p: @$ }}
     | e '|=' e
-        {$$ = { t: '|=', v: [$1, $3] }}
+        {$$ = { t: '|=', v: [$1, $3], p: @$ }}
     | e '*' e
-        {$$ = { t: '*', v: [$1, $3] }}
+        {$$ = { t: '*', v: [$1, $3], p: @$ }}
     | e '/' e
-        {$$ = { t: '/', v: [$1, $3] }}
+        {$$ = { t: '/', v: [$1, $3], p: @$ }}
     | e '%' e
-        {$$ = { t: '%', v: [$1, $3] }}
+        {$$ = { t: '%', v: [$1, $3], p: @$ }}
     | e '-' e
-        {$$ = { t: '-', v: [$1, $3] }}
+        {$$ = { t: '-', v: [$1, $3], p: @$ }}
     | e '+' e
-        {$$ = { t: '+', v: [$1, $3] }}
+        {$$ = { t: '+', v: [$1, $3], p: @$ }}
     | e '=' e
-        {$$ = { t: '=', v: [$1, $3] }}
+        {$$ = { t: '=', v: [$1, $3], p: @$ }}
     | e '!' e
-        {$$ = { t: '!', v: [$1, $3] }}
+        {$$ = { t: '!', v: [$1, $3], p: @$ }}
     | e '~' e
-        {$$ = { t: '~', v: [$1, $3] }}
+        {$$ = { t: '~', v: [$1, $3], p: @$ }}
     | e '<' e
-        {$$ = { t: '<', v: [$1, $3] }}
+        {$$ = { t: '<', v: [$1, $3], p: @$ }}
     | e '>' e
-        {$$ = { t: '>', v: [$1, $3] }}
+        {$$ = { t: '>', v: [$1, $3], p: @$ }}
     | e '&' e
-        {$$ = { t: '&', v: [$1, $3] }}
+        {$$ = { t: '&', v: [$1, $3], p: @$ }}
     | e '^' e
-        {$$ = { t: '^', v: [$1, $3] }}
+        {$$ = { t: '^', v: [$1, $3], p: @$ }}
     | e '|' e
-        {$$ = { t: '|', v: [$1, $3] }}
+        {$$ = { t: '|', v: [$1, $3], p: @$ }}
     | '-' e %prec UMINUS
-        {$$ = { t: 'unary -', v: $2 }}
+        {$$ = { t: 'unary -', v: $2, p: @$ }}
     | '+' e %prec UPLUS
-        {$$ = { t: 'unary +', v: $2 }}
+        {$$ = { t: 'unary +', v: $2, p: @$ }}
     | e '.' IDENTIFIER
-        {$$ = { t: '.', v: [$1, $3] }}
+        {$$ = { t: '.', v: [$1, $3], p: @$ }}
     | '(' e ')'
         {$$ = $2;}
     | e '(' eList ')'
-        {$$ = { t: 'functionCall', v: [$1, $3] }}
+        {$$ = { t: 'functionCall', v: [$1, $3], p: @$ }}
     | e ':' IDENTIFIER '(' eList ')'
-        {$$ = { t: 'methodCall', v: [$1, $3, $5] }}
+        {$$ = { t: 'methodCall', v: [$1, $3, $5], p: @$ }}
     | e '[' e ']'
-        {$$ = { t: 'subscript', v: [$1, $3] }}
+        {$$ = { t: 'subscript', v: [$1, $3], p: @$ }}
     | NUMBER
-        {$$ = { t: 'NUMBER', v: $1 }}
+        {$$ = { t: 'NUMBER', v: $1, p: @$ }}
     | IDENTIFIER
-        {$$ = { t: 'IDENTIFIER', v: $1 }}
+        {$$ = { t: 'IDENTIFIER', v: $1, p: @$ }}
     | string
         {$$ = $1}
     | func
@@ -330,7 +335,7 @@ atomicExp
 
 array
     : '[' eList ']'
-        {$$ = { t: 'array', v: $2 }}
+        {$$ = { t: 'array', v: $2, p: @$ }}
     ;
 
 eList
@@ -356,9 +361,9 @@ eListB
 
 object
     : '{' propList '}'
-        {$$ = { t: 'object', v: $2 }}
+        {$$ = { t: 'object', v: $2, p: @$ }}
     | '{' propListNonEmpty ',' '}'
-        {$$ = { t: 'object', v: $2 }}
+        {$$ = { t: 'object', v: $2, p: @$ }}
     ;
 
 propList
@@ -382,9 +387,9 @@ prop
 
 class
     : CLASS IDENTIFIER '{' classMembers classMethods '}'
-        {$$ = { t: 'class', v: { name: $2, type: ['members', $4], methods: $5 } }}
+        {$$ = { t: 'class', v: { name: $2, type: ['members', $4], methods: $5 }, p: @$ }}
     | CLASS IDENTIFIER classType '{' classMethods '}'
-        {$$ = { t: 'class', v: { name: $2, type: ['whole', $3], methods: $5 } }}
+        {$$ = { t: 'class', v: { name: $2, type: ['whole', $3], methods: $5 }, p: @$ }}
     ;
 
 /* TODO: proper type parsing (just IDENTIFIER right now) */
@@ -413,8 +418,8 @@ classMethods
     ;
 
 classMethod
-    : classMethodModifiers ':' IDENTIFIER '(' params ')' classMethodBody
-        {$$ = { modifiers: $1, name: $3, args: $5, body: $7 }}
+    : classMethodModifiers ':' IDENTIFIER '(' args ')' classMethodBody
+        {$$ = { modifiers: $1, name: $3, args: $5, body: $7, p: @$ }}
     ;
 
 classMethodModifiers
@@ -428,12 +433,12 @@ classMethodBody
     : block
         {$$ = $1}
     | '=>' e ';'
-        {$$ = { t: 'expBody', v: $2 }}
+        {$$ = { t: 'expBody', v: $2, p: @$ }}
     ;
 
 switch
     : SWITCH switchValueClause '{' switchCases '}'
-        {$$ = { t: 'switch', v: [$2, $4] }}
+        {$$ = { t: 'switch', v: [$2, $4], p: @$ }}
     ;
 
 switchValueClause
