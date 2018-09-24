@@ -56,7 +56,7 @@ function statementHasReturn(statement: Syntax.Statement): boolean {
     return true;
   }
 
-  if (statement.t === 'if') {
+  if (statement.t === 'if' || statement.t === 'for') {
     const [, body] = statement.v;
     return body.v.some(statementHasReturn);
   }
