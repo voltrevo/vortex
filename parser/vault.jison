@@ -90,7 +90,7 @@
 %left '+' '-'
 %left '*' '/' '%'
 %right '**'
-%left '!' '~' PREFIX POSTFIX '++' '--'
+%left '!' '~' PREFIX POSTFIX UMINUS UPLUS '++' '--'
 %left '(' ')' '[' ']' '.'
 
 %start program
@@ -99,7 +99,7 @@
 
 program
     : statements EOF
-        { console.log(require('util').inspect($1, { depth: 10, colors: true })); }
+        { console.log(require('util').inspect($1, { depth: Number(process.env.DEPTH) || 10, colors: require('tty').isatty(1) })); }
     ;
 
 statements
@@ -110,14 +110,17 @@ statements
     ;
 
 statement
+    /* TODO: Expressions maybe shouldn't be valid... introduce assignment
+       statements?
+    */
     : e ';'
-        {$$ = $1}
+        {$$ = { t: 'e', v: $1 }}
     | RETURN e ';'
-        {$$ = ['return', $2]}
+        {$$ = { t: 'return', v: $2 }}
     | BREAK ';'
-        {$$ = ['break']}
+        {$$ = { t: 'break' }}
     | CONTINUE ';'
-        {$$ = ['continue']}
+        {$$ = { t: 'continue' }}
     | if
         {$$ = $1}
     | for
@@ -128,32 +131,37 @@ statement
 
 if
     : IF '(' e ')' block
-        {$$ = ['if', $3, $5]}
+        {$$ = { t: 'if', v: [$3, $5.v] }}
     ;
 
 for
     : FOR block
-        {$$ = ['for', ['loop'], $2]}
+        {$$ = { t: 'for', v: [['loop'], $2.v] }}
     | FOR '(' e ')' block
-        {$$ = ['for', ['condition', $3], $5]}
+        {$$ = { t: 'for', v: [['condition', $3], $5.v] }}
     | FOR '(' IDENTIFIER OF e ')' block
-        {$$ = ['for', ['of', $3, $5], $7]}
+        {$$ = { t: 'for', v: [['of', $3, $5], $7.v] }}
     | FOR '(' e ';' e ';' e ')' block
-        {$$ = ['for', ['traditional', $3, $5, $7], $9]}
+        {$$ = { t: 'for', v: [['traditional', $3, $5, $7], $9.v] }}
+    ;
+
+string
+    : STRING
+        {$$ = { t: 'STRING', v: $1 }}
     ;
 
 import
     : IMPORT IDENTIFIER
-        {$$ = ['import', $2]}
-    | IMPORT IDENTIFIER FROM STRING
-        {$$ = ['import', $2, $4]}
+        {$$ = { t: 'import', v: [$2] }}
+    | IMPORT IDENTIFIER FROM string
+        {$$ = { t: 'import', v: [$2, $4] }}
     ;
 
 func
     : FUNC funcName '(' params ')' block
-        {$$ = ['func', $2, $4, $6]}
+        {$$ = { t: 'func', v: [$2, $4.map(p => p.v), $6] }}
     | FUNC funcName '(' params ')' '=>' e %prec FUNC
-        {$$ = ['func', $2, $4, ['expBody', $7]]}
+        {$$ = { t: 'func', v: [$2, $4.map(p => p.v), { t: 'expBody', v: $7 }] }}
     ;
 
 funcName
@@ -163,11 +171,12 @@ funcName
         {$$ = $1}
     ;
 
+/* TODO: Check trailing commas for params */
 params
     :
-        {$$ = ['params', []]}
+        {$$ = []}
     | nonEmptyParams
-        {$$ = ['params', $1]}
+        {$$ = $1}
     ;
 
 nonEmptyParams
@@ -179,109 +188,111 @@ nonEmptyParams
 
 param
     : IDENTIFIER
-        {$$ = ['param', $1]}
+        {$$ = { t: 'param', v: [$1, null] }}
     | IDENTIFIER ':' IDENTIFIER
-        {$$ = ['param', $1, $3]}
+        {$$ = { t: 'param', v: [$1, $3] }}
     ;
 
 block
     : '{' statements '}'
-        {$$ = ['block', $2]}
+        {$$ = { t: 'block', v: $2 }}
     ;
 
 e
     : e '**' e
-        {$$ = ['**', $1, $3]}
+        {$$ = { t: '**', v: [$1, $3] }}
     | e ':=' e
-        {$$ = [':=', $1, $3]}
+        {$$ = { t: ':=', v: [$1, $3] }}
     | '++' e %prec PREFIX
-        {$$ = ['prefix ++', $2]}
+        {$$ = { t: 'prefix ++', v: $2 }}
     | '--' e %prec PREFIX
-        {$$ = ['prefix --', $2]}
+        {$$ = { t: 'prefix --', v: $2 }}
     | e '++' %prec POSTFIX
-        {$$ = ['postfix ++', $2]}
+        {$$ = { t: 'postfix ++', v: $1 }}
     | e '--' %prec POSTFIX
-        {$$ = ['postfix --', $2]}
+        {$$ = { t: 'postfix --', v: $1 }}
     | e '<<' e
-        {$$ = ['<<', $1, $3]}
+        {$$ = { t: '<<', v: [$1, $3] }}
     | e '>>' e
-        {$$ = ['>>', $1, $3]}
+        {$$ = { t: '>>', v: [$1, $3] }}
     | e '<=' e
-        {$$ = ['<=', $1, $3]}
+        {$$ = { t: '<=', v: [$1, $3] }}
     | e '>=' e
-        {$$ = ['>=', $1, $3]}
+        {$$ = { t: '>=', v: [$1, $3] }}
     | e '==' e
-        {$$ = ['==', $1, $3]}
+        {$$ = { t: '==', v: [$1, $3] }}
     | e '!=' e
-        {$$ = ['!=', $1, $3]}
+        {$$ = { t: '!=', v: [$1, $3] }}
     | e '&&' e
-        {$$ = ['&&', $1, $3]}
+        {$$ = { t: '&&', v: [$1, $3] }}
     | e '||' e
-        {$$ = ['||', $1, $3]}
+        {$$ = { t: '||', v: [$1, $3] }}
     | e '+=' e
-        {$$ = ['+=', $1, $3]}
+        {$$ = { t: '+=', v: [$1, $3] }}
     | e '-=' e
-        {$$ = ['-=', $1, $3]}
+        {$$ = { t: '-=', v: [$1, $3] }}
     | e '*=' e
-        {$$ = ['*=', $1, $3]}
+        {$$ = { t: '*=', v: [$1, $3] }}
     | e '/=' e
-        {$$ = ['/=', $1, $3]}
+        {$$ = { t: '/=', v: [$1, $3] }}
     | e '%=' e
-        {$$ = ['%=', $1, $3]}
+        {$$ = { t: '%=', v: [$1, $3] }}
     | e '<<=' e
-        {$$ = ['<<=', $1, $3]}
+        {$$ = { t: '<<=', v: [$1, $3] }}
     | e '>>=' e
-        {$$ = ['>>=', $1, $3]}
+        {$$ = { t: '>>=', v: [$1, $3] }}
     | e '&=' e
-        {$$ = ['&=', $1, $3]}
+        {$$ = { t: '&=', v: [$1, $3] }}
     | e '^=' e
-        {$$ = ['^=', $1, $3]}
+        {$$ = { t: '^=', v: [$1, $3] }}
     | e '|=' e
-        {$$ = ['|=', $1, $3]}
+        {$$ = { t: '|=', v: [$1, $3] }}
     | e '*' e
-        {$$ = ['*', $1, $3]}
+        {$$ = { t: '*', v: [$1, $3] }}
     | e '/' e
-        {$$ = ['/', $1, $3]}
+        {$$ = { t: '/', v: [$1, $3] }}
     | e '%' e
-        {$$ = ['%', $1, $3]}
+        {$$ = { t: '%', v: [$1, $3] }}
     | e '-' e
-        {$$ = ['-', $1, $3]}
+        {$$ = { t: '-', v: [$1, $3] }}
     | e '+' e
-        {$$ = ['+', $1, $3]}
+        {$$ = { t: '+', v: [$1, $3] }}
     | e '=' e
-        {$$ = ['=', $1, $3]}
+        {$$ = { t: '=', v: [$1, $3] }}
     | e '!' e
-        {$$ = ['!', $1, $3]}
+        {$$ = { t: '!', v: [$1, $3] }}
     | e '~' e
-        {$$ = ['~', $1, $3]}
+        {$$ = { t: '~', v: [$1, $3] }}
     | e '<' e
-        {$$ = ['<', $1, $3]}
+        {$$ = { t: '<', v: [$1, $3] }}
     | e '>' e
-        {$$ = ['>', $1, $3]}
+        {$$ = { t: '>', v: [$1, $3] }}
     | e '&' e
-        {$$ = ['&', $1, $3]}
+        {$$ = { t: '&', v: [$1, $3] }}
     | e '^' e
-        {$$ = ['^', $1, $3]}
+        {$$ = { t: '^', v: [$1, $3] }}
     | e '|' e
-        {$$ = ['|', $1, $3]}
+        {$$ = { t: '|', v: [$1, $3] }}
     | '-' e %prec UMINUS
-        {$$ = ['-', $2]}
+        {$$ = { t: 'unary -', v: $2 }}
+    | '+' e %prec UPLUS
+        {$$ = { t: 'unary +', v: $2 }}
     | e '.' IDENTIFIER
-        {$$ = ['.', $1, $3]}
+        {$$ = { t: '.', v: [$1, $3] }}
     | '(' e ')'
         {$$ = $2;}
     | e '(' eList ')'
-        {$$ = ['functionCall', $1, $3]}
+        {$$ = { t: 'functionCall', v: [$1, $3] }}
     | e ':' IDENTIFIER '(' eList ')'
-        {$$ = ['methodCall', $1, $3, $5]}
+        {$$ = { t: 'methodCall', v: [$1, $3, $5] }}
     | e '[' e ']'
-        {$$ = ['subscript', $1, $3]}
+        {$$ = { t: 'subscript', v: [$1, $3] }}
     | NUMBER
-        {$$ = ['NUMBER', $1]}
+        {$$ = { t: 'NUMBER', v: $1 }}
     | IDENTIFIER
-        {$$ = ['IDENTIFIER', $1]}
-    | STRING
-        {$$ = ['STRING', $1]}
+        {$$ = { t: 'IDENTIFIER', v: $1 }}
+    | string
+        {$$ = $1}
     | func
         {$$ = $1}
     | array
@@ -301,7 +312,7 @@ atomicExp
         {$$ = $1}
     | IDENTIFIER
         {$$ = $1}
-    | STRING
+    | string
         {$$ = $1}
     | array
         {$$ = $1}
@@ -319,9 +330,7 @@ atomicExp
 
 array
     : '[' eList ']'
-        {$$ = ['array', $2]}
-    | '[' eListNonEmpty ',' ']'
-        {$$ = ['array', $2]}
+        {$$ = { t: 'array', v: $2 }}
     ;
 
 eList
@@ -347,9 +356,9 @@ eListB
 
 object
     : '{' propList '}'
-        {$$ = ['object', $2]}
+        {$$ = { t: 'object', v: $2 }}
     | '{' propListNonEmpty ',' '}'
-        {$$ = ['object', $2]}
+        {$$ = { t: 'object', v: $2 }}
     ;
 
 propList
@@ -373,9 +382,9 @@ prop
 
 class
     : CLASS IDENTIFIER '{' classMembers classMethods '}'
-        {$$ = ['class', { name: $2, type: ['members', $4], methods: $5 }]}
+        {$$ = { t: 'class', v: { name: $2, type: ['members', $4], methods: $5 } }}
     | CLASS IDENTIFIER classType '{' classMethods '}'
-        {$$ = ['class', { name: $2, type: ['whole', $3], methods: $5 }]}
+        {$$ = { t: 'class', v: { name: $2, type: ['whole', $3], methods: $5 } }}
     ;
 
 /* TODO: proper type parsing (just IDENTIFIER right now) */
@@ -405,7 +414,7 @@ classMethods
 
 classMethod
     : classMethodModifiers ':' IDENTIFIER '(' params ')' classMethodBody
-        {$$ = { modifiers: $1, name: $3, args: $5[1], body: $7 }}
+        {$$ = { modifiers: $1, name: $3, args: $5, body: $7 }}
     ;
 
 classMethodModifiers
@@ -419,12 +428,12 @@ classMethodBody
     : block
         {$$ = $1}
     | '=>' e ';'
-        {$$ = ['expBody', $2]}
+        {$$ = { t: 'expBody', v: $2 }}
     ;
 
 switch
     : SWITCH switchValueClause '{' switchCases '}'
-        {$$ = ['switch', $2, $4]}
+        {$$ = { t: 'switch', v: [$2, $4] }}
     ;
 
 switchValueClause

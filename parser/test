@@ -8,3 +8,9 @@ if [ ${#jisonStdout} -gt 0 ]; then
 fi
 
 node vault.js input.vlt
+
+echo "import { Syntax } from './parse';" >testProgram.ts
+echo >>testProgram.ts
+echo "export const testProgram: Syntax.Program =" >>testProgram.ts
+DEPTH=100 node vault.js input.vlt >>testProgram.ts
+echo ";" >>testProgram.ts
