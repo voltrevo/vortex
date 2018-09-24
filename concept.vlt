@@ -57,4 +57,4 @@ return func factorial(n: i32) => switch {
 return (import factorial)(5);
 
 // double.vlt
-return (x: f64) => 2 * x;
+return func(x: f64) => 2 * x;
