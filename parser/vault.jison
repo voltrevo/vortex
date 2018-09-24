@@ -347,9 +347,9 @@ eListB
 
 object
     : '{' propList '}'
-        {$$ = ['object', $1]}
+        {$$ = ['object', $2]}
     | '{' propListNonEmpty ',' '}'
-        {$$ = ['object', $1]}
+        {$$ = ['object', $2]}
     ;
 
 propList
