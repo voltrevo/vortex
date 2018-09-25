@@ -7,7 +7,7 @@ return class Pair {
   :product() => first * second;
 
   :swap() {
-    [first, second] = [second, first];
+    [first, second] = [second, first]; // error
   }
 
   :surpriseMe() {

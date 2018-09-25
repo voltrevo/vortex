@@ -29,7 +29,7 @@ for (const file of files) {
 
   for (const note of notes) {
     const line = lines[note.pos.first_line - 1];
-    const commentMatches = line.match(/\/\/[errorwarninfo ]*$/);
+    const commentMatches = line.match(/\/\/[TODOerrorwarninfo ]*$/);
 
     if (!commentMatches || !commentMatches[0].split(' ').indexOf(note.level)) {
       ok = false;
@@ -71,6 +71,8 @@ for (const file of files) {
   }
 }
 
-if (!ok) {
+if (ok) {
+  console.log('Success');
+} else {
   throw new Error('Errors found');
 }
