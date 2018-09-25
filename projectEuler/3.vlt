@@ -10,7 +10,7 @@ for {
     p = i;
   }
 
-  i++; // error TODO
+  i++;
 
   if (i * i > n) {
     return Math.max(p, n);

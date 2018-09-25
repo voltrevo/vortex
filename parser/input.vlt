@@ -32,7 +32,7 @@ func arrays() {
 
 func objects() {
   x := { a: 1, b: 1 };
-  x.b++; // error TODO
+  x.b++;
   x.c := 3; // error
 };
 
@@ -40,7 +40,7 @@ func immutableStuff() {
   x := { a: 0, b: 0 };
   y := x;
 
-  x.a++; // error TODO
+  x.a++;
 
   y == { a: 0, b: 0 }; // error
   x == { a: 1, b: 0 }; // error

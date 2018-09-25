@@ -103,6 +103,17 @@ function isValidTopExpression(e: Syntax.Expression) {
     return true;
   }
 
+  const incDecOperators = [
+    'prefix ++',
+    'postfix ++',
+    'prefix --',
+    'postfix --',
+  ];
+
+  if (incDecOperators.indexOf(e.t) !== -1) {
+    return true;
+  }
+
   if (['func', 'class'].indexOf(e.t) !== -1) {
     return true;
   }

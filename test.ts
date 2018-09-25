@@ -47,7 +47,7 @@ for (const file of files) {
   let lineNo = 0;
   for (const line of lines) {
     lineNo++;
-    const commentMatches = line.match(/\/\/[errorwarninfo ]*$/);
+    const commentMatches = line.match(/\/\/.*$/);
 
     if (!commentMatches) {
       continue;
@@ -55,7 +55,7 @@ for (const file of files) {
 
     const annotations = (commentMatches[0]
       .split(' ')
-      .filter(word => word !== '' && word !== '//')
+      .filter(word => ['error', 'warning', 'info'].indexOf(word) !== -1)
     );
 
     for (const annotation of annotations) {
