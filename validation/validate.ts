@@ -166,7 +166,7 @@ function validateScope(body: Syntax.Block, scope: Scope = {}): Note[] {
 
           case 'if':
           case 'for':
-            return Syntax.Children(el).filter(e => e.t !== 'block')
+            return Syntax.Children(el).filter(e => e.t !== 'block');
 
           default: return [el];
         }
@@ -362,6 +362,10 @@ function traverse<T>(
   results.push(...process(element));
 
   for (const traversal of SubTraversals(element)) {
+    if (traversal !== element) {
+      results.push(...process(traversal));
+    }
+
     for (const child of Syntax.Children(traversal)) {
       results.push(...traverse(child, process));
     }
