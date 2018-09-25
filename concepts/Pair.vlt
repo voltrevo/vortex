@@ -1,0 +1,23 @@
+return class Pair {
+  first: f64;
+  second: f64;
+
+  static :zero() => Pair({ first: 0, second: 0 });
+
+  :product() => first * second;
+
+  :swap() {
+    [first, second] = [second, first];
+  }
+
+  :surpriseMe() {
+    fig1 := first + second;
+    fig2 := this:product();
+
+    fig1++;
+
+    fig1 += this:product();
+
+    return 2 * fig1 + fig2;
+  }
+};
