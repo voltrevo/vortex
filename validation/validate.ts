@@ -63,6 +63,8 @@ export function validate(program: Syntax.Program): Note[] {
     } else if (el.t === 'for') {
       // TODO: Disallow shallow return unless continue might occur
       // beforehand
+      // TODO: Check init, inc in (init; cond; inc) are valid top(ish)
+      // expressions (ish because eg making a function in init isn't ok)
     } else if (el.t === 'class') {
       const methodBodies = el.v.methods.map(m => m.body);
 
