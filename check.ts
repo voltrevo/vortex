@@ -16,7 +16,7 @@ process.stdin.on('end', () => {
       col: note.pos.first_column,
       end_col: note.pos.last_column,
       text: note.message,
-      type: 'error',
+      type: note.level[0].toUpperCase(),
     }));
   }
 });
