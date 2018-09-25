@@ -8,6 +8,11 @@ const files = (spawnSync('git', ['ls-files'])
   .toString()
   .split('\n')
   .filter(line => line !== '')
+  .sort((a, b) => (
+    a.toUpperCase() < b.toUpperCase() ? -1 :
+    a.toUpperCase() === b.toUpperCase() ? 0 :
+    1
+  ))
 );
 
 let ok = true;
@@ -23,7 +28,7 @@ for (const file of files) {
   const lines = fileText.split('\n');
 
   for (const note of notes) {
-    const line = lines[note.pos.first_line];
+    const line = lines[note.pos.first_line - 1];
     const commentMatches = line.match(/\/\/[errorwarninfo ]*$/);
 
     if (!commentMatches || !commentMatches[0].split(' ').indexOf(note.level)) {
