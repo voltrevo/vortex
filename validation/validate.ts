@@ -6,36 +6,88 @@ type Note = {
   pos: Syntax.Pos,
 };
 
+function Note(
+  el: Syntax.Element,
+  level: 'error' | 'warning' | 'info',
+  message: string
+) {
+  return {
+    message,
+    level,
+    pos: el.p,
+  };
+}
+
 export function validate(program: Syntax.Program): Note[] {
-  return validateBlockBody(program);
-}
-
-function validateBlockBody(body: Syntax.Block): Note[] {
-  const issues = ([] as Note[]).concat(...body.v.map(validateStatement));
-
-  if (!body.v.some(statementHasReturn)) {
-    issues.push({
-      message: 'Body does not contain a return statement',
-      level: 'error',
-      pos: body.p,
-    });
-  }
-
-  return issues;
-}
-
-function validateStatement(statement: Syntax.Statement): Note[] {
   const issues: Note[] = [];
 
-  if (statement.t === 'e' && !isValidTopExpression(statement.v)) {
-    issues.push({
-      message: 'Statement has no effect',
-      level: 'error',
-      pos: statement.p,
-    });
-  }
+  issues.push(...validateBody(program));
+
+  issues.push(...traverse<Note>(program, el => {
+    switch (el.t) {
+      case 'e': {
+        // TODO: rename e -> expressionStatement?
+        if (!isValidTopExpression(el.v)) {
+          return [Note(el, 'error', 'Statement has no effect')];
+        }
+
+        return [];
+      }
+
+      case 'func': {
+        const [, , body] = el.v;
+        return body.t === 'block' ? validateBody(body) : [];
+      }
+
+      case 'class': {
+        const methodBodies = el.v.methods.map(m => m.body);
+        const classIssues = [];
+
+        for (const body of methodBodies) {
+          if (body.t === 'block') {
+            // TODO: Allow methods to implicitly return this? Enforce return
+            // consistency at least.
+            classIssues.push(...validateBody(body));
+          }
+        }
+
+        return classIssues;
+      }
+
+      case 'block': {
+        let returned = false;
+        const blockIssues = [];
+
+        for (const statement of el.v) {
+          if (returned) {
+            blockIssues.push(
+              Note(statement, 'error', 'Statement is unreachable')
+            );
+          }
+
+          if (statement.t === 'return') {
+            returned = true;
+          }
+        }
+      }
+
+      default: return [];
+    }
+  }));
 
   return issues;
+}
+
+function validateBody(body: Syntax.Block): Note[] {
+  const lastStatement: Syntax.Statement | undefined = (
+    body.v[body.v.length - 1]
+  );
+
+  if (!lastStatement) {
+    return [Note(body, 'error', 'Empty body')];
+  }
+
+  return validateStatementWillReturn(lastStatement);
 }
 
 function isValidTopExpression(e: Syntax.Expression) {
@@ -51,15 +103,76 @@ function isValidTopExpression(e: Syntax.Expression) {
   return false;
 }
 
-function statementHasReturn(statement: Syntax.Statement): boolean {
+function validateStatementWillReturn(statement: Syntax.Statement): Note[] {
   if (statement.t === 'return') {
-    return true;
+    return [];
   }
 
-  if (statement.t === 'if' || statement.t === 'for') {
-    const [, body] = statement.v;
-    return body.v.some(statementHasReturn);
+  if (statement.t !== 'for') {
+    return [Note(statement, 'error',
+      'Last statement of body does not return'
+    )];
   }
 
-  return false;
+  if (statement.t === 'for') {
+    const [typeClause, block] = statement.v;
+    const [type] = typeClause;
+
+    if (type !== 'loop') {
+      const clauseStr: string = (() => {
+        switch (type) {
+          case 'condition': return '(condition)';
+          case 'of': return '(item of range)';
+          case 'traditional': return '(init; condition; inc)';
+        }
+      })();
+
+      return [Note(statement, 'error', (
+        `${clauseStr} clause not allowed in for loop which needs to ` +
+        `return a value (either add a return statement after the loop or ` +
+        `remove ${clauseStr})`
+      ))];
+    }
+
+    const breaks = findBreaks(block);
+
+    return breaks.map(brk => Note(brk, 'error', (
+      'Break statement not allowed in for loop which needs to return a ' +
+      'value (either add a return statement after the loop or remove it)'
+    )));
+  }
+
+  return [];
+}
+
+function findBreaks(
+  block: Syntax.Block
+): Syntax.BreakStatement[] {
+  const breaks: Syntax.BreakStatement[] = [];
+
+  for (const statement of block.v) {
+    if (statement.t === 'break') {
+      breaks.push(statement);
+    } else if (statement.t === 'if') {
+      const [, ifBlock] = statement.v;
+      breaks.push(...findBreaks(ifBlock));
+    }
+  }
+
+  return breaks;
+}
+
+function traverse<T>(
+  element: Syntax.Element,
+  process: (el: Syntax.Element) => T[],
+): T[] {
+  const results: T[] = [];
+
+  results.push(...process(element));
+
+  for (const child of Syntax.Children(element)) {
+    results.push(...traverse(child, process));
+  }
+
+  return results;
 }

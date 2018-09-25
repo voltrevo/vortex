@@ -149,13 +149,15 @@ export namespace Syntax {
   export type Statement = (
     ExpressionStatement |
     { t: 'return', v: Expression, p: Pos } |
-    { t: 'break', p: Pos } |
+    BreakStatement |
     { t: 'continue', p: Pos } |
     IfStatement |
     ForStatement |
     Import |
     never
   );
+
+  export type BreakStatement = { t: 'break', p: Pos };
 
   export type IfStatement = { t: 'if', v: [Expression, Block], p: Pos };
   export type ForStatement = { t: 'for', v: [ForTypeClause, Block], p: Pos };
@@ -174,7 +176,166 @@ export namespace Syntax {
     never
   );
 
+  // TODO: Need a separate .t for program (body? distinguish between body that
+  // needs a return and block that doesn't.)
   export type Program = Block;
+
+  export type Element = Block | Statement | Expression;
+
+  export function Children(el: Element): Element[] {
+    switch (el.t) {
+      case 'block': { return el.v; }
+      case 'array': { return el.v; }
+
+      case 'object': {
+        return el.v.map(([, expression]) => expression);
+      }
+
+      case 'e': { return [el.v]; }
+      case 'return': { return [el.v]; }
+      case 'if': { return el.v; }
+      case 'break': { return [] };
+      case 'continue': { return [] };
+
+      case 'for': {
+        const [typeClause, block] = el.v;
+
+        const typeClauseChildren: Expression[] = (() => {
+          const [type] = typeClause;
+
+          switch (type) {
+            case 'loop': return [];
+
+            case 'condition': {
+              // return [];
+              const [, expression] = typeClause;
+
+              if (typeof expression === 'string') {
+                // This is not reachable, but Typescript doesn't know that
+                // because it's not good at control flow analysis for tuples.
+                // TODO: Don't use tuples :-(.
+                throw new Error('Should not be possible');
+              }
+
+              return [expression];
+            }
+
+            case 'of': {
+              const [, , expression] = typeClause;
+
+              if (typeof expression === 'string') {
+                // This is not reachable, but Typescript doesn't know that
+                // because it's not good at control flow analysis for tuples.
+                // TODO: Don't use tuples :-(.
+                throw new Error('Should not be possible');
+              }
+
+              return [expression];
+            }
+
+            case 'traditional': {
+              const [, init, cond, inc] = typeClause;
+
+              if (
+                typeof init === 'string' ||
+                typeof cond === 'string' ||
+                typeof inc === 'string'
+              ) {
+                // This is not reachable, but Typescript doesn't know that
+                // because it's not good at control flow analysis for tuples.
+                // TODO: Don't use tuples :-(.
+                throw new Error('Should not be possible');
+              }
+
+              return [init, cond, inc];
+            }
+          }
+        })();
+
+        return [...typeClauseChildren, block];
+      }
+
+      case 'import': {
+        // TODO: The first element here is an identifier but the parser is
+        // providing it as a raw string. The parser should be changed not to
+        // do that - passing through the identifier syntax element would be
+        // simpler. There are other examples of this, e.g. function names.
+        const [, fromString] = el.v;
+
+        if (typeof fromString === 'string') {
+          // This is not reachable, but Typescript doesn't know that
+          // because it's not good at control flow analysis for tuples.
+          // TODO: Don't use tuples :-(.
+          throw new Error('Should not be possible');
+        }
+
+        return fromString ? [fromString] : [];
+      }
+
+      case 'NUMBER': { return []; }
+      case 'IDENTIFIER': { return []; }
+      case 'STRING': { return []; }
+
+      case 'switch': {
+        const res: Element[] = [];
+
+        const [valueClause, cases] = el.v;
+
+        if (valueClause !== null) {
+          res.push(valueClause);
+        }
+
+        for (const case_ of cases) {
+          res.push(...case_);
+        }
+
+        return res;
+      }
+
+      case 'func': {
+        // TODO: Identifiers
+        const [, , body] = el.v;
+        return body.t === 'block' ? [body] : [body.v];
+      }
+
+      case 'class': {
+        // TODO
+        return [];
+      }
+
+      case 'subscript': { return el.v; }
+
+      case 'functionCall': {
+        const [fn, args] = el.v;
+        return [fn, ...args];
+      }
+
+      case 'methodCall': {
+        const [instance, , args] = el.v;
+        return [instance, ...args];
+      }
+
+      case '.': {
+        const [expression] = el.v;
+        return [expression];
+      }
+
+      default: {
+        // Operators. TODO: Need an extra layer with .t so there aren't an
+        // unmanageable number of cases.
+        const value: (
+          [Expression, Expression] |
+          Expression
+        ) = el.v;
+
+        if (Array.isArray(value)) {
+          return value;
+        }
+
+        return [value];
+      }
+    }
+  }
 }
 
 export function parse(programText: string): Syntax.Program {
