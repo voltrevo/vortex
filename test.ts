@@ -31,7 +31,10 @@ for (const file of files) {
     const line = lines[note.pos.first_line - 1];
     const commentMatches = line.match(/\/\/[TODOerrorwarninfo ]*$/);
 
-    if (!commentMatches || !commentMatches[0].split(' ').indexOf(note.level)) {
+    if (
+      !commentMatches ||
+      commentMatches[0].split(' ').indexOf(note.level) === -1
+    ) {
       ok = false;
 
       console.error(
