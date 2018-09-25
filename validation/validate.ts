@@ -179,7 +179,9 @@ function validateScope(body: Syntax.Block, scope: Scope = {}): Note[] {
 
         if (!scopeEntry) {
           // TODO: Look for typos
-          issues.push(Note(item, 'error', 'Variable does not exist'));
+          issues.push(Note(item, 'error',
+            `Variable ${item.v} does not exist`
+          ));
         } else {
           // imagine... scope[item.v].used = true... :-D
           scope = { ...scope, [item.v]: { ...scopeEntry, used: true } };
