@@ -1,0 +1,8 @@
+x := 1;
+
+for (x := 1; y; x++) { // error
+  y := 1;
+  return y;
+}
+
+return y; // error
