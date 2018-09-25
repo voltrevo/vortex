@@ -26,11 +26,16 @@ export function validate(program: Syntax.Program): Note[] {
   issues.push(...traverse<Note>(program, el => {
     const subIssues: Note[] = [];
 
-    const potentialSubExpressions = (
+    let potentialSubExpressions = (
       el.t === 'e' ?
       Syntax.Children(el.v) :
       Syntax.Children(el)
     );
+
+    if (el.t === 'for' && el.v[0][0] === 'traditional') {
+      // Don't consider init from (init; cond; inc) to be a subexpression
+      potentialSubExpressions = potentialSubExpressions.slice(1);
+    }
 
     for (const child of potentialSubExpressions) {
       const subexpression = Syntax.expressionFromElement(child);
