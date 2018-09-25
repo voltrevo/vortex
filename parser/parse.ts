@@ -354,6 +354,20 @@ export namespace Syntax {
         return el;
     }
   }
+
+  export function ExpressionChildren(el: Element): Expression[] {
+    const expChildren = [];
+
+    for (const child of Children(el)) {
+      const expChild = expressionFromElement(child);
+
+      if (expChild !== null) {
+        expChildren.push(expChild);
+      }
+    }
+
+    return expChildren;
+  }
 }
 
 export function parse(programText: string): Syntax.Program {

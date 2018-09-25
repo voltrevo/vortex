@@ -94,6 +94,108 @@ export function validate(program: Syntax.Program): Note[] {
     return subIssues;
   }));
 
+  issues.push(...validateScope(program));
+
+  return issues;
+}
+
+type Scope = {
+  [name: string]: {
+    origin: Syntax.Expression;
+    used: boolean;
+  };
+};
+
+function validateScope(body: Syntax.Block, scope: Scope = {}): Note[] {
+  const issues: Note[] = [];
+
+  for (const statement of body.v) {
+    let traversalElement: Syntax.Element = statement;
+
+    if (
+      statement.t === 'e' &&
+      statement.v.t === ':=' &&
+      statement.v.v[0].t === 'IDENTIFIER'
+    ) {
+      traversalElement = statement.v.v[1];
+
+      const newVariableName = statement.v.v[0].v;
+
+      if (typeof newVariableName !== 'string') {
+        throw new Error(
+          'should not be possible (TODO: not sure why ts doesn\'t know)'
+        );
+      }
+
+      const preExisting = scope[newVariableName];
+
+      if (preExisting) {
+        issues.push(Note(statement.v.v[0], 'error',
+          'Can\'t create variable that already exists'
+        ));
+
+        const loc = formatLocation(preExisting.origin.p);
+
+        issues.push(Note(preExisting.origin, 'warning',
+          `Attempt to create this variable again at ${loc}`
+        ));
+      } else {
+        scope = { ...scope,
+          [newVariableName]: {
+            origin: statement.v[0],
+            used: false,
+          }
+        };
+      }
+    }
+
+    const items: Syntax.Element[] = traverse<Syntax.Element>(
+      traversalElement,
+      el => (
+        ['IDENTIFIER', 'class', 'func', 'if', 'for'].indexOf(el.t) !== -1 ?
+        [el] :
+        []
+      ),
+      // Subtraversals specified here to avoid traversing into blocks here
+      // (need subscope logic instead)
+      el => {
+        switch (el.t) {
+          case 'class': return [];
+          case 'func': return [];
+          case '.': return [];
+
+          case 'if':
+          case 'for':
+            return Syntax.Children(el).filter(e => e.t !== 'block')
+
+          default: return [el];
+        }
+      }
+    );
+
+    for (const item of items) {
+      if (item.t === 'IDENTIFIER') {
+        const scopeEntry = scope[item.v];
+
+        if (!scopeEntry) {
+          // TODO: Look for typos
+          issues.push(Note(item, 'error', 'Variable does not exist'));
+        } else {
+          // imagine... scope[item.v].used = true... :-D
+          scope = { ...scope, [item.v]: { ...scopeEntry, used: true } };
+        }
+      } else if (item.t === 'if' || item.t === 'for') {
+        issues.push(...validateScope(item.v[1], scope));
+      } else if (item.t === 'func') {
+        // TODO
+      } else if (item.t === 'class') {
+        // TODO
+      } else {
+        throw new Error('Unexpected item.t: ' + item.t);
+      }
+    }
+  }
+
   return issues;
 }
 
@@ -251,14 +353,25 @@ function hasReturn(block: Syntax.Block) {
 function traverse<T>(
   element: Syntax.Element,
   process: (el: Syntax.Element) => T[],
+  SubTraversals: (el: Syntax.Element) => Syntax.Element[] = (el) => [el],
 ): T[] {
   const results: T[] = [];
 
   results.push(...process(element));
 
-  for (const child of Syntax.Children(element)) {
-    results.push(...traverse(child, process));
+  for (const traversal of SubTraversals(element)) {
+    for (const child of Syntax.Children(traversal)) {
+      results.push(...traverse(child, process));
+    }
   }
 
   return results;
+}
+
+function formatLocation(pos: Syntax.Pos) {
+  if (pos.first_line === pos.last_line) {
+    return `${pos.first_line}:${pos.first_column}-${pos.last_column}`;
+  }
+
+  throw new Error('Not implemented: formatting multiline locations');
 }
