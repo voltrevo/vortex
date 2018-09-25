@@ -336,6 +336,24 @@ export namespace Syntax {
       }
     }
   }
+
+  export function expressionFromElement(el: Element): Expression | null {
+    switch (el.t) {
+      case 'e':
+      case 'return':
+      case 'break':
+      case 'continue':
+      case 'if':
+      case 'for':
+      case 'import':
+      case 'block':
+      case 'IDENTIFIER':
+        return null;
+
+      default:
+        return el;
+    }
+  }
 }
 
 export function parse(programText: string): Syntax.Program {

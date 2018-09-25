@@ -3,7 +3,14 @@ foo := {
   b: 2,
 };
 
-foo.a = 1;
+foo.a = x := 2; // error
+foo.a = (x = (y := 2)); // error (creation just more deeply nested)
+foo.a = (x.y := 2); // ok: just adding prop, not creating variable
 foo.c := 3;
 foo.d := {};
+
+func() {
+  return a := 1; // error
+};
+
 foo.d.e := 42; // error

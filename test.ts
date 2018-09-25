@@ -29,7 +29,7 @@ for (const file of files) {
 
   for (const note of notes) {
     const line = lines[note.pos.first_line - 1];
-    const commentMatches = line.match(/\/\/[TODOerrorwarninfo ]*$/);
+    const commentMatches = line.match(/\/\/.*$/);
 
     if (
       !commentMatches ||
