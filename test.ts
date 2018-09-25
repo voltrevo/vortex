@@ -79,3 +79,12 @@ if (ok) {
 } else {
   throw new Error('Errors found');
 }
+
+const todos = spawnSync('git', ['grep', 'TODO']).stdout.toString().split('\n');
+
+if (todos.length > 0) {
+  const isVlt = (todo: string) => /^[^:]*\.vlt:/.test(todo);
+  console.log(`\n... found ${todos.length} TODOs though:\n`);
+  console.log(todos.filter(isVlt).join('\n'));
+  console.log(todos.filter(todo => !isVlt(todo)).join('\n'));
+}
