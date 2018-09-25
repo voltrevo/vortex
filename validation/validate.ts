@@ -39,6 +39,11 @@ export function validate(program: Syntax.Program): Note[] {
         return body.t === 'block' ? validateBody(body) : [];
       }
 
+      case 'for': {
+        // TODO: Disallow shallow return unless continue might occur beforehand
+        return [];
+      }
+
       case 'class': {
         const methodBodies = el.v.methods.map(m => m.body);
         const classIssues = [];
@@ -110,17 +115,27 @@ function validateStatementWillReturn(statement: Syntax.Statement): Note[] {
     return [];
   }
 
-  if (statement.t !== 'for') {
-    return [Note(statement, 'error',
-      'Last statement of body does not return'
-    )];
-  }
-
   if (statement.t === 'for') {
     const [typeClause, block] = statement.v;
     const [type] = typeClause;
 
-    if (type !== 'loop') {
+    const issues: Note[] = [];
+
+    if (!hasReturn(block)) {
+      issues.push(Note(statement, 'error', (
+        'For loop doesn\'t return a value since it doesn\'t have any return ' +
+        'statements'
+      )));
+    }
+
+    if (type === 'loop') {
+      const breaks = findBreaks(block);
+
+      issues.push(...breaks.map(brk => Note(brk, 'error', (
+        'Break statement not allowed in for loop which needs to return a ' +
+        'value (either add a return statement after the loop or remove it)'
+      ))));
+    } else {
       const clauseStr: string = (() => {
         switch (type) {
           case 'condition': return '(condition)';
@@ -129,22 +144,19 @@ function validateStatementWillReturn(statement: Syntax.Statement): Note[] {
         }
       })();
 
-      return [Note(statement, 'error', (
+      issues.push(Note(statement, 'error', (
         `${clauseStr} clause not allowed in for loop which needs to ` +
         `return a value (either add a return statement after the loop or ` +
         `remove ${clauseStr})`
-      ))];
+      )));
     }
 
-    const breaks = findBreaks(block);
-
-    return breaks.map(brk => Note(brk, 'error', (
-      'Break statement not allowed in for loop which needs to return a ' +
-      'value (either add a return statement after the loop or remove it)'
-    )));
+    return issues;
   }
 
-  return [];
+  return [Note(statement, 'error',
+    'Last statement of body does not return'
+  )];
 }
 
 function findBreaks(
@@ -162,6 +174,24 @@ function findBreaks(
   }
 
   return breaks;
+}
+
+function hasReturn(block: Syntax.Block) {
+  for (const statement of block.v) {
+    if (statement.t === 'return') {
+      return true;
+    }
+
+    if (statement.t === 'if' || statement.t === 'for') {
+      const [, subBlock] = statement.v;
+
+      if (hasReturn(subBlock)) {
+        return true;
+      }
+    }
+  }
+
+  return false;
 }
 
 function traverse<T>(
