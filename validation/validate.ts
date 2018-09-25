@@ -69,6 +69,8 @@ export function validate(program: Syntax.Program): Note[] {
             returned = true;
           }
         }
+
+        return blockIssues;
       }
 
       default: return [];
