@@ -52,7 +52,7 @@ export function validate(program: Syntax.Program): Note[] {
           if (body.t === 'block') {
             // TODO: Allow methods to implicitly return this? Enforce return
             // consistency at least.
-            classIssues.push(...validateBody(body));
+            classIssues.push(...validateMethodBody(body));
           }
         }
 
@@ -95,6 +95,17 @@ function validateBody(body: Syntax.Block): Note[] {
   }
 
   return validateStatementWillReturn(lastStatement);
+}
+
+function validateMethodBody(body: Syntax.Block): Note[] {
+  if (!hasReturn(body)) {
+    // Methods are allowed to not have return statements. In this case they
+    // implicitly `return this;`. However, if there are any return statements,
+    // an implied `return this;` does not occur and the regular rules apply.
+    return [];
+  }
+
+  return validateBody(body);
 }
 
 function isValidTopExpression(e: Syntax.Expression) {
