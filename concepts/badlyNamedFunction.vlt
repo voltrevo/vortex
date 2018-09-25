@@ -1,0 +1,1 @@
+return func wrongName() => 42; // error TODO name doesn't match file

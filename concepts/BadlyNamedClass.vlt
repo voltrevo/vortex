@@ -1,0 +1,1 @@
+return class WrongName {}; // error TODO name doesn't match file
