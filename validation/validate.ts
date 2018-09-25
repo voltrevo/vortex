@@ -92,7 +92,7 @@ export function validate(program: Syntax.Program): Note[] {
     }
 
     return subIssues;
-  }));
+  }, el => [el]));
 
   issues.push(...validateScope(program));
 
@@ -151,39 +151,27 @@ function validateScope(body: Syntax.Block, scope: Scope = {}): Note[] {
 
     const items: Syntax.Element[] = traverse<Syntax.Element>(
       traversalElement,
-      el => {
-        console.log('traversing ' + el.t + ': ' + formatLocation(el.p));
-        console.log('--children: ' + Syntax.Children(el).map(c => formatLocation(c.p)).join(','));
-        if (el.t === 'block') {
-          console.log('oh no block');
-        }
-
-        return (
-          ['IDENTIFIER', 'class', 'func', 'if', 'for'].indexOf(el.t) !== -1 ?
-          [el] :
-          []
-        );
-      },
+      el => (
+        ['IDENTIFIER', 'class', 'func', 'if', 'for'].indexOf(el.t) !== -1 ?
+        [el] :
+        []
+      ),
       // Subtraversals specified here to avoid traversing into blocks here
       // (need subscope logic instead)
       el => {
-        const traversals = (() => {
-          switch (el.t) {
-            case 'class': return [];
-            case 'func': return [];
-            case '.': return [];
+        switch (el.t) {
+          case 'class': return [];
+          case 'func': return [];
+          case '.': return [];
 
-            case 'if':
-            case 'for':
-              return Syntax.Children(el).filter(e => e.t !== 'block');
+          case 'if':
+          case 'for':
+            return Syntax.Children(el).filter(e => e.t !== 'block');
 
-            default: {
-              return [el];
-            }
+          default: {
+            return [el];
           }
-        })();
-        console.log('get traversals of ' + el.t + ': ' + traversals.map(t => formatLocation(t.p)));
-        return traversals;
+        }
       }
     );
 
@@ -369,7 +357,7 @@ function hasReturn(block: Syntax.Block) {
 function traverse<T>(
   element: Syntax.Element,
   process: (el: Syntax.Element) => T[],
-  SubTraversals: (el: Syntax.Element) => Syntax.Element[] = (el) => [el],
+  SubTraversals: (el: Syntax.Element) => Syntax.Element[],
 ): T[] {
   const results: T[] = [];
 
@@ -381,7 +369,7 @@ function traverse<T>(
     }
 
     for (const child of Syntax.Children(traversal)) {
-      results.push(...traverse(child, process));
+      results.push(...traverse(child, process, SubTraversals));
     }
   }
 
@@ -393,5 +381,5 @@ function formatLocation(pos: Syntax.Pos) {
     return `${pos.first_line}:${pos.first_column}-${pos.last_column}`;
   }
 
-  return `${pos.first_line}:${pos.first_column}=${pos.last_line}:${pos.last_column}`;
+  return `${pos.first_line}:${pos.first_column}-${pos.last_line}:${pos.last_column}`;
 }
