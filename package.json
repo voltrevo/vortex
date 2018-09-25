@@ -4,6 +4,9 @@
   "description": "",
   "main": "index.js",
   "author": "",
+  "scripts": {
+    "test": "node build/test.js"
+  },
   "license": "unlicensed",
   "dependencies": {},
   "devDependencies": {
