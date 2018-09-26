@@ -33,7 +33,8 @@ function Location(file: string, line: number) {
   return (chalk.reset(
     chalk.magenta(file) +
     chalk.cyan(':') +
-    chalk.green(line.toString())
+    chalk.green(line.toString()) +
+    chalk.cyan(':')
   ));
 }
 
@@ -46,7 +47,7 @@ function colorize(line: string) {
     return line;
   }
 
-  const location = grab(line, /^[^:]+:[0-9]+/);
+  const location = grab(line, /^[^:]+:[0-9]+:/);
 
   const rest = (
     !location ?
@@ -64,6 +65,12 @@ function colorize(line: string) {
       .replace(/\berror\b/g, chalk.reset(chalk.red('error')))
       .replace(/\bwarning\b/g, chalk.reset(chalk.yellow('warning')))
       .replace(/\binfo\b/g, chalk.reset(chalk.blue('info')))
+      .replace(/\btodo\b/g, chalk.reset(chalk.magenta('todo')))
+      .replace(/\bERROR\b/g, chalk.reset(chalk.red('ERROR')))
+      .replace(/\bWARNING\b/g, chalk.reset(chalk.yellow('WARNING')))
+      .replace(/\bINFO\b/g, chalk.reset(chalk.blue('INFO')))
+      .replace(/\bTODO\b/g, chalk.reset(chalk.magenta('TODO')))
+      .replace(/\bTODOs\b/g, chalk.reset(chalk.magenta('TODO')) + 's')
     )
   );
 }
@@ -112,12 +119,12 @@ for (const file of files) {
 
         if (nn === 0) {
           log.error(
-            `${file}:${lineNo} has ${level} tag that was not ` +
+            `${file}:${lineNo}: ${level} tag that was not ` +
             `produced by the compiler\n`
           );
         } else {
           log.error(
-            `${file}:${lineNo} has ${nt} ${level} tags but only ` +
+            `${file}:${lineNo}: ${nt} ${level} tags but only ` +
             `${nn} were produced by the compiler`
           );
         }
@@ -126,12 +133,12 @@ for (const file of files) {
 
         const wording = (
           nt === 0 ?
-          `has untagged ${level}${nn > 1 ? 's' : ''}` :
-          `has ${nn} ${level}s but only ${nt} tag${nt > 1 ? 's' : ''}`
+          `untagged ${level}${nn > 1 ? 's' : ''}` :
+          `${nn} ${level}s but only ${nt} tag${nt > 1 ? 's' : ''}`
         );
 
         log.error(
-          `${file}:${lineNo} ${wording}:\n` +
+          `${file}:${lineNo}: ${wording}:\n` +
           levelNotes.map(n => `  ${n.message}`).join('\n') + '\n'
         );
       }
@@ -140,17 +147,23 @@ for (const file of files) {
 }
 
 if (ok) {
-  console.log('Success');
+  log.info('>>> info: Tag matching succeeded');
 } else {
-  console.log((new Array(80).fill('-').join('')) + '\n');
-  throw new Error('Errors found');
+  log.error('>>> error: Tag matching failed');
 }
 
-const todos = spawnSync('git', ['grep', 'TODO']).stdout.toString().split('\n');
+console.log('\n' + (new Array(80).fill('-').join('')) + '\n');
+
+const todos = (spawnSync('git', ['grep', '-n', 'TODO'])
+  .stdout
+  .toString()
+  .split('\n')
+  .filter(line => line !== '')
+);
 
 if (todos.length > 0) {
   const isVlt = (todo: string) => /^[^:]*\.vlt:/.test(todo);
-  log.info(`\n... found ${todos.length} TODOs though:\n`);
+  log.info(`Found ${todos.length} TODOs:\n`);
   log.info(todos.filter(isVlt).join('\n'));
   log.info(todos.filter(todo => !isVlt(todo)).join('\n'));
 }
