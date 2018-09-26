@@ -16,13 +16,13 @@ func main(n: i32) {
     foo = foo + 1;
   }
 
-  return multiplyAdd(n, n, n) + 'hello';
+  return multiplyAdd(n, n, n) + 'hello'; // error TODO special function scoping
 };
 
-func multiplyAdd(a: i32, b: i32, c: i32) => a * b + c;
+func multiplyAdd(a: i32, b: i32, c: i32) => a * b + c; // error TODO
 
 func methodCalls() {
-  return getObject():method():method2();
+  return getObject():method():method2(); // error
 };
 
 func arrays() {
@@ -96,7 +96,7 @@ class Error: string {
 };
 
 return func factorial(n: i32) => switch {
-  (n < 0) => Error('Invalid input'); // ?
-  (n == 0) => 1;
-  (true) => n * factorial(n - 1);
+  (n < 0) => Error('Invalid input'); // error TODO TODO note counting
+  (n == 0) => 1; // error TODO
+  (true) => n * factorial(n - 1); // error TODO
 };

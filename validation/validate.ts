@@ -23,7 +23,7 @@ export function validate(program: Syntax.Program): Note[] {
 
   issues.push(...validateBody(program));
 
-  issues.push(...traverse<Note>(program, el => {
+  issues.push(...traverse<Syntax.Element, Note>(program, el => {
     const subIssues: Note[] = [];
 
     let potentialSubExpressions = (
@@ -92,97 +92,157 @@ export function validate(program: Syntax.Program): Note[] {
     }
 
     return subIssues;
-  }, el => [el]));
+  }, Syntax.Children));
 
   issues.push(...validateScope(program.v));
 
   return issues;
 }
 
-type Scope = {
-  [name: string]: {
-    origin: Syntax.Expression;
-    used: boolean;
-  };
-};
-
-function validateScope(
-  elements: Syntax.Element[],
-  scope: Scope = {}
-): Note[] {
-  debugger;
+function validateScope(elements: Syntax.Element[]): Note[] {
   const issues: Note[] = [];
 
-  for (const element of elements) {
-    let traversalElement: Syntax.Element = element;
+  type Variable = {
+    origin: Syntax.Identifier;
+    used: boolean;
+  };
 
-    if (
-      element.t === 'e' &&
-      element.v.t === ':=' &&
-      element.v.v[0].t === 'IDENTIFIER'
-    ) {
-      traversalElement = element.v.v[1];
+  type Scope = {
+    parent: Scope | null;
+    variables: {
+      [name: string]: Variable;
+    };
+  };
 
-      const newVariableName = element.v.v[0].v;
+  function lookup(s: Scope, name: string): Variable | null {
+    return (
+      (s.variables[name] || null) ||
+      s.parent && lookup(s.parent, name)
+    );
+  }
 
-      if (typeof newVariableName !== 'string') {
-        throw new Error(
-          'should not be possible (TODO: not sure why ts doesn\'t know)'
-        );
-      }
+  function modifyVariable(
+    s: Scope,
+    name: string,
+    mods: Partial<Variable>
+  ): Scope {
+    const curr = s.variables[name];
 
-      const preExisting = scope[newVariableName];
-
-      if (preExisting) {
-        issues.push(Note(element.v.v[0], 'error',
-          'Can\'t create variable that already exists'
-        ));
-
-        const loc = formatLocation(preExisting.origin.p);
-
-        issues.push(Note(preExisting.origin, 'warning',
-          `Attempt to create this variable again at ${loc}`
-        ));
-      } else {
-        scope = { ...scope,
-          [newVariableName]: {
-            origin: element.v[0],
-            used: false,
-          }
-        };
-      }
+    if (curr) {
+      // vault concept version:
+      // return s.variables[name] += mods; // TODO hmm += or custom operator?
+      // or
+      // return s.variables[name] = { ...s.variables[name], ...mods };
+      return {
+        parent: s.parent,
+        variables: {
+          ...s.variables,
+          [name]: { ...curr, ...mods }
+        }
+      };
     }
 
-    const items: Syntax.Element[] = traverse<Syntax.Element>(
-      traversalElement,
-      el => (
-        ['IDENTIFIER', 'class', 'func', 'if', 'for'].indexOf(el.t) !== -1 ?
-        [el] :
-        []
-      ),
-      // Subtraversals specified here to avoid traversing into blocks here
-      // (need subscope logic instead)
+    if (!s.parent) {
+      throw new Error('Tried to modify variable that doesn\'t exist');
+    }
+
+    return {
+      parent: modifyVariable(s.parent, name, mods),
+      variables: s.variables,
+    };
+  }
+
+  let scope: Scope = { parent: null, variables: {} };
+
+  for (const element of elements) {
+    type Push = { t: 'Push' };
+    const push: Push = { t: 'Push' };
+
+    type Pop = { t: 'Pop' };
+    const pop: Pop = { t: 'Pop' };
+
+    type CreateVariable = { t: 'CreateVariable', v: Syntax.Identifier };
+
+    type ScopeItem = Syntax.Element | Push | Pop | CreateVariable;
+
+    const items: ScopeItem[] = traverse<ScopeItem, ScopeItem>(
+      element,
+      el => [el],
       el => {
         switch (el.t) {
-          case 'class': return [];
-          case 'func': return [];
-          case '.': return [];
+          case 'Push':
+          case 'Pop':
+          case 'CreateVariable':
+            return [];
 
-          case 'if':
-            return Syntax.Children(el).filter(e => e.t !== 'block');
+          case 'class':
+          case 'func':
+          case 'block':
+          case 'for':
+            return [push, ...Syntax.Children(el), pop];
 
-          case 'for': return [];
+          case ':=':
+            let children: ScopeItem[] = Syntax.Children(el);
+            const left = el.v[0];
 
-          default: {
-            return [el];
-          }
+            if (left.t === 'IDENTIFIER') {
+              if (children[0].t !== 'IDENTIFIER') {
+                throw new Error('Expected first child to be identifier');
+              }
+
+              children.shift(); // Remove reference to self
+              children = [{ t: 'CreateVariable', v: left }, ...children];
+            }
+
+            return children;
+
+          default:
+            return Syntax.Children(el);
         }
       }
     );
 
     for (const item of items) {
-      if (item.t === 'IDENTIFIER') {
-        const scopeEntry = scope[item.v];
+      if (item.t === 'CreateVariable') {
+        const newVariableName = item.v.v;
+        const preExisting = lookup(scope, newVariableName);
+
+        if (preExisting) {
+          issues.push(Note(item.v, 'error',
+            'Can\'t create variable that already exists'
+          ));
+
+          const loc = formatLocation(item.v.p);
+
+          issues.push(Note(preExisting.origin, 'info',
+            `Attempt to create this variable again at ${loc}`
+          ));
+        } else {
+          scope = {
+            parent: scope.parent,
+            variables: { ...scope.variables,
+              [newVariableName]: {
+                origin: item.v,
+                used: false,
+              },
+            },
+          };
+        }
+      } else if (item.t === 'Push') {
+        scope = {
+          parent: scope,
+          variables: {},
+        };
+      } else if (item.t === 'Pop') {
+        if (!scope.parent) {
+          throw new Error(
+            'Processing scope pop but scope doesn\'t have parent'
+          );
+        }
+
+        scope = scope.parent;
+      } else if (item.t === 'IDENTIFIER') {
+        const scopeEntry = lookup(scope, item.v);
 
         if (!scopeEntry) {
           // TODO: Look for typos
@@ -191,26 +251,8 @@ function validateScope(
           ));
         } else {
           // imagine... scope[item.v].used = true... :-D
-          scope = { ...scope, [item.v]: { ...scopeEntry, used: true } };
+          scope = modifyVariable(scope, item.v, { used: true });
         }
-      } else if (item.t === 'if') {
-        issues.push(...validateScope(item.v[1].v, scope));
-      } else if (item.t === 'for') {
-        const forElements: Syntax.Element[] = Syntax.Children(item);
-        const forBlock = forElements.pop();
-
-        if (!forBlock || forBlock.t !== 'block') {
-          throw new Error('Expected a block');
-        }
-
-        forElements.push(...forBlock.v);
-        issues.push(...validateScope(forElements, scope));
-      } else if (item.t === 'func') {
-        // TODO
-      } else if (item.t === 'class') {
-        // TODO
-      } else {
-        throw new Error('Unexpected item.t: ' + item.t);
       }
     }
   }
@@ -369,30 +411,18 @@ function hasReturn(block: Syntax.Block) {
   return false;
 }
 
-function traverse<T>(
-  element: Syntax.Element,
-  process: (el: Syntax.Element) => T[],
-  SubTraversals: (el: Syntax.Element) => Syntax.Element[],
+function traverse<E, T>(
+  element: E,
+  visit: (el: E) => T[],
+  Children: (el: E) => E[],
 ): T[] {
   const results: T[] = [];
 
-  let processedSelf = false;
-
-  for (const traversal of SubTraversals(element)) {
-    for (const child of Syntax.Children(traversal)) {
-      results.push(...traverse(child, process, SubTraversals));
-    }
-
-    results.push(...process(traversal));
-
-    if (traversal === element) {
-      processedSelf = true;
-    }
+  for (const child of Children(element)) {
+    results.push(...traverse(child, visit, Children));
   }
 
-  if (!processedSelf) {
-    results.push(...process(element));
-  }
+  results.push(...visit(element));
 
   return results;
 }

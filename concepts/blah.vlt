@@ -3,16 +3,20 @@ foo := {
   b: 2,
 };
 
-x := 1;
-y := 1;
+x := 1; // info
+y := 1; // info
 foo.a = x := 2; // error
 foo.a = (x = (y := 2)); // error (creation just more deeply nested)
 foo.a = (x.y := 2); // ok: just adding prop, not creating variable
 foo.c := 3;
 foo.d := {};
+y := 3; // error
 
-func() { // TODO top level anonymous function can't be called
-  return a := 1; // error
+func() { // TODO: top level anonymous function can't be called
+  a := 1; // TODO: unused
+  return b := 1; // error
 };
+
+a++; // error
 
 foo.d.e := 42; // error

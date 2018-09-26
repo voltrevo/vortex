@@ -9,7 +9,14 @@ process.stdin.on('data', chunk => {
 });
 
 process.stdin.on('end', () => {
-  for (const note of compile(stdinText)) {
+  const notes = compile(stdinText);
+
+  // vim is silly and shows last note of line instead of first one... reversing
+  // fixes this issue (vim takes care of (hopefully stable) reordering by line
+  // number)
+  notes.reverse();
+
+  for (const note of notes) {
     console.error(JSON.stringify({
       lnum: note.pos.first_line,
       end_lnum: note.pos.last_line,
