@@ -125,7 +125,7 @@ for (const file of files) {
         } else {
           log.error(
             `${file}:${lineNo}: ${nt} ${level} tags but only ` +
-            `${nn} were produced by the compiler`
+            `${nn} ${nn > 1 ? 'were' : 'was'} produced by the compiler`
           );
         }
       } else if (nn > nt) {
