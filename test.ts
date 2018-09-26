@@ -154,16 +154,48 @@ if (ok) {
 
 console.log('\n' + (new Array(80).fill('-').join('')) + '\n');
 
+debugger;
+
+function compareArrays(a: any[], b: any[]) {
+  for (let i = 0; true; i++) {
+    const aOk = i < a.length;
+    const bOk = i < b.length;
+
+    if (aOk !== bOk) {
+      return aOk ? -1 : 1;
+    }
+
+    if (!aOk) {
+      return 0;
+    }
+
+    if (a[i] !== b[i]) {
+      return a[i] < b[i] ? -1 : 1;
+    }
+  }
+}
+
+function TodoSortPriority(line: string) {
+  return [
+    /^TODOs:/.test(line) ? 0 : 1,
+    /^[^:]*\.vlt:/.test(line) ? 0 : 1,
+  ];
+}
+
 const todos = (spawnSync('git', ['grep', '-n', 'TODO'])
   .stdout
   .toString()
   .split('\n')
   .filter(line => line !== '')
+  .sort((a, b) => {
+    return compareArrays(
+      TodoSortPriority(a),
+      TodoSortPriority(b),
+    );
+  })
 );
 
 if (todos.length > 0) {
-  const isVlt = (todo: string) => /^[^:]*\.vlt:/.test(todo);
   log.info(`Found ${todos.length} TODOs:\n`);
-  log.info(todos.filter(isVlt).join('\n'));
-  log.info(todos.filter(todo => !isVlt(todo)).join('\n'));
+  log.info(todos.join('\n'));
 }
