@@ -94,7 +94,7 @@ export function validate(program: Syntax.Program): Note[] {
     return subIssues;
   }, el => [el]));
 
-  issues.push(...validateScope(program));
+  issues.push(...validateScope(program.v));
 
   return issues;
 }
@@ -106,20 +106,24 @@ type Scope = {
   };
 };
 
-function validateScope(body: Syntax.Block, scope: Scope = {}): Note[] {
+function validateScope(
+  elements: Syntax.Element[],
+  scope: Scope = {}
+): Note[] {
+  debugger;
   const issues: Note[] = [];
 
-  for (const statement of body.v) {
-    let traversalElement: Syntax.Element = statement;
+  for (const element of elements) {
+    let traversalElement: Syntax.Element = element;
 
     if (
-      statement.t === 'e' &&
-      statement.v.t === ':=' &&
-      statement.v.v[0].t === 'IDENTIFIER'
+      element.t === 'e' &&
+      element.v.t === ':=' &&
+      element.v.v[0].t === 'IDENTIFIER'
     ) {
-      traversalElement = statement.v.v[1];
+      traversalElement = element.v.v[1];
 
-      const newVariableName = statement.v.v[0].v;
+      const newVariableName = element.v.v[0].v;
 
       if (typeof newVariableName !== 'string') {
         throw new Error(
@@ -130,7 +134,7 @@ function validateScope(body: Syntax.Block, scope: Scope = {}): Note[] {
       const preExisting = scope[newVariableName];
 
       if (preExisting) {
-        issues.push(Note(statement.v.v[0], 'error',
+        issues.push(Note(element.v.v[0], 'error',
           'Can\'t create variable that already exists'
         ));
 
@@ -142,7 +146,7 @@ function validateScope(body: Syntax.Block, scope: Scope = {}): Note[] {
       } else {
         scope = { ...scope,
           [newVariableName]: {
-            origin: statement.v[0],
+            origin: element.v[0],
             used: false,
           }
         };
@@ -165,8 +169,9 @@ function validateScope(body: Syntax.Block, scope: Scope = {}): Note[] {
           case '.': return [];
 
           case 'if':
-          case 'for':
             return Syntax.Children(el).filter(e => e.t !== 'block');
+
+          case 'for': return [];
 
           default: {
             return [el];
@@ -188,8 +193,18 @@ function validateScope(body: Syntax.Block, scope: Scope = {}): Note[] {
           // imagine... scope[item.v].used = true... :-D
           scope = { ...scope, [item.v]: { ...scopeEntry, used: true } };
         }
-      } else if (item.t === 'if' || item.t === 'for') {
-        issues.push(...validateScope(item.v[1], scope));
+      } else if (item.t === 'if') {
+        issues.push(...validateScope(item.v[1].v, scope));
+      } else if (item.t === 'for') {
+        const forElements: Syntax.Element[] = Syntax.Children(item);
+        const forBlock = forElements.pop();
+
+        if (!forBlock || forBlock.t !== 'block') {
+          throw new Error('Expected a block');
+        }
+
+        forElements.push(...forBlock.v);
+        issues.push(...validateScope(forElements, scope));
       } else if (item.t === 'func') {
         // TODO
       } else if (item.t === 'class') {
@@ -361,16 +376,22 @@ function traverse<T>(
 ): T[] {
   const results: T[] = [];
 
-  results.push(...process(element));
+  let processedSelf = false;
 
   for (const traversal of SubTraversals(element)) {
-    if (traversal !== element) {
-      results.push(...process(traversal));
-    }
-
     for (const child of Syntax.Children(traversal)) {
       results.push(...traverse(child, process, SubTraversals));
     }
+
+    results.push(...process(traversal));
+
+    if (traversal === element) {
+      processedSelf = true;
+    }
+  }
+
+  if (!processedSelf) {
+    results.push(...process(element));
   }
 
   return results;
