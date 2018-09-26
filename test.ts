@@ -15,6 +15,18 @@ const files = (spawnSync('git', ['ls-files'])
   ))
 );
 
+function Tags(line: string): string[] {
+  // (TODO: handle false positives caused by strings)
+  // TODO: get parser to emit comments somehow
+  const comment = line.match(/\/\/.*$/);
+
+  if (!comment) {
+    return [];
+  }
+
+  return comment[0].match(/\#\w*/g) || [];
+}
+
 let ok = true;
 
 for (const file of files) {
@@ -27,47 +39,51 @@ for (const file of files) {
 
   const lines = fileText.split('\n');
 
-  for (const note of notes) {
-    const line = lines[note.pos.first_line - 1];
-    const commentMatches = line.match(/\/\/.*$/);
-
-    if (
-      !commentMatches ||
-      commentMatches[0].split(' ').indexOf(note.level) === -1
-    ) {
       ok = false;
 
-      console.error(
-        `${file}:${note.pos.first_line} contains unannotated ` +
-        `${note.level}:\n  ${note.message}\n`
-      );
-    }
-  }
 
   let lineNo = 0;
   for (const line of lines) {
     lineNo++;
-    const commentMatches = line.match(/\/\/.*$/);
 
-    if (!commentMatches) {
-      continue;
-    }
+    const tags = Tags(line);
+    const lineNotes = notes.filter(n => n.pos.first_line === lineNo);
 
-    const annotations = (commentMatches[0]
-      .split(' ')
-      .filter(word => ['error', 'warning', 'info'].indexOf(word) !== -1)
-    );
+    for (const level of ['error', 'warning', 'info']) {
+      const levelTags = tags.filter(t => t === `#${level}`);
+      const levelNotes = lineNotes.filter(n => n.level === level);
 
-    for (const annotation of annotations) {
-      if (!notes.some(note => (
-        note.level === annotation &&
-        note.pos.first_line === lineNo
-      ))) {
+      const nt = levelTags.length;
+      const nn = levelNotes.length;
+
+      if (nt > nn) {
         ok = false;
 
+        if (nn === 0) {
+          console.error(
+            `${file}:${lineNo} has ${level} annotation that was not ` +
+            `produced by the compiler\n`
+          );
+        } else {
+          console.error(
+            `${file}:${lineNo} has ${nt} ${level} annotations but only ` +
+            `${nn} were produced by the compiler`
+          );
+        }
+      } else if (nn > nt) {
+        ok = false;
+
+        // TODO: annotation -> tag
+
+        const wording = (
+          nt === 0 ?
+          `has unannotated ${level}${nn > 1 ? 's' : ''}` :
+          `has ${nn} ${level}s but only ${nt} annotation${nt > 1 ? 's' : ''}`
+        );
+
         console.error(
-          `${file}:${lineNo} has ${annotation} annotation but this was not ` +
-          `produced by the compiler\n`
+          `${file}:${lineNo} ${wording}:\n` +
+          levelNotes.map(n => `  ${n.message}`).join('\n') + '\n'
         );
       }
     }

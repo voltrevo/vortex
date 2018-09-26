@@ -1,8 +1,8 @@
-x := 1; // info
+x := 1; // #info
 
-for (x := 1; y; x++) { // error
+for (x := 1; y; x++) { // #error #error
   y := 1;
   return y;
 }
 
-return y; // error TODO also unreachable, TODO count note annotations
+return y; // #error TODO also unreachable, TODO count note annotations

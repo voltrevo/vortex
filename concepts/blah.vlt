@@ -3,20 +3,20 @@ foo := {
   b: 2,
 };
 
-x := 1; // info
-y := 1; // info warning
-foo.a = x := 2; // error
-foo.a = (x = (y := 2)); // error (creation just more deeply nested)
+x := 1; // #info
+y := 1; // #info #warning #info
+foo.a = x := 2; // #error #error #error TODO: duplicate sub creation error?
+foo.a = (x = (y := 2)); // #error #error (creation just more deeply nested)
 foo.a = (x.y := 2); // ok: just adding prop, not creating variable
 foo.c := 3;
 foo.d := {};
-y := 3; // error
+y := 3; // #error
 
 func() { // TODO: top level anonymous function can't be called
-  a := 1; // warning
-  return b := 1; // error warning
+  a := 1; // #warning
+  return b := 1; // #error #warning
 };
 
-a++; // error
+a++; // #error
 
-foo.d.e := 42; // error
+foo.d.e := 42; // #error

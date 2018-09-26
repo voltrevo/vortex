@@ -1,4 +1,9 @@
 return class Pair {
+  // TODO: implement modifier/mechanism to discourage (not prevent) property
+  // access for classes designed to provide a tight abstraction over their data
+  // - perhaps { ...instance }.prop could be used as a bypass
+  // - ^ although, that form shouldn't allow instance assignment so how should
+  //     that work?
   first: f64;
   second: f64;
 
