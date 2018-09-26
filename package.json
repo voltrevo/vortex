@@ -10,9 +10,11 @@
   "license": "unlicensed",
   "dependencies": {},
   "devDependencies": {
+    "@types/minimist": "^1.2.0",
     "@types/node": "^10.10.3",
     "chalk": "^2.4.1",
     "jison": "^0.4.18",
+    "minimist": "^1.2.0",
     "typescript": "^3.0.3"
   }
 }
