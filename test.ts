@@ -1,6 +1,8 @@
 import { readFileSync } from 'fs';
 import { spawnSync } from 'child_process';
 
+import chalk from 'chalk';
+
 import compile from './compile';
 
 const files = (spawnSync('git', ['ls-files'])
@@ -26,6 +28,58 @@ function Tags(line: string): string[] {
 
   return comment[0].match(/\#\w*/g) || [];
 }
+
+function Location(file: string, line: number) {
+  return (chalk.reset(
+    chalk.magenta(file) +
+    chalk.cyan(':') +
+    chalk.green(line.toString())
+  ));
+}
+
+function grab(str: string, re: RegExp): string {
+  return (str.match(re) || [''])[0];
+}
+
+function colorize(line: string) {
+  if (line === '') {
+    return line;
+  }
+
+  const location = grab(line, /^[^:]+:[0-9]+/);
+
+  const rest = (
+    !location ?
+    line :
+    line.split(location)[1]
+  );
+
+  return (
+    (
+      location ?
+      Location(grab(line, /^[^:]+/), Number(grab(line, /[0-9]+/))) :
+      ''
+    ) +
+    chalk.reset(rest
+      .replace(/\berror\b/g, chalk.reset(chalk.red('error')))
+      .replace(/\bwarning\b/g, chalk.reset(chalk.yellow('warning')))
+      .replace(/\binfo\b/g, chalk.reset(chalk.blue('info')))
+    )
+  );
+}
+
+const log = {
+  error(str: string) {
+    for (const line of str.split('\n')) {
+      console.error(colorize(line));
+    }
+  },
+  info(str: string) {
+    for (const line of str.split('\n')) {
+      console.info(colorize(line));
+    }
+  }
+};
 
 let ok = true;
 
@@ -57,12 +111,12 @@ for (const file of files) {
         ok = false;
 
         if (nn === 0) {
-          console.error(
+          log.error(
             `${file}:${lineNo} has ${level} tag that was not ` +
             `produced by the compiler\n`
           );
         } else {
-          console.error(
+          log.error(
             `${file}:${lineNo} has ${nt} ${level} tags but only ` +
             `${nn} were produced by the compiler`
           );
@@ -76,7 +130,7 @@ for (const file of files) {
           `has ${nn} ${level}s but only ${nt} tag${nt > 1 ? 's' : ''}`
         );
 
-        console.error(
+        log.error(
           `${file}:${lineNo} ${wording}:\n` +
           levelNotes.map(n => `  ${n.message}`).join('\n') + '\n'
         );
@@ -88,6 +142,7 @@ for (const file of files) {
 if (ok) {
   console.log('Success');
 } else {
+  console.log((new Array(80).fill('-').join('')) + '\n');
   throw new Error('Errors found');
 }
 
@@ -95,7 +150,7 @@ const todos = spawnSync('git', ['grep', 'TODO']).stdout.toString().split('\n');
 
 if (todos.length > 0) {
   const isVlt = (todo: string) => /^[^:]*\.vlt:/.test(todo);
-  console.log(`\n... found ${todos.length} TODOs though:\n`);
-  console.log(todos.filter(isVlt).join('\n'));
-  console.log(todos.filter(todo => !isVlt(todo)).join('\n'));
+  log.info(`\n... found ${todos.length} TODOs though:\n`);
+  log.info(todos.filter(isVlt).join('\n'));
+  log.info(todos.filter(todo => !isVlt(todo)).join('\n'));
 }

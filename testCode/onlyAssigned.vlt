@@ -5,7 +5,7 @@ func() {
   y += 1;
   z := 1; // #warning ... hmm how to handle this one?
   z++;
-  zz := 1; // shouldn't be a (w)arning (similar to ++ issue)
+  zz := 1; // shouldn't be a warning (similar to ++ issue)
   a := (zz += 1);
   return a;
 };
