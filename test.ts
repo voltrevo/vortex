@@ -39,9 +39,6 @@ for (const file of files) {
 
   const lines = fileText.split('\n');
 
-      ok = false;
-
-
   let lineNo = 0;
   for (const line of lines) {
     lineNo++;
@@ -61,24 +58,22 @@ for (const file of files) {
 
         if (nn === 0) {
           console.error(
-            `${file}:${lineNo} has ${level} annotation that was not ` +
+            `${file}:${lineNo} has ${level} tag that was not ` +
             `produced by the compiler\n`
           );
         } else {
           console.error(
-            `${file}:${lineNo} has ${nt} ${level} annotations but only ` +
+            `${file}:${lineNo} has ${nt} ${level} tags but only ` +
             `${nn} were produced by the compiler`
           );
         }
       } else if (nn > nt) {
         ok = false;
 
-        // TODO: annotation -> tag
-
         const wording = (
           nt === 0 ?
-          `has unannotated ${level}${nn > 1 ? 's' : ''}` :
-          `has ${nn} ${level}s but only ${nt} annotation${nt > 1 ? 's' : ''}`
+          `has untagged ${level}${nn > 1 ? 's' : ''}` :
+          `has ${nn} ${level}s but only ${nt} tag${nt > 1 ? 's' : ''}`
         );
 
         console.error(
