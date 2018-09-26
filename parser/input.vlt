@@ -68,7 +68,7 @@ break;
 
 func() {}; // error
 
-foo := func() {}; // error
+foo := func() {}; // error warning
 
 func loops() {
   for {

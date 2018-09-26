@@ -99,7 +99,31 @@ export function validate(program: Syntax.Program): Note[] {
   return issues;
 }
 
-function validateScope(elements: Syntax.Element[]): Note[] {
+type Push = { t: 'Push' };
+const push: Push = { t: 'Push' };
+
+type Pop = { t: 'Pop' };
+const pop: Pop = { t: 'Pop' };
+
+type CreateVariable = { t: 'CreateVariable', v: Syntax.Identifier };
+
+type IdentifierAssignTarget = {
+  t: 'IDENTIFIER-assignTarget',
+  v: string,
+  p: Syntax.Pos,
+};
+
+type ScopeItem = (
+  Syntax.Element |
+  Push |
+  Pop |
+  CreateVariable |
+  IdentifierAssignTarget |
+  never
+);
+
+function validateScope(elements: ScopeItem[]): Note[] {
+  elements.push(pop);
   const issues: Note[] = [];
 
   type Variable = {
@@ -153,32 +177,9 @@ function validateScope(elements: Syntax.Element[]): Note[] {
     };
   }
 
-  let scope: Scope = { parent: null, variables: {} };
+  let scope: Scope | null = { parent: null, variables: {} };
 
   for (const element of elements) {
-    type Push = { t: 'Push' };
-    const push: Push = { t: 'Push' };
-
-    type Pop = { t: 'Pop' };
-    const pop: Pop = { t: 'Pop' };
-
-    type CreateVariable = { t: 'CreateVariable', v: Syntax.Identifier };
-
-    type IdentifierAssignTarget = {
-      t: 'IDENTIFIER-assignTarget',
-      v: string,
-      p: Syntax.Pos,
-    };
-
-    type ScopeItem = (
-      Syntax.Element |
-      Push |
-      Pop |
-      CreateVariable |
-      IdentifierAssignTarget |
-      never
-    );
-
     const items: ScopeItem[] = traverse<ScopeItem, ScopeItem>(
       element,
       el => [el],
@@ -246,6 +247,10 @@ function validateScope(elements: Syntax.Element[]): Note[] {
     );
 
     for (const item of items) {
+      if (scope === null) {
+        throw new Error('Attempt to process item without a scope');
+      }
+
       if (item.t === 'CreateVariable') {
         const newVariableName = item.v.v;
         const preExisting = lookup(scope, newVariableName);
@@ -278,12 +283,6 @@ function validateScope(elements: Syntax.Element[]): Note[] {
           variables: {},
         };
       } else if (item.t === 'Pop') {
-        if (!scope.parent) {
-          throw new Error(
-            'Processing scope pop but scope doesn\'t have parent'
-          );
-        }
-
         for (const varName of Object.keys(scope.variables)) {
           const variable = scope.variables[varName];
 
