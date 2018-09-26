@@ -13,8 +13,8 @@ foo.d := {};
 y := 3; // error
 
 func() { // TODO: top level anonymous function can't be called
-  a := 1; // TODO: unused
-  return b := 1; // error
+  a := 1; // warning
+  return b := 1; // error warning
 };
 
 a++; // error

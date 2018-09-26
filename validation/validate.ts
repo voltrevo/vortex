@@ -240,6 +240,16 @@ function validateScope(elements: Syntax.Element[]): Note[] {
           );
         }
 
+        for (const varName of Object.keys(scope.variables)) {
+          const variable = scope.variables[varName];
+
+          if (!variable.used) {
+            issues.push(Note(variable.origin, 'warning',
+              `Variable ${varName} is not used`
+            ));
+          }
+        }
+
         scope = scope.parent;
       } else if (item.t === 'IDENTIFIER') {
         const scopeEntry = lookup(scope, item.v);

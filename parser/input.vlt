@@ -27,7 +27,7 @@ func methodCalls() {
 
 func arrays() {
   literal := [1, 2, 3, 2 + 2];
-  subscript := literal[blah()]; // error
+  subscript := literal[blah()]; // error warning
 };
 
 func objects() {
@@ -72,7 +72,7 @@ foo := func() {}; // error
 
 func loops() {
   for {
-    infiniteLoop := 1;
+    infiniteLoop := 1; // warning
   }
 
   for (1) {}
