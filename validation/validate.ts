@@ -7,7 +7,7 @@ type Note = {
 };
 
 function Note(
-  el: Syntax.Element,
+  el: { p: Syntax.Pos },
   level: 'error' | 'warning' | 'info',
   message: string
 ) {
@@ -105,6 +105,7 @@ function validateScope(elements: Syntax.Element[]): Note[] {
   type Variable = {
     origin: Syntax.Identifier;
     used: boolean;
+    assigned: boolean;
   };
 
   type Scope = {
@@ -163,7 +164,20 @@ function validateScope(elements: Syntax.Element[]): Note[] {
 
     type CreateVariable = { t: 'CreateVariable', v: Syntax.Identifier };
 
-    type ScopeItem = Syntax.Element | Push | Pop | CreateVariable;
+    type IdentifierAssignTarget = {
+      t: 'IDENTIFIER-assignTarget',
+      v: string,
+      p: Syntax.Pos,
+    };
+
+    type ScopeItem = (
+      Syntax.Element |
+      Push |
+      Pop |
+      CreateVariable |
+      IdentifierAssignTarget |
+      never
+    );
 
     const items: ScopeItem[] = traverse<ScopeItem, ScopeItem>(
       element,
@@ -173,6 +187,7 @@ function validateScope(elements: Syntax.Element[]): Note[] {
           case 'Push':
           case 'Pop':
           case 'CreateVariable':
+          case 'IDENTIFIER-assignTarget':
             return [];
 
           case 'class':
@@ -197,6 +212,34 @@ function validateScope(elements: Syntax.Element[]): Note[] {
             return children;
 
           default:
+            if (Syntax.isAssignmentOperator(el.t)) {
+              // TODO: any usage below... needed because typescript can't
+              // figure this situation out I think
+              let assignTarget: Syntax.Element = (el as any).v[0];
+
+              while (assignTarget.t === '.') {
+                assignTarget = assignTarget.v[0];
+              }
+
+              if (assignTarget.t === 'IDENTIFIER') {
+                const name = assignTarget.v;
+
+                return Syntax.Children(el).map(child => {
+                  if (child !== assignTarget) {
+                    return child;
+                  }
+
+                  // More typescript griping: it's really silly that typescript
+                  // requires 'as' below
+                  return {
+                    t: 'IDENTIFIER-assignTarget' as 'IDENTIFIER-assignTarget',
+                    v: name,
+                    p: assignTarget.p,
+                  };
+                });
+              }
+            }
+
             return Syntax.Children(el);
         }
       }
@@ -224,6 +267,7 @@ function validateScope(elements: Syntax.Element[]): Note[] {
               [newVariableName]: {
                 origin: item.v,
                 used: false,
+                assigned: false,
               },
             },
           };
@@ -244,9 +288,16 @@ function validateScope(elements: Syntax.Element[]): Note[] {
           const variable = scope.variables[varName];
 
           if (!variable.used) {
-            issues.push(Note(variable.origin, 'warning',
-              `Variable ${varName} is not used`
-            ));
+            if (!variable.assigned) {
+              issues.push(Note(variable.origin, 'warning',
+                `Variable ${varName} is not used`
+              ));
+            } else {
+              issues.push(Note(variable.origin, 'warning',
+                `Variable ${varName} is assigned but never used, so it ` +
+                `can't affect the return value`
+              ));
+            }
           }
         }
 
@@ -262,6 +313,17 @@ function validateScope(elements: Syntax.Element[]): Note[] {
         } else {
           // imagine... scope[item.v].used = true... :-D
           scope = modifyVariable(scope, item.v, { used: true });
+        }
+      } else if (item.t === 'IDENTIFIER-assignTarget') {
+        const scopeEntry = lookup(scope, item.v);
+
+        if (!scopeEntry) {
+          // TODO: Look for typos
+          issues.push(Note(item, 'error',
+            `Variable ${item.v} does not exist`
+          ));
+        } else {
+          scope = modifyVariable(scope, item.v, { assigned: true });
         }
       }
     }
@@ -294,7 +356,6 @@ function validateMethodBody(body: Syntax.Block): Note[] {
 }
 
 function isValidTopExpression(e: Syntax.Expression) {
-  // TODO: Is := not an assignment operator?
   if (Syntax.isAssignmentOperator(e.t) || e.t === ':=') {
     return true;
   }

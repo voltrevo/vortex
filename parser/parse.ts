@@ -23,6 +23,8 @@ export namespace Syntax {
   export function isAssignmentOperator(
     str: string
   ): str is AssignmentOperator {
+    // := is excluded on purpose - creation is not assignment, assignment is
+    // mutation
     const operators = [
       '+=',
       '-=',
