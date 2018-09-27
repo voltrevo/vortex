@@ -222,11 +222,18 @@ function prettyPrint(note: Note & { file: string, text: string }) {
     return `${chalk.reset(chalk.green(numStr))}${chalk.cyan(':')}`;
   }
 
-  const lines = note.text.split('\n').slice(
-    note.pos.first_line - 1,
-    note.pos.last_line
-  ).map((line, i) => {
-    const lineNo = note.pos.first_line + i;
+  const textLines = note.text.split('\n');
+
+  if (textLines[textLines.length - 1] === '') {
+    textLines.pop();
+  }
+
+  // Add a line of context before and after
+  const ctxFirstLine = Math.max(0, note.pos.first_line - 2);
+  const ctxLastLine = Math.min(note.pos.last_line + 1, textLines.length);
+
+  const lines = textLines.slice(ctxFirstLine, ctxLastLine).map((line, i) => {
+    const lineNo = ctxFirstLine + i + 1;
 
     function addLevelColor(str: string): string {
       if (str.indexOf('//') !== -1) {
@@ -268,7 +275,7 @@ function prettyPrint(note: Note & { file: string, text: string }) {
         addLevelColor(line.slice(0, note.pos.last_column + 1)) +
         line.slice(note.pos.last_column + 1)
       );
-    } else {
+    } else if (note.pos.first_line < lineNo && lineNo < note.pos.last_line) {
       line = addLevelColor(line);
     }
 
