@@ -214,9 +214,9 @@ function compactPrint(note: Note & { file: string }) {
 function prettyPrint(note: Note & { file: string, text: string }) {
   console.error(colorize(prettyLocation(note)));
 
-  function lineNoStr(n: number): string {
-    const numWidth = note.pos.last_line.toString().length;
+  const numWidth = note.pos.last_line.toString().length;
 
+  function lineNoStr(n: number): string {
     let numStr = n.toString();
 
     while (numStr.length < numWidth) {
@@ -235,6 +235,29 @@ function prettyPrint(note: Note & { file: string, text: string }) {
   // Add a line of context before and after
   const ctxFirstLine = Math.max(0, note.pos.first_line - 2);
   const ctxLastLine = Math.min(note.pos.last_line + 1, textLines.length);
+
+  const maxLineLength = textLines.slice(ctxFirstLine, ctxLastLine).reduce(
+    (acc, line) => Math.max(acc, line.length),
+    0
+  );
+
+  let boundary = '';
+
+  while (boundary.length < numWidth) {
+    boundary += ' ';
+  }
+
+  boundary += ':.';
+
+  for (let i = 0; i < maxLineLength; i++) {
+    boundary += '.';
+  }
+
+  boundary = chalk.reset(chalk.cyan(boundary));
+
+  if (ctxFirstLine === 0) {
+    console.error(boundary.replace(':', '.'));
+  }
 
   const lines = textLines.slice(ctxFirstLine, ctxLastLine).map((line, i) => {
     const lineNo = ctxFirstLine + i + 1;
@@ -295,9 +318,16 @@ function prettyPrint(note: Note & { file: string, text: string }) {
       ].join('');
     }
 
-    return `${lineNoStr(lineNo)} ${line}`;
+    line = `${lineNoStr(lineNo)} ${line}`;
+
+    return line;
   }).join('\n');
 
   console.error(lines);
+
+  if (ctxLastLine === textLines.length) {
+    console.error(boundary);
+  }
+
   console.error();
 }
