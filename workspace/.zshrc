@@ -105,3 +105,5 @@ if [ -d /root/.config/docker-workspace ] && [ ! -f /root/.config/docker-workspac
   touch /root/.config/docker-workspace/.zsh_history
   touch /root/.config/docker-workspace/.gitconfig
 fi
+
+export PATH="$PATH:/root/docker-vault/bin"

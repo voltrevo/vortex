@@ -74,3 +74,5 @@ autocmd FileType * set nosmartindent|set nocindent
 " Fix dracula diff colors (not sure why these are broken on ubuntu)
 hi diffAdded ctermfg=84
 hi diffRemoved ctermfg=203
+
+au BufRead,BufNewFile *.vlt set filetype=vault

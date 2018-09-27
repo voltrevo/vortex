@@ -5,6 +5,7 @@
   "main": "index.js",
   "author": "",
   "scripts": {
+    "build": "jison src/parser/vault.jison -o $(pwd)/src/parser/vault.js && tsc",
     "test": "node build/test.js"
   },
   "license": "unlicensed",
