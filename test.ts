@@ -1,8 +1,7 @@
 import { readFileSync } from 'fs';
 import { spawnSync } from 'child_process';
 
-import chalk from 'chalk';
-
+import colorize from './colorize';
 import compile from './compile';
 
 const files = (spawnSync('git', ['ls-files'])
@@ -27,52 +26,6 @@ function Tags(line: string): string[] {
   }
 
   return comment[0].match(/\#\w*/g) || [];
-}
-
-function Location(file: string, line: number) {
-  return (chalk.reset(
-    chalk.magenta(file) +
-    chalk.cyan(':') +
-    chalk.green(line.toString()) +
-    chalk.cyan(':')
-  ));
-}
-
-function grab(str: string, re: RegExp): string {
-  return (str.match(re) || [''])[0];
-}
-
-function colorize(line: string) {
-  if (line === '') {
-    return line;
-  }
-
-  const location = grab(line, /^[^:]+:[0-9]+:/);
-
-  const rest = (
-    !location ?
-    line :
-    line.split(location)[1]
-  );
-
-  return (
-    (
-      location ?
-      Location(grab(line, /^[^:]+/), Number(grab(line, /[0-9]+/))) :
-      ''
-    ) +
-    chalk.reset(rest
-      .replace(/\berror\b/g, chalk.reset(chalk.red('error')))
-      .replace(/\bwarning\b/g, chalk.reset(chalk.yellow('warning')))
-      .replace(/\binfo\b/g, chalk.reset(chalk.blue('info')))
-      .replace(/\btodo\b/g, chalk.reset(chalk.magenta('todo')))
-      .replace(/\bERROR\b/g, chalk.reset(chalk.red('ERROR')))
-      .replace(/\bWARNING\b/g, chalk.reset(chalk.yellow('WARNING')))
-      .replace(/\bINFO\b/g, chalk.reset(chalk.blue('INFO')))
-      .replace(/\bTODO\b/g, chalk.reset(chalk.magenta('TODO')))
-      .replace(/\bTODOs\b/g, chalk.reset(chalk.magenta('TODO')) + 's')
-    )
-  );
 }
 
 const log = {

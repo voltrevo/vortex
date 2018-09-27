@@ -1,7 +1,7 @@
 import { Syntax, parse } from './parser/parse';
 import { validate } from './validation/validate';
 
-type Note = {
+export type Note = {
   message: string;
   level: 'error' | 'warning' | 'info';
   pos: Syntax.Pos,

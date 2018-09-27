@@ -1,7 +1,9 @@
 import * as fs from 'fs';
 import * as minimist from 'minimist';
 
-import compile from './compile';
+import colorize from './colorize';
+import { default as compile, Note } from './compile';
+import formatLocation from './formatLocation';
 import getStdin from './getStdin';
 
 const args = minimist(process.argv.slice(2));
@@ -96,8 +98,8 @@ function parse<T>(variations: string[], parseOpt: Parser<T>): ParsedOption<T> | 
   return parseOption(Option(variations, parseOpt));
 }
 
-type Format = 'pretty' | 'native' | 'vim-ale';
-const formats: Format[] = ['pretty', 'native', 'vim-ale'];
+type Format = 'pretty' | 'compact' | 'native' | 'vim-ale';
+const formats: Format[] = ['pretty', 'compact', 'native', 'vim-ale'];
 
 function isFormat(value: any): value is Format {
   return formats.indexOf(value) !== -1;
@@ -151,6 +153,19 @@ const inputs: ({ type: 'file', name: string } | string)[] = [];
 
     for (const note of notes) {
       switch (format.value) {
+        case 'pretty': {
+          // TODO: Make this better
+          prettyPrint({ file, ...note });
+
+          break;
+        }
+
+        case 'compact': {
+          prettyPrint({ file, ...note });
+
+          break;
+        }
+
         case 'native': {
           // TODO: compile should generate file property
           console.error(JSON.stringify({ file, ...note }));
@@ -170,13 +185,6 @@ const inputs: ({ type: 'file', name: string } | string)[] = [];
           break;
         }
 
-        case 'pretty': {
-          // TODO: Make this better
-          console.error(`${file}:${note.pos.first_line}: ${note.message}`);
-
-          break;
-        }
-
         default:
           // TODO: Why doesn't typescript know this is impossible?
           throw new Error('Should not be possible');
@@ -186,3 +194,9 @@ const inputs: ({ type: 'file', name: string } | string)[] = [];
 })().catch(e => {
   setTimeout(() => { throw e; });
 });
+
+function prettyPrint(note: Note & { file: string }) {
+  console.error(colorize(
+    `${note.file}:${formatLocation(note.pos)}: ${note.level}: ${note.message}`
+  ));
+}

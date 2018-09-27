@@ -1,3 +1,4 @@
+import formatLocation from '../formatLocation';
 import { Syntax } from '../parser/parse';
 
 type Note = {
@@ -495,12 +496,4 @@ function traverse<E, T>(
   results.push(...visit(element));
 
   return results;
-}
-
-function formatLocation(pos: Syntax.Pos) {
-  if (pos.first_line === pos.last_line) {
-    return `${pos.first_line}:${pos.first_column}-${pos.last_column}`;
-  }
-
-  return `${pos.first_line}:${pos.first_column}-${pos.last_line}:${pos.last_column}`;
 }
