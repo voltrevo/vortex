@@ -1,4 +1,3 @@
-TODO: Fix line number bug in pretty output
 TODO: Docker file for easy participation in demo
 TODO: Implement TODO prioritization and sorting
 TODO: Mechanism for removing TODO false positives

@@ -21,6 +21,17 @@ function grab(str: string, re: RegExp): string {
   return (str.match(re) || [''])[0];
 }
 
+function assert(value: any) {
+  if (!value) {
+    throw new Error('Assertion failure');
+  }
+}
+
+function dropPrefix(prefix: string, line: string) {
+  assert(line.substring(0, prefix.length) === prefix);
+  return line.substring(prefix.length);
+}
+
 export default function colorize(line: string) {
   if (line === '') {
     return line;
@@ -28,18 +39,14 @@ export default function colorize(line: string) {
 
   const location = grab(line, /^[\w.()\/]+(:[LC0-9-]+)?(:[LC0-9-]+)?:/);
   const file = grab(location, /^[^:]+/);
-  const lineNo = grab(location, /[LC0-9-]+/);
+  const lineNo = grab(dropPrefix(file, location), /[LC0-9-]+/);
 
   const column = grab(
-    location.split(lineNo || '@invalid').slice(1).join(lineNo || '@invalid'),
+    dropPrefix(`${file ? file + ':' : ''}${lineNo ? lineNo + ':' : ''}`, location),
     /[LC0-9-]+/
   );
 
-  const rest = (
-    !location ?
-    line :
-    line.split(location).slice(1).join(location)
-  );
+  const rest = dropPrefix(location, line);
 
   return (
     (
