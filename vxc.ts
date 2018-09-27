@@ -1,12 +1,11 @@
 import * as fs from 'fs';
 import * as minimist from 'minimist';
 
-import chalk from 'chalk';
-
 import colorize from './colorize';
 import { default as compile, Note } from './compile';
 import formatLocation from './formatLocation';
 import getStdin from './getStdin';
+import prettyErrorContext from './prettyErrorContext';
 
 const args = minimist(process.argv.slice(2));
 
@@ -214,120 +213,7 @@ function compactPrint(note: Note & { file: string }) {
 function prettyPrint(note: Note & { file: string, text: string }) {
   console.error(colorize(prettyLocation(note)));
 
-  const textLines = note.text.split('\n').map(line => {
-    if (line.indexOf('//') === -1) {
-      return line;
-    }
-
-    const [code, ...comment] = line.split('//');
-
-    return code + chalk.reset(chalk.grey('//' + comment.join('//')));
-  });
-
-  if (textLines[textLines.length - 1] === '') {
-    textLines.pop();
+  for (const line of prettyErrorContext(note)) {
+    console.error(line);
   }
-
-  // Add a line of context before and after
-  const ctxFirstLine = Math.max(0, note.pos.first_line - 2);
-  const ctxLastLine = Math.min(note.pos.last_line + 1, textLines.length);
-
-  const numWidth = Math.max(3, 1 + (ctxLastLine + 1).toString().length);
-
-  function lineNoStr(n: number): string {
-    let numStr = n.toString();
-
-    while (numStr.length < numWidth) {
-      numStr = ' ' + numStr;
-    }
-
-    numStr += ' ';
-
-    return `${chalk.reset(chalk.bgMagenta.bold.green(numStr))} `;
-  }
-
-  let lineNoSpaces = '';
-
-  while (lineNoSpaces.length < numWidth) {
-    lineNoSpaces += ' ';
-  }
-
-  lineNoSpaces += ' ';
-  lineNoSpaces = chalk.bgMagenta(lineNoSpaces);
-
-  if (ctxFirstLine === 0) {
-    console.error(chalk.reset(chalk.cyan(`${lineNoSpaces} func {`)));
-  }
-
-  const lines = textLines.slice(ctxFirstLine, ctxLastLine).map((line, i) => {
-    const lineNo = ctxFirstLine + i + 1;
-
-    function addLevelColor(str: string): string {
-      if (str.indexOf('//') !== -1) {
-        const [code, ...comment] = str.split('//');
-        return addLevelColor(code) + '//' + comment.join('//');
-      }
-
-      switch (note.level) {
-        case 'error': {
-          return chalk.reset(chalk.red(str));
-        }
-
-        case 'warning': {
-          return chalk.reset(chalk.yellow(str));
-        }
-
-        case 'info': {
-          return chalk.reset(chalk.blue(str));
-        }
-      }
-    }
-
-    if (lineNo === note.pos.first_line && lineNo === note.pos.last_line) {
-      line = (
-        line.slice(0, note.pos.first_column) +
-        addLevelColor(line.slice(
-          note.pos.first_column,
-          note.pos.last_column + 1,
-        )) +
-        line.slice(note.pos.last_column + 1)
-      );
-    } else if (lineNo === note.pos.first_line) {
-      line = (
-        line.slice(0, note.pos.first_column) +
-        addLevelColor(line.slice(note.pos.first_column))
-      );
-    } else if (lineNo === note.pos.last_line) {
-      line = (
-        addLevelColor(line.slice(0, note.pos.last_column + 1)) +
-        line.slice(note.pos.last_column + 1)
-      );
-    } else if (note.pos.first_line < lineNo && lineNo < note.pos.last_line) {
-      line = addLevelColor(line);
-    }
-
-    if (lineNo === note.pos.first_line) {
-      line += [
-        ' ',
-        chalk.reset(chalk.cyan('<')),
-        ' ',
-        addLevelColor(note.level),
-        chalk.reset(chalk.cyan(':')),
-        ' ',
-        note.message,
-      ].join('');
-    }
-
-    line = `${lineNoStr(lineNo)}  ${line}`;
-
-    return line;
-  }).join('\n');
-
-  console.error(lines);
-
-  if (ctxLastLine === textLines.length) {
-    console.error(chalk.reset(chalk.cyan(`${lineNoSpaces} }`)));
-  }
-
-  console.error();
 }
