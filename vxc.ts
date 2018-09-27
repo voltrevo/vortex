@@ -201,14 +201,18 @@ const inputs: ({ type: 'file', name: string } | string)[] = [];
   setTimeout(() => { throw e; });
 });
 
+function prettyLocation(note: Note & { file: string }) {
+  return `${note.file}:${formatLocation(note.pos)}:`;
+}
+
 function compactPrint(note: Note & { file: string }) {
   console.error(colorize(
-    `${note.file}:${formatLocation(note.pos)}: ${note.level}: ${note.message}`
+    `${prettyLocation(note)} ${note.level}: ${note.message}`
   ));
 }
 
 function prettyPrint(note: Note & { file: string, text: string }) {
-  compactPrint(note);
+  console.error(colorize(prettyLocation(note)));
 
   function lineNoStr(n: number): string {
     const numWidth = note.pos.last_line.toString().length;
@@ -219,7 +223,7 @@ function prettyPrint(note: Note & { file: string, text: string }) {
       numStr = ' ' + numStr;
     }
 
-    return `${chalk.reset(chalk.green(numStr))}${chalk.cyan(':')}`;
+    return `${chalk.reset(chalk.green(numStr))}${chalk.reset(chalk.cyan(':'))}`;
   }
 
   const textLines = note.text.split('\n');
@@ -277,6 +281,18 @@ function prettyPrint(note: Note & { file: string, text: string }) {
       );
     } else if (note.pos.first_line < lineNo && lineNo < note.pos.last_line) {
       line = addLevelColor(line);
+    }
+
+    if (lineNo === note.pos.first_line) {
+      line += [
+        ' ',
+        chalk.reset(chalk.cyan('<')),
+        ' ',
+        addLevelColor(note.level),
+        chalk.reset(chalk.cyan(':')),
+        ' ',
+        note.message,
+      ].join('');
     }
 
     return `${lineNoStr(lineNo)} ${line}`;
