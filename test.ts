@@ -3,6 +3,7 @@ import { spawnSync } from 'child_process';
 
 import colorize from './colorize';
 import compile from './compile';
+import prettyErrorContext from './prettyErrorContext';
 
 const files = (spawnSync('git', ['ls-files'])
   .stdout
@@ -90,10 +91,17 @@ for (const file of files) {
           `${nn} ${level}s but only ${nt} tag${nt > 1 ? 's' : ''}`
         );
 
-        log.error(
-          `${file}:${lineNo}: ${wording}:\n` +
-          levelNotes.map(n => `  ${n.message}`).join('\n') + '\n'
-        );
+        log.error(`${file}:${lineNo}: ${wording}:`);
+
+        for (const note of levelNotes) {
+          for (const prettyLine of prettyErrorContext({
+            file,
+            text: fileText,
+            ...note
+          })) {
+            console.error(prettyLine);
+          }
+        }
       }
     }
   }
