@@ -214,18 +214,6 @@ function compactPrint(note: Note & { file: string }) {
 function prettyPrint(note: Note & { file: string, text: string }) {
   console.error(colorize(prettyLocation(note)));
 
-  const numWidth = note.pos.last_line.toString().length;
-
-  function lineNoStr(n: number): string {
-    let numStr = n.toString();
-
-    while (numStr.length < numWidth) {
-      numStr = ' ' + numStr;
-    }
-
-    return `${chalk.reset(chalk.green(numStr))}${chalk.reset(chalk.cyan(':'))}`;
-  }
-
   const textLines = note.text.split('\n');
 
   if (textLines[textLines.length - 1] === '') {
@@ -236,27 +224,28 @@ function prettyPrint(note: Note & { file: string, text: string }) {
   const ctxFirstLine = Math.max(0, note.pos.first_line - 2);
   const ctxLastLine = Math.min(note.pos.last_line + 1, textLines.length);
 
-  const maxLineLength = textLines.slice(ctxFirstLine, ctxLastLine).reduce(
-    (acc, line) => Math.max(acc, line.length),
-    0
-  );
+  const numWidth = (ctxLastLine + 1).toString().length;
 
-  let boundary = '';
+  function lineNoStr(n: number): string {
+    let numStr = n.toString();
 
-  while (boundary.length < numWidth) {
-    boundary += ' ';
+    while (numStr.length < numWidth) {
+      numStr = ' ' + numStr;
+    }
+
+    return `${chalk.reset(chalk.green(numStr))} `;
   }
 
-  boundary += ':.';
+  let lineNoSpaces = '';
 
-  for (let i = 0; i < maxLineLength; i++) {
-    boundary += '.';
+  while (lineNoSpaces.length < numWidth) {
+    lineNoSpaces += ' ';
   }
 
-  boundary = chalk.reset(chalk.cyan(boundary));
+  lineNoSpaces += ' ';
 
   if (ctxFirstLine === 0) {
-    console.error(boundary.replace(':', '.'));
+    console.error(chalk.reset(chalk.cyan(`${lineNoSpaces}func {`)));
   }
 
   const lines = textLines.slice(ctxFirstLine, ctxLastLine).map((line, i) => {
@@ -318,7 +307,7 @@ function prettyPrint(note: Note & { file: string, text: string }) {
       ].join('');
     }
 
-    line = `${lineNoStr(lineNo)} ${line}`;
+    line = `${lineNoStr(lineNo)}  ${line}`;
 
     return line;
   }).join('\n');
@@ -326,7 +315,7 @@ function prettyPrint(note: Note & { file: string, text: string }) {
   console.error(lines);
 
   if (ctxLastLine === textLines.length) {
-    console.error(boundary);
+    console.error(chalk.reset(chalk.cyan(`${lineNoSpaces}}`)));
   }
 
   console.error();
