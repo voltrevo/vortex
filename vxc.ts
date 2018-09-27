@@ -233,7 +233,9 @@ function prettyPrint(note: Note & { file: string, text: string }) {
       numStr = ' ' + numStr;
     }
 
-    return `${chalk.reset(chalk.green(numStr))} `;
+    numStr += ' ';
+
+    return `${chalk.reset(chalk.bgMagenta.bold.green(numStr))} `;
   }
 
   let lineNoSpaces = '';
@@ -243,9 +245,10 @@ function prettyPrint(note: Note & { file: string, text: string }) {
   }
 
   lineNoSpaces += ' ';
+  lineNoSpaces = chalk.bgMagenta(lineNoSpaces);
 
   if (ctxFirstLine === 0) {
-    console.error(chalk.reset(chalk.cyan(`${lineNoSpaces}func {`)));
+    console.error(chalk.reset(chalk.cyan(`${lineNoSpaces} func {`)));
   }
 
   const lines = textLines.slice(ctxFirstLine, ctxLastLine).map((line, i) => {
@@ -315,7 +318,7 @@ function prettyPrint(note: Note & { file: string, text: string }) {
   console.error(lines);
 
   if (ctxLastLine === textLines.length) {
-    console.error(chalk.reset(chalk.cyan(`${lineNoSpaces}}`)));
+    console.error(chalk.reset(chalk.cyan(`${lineNoSpaces} }`)));
   }
 
   console.error();
