@@ -155,13 +155,13 @@ const inputs: ({ type: 'file', name: string } | string)[] = [];
       switch (format.value) {
         case 'pretty': {
           // TODO: Make this better
-          prettyPrint({ file, ...note });
+          prettyPrint({ file, text, ...note });
 
           break;
         }
 
         case 'compact': {
-          prettyPrint({ file, ...note });
+          compactPrint({ file, ...note });
 
           break;
         }
@@ -195,8 +195,20 @@ const inputs: ({ type: 'file', name: string } | string)[] = [];
   setTimeout(() => { throw e; });
 });
 
-function prettyPrint(note: Note & { file: string }) {
+function compactPrint(note: Note & { file: string }) {
   console.error(colorize(
     `${note.file}:${formatLocation(note.pos)}: ${note.level}: ${note.message}`
   ));
+}
+
+function prettyPrint(note: Note & { file: string, text: string }) {
+  compactPrint(note);
+
+  const lines = note.text.split('\n').slice(
+    note.pos.first_line - 1,
+    note.pos.last_line
+  ).map(line => `  ${line}`).join('\n');
+
+  console.error(lines);
+  console.error();
 }
