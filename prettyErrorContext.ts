@@ -46,10 +46,10 @@ export default function prettyErrorContext(
   }
 
   lineNoSpaces += ' ';
-  lineNoSpaces = chalk.bgMagenta(lineNoSpaces);
+  lineNoSpaces = chalk.reset(chalk.bgMagenta(lineNoSpaces));
 
   if (ctxFirstLine === 0) {
-    output.push(chalk.reset(chalk.cyan(`${lineNoSpaces} func {`)));
+    output.push(lineNoSpaces + chalk.reset(chalk.cyan(' func {')));
   }
 
   const lines = textLines.slice(ctxFirstLine, ctxLastLine).map((line, i) => {
@@ -99,15 +99,17 @@ export default function prettyErrorContext(
       line = addLevelColor(line);
     }
 
-    if (lineNo === note.pos.first_line) {
+    if (lineNo === note.pos.last_line) {
+      let spacer = '';
+      const len = Math.min(note.pos.first_column, note.pos.last_column);
+
+      while (spacer.length < len) {
+        spacer += ' ';
+      }
+
       line += [
-        ' ',
-        chalk.reset(chalk.cyan('<')),
-        ' ',
-        addLevelColor(note.level),
-        chalk.reset(chalk.cyan(':')),
-        ' ',
-        note.message,
+        `\n${lineNoSpaces}   ${spacer}`,
+        addLevelColor('^') + ' ' + note.message,
       ].join('');
     }
 
@@ -119,7 +121,7 @@ export default function prettyErrorContext(
   output.push(...lines);
 
   if (ctxLastLine === textLines.length) {
-    output.push(chalk.reset(chalk.cyan(`${lineNoSpaces} }`)));
+    output.push(lineNoSpaces + chalk.reset(chalk.cyan(' }')));
   }
 
   output.push('');

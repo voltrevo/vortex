@@ -211,7 +211,7 @@ function compactPrint(note: Note & { file: string }) {
 }
 
 function prettyPrint(note: Note & { file: string, text: string }) {
-  console.error(colorize(prettyLocation(note)));
+  console.error(colorize(`${prettyLocation(note)} ${note.level}:`));
 
   for (const line of prettyErrorContext(note)) {
     console.error(line);
