@@ -224,7 +224,7 @@ function prettyPrint(note: Note & { file: string, text: string }) {
   const ctxFirstLine = Math.max(0, note.pos.first_line - 2);
   const ctxLastLine = Math.min(note.pos.last_line + 1, textLines.length);
 
-  const numWidth = (ctxLastLine + 1).toString().length;
+  const numWidth = Math.max(3, (ctxLastLine + 1).toString().length);
 
   function lineNoStr(n: number): string {
     let numStr = n.toString();
