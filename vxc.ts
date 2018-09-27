@@ -1,6 +1,8 @@
 import * as fs from 'fs';
 import * as minimist from 'minimist';
 
+import chalk from 'chalk';
+
 import colorize from './colorize';
 import { default as compile, Note } from './compile';
 import formatLocation from './formatLocation';
@@ -151,6 +153,10 @@ const inputs: ({ type: 'file', name: string } | string)[] = [];
 
     const notes = compile(text);
 
+    if (format.value === 'pretty' && notes.length > 0) {
+      console.log();
+    }
+
     for (const note of notes) {
       switch (format.value) {
         case 'pretty': {
@@ -204,10 +210,70 @@ function compactPrint(note: Note & { file: string }) {
 function prettyPrint(note: Note & { file: string, text: string }) {
   compactPrint(note);
 
+  function lineNoStr(n: number): string {
+    const numWidth = note.pos.last_line.toString().length;
+
+    let numStr = n.toString();
+
+    while (numStr.length < numWidth) {
+      numStr = ' ' + numStr;
+    }
+
+    return `${chalk.reset(chalk.green(numStr))}${chalk.cyan(':')}`;
+  }
+
   const lines = note.text.split('\n').slice(
     note.pos.first_line - 1,
     note.pos.last_line
-  ).map(line => `  ${line}`).join('\n');
+  ).map((line, i) => {
+    const lineNo = note.pos.first_line + i;
+
+    function addLevelColor(str: string): string {
+      if (str.indexOf('//') !== -1) {
+        const [code, ...comment] = str.split('//');
+        return addLevelColor(code) + '//' + comment.join('//');
+      }
+
+      switch (note.level) {
+        case 'error': {
+          return chalk.reset(chalk.red(str));
+        }
+
+        case 'warning': {
+          return chalk.reset(chalk.yellow(str));
+        }
+
+        case 'info': {
+          return chalk.reset(chalk.blue(str));
+        }
+      }
+    }
+
+    if (lineNo === note.pos.first_line && lineNo === note.pos.last_line) {
+      line = (
+        line.slice(0, note.pos.first_column) +
+        addLevelColor(line.slice(
+          note.pos.first_column,
+          note.pos.last_column + 1,
+        )) +
+        line.slice(note.pos.last_column + 1)
+      );
+    } else if (lineNo === note.pos.first_line) {
+      line = (
+        line.slice(0, note.pos.first_column) +
+        addLevelColor(line.slice(note.pos.first_column))
+      );
+    } else if (lineNo === note.pos.last_line) {
+      line = (
+        addLevelColor(line.slice(0, note.pos.last_column + 1)) +
+        line.slice(note.pos.last_column + 1)
+      );
+    } else {
+      line = addLevelColor(line);
+    }
+
+    return `${lineNoStr(lineNo)} ${line}`;
+  }).join('\n');
 
   console.error(lines);
   console.error();
