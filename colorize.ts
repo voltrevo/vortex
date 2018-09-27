@@ -29,12 +29,16 @@ export default function colorize(line: string) {
   const location = grab(line, /^[\w.\/]+(:[LC0-9-]+)?(:[LC0-9-]+)?:/);
   const file = grab(location, /^[^:]+/);
   const lineNo = grab(location, /[LC0-9-]+/);
-  const column = grab(location.split(lineNo || '@invalid')[1] || '', /[LC0-9-]+/);
+
+  const column = grab(
+    location.split(lineNo || '@invalid').slice(1).join(lineNo || '@invalid'),
+    /[LC0-9-]+/
+  );
 
   const rest = (
     !location ?
     line :
-    line.split(location)[1]
+    line.split(location).slice(1).join(location)
   );
 
   return (
