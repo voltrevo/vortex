@@ -35,7 +35,7 @@ export function validate(program: Syntax.Program): Note[] {
       // TODO: Dear typescript: why do I need el.t === 'e' again here?
       if (el.t === 'e' && !isValidTopExpression(el.v)) {
         subIssues.push(Note(el, 'error',
-          'Statement has no effect'
+          'Statement has no effect' // TODO: better wording
         ));
       }
     } else if (el.t === 'func') {
@@ -176,29 +176,45 @@ function validateScope(elements: ScopeItem[]): Note[] {
             return [];
 
           case 'class': {
-            return [
-              push,
-              {
-                t: 'CreateVariable' as 'CreateVariable',
-                v: el.v.name,
-              },
-              ...Syntax.Children(el),
-              pop,
-            ];
+            const res: ScopeItem[] = [{
+              t: 'CreateVariable' as 'CreateVariable',
+              v: el.v.name,
+            }];
+
+            if (el.topExp) {
+              res.push(push);
+            } else {
+              res.unshift(push);
+            }
+
+            res.push(...Syntax.Children(el));
+            res.push(pop);
+
+            return res;
           }
 
           case 'func': {
+            const res: ScopeItem[] = [];
+
             const [name] = el.v;
 
-            return [
-              push,
-              ...(name === null ? [] : [{
+            if (name !== null) {
+              res.push({
                 t: 'CreateVariable' as 'CreateVariable',
                 v: name,
-              }]),
-              ...Syntax.Children(el),
-              pop,
-            ];
+              });
+            }
+
+            if (el.topExp) {
+              res.push(push);
+            } else {
+              res.unshift(push);
+            }
+
+            res.push(...Syntax.Children(el));
+            res.push(pop);
+
+            return res;
           }
 
           case 'block':

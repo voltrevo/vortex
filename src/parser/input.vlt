@@ -91,12 +91,12 @@ class Point { // #warning
   }
 };
 
-class Error: string { // #warning TODO: lift scope
+class Error: string {
   :message() { return this; }
 };
 
 return func factorial(n: i32) => switch {
-  (n < 0) => Error('Invalid input'); // #error #error TODO
+  (n < 0) => Error('Invalid input'); // #error TODO
   (n == 0) => 1; // #error TODO
   (true) => n * factorial(n - 1); // #error #error #error TODO
 };

@@ -98,7 +98,7 @@ export namespace Syntax {
   export type NUMBER = { t: 'NUMBER', v: string, p: Pos };
   export type STRING = { t: 'STRING', v: string, p: Pos };
 
-  export type Expression = (
+  export type Expression = { topExp?: true } & (
     NUMBER |
     Identifier |
     STRING |

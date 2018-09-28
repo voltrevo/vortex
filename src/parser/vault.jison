@@ -119,7 +119,7 @@ statement
        statements?
     */
     : e ';'
-        {$$ = { t: 'e', v: $1, p: @$ }}
+        {$$ = { t: 'e', v: { ...$1, topExp: true }, p: @$ }}
     | RETURN e ';'
         {$$ = { t: 'return', v: $2, p: @$ }}
     | BREAK ';'
