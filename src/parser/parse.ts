@@ -104,34 +104,34 @@ export namespace Syntax {
     STRING |
     { t: NonSpecialBinaryOperator, v: [Expression, Expression], p: Pos } |
     { t: UnaryOperator, v: Expression, p: Pos } |
-    { t: '.', v: [Expression, string], p: Pos } |
+    { t: '.', v: [Expression, Identifier], p: Pos } |
     { t: 'functionCall', v: [Expression, Expression[]], p: Pos } |
-    { t: 'methodCall', v: [Expression, string, Expression[]], p: Pos } |
+    { t: 'methodCall', v: [Expression, Identifier, Expression[]], p: Pos } |
     { t: 'subscript', v: [Expression, Expression], p: Pos } |
     {
       t: 'func',
       v: [
-        string | null,
-        { t: 'arg', v: [string, string | null], p: Pos }[],
+        Identifier | null,
+        { t: 'arg', v: [Identifier, Identifier | null], p: Pos }[],
         Block | ExpressionBody
       ],
       p: Pos,
     } |
     { t: 'array', v: Expression[], p: Pos } |
-    { t: 'object', v: [string, Expression][], p: Pos } |
+    { t: 'object', v: [Identifier, Expression][], p: Pos } |
     {
       t: 'class',
       v: {
-        name: string,
+        name: Identifier,
         type: (
-          ['members', [string, string][]] |
-          ['whole', string] |
+          ['members', [Identifier, Identifier][]] |
+          ['whole', Identifier] |
           never
         ),
         methods: {
           modifiers: 'static'[]
-          name: string,
-          args: { t: 'arg', v: [string, string | null], p: Pos }[],
+          name: Identifier,
+          args: { t: 'arg', v: [Identifier, Identifier | null], p: Pos }[],
           body: Block | ExpressionBody,
           p: Pos,
         }[],
@@ -165,15 +165,15 @@ export namespace Syntax {
   export type ForStatement = { t: 'for', v: [ForTypeClause, Block], p: Pos };
 
   export type Import = (
-    { t: 'import', v: [string], p: Pos } |
-    { t: 'import', v: [string, STRING], p: Pos } |
+    { t: 'import', v: [Identifier], p: Pos } |
+    { t: 'import', v: [Identifier, STRING], p: Pos } |
     never
   );
 
   export type ForTypeClause = (
     ['loop'] |
     ['condition', Expression] |
-    ['of', string, Expression] |
+    ['of', Identifier, Expression] |
     ['traditional', Expression, Expression, Expression] |
     never
   );

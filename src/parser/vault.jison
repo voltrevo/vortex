@@ -144,7 +144,7 @@ for
         {$$ = { t: 'for', v: [['loop'], $2], p: @$ }}
     | FOR '(' e ')' block
         {$$ = { t: 'for', v: [['condition', $3], $5], p: @$ }}
-    | FOR '(' IDENTIFIER OF e ')' block
+    | FOR '(' identifier OF e ')' block
         {$$ = { t: 'for', v: [['of', $3, $5], $7], p: @$ }}
     | FOR '(' e ';' e ';' e ')' block
         {$$ = { t: 'for', v: [['traditional', $3, $5, $7], $9], p: @$ }}
@@ -156,9 +156,9 @@ string
     ;
 
 import
-    : IMPORT IDENTIFIER
+    : IMPORT identifier
         {$$ = { t: 'import', v: [$2], p: @$ }}
-    | IMPORT IDENTIFIER FROM string
+    | IMPORT identifier FROM string
         {$$ = { t: 'import', v: [$2, $4], p: @$ }}
     ;
 
@@ -172,7 +172,7 @@ func
 funcName
     :
         {$$ = null}
-    | IDENTIFIER
+    | identifier
         {$$ = $1}
     ;
 
@@ -192,9 +192,9 @@ nonEmptyArgs
     ;
 
 arg
-    : IDENTIFIER
+    : identifier
         {$$ = { t: 'arg', v: [$1, null], p: @$ }}
-    | IDENTIFIER ':' IDENTIFIER
+    | identifier ':' identifier
         {$$ = { t: 'arg', v: [$1, $3], p: @$ }}
     ;
 
@@ -282,20 +282,20 @@ e
         {$$ = { t: 'unary -', v: $2, p: @$ }}
     | '+' e %prec UPLUS
         {$$ = { t: 'unary +', v: $2, p: @$ }}
-    | e '.' IDENTIFIER
+    | e '.' identifier
         {$$ = { t: '.', v: [$1, $3], p: @$ }}
     | '(' e ')'
         {$$ = $2;}
     | e '(' eList ')'
         {$$ = { t: 'functionCall', v: [$1, $3], p: @$ }}
-    | e ':' IDENTIFIER '(' eList ')'
+    | e ':' identifier '(' eList ')'
         {$$ = { t: 'methodCall', v: [$1, $3, $5], p: @$ }}
     | e '[' e ']'
         {$$ = { t: 'subscript', v: [$1, $3], p: @$ }}
     | NUMBER
         {$$ = { t: 'NUMBER', v: $1, p: @$ }}
-    | IDENTIFIER
-        {$$ = { t: 'IDENTIFIER', v: $1, p: @$ }}
+    | identifier
+        {$$ = $1}
     | string
         {$$ = $1}
     | func
@@ -312,10 +312,15 @@ e
         {$$ = $1}
     ;
 
+identifier
+    : IDENTIFIER
+        {$$ = { t: 'IDENTIFIER', v: $1, p: @$ }}
+    ;
+
 atomicExp
     : NUMBER
         {$$ = $1}
-    | IDENTIFIER
+    | identifier
         {$$ = $1}
     | string
         {$$ = $1}
@@ -381,20 +386,20 @@ propListNonEmpty
     ;
 
 prop
-    : IDENTIFIER ':' e
+    : identifier ':' e
         {$$ = [$1, $3]}
     ;
 
 class
-    : CLASS IDENTIFIER '{' classMembers classMethods '}'
+    : CLASS identifier '{' classMembers classMethods '}'
         {$$ = { t: 'class', v: { name: $2, type: ['members', $4], methods: $5 }, p: @$ }}
-    | CLASS IDENTIFIER classType '{' classMethods '}'
+    | CLASS identifier classType '{' classMethods '}'
         {$$ = { t: 'class', v: { name: $2, type: ['whole', $3], methods: $5 }, p: @$ }}
     ;
 
-/* TODO: proper type parsing (just IDENTIFIER right now) */
+/* TODO: proper type parsing (just identifier right now) */
 classType
-    : ':' IDENTIFIER
+    : ':' identifier
         {$$ = $2}
     ;
 
@@ -406,7 +411,7 @@ classMembers
     ;
 
 classMember
-    : IDENTIFIER ':' IDENTIFIER ';'
+    : identifier ':' identifier ';'
         {$$ = [$1, $3]}
     ;
 
@@ -418,7 +423,7 @@ classMethods
     ;
 
 classMethod
-    : classMethodModifiers ':' IDENTIFIER '(' args ')' classMethodBody
+    : classMethodModifiers ':' identifier '(' args ')' classMethodBody
         {$$ = { modifiers: $1, name: $3, args: $5, body: $7, p: @$ }}
     ;
 
