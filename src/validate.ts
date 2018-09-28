@@ -175,8 +175,36 @@ function validateScope(elements: ScopeItem[]): Note[] {
           case 'IDENTIFIER-assignTarget':
             return [];
 
-          case 'class':
-          case 'func':
+          case 'class': {
+            return [
+              push,
+              /* TODO
+              {
+                t: 'CreateVariable',
+                v: el.v.name,
+              },
+             */
+              ...Syntax.Children(el),
+              pop,
+            ];
+          }
+
+          case 'func': {
+            // const [name] = el.v;
+
+            return [
+              push,
+              /* TODO
+              ...(name === null ? [] : [{
+                t: 'CreateVariable',
+                v: name,
+              }]),
+               */
+              ...Syntax.Children(el),
+              pop,
+            ];
+          }
+
           case 'block':
           case 'for':
             return [push, ...Syntax.Children(el), pop];
