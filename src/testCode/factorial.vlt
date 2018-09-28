@@ -1,7 +1,7 @@
 import Error from 'core';
 
 return func factorial(n: i32) => switch {
-  (n < 0) => Error('Invalid input'); // #error #error TODO variables from import and params
-  (n == 0) => 1; // #error TODO
-  (true) => n * factorial(n - 1); // #error #error #error TODO true is not an identifier
+  (n < 0) => Error('Invalid input'); // #error TODO variables from import and params
+  (n == 0) => 1;
+  (true) => n * factorial(n - 1); // #error TODO true is not an identifier
 };

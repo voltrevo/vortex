@@ -112,7 +112,7 @@ export namespace Syntax {
       t: 'func',
       v: [
         Identifier | null,
-        { t: 'arg', v: [Identifier, Identifier | null], p: Pos }[],
+        Arg[],
         Block | ExpressionBody
       ],
       p: Pos,
@@ -131,7 +131,7 @@ export namespace Syntax {
         methods: {
           modifiers: 'static'[]
           name: Identifier,
-          args: { t: 'arg', v: [Identifier, Identifier | null], p: Pos }[],
+          args: Arg[],
           body: Block | ExpressionBody,
           p: Pos,
         }[],
@@ -178,14 +178,21 @@ export namespace Syntax {
     never
   );
 
+  export type Arg = {
+    t: 'arg',
+    v: [Identifier, Identifier | null],
+    p: Pos
+  };
+
   // TODO: Need a separate .t for program (body? distinguish between body that
   // needs a return and block that doesn't.)
   export type Program = Block;
 
-  export type Element = Block | Statement | Expression;
+  export type Element = Block | Statement | Expression | Arg;
 
   export function Children(el: Element): Element[] {
     switch (el.t) {
+      case 'arg': { return []; }
       case 'block': { return el.v; }
       case 'array': { return el.v; }
 
@@ -296,8 +303,8 @@ export namespace Syntax {
 
       case 'func': {
         // TODO: Identifiers
-        const [, , body] = el.v;
-        return body.t === 'block' ? [body] : [body.v];
+        const [, args, body] = el.v;
+        return body.t === 'block' ? [...args, body] : [...args, body.v];
       }
 
       case 'class': {
@@ -341,6 +348,7 @@ export namespace Syntax {
 
   export function expressionFromElement(el: Element): Expression | null {
     switch (el.t) {
+      case 'arg':
       case 'e':
       case 'return':
       case 'break':

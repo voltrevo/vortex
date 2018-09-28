@@ -217,6 +217,13 @@ function validateScope(elements: ScopeItem[]): Note[] {
             return res;
           }
 
+          case 'arg': {
+            return [{
+              t: 'CreateVariable',
+              v: el.v[0],
+            }];
+          }
+
           case 'block':
           case 'for':
             return [push, ...Syntax.Children(el), pop];
