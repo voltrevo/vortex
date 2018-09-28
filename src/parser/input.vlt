@@ -3,7 +3,7 @@ import math from 'core';
 import factorial;
 
 // main doesn't have special significance
-func main(n: i32) {
+func main(n: i32) { // #warning
   2 ** 3 ** 4; // #error
   1 + 1; // #error
 
@@ -19,24 +19,24 @@ func main(n: i32) {
   return multiplyAdd(n, n, n) + 'hello'; // #error #error #error #error TODO special function scoping
 };
 
-func multiplyAdd(a: i32, b: i32, c: i32) => a * b + c; // #error #error #error TODO
+func multiplyAdd(a: i32, b: i32, c: i32) => a * b + c; // #error #error #error #warning TODO
 
-func methodCalls() {
+func methodCalls() { // #warning
   return getObject():method():method2(); // #error
 };
 
-func arrays() {
+func arrays() { // #warning
   literal := [1, 2, 3, 2 + 2];
   subscript := literal[blah()]; // #error #warning #error
 };
 
-func objects() {
+func objects() { // #warning
   x := { a: 1, b: 1 };
   x.b++;
   x.c := 3; // #error
 };
 
-func immutableStuff() {
+func immutableStuff() { // #warning
   x := { a: 0, b: 0 };
   y := x;
 
@@ -46,7 +46,7 @@ func immutableStuff() {
   x == { a: 1, b: 0 }; // #error #error
 };
 
-func trailing() {
+func trailing() { // #warning
   { // #error
     a: 1,
     b: 2,
@@ -70,7 +70,7 @@ func() {}; // #error
 
 foo := func() {}; // #error #warning
 
-func loops() {
+func loops() { // #warning
   for {
     infiniteLoop := 1; // #warning
   }
@@ -80,7 +80,7 @@ func loops() {
   for (i of values) {} // #error #error #error
 };
 
-class Point {
+class Point { // #warning
   x: f64;
   y: f64;
 
@@ -91,12 +91,12 @@ class Point {
   }
 };
 
-class Error: string {
+class Error: string { // #warning TODO: lift scope
   :message() { return this; }
 };
 
 return func factorial(n: i32) => switch {
   (n < 0) => Error('Invalid input'); // #error #error TODO
   (n == 0) => 1; // #error TODO
-  (true) => n * factorial(n - 1); // #error #error #error #error TODO
+  (true) => n * factorial(n - 1); // #error #error #error TODO
 };

@@ -1,1 +1,1 @@
-return class WrongName {}; // TODO name doesn't match file TODO todo priority
+return class WrongName {}; // #warning TODO: lift scope, ok due to return TODO name doesn't match file TODO todo priority

@@ -1,4 +1,4 @@
-func foo() {
+func foo() { // #warning
   sum := 0;
 
   i := 0;
@@ -15,4 +15,4 @@ func foo() {
   return sum; // TODO this is unreachable
 };
 
-return 12345;
+return foo(); // #error TODO: need to lift scope of foo

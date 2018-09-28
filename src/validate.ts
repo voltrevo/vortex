@@ -178,28 +178,24 @@ function validateScope(elements: ScopeItem[]): Note[] {
           case 'class': {
             return [
               push,
-              /* TODO
               {
-                t: 'CreateVariable',
+                t: 'CreateVariable' as 'CreateVariable',
                 v: el.v.name,
               },
-             */
               ...Syntax.Children(el),
               pop,
             ];
           }
 
           case 'func': {
-            // const [name] = el.v;
+            const [name] = el.v;
 
             return [
               push,
-              /* TODO
               ...(name === null ? [] : [{
-                t: 'CreateVariable',
+                t: 'CreateVariable' as 'CreateVariable',
                 v: name,
               }]),
-               */
               ...Syntax.Children(el),
               pop,
             ];
