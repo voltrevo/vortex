@@ -1,5 +1,5 @@
-import formatLocation from '../formatLocation';
-import { Syntax } from '../parser/parse';
+import formatLocation from './formatLocation';
+import { Syntax } from './parser/parse';
 
 type Note = {
   message: string;

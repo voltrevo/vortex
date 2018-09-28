@@ -1,5 +1,5 @@
 import { Syntax, parse } from './parser/parse';
-import { validate } from './validation/validate';
+import { validate } from './validate';
 
 export type Note = {
   message: string;
