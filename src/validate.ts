@@ -1,23 +1,6 @@
 import formatLocation from './formatLocation';
+import Note from './Note';
 import { Syntax } from './parser/parse';
-
-type Note = {
-  message: string;
-  level: 'error' | 'warning' | 'info';
-  pos: Syntax.Pos,
-};
-
-function Note(
-  el: { p: Syntax.Pos },
-  level: 'error' | 'warning' | 'info',
-  message: string
-) {
-  return {
-    message,
-    level,
-    pos: el.p,
-  };
-}
 
 export function validate(program: Syntax.Program): Note[] {
   const issues: Note[] = [];

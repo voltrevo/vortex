@@ -1,10 +1,17 @@
 import chalk from 'chalk';
 
-import { Note } from './compile';
+import Note from './Note';
 
 export default function prettyErrorContext(
   note: Note & { file: string, text: string },
 ): string[] {
+  // TODO: Why does typescript require this?
+  const pos = note.pos;
+
+  if (!pos) {
+    return [];
+  }
+
   const output = [];
 
   const textLines = note.text.split('\n').map(line => {
@@ -22,8 +29,8 @@ export default function prettyErrorContext(
   }
 
   // Add a line of context before and after
-  const ctxFirstLine = Math.max(0, note.pos.first_line - 2);
-  const ctxLastLine = Math.min(note.pos.last_line + 1, textLines.length);
+  const ctxFirstLine = Math.max(0, pos.first_line - 2);
+  const ctxLastLine = Math.min(pos.last_line + 1, textLines.length);
 
   const numWidth = Math.max(3, 1 + (ctxLastLine + 1).toString().length);
 
@@ -76,39 +83,39 @@ export default function prettyErrorContext(
       }
     }
 
-    if (lineNo === note.pos.first_line && lineNo === note.pos.last_line) {
+    if (lineNo === pos.first_line && lineNo === pos.last_line) {
       line = (
-        line.slice(0, note.pos.first_column) +
+        line.slice(0, pos.first_column) +
         addLevelColor(line.slice(
-          note.pos.first_column,
-          note.pos.last_column + 1,
+          pos.first_column,
+          pos.last_column + 1,
         )) +
-        line.slice(note.pos.last_column + 1)
+        line.slice(pos.last_column + 1)
       );
-    } else if (lineNo === note.pos.first_line) {
+    } else if (lineNo === pos.first_line) {
       line = (
-        line.slice(0, note.pos.first_column) +
-        addLevelColor(line.slice(note.pos.first_column))
+        line.slice(0, pos.first_column) +
+        addLevelColor(line.slice(pos.first_column))
       );
-    } else if (lineNo === note.pos.last_line) {
+    } else if (lineNo === pos.last_line) {
       line = (
-        addLevelColor(line.slice(0, note.pos.last_column + 1)) +
-        line.slice(note.pos.last_column + 1)
+        addLevelColor(line.slice(0, pos.last_column + 1)) +
+        line.slice(pos.last_column + 1)
       );
-    } else if (note.pos.first_line < lineNo && lineNo < note.pos.last_line) {
+    } else if (pos.first_line < lineNo && lineNo < pos.last_line) {
       line = addLevelColor(line);
     }
 
-    if (lineNo === note.pos.last_line) {
+    if (lineNo === pos.last_line) {
       let spacer = '';
-      const len = Math.min(note.pos.first_column, note.pos.last_column);
+      const len = Math.min(pos.first_column, pos.last_column);
 
       while (spacer.length < len) {
         spacer += ' ';
       }
 
       line += [
-        `\n${lineNoSpaces}   ${spacer}`,
+        `\n${lineNoSpaces}  ${spacer}`,
         addLevelColor('^') + ' ' + note.message,
       ].join('');
     }

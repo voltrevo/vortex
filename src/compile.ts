@@ -1,11 +1,6 @@
+import Note from './Note';
 import { Syntax, parse } from './parser/parse';
 import { validate } from './validate';
-
-export type Note = {
-  message: string;
-  level: 'error' | 'warning' | 'info';
-  pos: Syntax.Pos,
-};
 
 export default function compile(text: string) {
   const notes: Note[] = [];

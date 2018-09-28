@@ -2,9 +2,10 @@ import * as fs from 'fs';
 import * as minimist from 'minimist';
 
 import colorize from './colorize';
-import { default as compile, Note } from './compile';
+import compile from './compile';
 import formatLocation from './formatLocation';
 import getStdin from './getStdin';
+import Note from './Note';
 import prettyErrorContext from './prettyErrorContext';
 
 const args = minimist(process.argv.slice(2));
@@ -150,7 +151,13 @@ const inputs: ({ type: 'file', name: string } | string)[] = [];
 
     const file = typeof input === 'string' ? '(stdin)' : input.name;
 
+    const startTime = Date.now();
     const notes = compile(text);
+    const endTime = Date.now();
+
+    notes.push(Note({}, 'info',
+      `compiled in ${endTime - startTime}ms`
+    ));
 
     if (format.value === 'pretty' && notes.length > 0) {
       console.log();
@@ -178,11 +185,22 @@ const inputs: ({ type: 'file', name: string } | string)[] = [];
         }
 
         case 'vim-ale': {
+          const lines = text.split('\n');
+          const line = lines.length - 1;
+          const column = lines[line].length;
+
+          const pos = note.pos || {
+            first_line: line,
+            last_line: line,
+            first_column: column,
+            last_column: column,
+          };
+
           console.error(JSON.stringify({
-            lnum: note.pos.first_line,
-            end_lnum: note.pos.last_line,
-            col: note.pos.first_column,
-            end_col: note.pos.last_column,
+            lnum: pos.first_line,
+            end_lnum: pos.last_line,
+            col: pos.first_column,
+            end_col: pos.last_column,
             text: note.message,
             type: note.level[0].toUpperCase(),
           }));
@@ -201,6 +219,10 @@ const inputs: ({ type: 'file', name: string } | string)[] = [];
 });
 
 function prettyLocation(note: Note & { file: string }) {
+  if (!note.pos) {
+    return `${note.file}:`;
+  }
+
   return `${note.file}:${formatLocation(note.pos)}:`;
 }
 
@@ -211,6 +233,12 @@ function compactPrint(note: Note & { file: string }) {
 }
 
 function prettyPrint(note: Note & { file: string, text: string }) {
+  if (!note.pos) {
+    compactPrint(note);
+    console.error();
+    return;
+  }
+
   console.error(colorize(`${prettyLocation(note)} ${note.level}:`));
 
   for (const line of prettyErrorContext(note)) {
