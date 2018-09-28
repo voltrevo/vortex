@@ -6,7 +6,7 @@
   "author": "",
   "scripts": {
     "build": "jison src/parser/vault.jison -o $(pwd)/src/parser/vault.js && tsc",
-    "test": "node build/test.js"
+    "test": "node build/src/test.js"
   },
   "license": "unlicensed",
   "dependencies": {},
