@@ -5,10 +5,13 @@ import { Syntax } from './parser/parse';
 type Value = (
   { t: 'string', v: string } |
   { t: 'number', v: number } |
-  { t: 'unknown' } |
-  { t: 'missing' } |
+  { t: 'unknown', v: null } |
+  { t: 'missing', v: null } |
   never
 );
+
+// const unknown = { t: 'unknown' as 'unknown', v: null };
+const missing = { t: 'missing' as 'missing', v: null };
 
 namespace Value {
   export function String(v: Value): string {
@@ -21,47 +24,48 @@ namespace Value {
   }
 }
 
-type ValuePlus = {
+type Context = {
+  scope: Scope<Context>;
   value: Value;
   notes: Note[];
 };
 
-type VInfo = {
-  value: ValuePlus;
-};
-
-export default function interpret(program: Syntax.Program): ValuePlus {
-  let scope = Scope<VInfo>();
-
-  let result: ValuePlus = {
-    value: { t: 'missing' },
+function Context(): Context {
+  return {
+    scope: Scope<Context>(),
+    value: missing,
     notes: [],
   };
+}
+
+export default function interpret(program: Syntax.Program): Context {
+  let context = Context();
 
   for (const statement of program.v) {
     checkNull((() => {
-      // Typescript limitation: value has type `any` below
-      // ... I think this is kindof ok, but it's confusing, generally you
-      // want to avoid the possibility of `any`.
-      let value = null;
-
       switch (statement.t) {
         case 'e': {
-          ({ scope } = evalExpression(scope, statement.v));
+          const ctx = evalExpression(context.scope, statement.v);
+          context.scope = ctx.scope;
+          context.notes.push(...ctx.notes);
           return null;
         }
 
         case 'return': {
-          ({ scope, value } = evalExpression(scope, statement.v));
+          const { scope, value, notes } = evalExpression(
+            context.scope,
+            statement.v
+          );
 
-          value.notes.push(Note(
+          context.scope = scope;
+          context.value = value;
+          context.notes.push(...notes);
+
+          context.notes.push(Note(
             statement,
-            value.value.t === 'missing' ? 'error' : 'info',
-            `Returned ${Value.String(value.value)}`,
+            value.t === 'missing' ? 'error' : 'info',
+            `Returned ${Value.String(value)}`,
           ));
-
-          result.value = value.value;
-          result.notes.push(...value.notes);
 
           return null;
         }
@@ -71,9 +75,9 @@ export default function interpret(program: Syntax.Program): ValuePlus {
         case 'if':
         case 'for':
         case 'import': {
-          result.notes.push(Note(statement, 'warning',
+          context.notes.push(Note(statement, 'warning',
             // TODO: Need to capture more structure in compiler notes
-            `Not implemented: ${statement.t} statement`,
+            `Not implemented: ${statement.t} statement ${new Error().stack}`,
           ));
 
           return null;
@@ -81,68 +85,39 @@ export default function interpret(program: Syntax.Program): ValuePlus {
       }
     })());
 
-    if (result.value !== null) {
-      return result;
+    if (statement.t === 'return') {
+      return context;
     }
   }
 
-  return result;
+  return context;
 }
 
 function evalExpression(
-  scope: Scope<VInfo>,
+  scope: Scope<Context>,
   exp: Syntax.Expression
-): { scope: Scope<VInfo>, value: ValuePlus } {
-  let value: ValuePlus = {
-    value: {
-      t: 'missing'
-    },
-    notes: [],
-  };
+): Context {
+  let { value, notes } = Context();
 
   checkNull((() => {
-    let left = null;
-    let right = null;
-
     switch (exp.t) {
       case 'NUMBER': {
-        value.value = { t: 'number', v: Number(exp.v) };
+        value = { t: 'number', v: Number(exp.v) };
         return null;
       }
 
       case '+': {
-        ({ scope, value: left } = evalExpression(scope, exp.v[0]));
-        ({ scope, value: right } = evalExpression(scope, exp.v[1]));
+        ({ scope, value, notes } = evalSymmetricOperator(
+          { scope, value, notes },
+          exp,
+          (left, right) => {
+            if (left.t === 'number' && right.t === 'number') {
+              return { t: 'number', v: left.v + right.v };
+            }
 
-        value.notes.push(...left.notes, ...right.notes);
-
-        if (left.value.t === 'missing' || right.value.t === 'missing') {
-          value.value = { t: 'missing' };
-          return null;
-        }
-
-        if (left.value.t === 'number' && right.value.t === 'number') {
-          value.value = { t: 'number', v: left.value.v + right.value.v };
-          return null;
-        }
-
-        if (left.value.t !== right.value.t) {
-          value.value = { t: 'missing' };
-
-          value.notes.push(Note(exp, 'error',
-            `Type mismatch: ${left.value.t} + ${right.value.t}`,
-          ));
-
-          return null;
-        }
-
-        value.value = { t: 'missing' };
-
-        value.notes.push(Note(exp, 'error',
-          `Not implemented: ${left.value.t} + ${right.value.t}`,
+            return null;
+          },
         ));
-
-        return null;
       }
 
       case ':=':
@@ -193,7 +168,7 @@ function evalExpression(
       case 'class':
       case 'switch':
       case 'import':
-        value.notes.push(Note(exp, 'warning',
+        notes.push(Note(exp, 'warning',
           `Not implemented: ${exp.t} expression`,
         ));
 
@@ -201,7 +176,54 @@ function evalExpression(
     }
   })());
 
-  return { scope, value };
+  return { scope, value, notes };
+}
+
+function evalSymmetricOperator<T extends {
+  t: string,
+  v: [Syntax.Expression, Syntax.Expression],
+  p: Syntax.Pos
+}>(
+  { scope }: Context,
+  exp: T,
+  combine: (a: Value, b: Value) => Value | null,
+): Context {
+  let value: Value | null = missing;
+  let notes = [] as Note[];
+
+  const left = evalExpression(scope, exp.v[0]);
+  scope = left.scope;
+  const right = evalExpression(scope, exp.v[1]);
+  scope = right.scope;
+
+  notes.push(...left.notes, ...right.notes);
+
+  if (left.value.t === 'missing' || right.value.t === 'missing') {
+    value = missing;
+    return { scope, value, notes };
+  }
+
+  if (left.value.t !== right.value.t) {
+    value = missing;
+
+    notes.push(Note(exp, 'error',
+      `Type mismatch: ${left.value.t} ${exp.t} ${right.value.t}`,
+    ));
+
+    return { scope, value, notes };
+  }
+
+  value = combine(left.value, right.value);
+
+  if (value === null) {
+    notes.push(Note(exp, 'error',
+      `Not implemented: ${left.value.t} + ${right.value.t}`,
+    ));
+
+    value = missing;
+  }
+
+  return { scope, value, notes };
 }
 
 function checkNull(ignored: null) {}
