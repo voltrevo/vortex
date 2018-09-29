@@ -16,7 +16,7 @@ function Scope<T>(): Scope<T> {
 
 namespace Scope {
   export type Variable<T> = {
-    origin: Syntax.Identifier;
+    origin: Syntax.Element;
     data: T;
   };
 
