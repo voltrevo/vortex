@@ -131,6 +131,22 @@ function evalExpression(
         return null;
       }
 
+      case '-': {
+        ({ scope, value, notes } = evalVanillaOperator(
+          { scope, value, notes },
+          exp,
+          (left, right) => {
+            if (left.t === 'number' && right.t === 'number') {
+              return { t: 'number', v: left.v - right.v };
+            }
+
+            return null;
+          },
+        ));
+
+        return null;
+      }
+
       case '*': {
         ({ scope, value, notes } = evalVanillaOperator(
           { scope, value, notes },
@@ -142,12 +158,62 @@ function evalExpression(
 
             // TODO: Implement generic version of this which just requires
             // non-number type to have a + operator
+            // TODO: Possibly configure limit for this behaviour during
+            // analysis?
             if (left.t === 'string' && right.t === 'number') {
               return { t: 'string', v: left.v.repeat(right.v) };
             }
 
             if (left.t === 'number' && right.t === 'string') {
               return { t: 'string', v: right.v.repeat(left.v) };
+            }
+
+            return null;
+          },
+        ));
+
+        return null;
+      }
+
+      case '/': {
+        ({ scope, value, notes } = evalVanillaOperator(
+          { scope, value, notes },
+          exp,
+          (left, right) => {
+            if (left.t === 'number' && right.t === 'number') {
+              return { t: 'number', v: left.v / right.v };
+            }
+
+            return null;
+          },
+        ));
+
+        return null;
+      }
+
+      case '%': {
+        ({ scope, value, notes } = evalVanillaOperator(
+          { scope, value, notes },
+          exp,
+          (left, right) => {
+            if (left.t === 'number' && right.t === 'number') {
+              return { t: 'number', v: left.v % right.v };
+            }
+
+            return null;
+          },
+        ));
+
+        return null;
+      }
+
+      case '**': {
+        ({ scope, value, notes } = evalVanillaOperator(
+          { scope, value, notes },
+          exp,
+          (left, right) => {
+            if (left.t === 'number' && right.t === 'number') {
+              return { t: 'number', v: left.v ** right.v };
             }
 
             return null;
@@ -169,7 +235,6 @@ function evalExpression(
       case '^=':
       case '|=':
       case '=':
-      case '**':
       case '<<':
       case '>>':
       case '<=':
@@ -178,10 +243,6 @@ function evalExpression(
       case '!=':
       case '&&':
       case '||':
-      case '*':
-      case '/':
-      case '%':
-      case '-':
       case '<':
       case '>':
       case '&':
@@ -194,7 +255,6 @@ function evalExpression(
       case 'unary -':
       case 'unary +':
       case 'IDENTIFIER':
-      case 'STRING':
       case '.':
       case 'functionCall':
       case 'methodCall':
