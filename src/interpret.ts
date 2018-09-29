@@ -14,7 +14,7 @@ namespace Value {
   export function String(v: Value): string {
     switch (v.t) {
       case 'string': return JSON.stringify(v.v);
-      case 'number': return v.t.toString();
+      case 'number': return v.v.toString();
       case 'unknown': return '<unknown>';
       case 'missing': return '<missing>';
     }
@@ -73,7 +73,7 @@ export default function interpret(program: Syntax.Program): ValuePlus {
         case 'import': {
           result.notes.push(Note(statement, 'warning',
             // TODO: Need to capture more structure in compiler notes
-            `NotImplemented: ${statement.t} statement`,
+            `Not implemented: ${statement.t} statement`,
           ));
 
           return null;
@@ -101,7 +101,50 @@ function evalExpression(
   };
 
   checkNull((() => {
+    let left = null;
+    let right = null;
+
     switch (exp.t) {
+      case 'NUMBER': {
+        value.value = { t: 'number', v: Number(exp.v) };
+        return null;
+      }
+
+      case '+': {
+        ({ scope, value: left } = evalExpression(scope, exp.v[0]));
+        ({ scope, value: right } = evalExpression(scope, exp.v[1]));
+
+        value.notes.push(...left.notes, ...right.notes);
+
+        if (left.value.t === 'missing' || right.value.t === 'missing') {
+          value.value = { t: 'missing' };
+          return null;
+        }
+
+        if (left.value.t === 'number' && right.value.t === 'number') {
+          value.value = { t: 'number', v: left.value.v + right.value.v };
+          return null;
+        }
+
+        if (left.value.t !== right.value.t) {
+          value.value = { t: 'missing' };
+
+          value.notes.push(Note(exp, 'error',
+            `Type mismatch: ${left.value.t} + ${right.value.t}`,
+          ));
+
+          return null;
+        }
+
+        value.value = { t: 'missing' };
+
+        value.notes.push(Note(exp, 'error',
+          `Not implemented: ${left.value.t} + ${right.value.t}`,
+        ));
+
+        return null;
+      }
+
       case ':=':
       case '+=':
       case '-=':
@@ -127,7 +170,6 @@ function evalExpression(
       case '/':
       case '%':
       case '-':
-      case '+':
       case '<':
       case '>':
       case '&':
@@ -139,7 +181,6 @@ function evalExpression(
       case 'postfix ++':
       case 'unary -':
       case 'unary +':
-      case 'NUMBER':
       case 'IDENTIFIER':
       case 'STRING':
       case '.':
@@ -153,7 +194,7 @@ function evalExpression(
       case 'switch':
       case 'import':
         value.notes.push(Note(exp, 'warning',
-          `NotImplemented: ${exp.t} expression`,
+          `Not implemented: ${exp.t} expression`,
         ));
 
         return null;
