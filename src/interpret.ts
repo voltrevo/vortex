@@ -77,7 +77,7 @@ export default function interpret(program: Syntax.Program): Context {
         case 'import': {
           context.notes.push(Note(statement, 'warning',
             // TODO: Need to capture more structure in compiler notes
-            `Not implemented: ${statement.t} statement ${new Error().stack}`,
+            `Not implemented: ${statement.t} statement`,
           ));
 
           return null;
@@ -112,7 +112,7 @@ function evalExpression(
       }
 
       case '+': {
-        ({ scope, value, notes } = evalSymmetricOperator(
+        ({ scope, value, notes } = evalVanillaOperator(
           { scope, value, notes },
           exp,
           (left, right) => {
@@ -122,6 +122,32 @@ function evalExpression(
 
             if (left.t === 'string' && right.t === 'string') {
               return { t: 'string', v: left.v + right.v };
+            }
+
+            return null;
+          },
+        ));
+
+        return null;
+      }
+
+      case '*': {
+        ({ scope, value, notes } = evalVanillaOperator(
+          { scope, value, notes },
+          exp,
+          (left, right) => {
+            if (left.t === 'number' && right.t === 'number') {
+              return { t: 'number', v: left.v * right.v };
+            }
+
+            // TODO: Implement generic version of this which just requires
+            // non-number type to have a + operator
+            if (left.t === 'string' && right.t === 'number') {
+              return { t: 'string', v: left.v.repeat(right.v) };
+            }
+
+            if (left.t === 'number' && right.t === 'string') {
+              return { t: 'string', v: right.v.repeat(left.v) };
             }
 
             return null;
@@ -190,7 +216,7 @@ function evalExpression(
   return { scope, value, notes };
 }
 
-function evalSymmetricOperator<T extends {
+function evalVanillaOperator<T extends {
   t: string,
   v: [Syntax.Expression, Syntax.Expression],
   p: Syntax.Pos
@@ -214,21 +240,11 @@ function evalSymmetricOperator<T extends {
     return { scope, value, notes };
   }
 
-  if (left.value.t !== right.value.t) {
-    value = missing;
-
-    notes.push(Note(exp, 'error',
-      `Type mismatch: ${left.value.t} ${exp.t} ${right.value.t}`,
-    ));
-
-    return { scope, value, notes };
-  }
-
   value = combine(left.value, right.value);
 
   if (value === null) {
     notes.push(Note(exp, 'error',
-      `Not implemented: ${left.value.t} ${exp.t} ${right.value.t}`,
+      `Type mismatch: ${left.value.t} ${exp.t} ${right.value.t}`,
     ));
 
     value = missing;
