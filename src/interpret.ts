@@ -111,6 +111,44 @@ function evalExpression(
         return null;
       }
 
+      case 'IDENTIFIER': {
+        const entry = Scope.get(scope, exp.v);
+
+        if (entry === null) {
+          value = missing;
+          return null;
+        }
+
+        value = entry.data.value;
+        return null;
+      }
+
+      case ':=': {
+        const left = exp.v[0];
+
+        const right = evalExpression(scope, exp.v[1]);
+        notes.push(...right.notes);
+
+        if (left.t !== 'IDENTIFIER') {
+          notes.push(Note(exp, 'error',
+            'NotImplemented: non-identifier lvalues'
+          ));
+
+          return null;
+        }
+
+        scope = Scope.add<Context>(scope, left.v, {
+          origin: left,
+          data: {
+            scope,
+            value: right.value,
+            notes: [],
+          },
+        });
+
+        return null;
+      }
+
       case '+': {
         ({ scope, value, notes } = evalVanillaOperator(
           { scope, value, notes },

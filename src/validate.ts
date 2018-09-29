@@ -186,6 +186,7 @@ function validateScope(elements: ScopeItem[]): Note[] {
 
           case ':=':
             let children: ScopeItem[] = Syntax.Children(el);
+            children = [...children];
             const left = el.v[0];
 
             if (left.t === 'IDENTIFIER') {
