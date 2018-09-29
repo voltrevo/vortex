@@ -112,7 +112,12 @@ function validateScope(elements: ScopeItem[]): Note[] {
   elements.push(pop);
   const issues: Note[] = [];
 
-  let scope: Scope | null = { parent: null, variables: {} };
+  type VInfo = {
+    used: boolean;
+    assigned: boolean;
+  };
+
+  let scope: Scope<VInfo> | null = { parent: null, variables: {} };
 
   for (const element of elements) {
     const items: ScopeItem[] = traverse<ScopeItem, ScopeItem>(
@@ -248,16 +253,13 @@ function validateScope(elements: ScopeItem[]): Note[] {
             `Attempt to create this variable again at ${loc}`
           ));
         } else {
-          scope = {
-            parent: scope.parent,
-            variables: { ...scope.variables,
-              [newVariableName]: {
-                origin: item.v,
-                used: false,
-                assigned: false,
-              },
+          scope = Scope.add(scope, newVariableName, {
+            origin: item.v,
+            data: {
+              used: false,
+              assigned: false,
             },
-          };
+          });
         }
       } else if (item.t === 'Push') {
         scope = {
@@ -268,8 +270,8 @@ function validateScope(elements: ScopeItem[]): Note[] {
         for (const varName of Object.keys(scope.variables)) {
           const variable = scope.variables[varName];
 
-          if (!variable.used) {
-            if (!variable.assigned) {
+          if (!variable.data.used) {
+            if (!variable.data.assigned) {
               issues.push(Note(variable.origin, 'warning',
                 `Variable ${varName} is not used`
               ));

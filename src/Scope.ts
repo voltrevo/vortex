@@ -1,13 +1,13 @@
 import { Syntax } from './parser/parse';
 
-type Scope = {
-  parent: Scope | null;
+type Scope<T> = {
+  parent: Scope<T> | null;
   variables: {
-    [name: string]: Scope.Variable;
+    [name: string]: Scope.Variable<T>;
   };
 };
 
-function Scope(): Scope {
+function Scope<T>(): Scope<T> {
   return {
     parent: null,
     variables: {},
@@ -15,36 +15,56 @@ function Scope(): Scope {
 }
 
 namespace Scope {
-  export type Variable = {
+  export type Variable<T> = {
     origin: Syntax.Identifier;
-    used: boolean;
-    assigned: boolean;
+    data: T;
   };
 
-  export function get(s: Scope, name: string): Variable | null {
+  export function add<T>(
+    s: Scope<T>,
+    name: string,
+    variable: Variable<T>,
+  ): Scope<T> {
+    return {
+      parent: s.parent,
+      variables: { ...s.variables,
+        [name]: variable,
+      },
+    };
+  }
+
+  export function get<T>(
+    s: Scope<T>,
+    name: string
+  ): Variable<T> | null {
     return (
       (s.variables[name] || null) ||
       s.parent && get(s.parent, name)
     );
   }
 
-  export function set(
-    s: Scope,
+  export function set<T>(
+    s: Scope<T>,
     name: string,
-    mods: Partial<Variable>,
-  ): Scope {
+    mods: Partial<T>,
+  ): Scope<T> {
     const curr = s.variables[name];
 
     if (curr) {
-      // vault concept version:
-      // return s.variables[name] += mods; // TODO hmm += or custom operator?
-      // or
-      // return s.variables[name] = { ...s.variables[name], ...mods };
       return {
         parent: s.parent,
         variables: {
           ...s.variables,
-          [name]: { ...curr, ...mods }
+          // any needed because of this Typescript limitation:
+          // https://github.com/Microsoft/TypeScript/issues/20510
+          // 'working as intended' they say...
+          [name]: {
+            ...curr,
+            data: {
+              ...(curr as any).data,
+              ...(mods as any)
+            }
+          }
         }
       };
     }
