@@ -106,6 +106,11 @@ function evalExpression(
         return null;
       }
 
+      case 'STRING': {
+        value = { t: 'string', v: exp.v.substring(1, exp.v.length - 1) };
+        return null;
+      }
+
       case '+': {
         ({ scope, value, notes } = evalSymmetricOperator(
           { scope, value, notes },
@@ -115,9 +120,15 @@ function evalExpression(
               return { t: 'number', v: left.v + right.v };
             }
 
+            if (left.t === 'string' && right.t === 'string') {
+              return { t: 'string', v: left.v + right.v };
+            }
+
             return null;
           },
         ));
+
+        return null;
       }
 
       case ':=':
@@ -217,7 +228,7 @@ function evalSymmetricOperator<T extends {
 
   if (value === null) {
     notes.push(Note(exp, 'error',
-      `Not implemented: ${left.value.t} + ${right.value.t}`,
+      `Not implemented: ${left.value.t} ${exp.t} ${right.value.t}`,
     ));
 
     value = missing;
