@@ -1,6 +1,8 @@
 import formatLocation from './formatLocation';
 import Note from './Note';
 import { Syntax } from './parser/parse';
+import Scope from './Scope';
+import traverse from './traverse';
 
 export function validate(program: Syntax.Program): Note[] {
   const issues: Note[] = [];
@@ -109,57 +111,6 @@ type ScopeItem = (
 function validateScope(elements: ScopeItem[]): Note[] {
   elements.push(pop);
   const issues: Note[] = [];
-
-  type Variable = {
-    origin: Syntax.Identifier;
-    used: boolean;
-    assigned: boolean;
-  };
-
-  type Scope = {
-    parent: Scope | null;
-    variables: {
-      [name: string]: Variable;
-    };
-  };
-
-  function lookup(s: Scope, name: string): Variable | null {
-    return (
-      (s.variables[name] || null) ||
-      s.parent && lookup(s.parent, name)
-    );
-  }
-
-  function modifyVariable(
-    s: Scope,
-    name: string,
-    mods: Partial<Variable>
-  ): Scope {
-    const curr = s.variables[name];
-
-    if (curr) {
-      // vault concept version:
-      // return s.variables[name] += mods; // TODO hmm += or custom operator?
-      // or
-      // return s.variables[name] = { ...s.variables[name], ...mods };
-      return {
-        parent: s.parent,
-        variables: {
-          ...s.variables,
-          [name]: { ...curr, ...mods }
-        }
-      };
-    }
-
-    if (!s.parent) {
-      throw new Error('Tried to modify variable that doesn\'t exist');
-    }
-
-    return {
-      parent: modifyVariable(s.parent, name, mods),
-      variables: s.variables,
-    };
-  }
 
   let scope: Scope | null = { parent: null, variables: {} };
 
@@ -284,7 +235,7 @@ function validateScope(elements: ScopeItem[]): Note[] {
 
       if (item.t === 'CreateVariable') {
         const newVariableName = item.v.v;
-        const preExisting = lookup(scope, newVariableName);
+        const preExisting = Scope.get(scope, newVariableName);
 
         if (preExisting) {
           issues.push(Note(item.v, 'error',
@@ -333,7 +284,7 @@ function validateScope(elements: ScopeItem[]): Note[] {
 
         scope = scope.parent;
       } else if (item.t === 'IDENTIFIER') {
-        const scopeEntry = lookup(scope, item.v);
+        const scopeEntry = Scope.get(scope, item.v);
 
         if (!scopeEntry) {
           // TODO: Look for typos
@@ -342,10 +293,10 @@ function validateScope(elements: ScopeItem[]): Note[] {
           ));
         } else {
           // imagine... scope[item.v].used = true... :-D
-          scope = modifyVariable(scope, item.v, { used: true });
+          scope = Scope.set(scope, item.v, { used: true });
         }
       } else if (item.t === 'IDENTIFIER-assignTarget') {
-        const scopeEntry = lookup(scope, item.v);
+        const scopeEntry = Scope.get(scope, item.v);
 
         if (!scopeEntry) {
           // TODO: Look for typos
@@ -353,7 +304,7 @@ function validateScope(elements: ScopeItem[]): Note[] {
             `Variable ${item.v} does not exist`
           ));
         } else {
-          scope = modifyVariable(scope, item.v, { assigned: true });
+          scope = Scope.set(scope, item.v, { assigned: true });
         }
       }
     }
@@ -510,20 +461,4 @@ function hasReturn(block: Syntax.Block) {
   }
 
   return false;
-}
-
-function traverse<E, T>(
-  element: E,
-  visit: (el: E) => T[],
-  Children: (el: E) => E[],
-): T[] {
-  const results: T[] = [];
-
-  for (const child of Children(element)) {
-    results.push(...traverse(child, visit, Children));
-  }
-
-  results.push(...visit(element));
-
-  return results;
 }
