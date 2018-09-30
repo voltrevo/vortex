@@ -2,6 +2,7 @@ import Note from './Note';
 import Scope from './Scope';
 import { Syntax } from './parser/parse';
 
+// TODO: Types start with capitals
 type Value = (
   { t: 'string', v: string } |
   { t: 'number', v: number } |
@@ -356,7 +357,37 @@ function evalExpression(
       }
 
       case 'unary -':
-      case 'unary +':
+      case 'unary +': {
+        const right = evalExpression(scope, exp.v);
+        notes.push(...right.notes);
+        const validValue = Value.getValidOrNull(right.value);
+
+        if (!validValue) {
+          value = right.value;
+          return null;
+        }
+
+        if (validValue.t === 'number') {
+          value = {
+            t: 'number',
+            v: (
+              exp.t === 'unary -' ?
+              -validValue.v :
+              +validValue.v
+            )
+          };
+
+          return null;
+        }
+
+        notes.push(Note(exp, 'error',
+          `Type error: ${exp.t.slice(6)}${right.value.t}`,
+        ));
+
+        value = missing;
+
+        return null;
+      }
 
       case 'prefix --':
       case 'postfix --':
