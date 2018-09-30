@@ -75,4 +75,4 @@ autocmd FileType * set nosmartindent|set nocindent
 hi diffAdded ctermfg=84
 hi diffRemoved ctermfg=203
 
-au BufRead,BufNewFile *.vlt set filetype=vault
+au BufRead,BufNewFile *.vx set filetype=vortex

@@ -1,7 +1,7 @@
 " Author: Andrew Morris <voltrevo@gmail.com>
-" Description: check vault files, based on rust ale_linter
+" Description: check vortex files, based on rust ale_linter
 
-function! ale_linters#vault#check#HandleErrors(buffer, lines) abort
+function! ale_linters#vortex#check#HandleErrors(buffer, lines) abort
     let l:output = []
 
     for l:errorline in a:lines
@@ -22,14 +22,14 @@ function! ale_linters#vault#check#HandleErrors(buffer, lines) abort
     return l:output
 endfunction
 
-function! ale_linters#vault#check#CheckCommand(buffer) abort
-  return 'vault-check'
+function! ale_linters#vortex#check#CheckCommand(buffer) abort
+  return 'vortex-check'
 endfunction
 
-call ale#linter#Define('vault', {
-\   'name': 'vault-check',
-\   'executable': 'vault-check',
-\   'command_callback': 'ale_linters#vault#check#CheckCommand',
-\   'callback': 'ale_linters#vault#check#HandleErrors',
+call ale#linter#Define('vortex', {
+\   'name': 'vortex-check',
+\   'executable': 'vortex-check',
+\   'command_callback': 'ale_linters#vortex#check#CheckCommand',
+\   'callback': 'ale_linters#vortex#check#HandleErrors',
 \   'output_stream': 'stderr',
 \})

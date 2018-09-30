@@ -45,7 +45,7 @@ const log = {
 let ok = true;
 
 for (const file of files) {
-  if (!/\.vlt$/.test(file)) {
+  if (!/\.vx$/.test(file)) {
     continue;
   }
 
@@ -139,7 +139,7 @@ function compareArrays(a: any[], b: any[]) {
 function TodoSortPriority(line: string) {
   return [
     /^TODOs:/.test(line) ? 0 : 1,
-    /^[^:]*\.vlt:/.test(line) ? 0 : 1,
+    /^[^:]*\.vx:/.test(line) ? 0 : 1,
     line,
   ];
 }

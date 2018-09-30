@@ -1,6 +1,6 @@
 #!/bin/bash -e
 
-jisonStdout=$(npx jison vault.jison)
+jisonStdout=$(npx jison vortex.jison)
 
 if [ ${#jisonStdout} -gt 0 ]; then
   echo "$jisonStdout" 1>&2
@@ -10,5 +10,5 @@ fi
 echo "import { Syntax } from './parse';" >testProgram.ts
 echo >>testProgram.ts
 echo "export const testProgram: Syntax.Program =" >>testProgram.ts
-DEPTH=100 PRINT=1 node vault.js input.vlt >>testProgram.ts
+DEPTH=100 PRINT=1 node vortex.js input.vx >>testProgram.ts
 echo ";" >>testProgram.ts

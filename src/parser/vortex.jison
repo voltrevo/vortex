@@ -1,4 +1,4 @@
-/* description: Parses the vault language and generates the syntax tree. */
+/* description: Parses the vortex language and generates the syntax tree. */
 
 /* lexical grammar */
 %lex

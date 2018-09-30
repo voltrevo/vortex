@@ -5,7 +5,7 @@
   "main": "index.js",
   "author": "",
   "scripts": {
-    "build": "rm -r build && jison src/parser/vault.jison -o $(pwd)/src/parser/vault.js && tsc",
+    "build": "rm -r build && jison src/parser/vortex.jison -o $(pwd)/src/parser/vortex.js && tsc",
     "test": "node build/src/test.js"
   },
   "license": "unlicensed",

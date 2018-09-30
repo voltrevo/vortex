@@ -1,6 +1,6 @@
 declare function require(name: string): any;
 
-const { parser: parserUntyped } = require('./vault.js');
+const { parser: parserUntyped } = require('./vortex.js');
 
 export namespace Syntax {
   export type CreationOperator = ':=';

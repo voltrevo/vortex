@@ -1,3 +1,3 @@
 #!/bin/bash
 
-docker build -t vault-workspace workspace && docker run -w /root/docker-vault -it --rm -v $(pwd):/root/docker-vault vault-workspace /bin/zsh
+docker build -t vortex-workspace workspace && docker run -w /root/docker-vortex -it --rm -v $(pwd):/root/docker-vortex vortex-workspace /bin/zsh

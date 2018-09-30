@@ -18,6 +18,6 @@ nvm install node
 mkdir -p ~/.vim/ale_linters
 mkdir -p ~/.vim/ftplugin
 mkdir -p ~/.vim/syntax
-ln -s /root/docker-vault/src/vim/ale_linters/vault ~/.vim/ale_linters/vault
-ln -s /root/docker-vault/src/vim/ftplugin/vault.vim ~/.vim/ftplugin/vault.vim
-ln -s /root/docker-vault/src/vim/syntax/vault.vim ~/.vim/syntax/vault.vim
+ln -s /root/docker-vortex/src/vim/ale_linters/vortex ~/.vim/ale_linters/vortex
+ln -s /root/docker-vortex/src/vim/ftplugin/vortex.vim ~/.vim/ftplugin/vortex.vim
+ln -s /root/docker-vortex/src/vim/syntax/vortex.vim ~/.vim/syntax/vortex.vim
