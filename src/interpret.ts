@@ -251,7 +251,28 @@ function evalExpression(
       }
 
       case '&&':
-      case '||':
+      case '||': {
+        const op: (a: boolean, b: boolean) => boolean = (() => {
+          switch (exp.t) {
+            case '&&': return (a: boolean, b: boolean) => a && b;
+            case '||': return (a: boolean, b: boolean) => a || b;
+          }
+        })();
+
+        ({ scope, value, notes } = evalVanillaOperator(
+          { scope, value, notes },
+          exp,
+          (left, right) => {
+            if (left.t === 'bool' && right.t === 'bool') {
+              return { t: 'bool', v: op(left.v, right.v) };
+            }
+
+            return null;
+          },
+        ));
+
+        return null;
+      }
 
       case '<=':
       case '>=':
