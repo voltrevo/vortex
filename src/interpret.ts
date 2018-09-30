@@ -12,7 +12,15 @@ type Value = (
   never
 );
 
-// const unknown = { t: 'unknown' as 'unknown', v: null };
+type ValidValue = (
+  { t: 'string', v: string } |
+  { t: 'number', v: number } |
+  { t: 'bool', v: boolean } |
+  { t: 'null', v: null } |
+  never
+);
+
+const unknown = { t: 'unknown' as 'unknown', v: null };
 const missing = { t: 'missing' as 'missing', v: null };
 
 namespace Value {
@@ -24,6 +32,20 @@ namespace Value {
       case 'null': return 'null';
       case 'unknown': return '<unknown>';
       case 'missing': return '<missing>';
+    }
+  }
+
+  export function getValidOrNull(v: Value): ValidValue | null {
+    switch (v.t) {
+      case 'string':
+      case 'number':
+      case 'bool':
+      case 'null':
+        return v;
+
+      case 'unknown':
+      case 'missing':
+        return null;
     }
   }
 }
@@ -145,7 +167,7 @@ function evalExpression(
 
         if (left.t !== 'IDENTIFIER') {
           notes.push(Note(exp, 'error',
-            'NotImplemented: non-identifier lvalues'
+            'NotImplemented: non-identifier lvalues',
           ));
 
           return null;
@@ -274,13 +296,64 @@ function evalExpression(
         return null;
       }
 
+      case '==':
+      case '!=': {
+        ({ scope, value, notes } = evalVanillaOperator(
+          { scope, value, notes },
+          exp,
+          (left, right) => {
+            if (left.t !== right.t) {
+              // ==, != require types to match
+              return null;
+            }
+
+            return {
+              t: 'bool',
+              v: exp.t === '==' ? left.v === right.v : left.v !== right.v,
+            };
+          },
+        ));
+
+        return null;
+      }
+
       case '<=':
       case '>=':
       case '<':
-      case '>':
+      case '>': {
+        type V = string | number | boolean;
+        const op: (a: V, b: V) => boolean = (() => {
+          switch (exp.t) {
+            case '<=': return (a: V, b: V) => a <= b;
+            case '>=': return (a: V, b: V) => a >= b;
+            case '<': return (a: V, b: V) => a < b;
+            case '>': return (a: V, b: V) => a > b;
+          }
+        })();
 
-      case '==':
-      case '!=':
+        ({ scope, value, notes } = evalVanillaOperator(
+          { scope, value, notes },
+          exp,
+          (left, right) => {
+            if (left.t !== right.t) {
+              // ==, != require types to match
+              return null;
+            }
+
+            const v = (
+              // Special case: typescript doesn't allow comparison with nulls,
+              // but we want to allow it when both sides are null
+              left.t === 'null' || right.t === 'null' ?
+              op(left.v as any, right.v as any) :
+              op(left.v, right.v)
+            );
+
+            return { t: 'bool', v };
+          },
+        ));
+
+        return null;
+      }
 
       case 'unary -':
       case 'unary +':
@@ -330,7 +403,7 @@ function evalVanillaOperator<T extends {
 }>(
   { scope }: Context,
   exp: T,
-  combine: (a: Value, b: Value) => Value | null,
+  combine: (a: ValidValue, b: ValidValue) => Value | null,
 ): Context {
   let value: Value | null = missing;
   let notes = [] as Note[];
@@ -347,11 +420,16 @@ function evalVanillaOperator<T extends {
     return { scope, value, notes };
   }
 
+  if (left.value.t === 'unknown' || right.value.t === 'unknown') {
+    value = unknown;
+    return { scope, value, notes };
+  }
+
   value = combine(left.value, right.value);
 
   if (value === null) {
     notes.push(Note(exp, 'error',
-      `Type mismatch: ${left.value.t} ${exp.t} ${right.value.t}`,
+      `Type error: ${left.value.t} ${exp.t} ${right.value.t}`,
     ));
 
     value = missing;
