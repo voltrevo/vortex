@@ -123,9 +123,13 @@ function interpretInContext(
               }
             } else {
               context.notes.push(Note(cond, 'error',
-                `Type error: Invalid bad condition type: ${validCond.t}`,
+                `Type error: Non-bool condition: ${validCond.t}`,
               ));
+
+              context.value = unknown;
             }
+          } else {
+            context.value = unknown;
           }
 
           return null;
