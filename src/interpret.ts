@@ -183,22 +183,6 @@ function evalExpression(
         return null;
       }
 
-      case '-': {
-        ({ scope, value, notes } = evalVanillaOperator(
-          { scope, value, notes },
-          exp,
-          (left, right) => {
-            if (left.t === 'number' && right.t === 'number') {
-              return { t: 'number', v: left.v - right.v };
-            }
-
-            return null;
-          },
-        ));
-
-        return null;
-      }
-
       case '*': {
         ({ scope, value, notes } = evalVanillaOperator(
           { scope, value, notes },
@@ -227,85 +211,63 @@ function evalExpression(
         return null;
       }
 
-      case '/': {
-        ({ scope, value, notes } = evalVanillaOperator(
-          { scope, value, notes },
-          exp,
-          (left, right) => {
-            if (left.t === 'number' && right.t === 'number') {
-              return { t: 'number', v: left.v / right.v };
-            }
-
-            return null;
-          },
-        ));
-
-        return null;
-      }
-
-      case '%': {
-        ({ scope, value, notes } = evalVanillaOperator(
-          { scope, value, notes },
-          exp,
-          (left, right) => {
-            if (left.t === 'number' && right.t === 'number') {
-              return { t: 'number', v: left.v % right.v };
-            }
-
-            return null;
-          },
-        ));
-
-        return null;
-      }
-
-      case '**': {
-        ({ scope, value, notes } = evalVanillaOperator(
-          { scope, value, notes },
-          exp,
-          (left, right) => {
-            if (left.t === 'number' && right.t === 'number') {
-              return { t: 'number', v: left.v ** right.v };
-            }
-
-            return null;
-          },
-        ));
-
-        return null;
-      }
-
-      case ':=':
-      case '+=':
-      case '-=':
-      case '*=':
-      case '/=':
-      case '%=':
-      case '<<=':
-      case '>>=':
-      case '&=':
-      case '^=':
-      case '|=':
-      case '=':
+      // Number only operators (for now)
+      case '-':
       case '<<':
       case '>>':
-      case '<=':
-      case '>=':
-      case '==':
-      case '!=':
-      case '&&':
-      case '||':
-      case '<':
-      case '>':
       case '&':
       case '^':
       case '|':
+      case '/':
+      case '%':
+      case '**': {
+        const op: (a: number, b: number) => number = (() => {
+          switch (exp.t) {
+            case '-': return (a: number, b: number) => a - b;
+            case '<<': return (a: number, b: number) => a << b;
+            case '>>': return (a: number, b: number) => a >> b;
+            case '&': return (a: number, b: number) => a & b;
+            case '^': return (a: number, b: number) => a ^ b;
+            case '|': return (a: number, b: number) => a | b;
+            case '/': return (a: number, b: number) => a / b;
+            case '%': return (a: number, b: number) => a % b;
+            case '**': return (a: number, b: number) => a ** b;
+          }
+        })();
+
+        ({ scope, value, notes } = evalVanillaOperator(
+          { scope, value, notes },
+          exp,
+          (left, right) => {
+            if (left.t === 'number' && right.t === 'number') {
+              return { t: 'number', v: op(left.v, right.v) };
+            }
+
+            return null;
+          },
+        ));
+
+        return null;
+      }
+
+      case '&&':
+      case '||':
+
+      case '<=':
+      case '>=':
+      case '<':
+      case '>':
+
+      case '==':
+      case '!=':
+
+      case 'unary -':
+      case 'unary +':
+
       case 'prefix --':
       case 'postfix --':
       case 'prefix ++':
       case 'postfix ++':
-      case 'unary -':
-      case 'unary +':
       case 'IDENTIFIER':
       case '.':
       case 'functionCall':
@@ -317,6 +279,18 @@ function evalExpression(
       case 'class':
       case 'switch':
       case 'import':
+
+      case '+=':
+      case '-=':
+      case '*=':
+      case '/=':
+      case '%=':
+      case '<<=':
+      case '>>=':
+      case '&=':
+      case '^=':
+      case '|=':
+      case '=':
         notes.push(Note(exp, 'warning',
           `Not implemented: ${exp.t} expression`,
         ));
