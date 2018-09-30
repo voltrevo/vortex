@@ -21,6 +21,9 @@
 'class'               return 'CLASS'
 'static'              return 'STATIC'
 'switch'              return 'SWITCH'
+'true'                return 'TRUE'
+'false'               return 'FALSE'
+'null'                return 'NULL'
 [a-zA-Z]\w*           return 'IDENTIFIER'
 ";"                   return ';'
 [0-9]+("."[0-9]+)?\b  return 'NUMBER'
@@ -294,6 +297,10 @@ e
         {$$ = { t: 'subscript', v: [$1, $3], p: @$ }}
     | NUMBER
         {$$ = { t: 'NUMBER', v: $1, p: @$ }}
+    | bool
+        {$$ = $1}
+    | NULL
+        {$$ = { t: 'NUMBER', v: null, p: @$ }}
     | identifier
         {$$ = $1}
     | string
@@ -317,8 +324,19 @@ identifier
         {$$ = { t: 'IDENTIFIER', v: $1, p: @$ }}
     ;
 
+bool
+    : TRUE
+        {$$ = { t: 'BOOL', v: true, p: @$ } }
+    | FALSE
+        {$$ = { t: 'BOOL', v: false, p: @$ } }
+    ;
+
 atomicExp
     : NUMBER
+        {$$ = $1}
+    | bool
+        {$$ = $1}
+    | NULL
         {$$ = $1}
     | identifier
         {$$ = $1}

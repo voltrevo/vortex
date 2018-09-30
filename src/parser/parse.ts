@@ -96,11 +96,15 @@ export namespace Syntax {
 
   export type Identifier = { t: 'IDENTIFIER', v: string, p: Pos };
   export type NUMBER = { t: 'NUMBER', v: string, p: Pos };
+  export type BOOL = { t: 'BOOL', v: boolean, p: Pos };
+  export type NULL = { t: 'NULL', v: null, p: Pos };
   export type STRING = { t: 'STRING', v: string, p: Pos };
 
   export type Expression = { topExp?: true } & (
-    NUMBER |
     Identifier |
+    NUMBER |
+    BOOL |
+    NULL |
     STRING |
     { t: NonSpecialBinaryOperator, v: [Expression, Expression], p: Pos } |
     { t: UnaryOperator, v: Expression, p: Pos } |
@@ -281,8 +285,10 @@ export namespace Syntax {
         return fromString ? [fromString] : [];
       }
 
-      case 'NUMBER': { return []; }
       case 'IDENTIFIER': { return []; }
+      case 'NUMBER': { return []; }
+      case 'BOOL': { return []; }
+      case 'NULL': { return []; }
       case 'STRING': { return []; }
 
       case 'switch': {

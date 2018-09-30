@@ -5,6 +5,8 @@ import { Syntax } from './parser/parse';
 type Value = (
   { t: 'string', v: string } |
   { t: 'number', v: number } |
+  { t: 'bool', v: boolean } |
+  { t: 'null', v: null } |
   { t: 'unknown', v: null } |
   { t: 'missing', v: null } |
   never
@@ -18,6 +20,8 @@ namespace Value {
     switch (v.t) {
       case 'string': return JSON.stringify(v.v);
       case 'number': return v.v.toString();
+      case 'bool': return v.v.toString();
+      case 'null': return 'null';
       case 'unknown': return '<unknown>';
       case 'missing': return '<missing>';
     }
@@ -103,6 +107,16 @@ function evalExpression(
     switch (exp.t) {
       case 'NUMBER': {
         value = { t: 'number', v: Number(exp.v) };
+        return null;
+      }
+
+      case 'BOOL': {
+        value = { t: 'bool', v: exp.v };
+        return null;
+      }
+
+      case 'NULL': {
+        value = { t: 'null', v: exp.v };
         return null;
       }
 
