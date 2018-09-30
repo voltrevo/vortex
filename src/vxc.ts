@@ -185,15 +185,11 @@ const inputs: ({ type: 'file', name: string } | string)[] = [];
         }
 
         case 'vim-ale': {
-          const lines = text.split('\n');
-          const line = lines.length - 1;
-          const column = lines[line].length;
-
           const pos = note.pos || {
-            first_line: line,
-            last_line: line,
-            first_column: column,
-            last_column: column,
+            first_line: 1,
+            last_line: 1,
+            first_column: 1,
+            last_column: 1,
           };
 
           console.error(JSON.stringify({

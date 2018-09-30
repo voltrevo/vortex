@@ -65,9 +65,14 @@ function Context(): Context {
   };
 }
 
-export default function interpret(program: Syntax.Program): Context {
-  let context = Context();
+export default function interpret(program: Syntax.Program) {
+  return interpretInContext(Context(), program);
+}
 
+function interpretInContext(
+  context: Context,
+  program: Syntax.Program
+): Context {
   for (const statement of program.v) {
     checkNull((() => {
       switch (statement.t) {
@@ -97,9 +102,37 @@ export default function interpret(program: Syntax.Program): Context {
           return null;
         }
 
+        case 'if': {
+          const [cond, block] = statement.v;
+          const condCtx = evalExpression(context.scope, cond);
+          context.notes.push(...condCtx.notes);
+
+          const validCond = Value.getValidOrNull(condCtx.value);
+
+          if (validCond) {
+            if (validCond.t === 'bool') {
+              if (validCond.v) {
+                context.scope = { parent: context.scope, variables: {} };
+                context = interpretInContext(context, block);
+
+                if (context.scope.parent === null) {
+                  throw new Error('This should not be possible');
+                }
+
+                context.scope = context.scope.parent;
+              }
+            } else {
+              context.notes.push(Note(cond, 'error',
+                `Type error: Invalid bad condition type: ${validCond.t}`,
+              ));
+            }
+          }
+
+          return null;
+        }
+
         case 'break':
         case 'continue':
-        case 'if':
         case 'for':
         case 'import': {
           context.notes.push(Note(statement, 'warning',
@@ -112,7 +145,7 @@ export default function interpret(program: Syntax.Program): Context {
       }
     })());
 
-    if (statement.t === 'return') {
+    if (context.value.t !== 'missing') {
       return context;
     }
   }
@@ -393,7 +426,6 @@ function evalExpression(
       case 'postfix --':
       case 'prefix ++':
       case 'postfix ++':
-      case 'IDENTIFIER':
       case '.':
       case 'functionCall':
       case 'methodCall':
