@@ -1,4 +1,4 @@
-import interpret from './interpret';
+import analyze from './analyze';
 import Note from './Note';
 import { Syntax, parse } from './parser/parse';
 import { validate } from './validate';
@@ -33,8 +33,8 @@ export default function compile(text: string) {
 
   if (program) {
     notes.push(...validate(program));
-    const { notes: interpretationNotes } = interpret(program);
-    notes.push(...interpretationNotes);
+    const { notes: analysisNotes } = analyze(program);
+    notes.push(...analysisNotes);
   }
 
   return notes;

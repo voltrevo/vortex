@@ -65,11 +65,11 @@ function Context(): Context {
   };
 }
 
-export default function interpret(program: Syntax.Program) {
-  return interpretInContext(Context(), program);
+export default function analyze(program: Syntax.Program) {
+  return analyzeInContext(Context(), program);
 }
 
-function interpretInContext(
+function analyzeInContext(
   context: Context,
   program: Syntax.Program
 ): Context {
@@ -113,7 +113,7 @@ function interpretInContext(
             if (validCond.t === 'bool') {
               if (validCond.v) {
                 context.scope = { parent: context.scope, variables: {} };
-                context = interpretInContext(context, block);
+                context = analyzeInContext(context, block);
 
                 if (context.scope.parent === null) {
                   throw new Error('This should not be possible');
@@ -192,7 +192,7 @@ function interpretInContext(
             }
 
             context.scope = { parent: context.scope, variables: {} };
-            context = interpretInContext(context, block);
+            context = analyzeInContext(context, block);
 
             if (context.scope.parent === null) {
               throw new Error('This should not be possible');
