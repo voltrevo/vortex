@@ -138,7 +138,11 @@ function analyzeInContext(
         case 'for': {
           const { control, block } = statement.v;
 
-          if (control !== null && control.t !== 'condition') {
+          if (
+            control !== null &&
+            control.t !== 'condition' &&
+            control.t !== 'setup; condition; next'
+          ) {
             context.notes.push(Note(statement, 'warning',
               // TODO: Need to capture more structure in compiler notes
               `Not implemented: for loop with (${control.t}) control clause`,
@@ -147,20 +151,34 @@ function analyzeInContext(
             return null;
           }
 
-          const cond = (
-            control === null ?
-            {
-              t: 'BOOL' as 'BOOL',
-              v: true,
-              p: {
-                first_line: 0,
-                last_line: 0,
-                first_column: 0,
-                last_column: 0,
-              },
-            } :
-            control.v
-          );
+          const cond: Syntax.Expression = (() => {
+            if (control === null) {
+              return {
+                t: 'BOOL' as 'BOOL',
+                v: true,
+                p: {
+                  first_line: 0,
+                  last_line: 0,
+                  first_column: 0,
+                  last_column: 0,
+                },
+              };
+            }
+
+            switch (control.t) {
+              case 'condition': { return control.v; }
+              case 'setup; condition; next': { return control.v[1]; }
+            }
+          })();
+
+          context.scope = Scope.push(context.scope);
+
+          if (control && control.t === 'setup; condition; next') {
+            const [setup] = control.v;
+            const setupCtx = evalExpression(context.scope, setup);
+            context.scope = setupCtx.scope;
+            context.notes.push(...setupCtx.notes);
+          }
 
           let iterations = 0;
 
@@ -191,10 +209,20 @@ function analyzeInContext(
               break;
             }
 
-            context.scope = { parent: context.scope, variables: {} };
+            context.scope = Scope.push(context.scope);
             context = analyzeInContext(context, block);
 
+            if (control && control.t === 'setup; condition; next') {
+              const [, , next] = control.v;
+              const nextCtx = evalExpression(context.scope, next);
+              context.scope = nextCtx.scope;
+              context.notes.push(...nextCtx.notes);
+            }
+
             if (context.scope.parent === null) {
+              // This is one of those cases that vortex will hopefully not need
+              // this (since you can know context.scope is currently a
+              // ScopeWithParent)
               throw new Error('This should not be possible');
             }
 
@@ -203,7 +231,7 @@ function analyzeInContext(
             iterations++;
 
             if (context.value.t !== 'missing') {
-              return null;
+              break;
             }
 
             if (iterations >= 1024) {
@@ -217,6 +245,16 @@ function analyzeInContext(
               break;
             }
           }
+
+          const innerScope = context.scope.parent;
+
+          if (innerScope === null) {
+            throw new Error('This should not be possible');
+          }
+
+          // TODO: It would be better to use Scope.pop here but it's difficult
+          // due to typescript limitations.
+          context.scope = innerScope;
 
           return null;
         }
