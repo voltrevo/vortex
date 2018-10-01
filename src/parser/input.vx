@@ -4,13 +4,13 @@ import factorial;
 
 // main doesn't have special significance
 func main(n: i32) { // #warning
-  2 ** 3 ** 4; // #error
-  1 + 1; // #error
+  2 ** 3 ** 4; // #warning
+  1 + 1; // #warning
 
-  100 + 2 * 3; // #error
+  100 + 2 * 3; // #warning
 
   foo := 7;
-  (import bar)(); // #error
+  (import bar)(); // #warning
 
   if (1 > 1) {
     foo = foo + 1;
@@ -42,17 +42,17 @@ func immutableStuff() { // #warning
 
   x.a++;
 
-  y == { a: 0, b: 0 }; // #error
-  x == { a: 1, b: 0 }; // #error #error
+  y == { a: 0, b: 0 }; // #warning
+  x == { a: 1, b: 0 }; // #error #warning
 };
 
 func trailing() { // #warning
-  { // #error
+  { // #warning
     a: 1,
     b: 2,
   };
 
-  [ // #error #error
+  [ // #error #warning
     1,
     2,
     3,

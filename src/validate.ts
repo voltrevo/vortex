@@ -42,7 +42,7 @@ export function validate(program: Syntax.Program): Note[] {
 
       // TODO: Dear typescript: why do I need el.t === 'e' again here?
       if (el.t === 'e' && !isValidTopExpression(el.v)) {
-        subIssues.push(Note(el, 'error',
+        subIssues.push(Note(el, 'warning',
           'Statement has no effect' // TODO: better wording
         ));
       }
