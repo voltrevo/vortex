@@ -346,38 +346,8 @@ function evalExpression(
         return null;
       }
 
-      case '=': {
-        const left = exp.v[0];
-
-        const right = evalExpression(scope, exp.v[1]);
-        notes.push(...right.notes);
-
-        if (left.t !== 'IDENTIFIER') {
-          notes.push(Note(left, 'error',
-            'NotImplemented: non-identifier lvalues',
-          ));
-
-          return null;
-        }
-
-        const existing = Scope.get<Context>(scope, left.v);
-
-        if (!existing) {
-          notes.push(Note(exp, 'error',
-            'Attempt to assign to a variable that does not exist',
-          ));
-
-          return null;
-        }
-
-        // TODO: Should the scope data really be Context? Not seeming
-        // appropriate here. (What's the purpose of scope, notes?)
-        scope = Scope.set<Context>(scope, left.v, { value: right.value });
-
-        return null;
-      }
-
       // TODO: Support more compound assignment operators
+      case '=':
       case '+=':
       case '-=':
       case '*=':
@@ -395,8 +365,9 @@ function evalExpression(
           // quirk of typescript - without it, synthOp is a string when
           // included in the return object even though it correctly deduces the
           // more accurate type when hovering on synthOp.
-          const synthOp: Syntax.NonSpecialBinaryOperator = (() => {
+          const synthOp: Syntax.NonSpecialBinaryOperator | null = (() => {
             switch (exp.t) {
+              case '=': return null;
               case '+=': return '+';
               case '-=': return '-';
               case '*=': return '*';
@@ -409,6 +380,10 @@ function evalExpression(
               case '|=': return '|';
             }
           })();
+
+          if (synthOp === null) {
+            return exp.v[1];
+          }
 
           return {
             t: synthOp,
