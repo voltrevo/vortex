@@ -377,6 +377,77 @@ function evalExpression(
         return null;
       }
 
+      case 'prefix --':
+      case 'postfix --':
+      case 'prefix ++':
+      case 'postfix ++': {
+        const fixType: 'pre' | 'post' = (
+          exp.t.indexOf('prefix') === 0 ?
+          'pre' :
+          'post'
+        );
+
+        const incDec: 'inc' | 'dec' = (
+          exp.t.indexOf('++') !== -1 ?
+          'inc' :
+          'dec'
+        );
+
+        const subExp = exp.v;
+
+        const subExpCtx = evalExpression(scope, subExp);
+        scope = subExpCtx.scope;
+        notes.push(...subExpCtx.notes);
+
+        const validValue = Value.getValidOrNull(subExpCtx.value);
+
+        if (validValue && validValue.t !== 'number') {
+          const opStr: string = (() => {
+            switch (incDec) {
+              case 'inc': return '++';
+              case 'dec': return '--';
+            }
+          })();
+
+          const typeExpStr: string = (() => {
+            switch (fixType) {
+              case 'pre': return `${opStr}${validValue.t}`;
+              case 'post': return `${validValue.t}${opStr}`;
+            }
+          })();
+
+          notes.push(Note(exp, 'error',
+            `Type error: ${typeExpStr}`
+          ));
+        }
+
+        if (subExp.t !== 'IDENTIFIER') {
+          notes.push(Note(exp, 'warning',
+            `Not implemented: non-identifier lvalues`,
+          ));
+        }
+
+        if (
+          validValue &&
+          validValue.t === 'number' &&
+          subExp.t === 'IDENTIFIER'
+        ) {
+          const newValue = {
+            t: 'number' as 'number',
+            v: (
+              incDec === 'inc' ?
+              validValue.v + 1 :
+              validValue.v - 1
+            )
+          };
+
+          scope = Scope.set(scope, subExp.v, { value: newValue });
+          value = fixType === 'pre' ? newValue : validValue;
+        }
+
+        return null;
+      }
+
       case '+=':
       case '-=':
       case '*=':
@@ -597,10 +668,6 @@ function evalExpression(
         return null;
       }
 
-      case 'prefix --':
-      case 'postfix --':
-      case 'prefix ++':
-      case 'postfix ++':
       case '.':
       case 'functionCall':
       case 'methodCall':
