@@ -377,6 +377,74 @@ function evalExpression(
         return null;
       }
 
+      // TODO: Support more compound assignment operators
+      case '+=':
+      case '-=':
+      case '*=':
+      case '/=':
+      case '%=':
+      case '<<=':
+      case '>>=':
+      case '&=':
+      case '^=':
+      case '|=': {
+        const left = exp.v[0];
+
+        const rightExp: Syntax.Expression = (() => {
+          // The need for the type annotation below is a particularly strange
+          // quirk of typescript - without it, synthOp is a string when
+          // included in the return object even though it correctly deduces the
+          // more accurate type when hovering on synthOp.
+          const synthOp: Syntax.NonSpecialBinaryOperator = (() => {
+            switch (exp.t) {
+              case '+=': return '+';
+              case '-=': return '-';
+              case '*=': return '*';
+              case '/=': return '/';
+              case '%=': return '%';
+              case '<<=': return '<<';
+              case '>>=': return '>>';
+              case '&=': return '&';
+              case '^=': return '^';
+              case '|=': return '|';
+            }
+          })();
+
+          return {
+            t: synthOp,
+            v: exp.v,
+            p: exp.p,
+          };
+        })();
+
+        const right = evalExpression(scope, rightExp);
+        notes.push(...right.notes);
+
+        if (left.t !== 'IDENTIFIER') {
+          notes.push(Note(left, 'error',
+            'NotImplemented: non-identifier lvalues',
+          ));
+
+          return null;
+        }
+
+        const existing = Scope.get<Context>(scope, left.v);
+
+        if (!existing) {
+          notes.push(Note(exp, 'error',
+            'Attempt to assign to a variable that does not exist',
+          ));
+
+          return null;
+        }
+
+        // TODO: Should the scope data really be Context? Not seeming
+        // appropriate here. (What's the purpose of scope, notes?)
+        scope = Scope.set<Context>(scope, left.v, { value: right.value });
+
+        return null;
+      }
+
       case 'prefix --':
       case 'postfix --':
       case 'prefix ++':
@@ -444,23 +512,6 @@ function evalExpression(
           scope = Scope.set(scope, subExp.v, { value: newValue });
           value = fixType === 'pre' ? newValue : validValue;
         }
-
-        return null;
-      }
-
-      case '+=':
-      case '-=':
-      case '*=':
-      case '/=':
-      case '%=':
-      case '<<=':
-      case '>>=':
-      case '&=':
-      case '^=':
-      case '|=': {
-        notes.push(Note(exp, 'warning',
-          `Not implemented: ${exp.t} assignment`,
-        ));
 
         return null;
       }
