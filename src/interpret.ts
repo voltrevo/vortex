@@ -135,9 +135,94 @@ function interpretInContext(
           return null;
         }
 
+        case 'for': {
+          const { control, block } = statement.v;
+
+          if (control !== null && control.t !== 'condition') {
+            context.notes.push(Note(statement, 'warning',
+              // TODO: Need to capture more structure in compiler notes
+              `Not implemented: for loop with (${control.t}) control clause`,
+            ));
+
+            return null;
+          }
+
+          const cond = (
+            control === null ?
+            {
+              t: 'BOOL' as 'BOOL',
+              v: true,
+              p: {
+                first_line: 0,
+                last_line: 0,
+                first_column: 0,
+                last_column: 0,
+              },
+            } :
+            control.v
+          );
+
+          let iterations = 0;
+
+          while (true) {
+            const condCtx = evalExpression(context.scope, cond);
+
+            // TODO: Note counting / deduplication
+
+            context.notes.push(...condCtx.notes);
+
+            const validCond = Value.getValidOrNull(condCtx.value);
+
+            if (!validCond) {
+              context.value = unknown;
+              break;
+            }
+
+            if (validCond.t !== 'bool') {
+              context.notes.push(Note(cond, 'error',
+                `Type error: Non-bool condition: ${validCond.t}`,
+              ));
+
+              context.value = unknown;
+              break;
+            }
+
+            if (validCond.v === false) {
+              break;
+            }
+
+            context.scope = { parent: context.scope, variables: {} };
+            context = interpretInContext(context, block);
+
+            if (context.scope.parent === null) {
+              throw new Error('This should not be possible');
+            }
+
+            context.scope = context.scope.parent;
+
+            iterations++;
+
+            if (context.value.t !== 'missing') {
+              return null;
+            }
+
+            if (iterations >= 16384) {
+              // TODO: Count total operations and limit execution based on that
+              // instead.
+              context.notes.push(Note(statement, 'warning',
+                'Hit iteration limit of 16384',
+              ));
+
+              context.value = unknown;
+              break;
+            }
+          }
+
+          return null;
+        }
+
         case 'break':
         case 'continue':
-        case 'for':
         case 'import': {
           context.notes.push(Note(statement, 'warning',
             // TODO: Need to capture more structure in compiler notes

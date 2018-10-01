@@ -1,4 +1,5 @@
 TODO: Do something about confusing info labels for compile time in vim (can't ale render infos differently than warnings?)
+TODO: 0b 0x 0o literals (allow floats and e, e.g. 0b1.1e5 == 48 (what to do about e in hex?))
 TODO: Scope validation for class syntax
 TODO: Implement TODO prioritization and sorting
 TODO: Mechanism for removing TODO false positives
