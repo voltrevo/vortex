@@ -166,7 +166,15 @@ export namespace Syntax {
   export type BreakStatement = { t: 'break', p: Pos };
 
   export type IfStatement = { t: 'if', v: [Expression, Block], p: Pos };
-  export type ForStatement = { t: 'for', v: [ForTypeClause, Block], p: Pos };
+
+  export type ForStatement = {
+    t: 'for',
+    v: {
+      control: null | ForControlClause,
+      block: Block
+    },
+    p: Pos
+  };
 
   export type Import = (
     { t: 'import', v: [Identifier], p: Pos } |
@@ -174,11 +182,10 @@ export namespace Syntax {
     never
   );
 
-  export type ForTypeClause = (
-    ['loop'] |
-    ['condition', Expression] |
-    ['of', Identifier, Expression] |
-    ['traditional', Expression, Expression, Expression] |
+  export type ForControlClause = (
+    { t: 'condition', v: Expression } |
+    { t: 'range', v: [Identifier, Expression] } |
+    { t: 'setup; condition; next', v: [Expression, Expression, Expression] } |
     never
   );
 
@@ -211,61 +218,32 @@ export namespace Syntax {
       case 'continue': { return [] };
 
       case 'for': {
-        const [typeClause, block] = el.v;
+        const { control, block } = el.v;
 
-        const typeClauseChildren: Expression[] = (() => {
-          const [type] = typeClause;
+        const controlClauseChildren: Expression[] = (() => {
+          if (control === null) {
+            return [];
+          }
 
-          switch (type) {
-            case 'loop': return [];
-
+          switch (control.t) {
             case 'condition': {
-              // return [];
-              const [, expression] = typeClause;
-
-              if (typeof expression === 'string') {
-                // This is not reachable, but Typescript doesn't know that
-                // because it's not good at control flow analysis for tuples.
-                // TODO: Don't use tuples :-(.
-                throw new Error('Should not be possible');
-              }
-
-              return [expression];
+              return [control.v];
             }
 
-            case 'of': {
-              const [, , expression] = typeClause;
-
-              if (typeof expression === 'string') {
-                // This is not reachable, but Typescript doesn't know that
-                // because it's not good at control flow analysis for tuples.
-                // TODO: Don't use tuples :-(.
-                throw new Error('Should not be possible');
-              }
-
-              return [expression];
+            case 'range': {
+              // TODO: Identifier should be considered a child too. Probably
+              // fix this when implementing non-identifier lvalues.
+              const [, rangeExp] = control.v;
+              return [rangeExp];
             }
 
-            case 'traditional': {
-              const [, init, cond, inc] = typeClause;
-
-              if (
-                typeof init === 'string' ||
-                typeof cond === 'string' ||
-                typeof inc === 'string'
-              ) {
-                // This is not reachable, but Typescript doesn't know that
-                // because it's not good at control flow analysis for tuples.
-                // TODO: Don't use tuples :-(.
-                throw new Error('Should not be possible');
-              }
-
-              return [init, cond, inc];
+            case 'setup; condition; next': {
+              return [...control.v];
             }
           }
         })();
 
-        return [...typeClauseChildren, block];
+        return [...controlClauseChildren, block];
       }
 
       case 'import': {

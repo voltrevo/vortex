@@ -1,3 +1,4 @@
+TODO: Do something about confusing info labels for compile time in vim (can't ale render infos differently than warnings?)
 TODO: Scope validation for class syntax
 TODO: Implement TODO prioritization and sorting
 TODO: Mechanism for removing TODO false positives

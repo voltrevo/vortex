@@ -118,9 +118,6 @@ statements
     ;
 
 statement
-    /* TODO: Expressions maybe shouldn't be valid... introduce assignment
-       statements?
-    */
     : e ';'
         {$$ = { t: 'e', v: { ...$1, topExp: true }, p: @$ }}
     | RETURN e ';'
@@ -144,13 +141,13 @@ if
 
 for
     : FOR block
-        {$$ = { t: 'for', v: [['loop'], $2], p: @$ }}
+        {$$ = { t: 'for', v: { control: null, block: $2 }, p: @$ }}
     | FOR '(' e ')' block
-        {$$ = { t: 'for', v: [['condition', $3], $5], p: @$ }}
+        {$$ = { t: 'for', v: { control: { t: 'condition', v: $3 }, block: $5 }, p: @$ }}
     | FOR '(' identifier OF e ')' block
-        {$$ = { t: 'for', v: [['of', $3, $5], $7], p: @$ }}
+        {$$ = { t: 'for', v: { control: { t: 'range', v: [$3, $5] }, block: $7 }, p: @$ }}
     | FOR '(' e ';' e ';' e ')' block
-        {$$ = { t: 'for', v: [['traditional', $3, $5, $7], $9], p: @$ }}
+        {$$ = { t: 'for', v: { control: { t: 'setup; condition; next', v: [$3, $5, $7] }, block: $9 }, p: @$ }}
     ;
 
 string

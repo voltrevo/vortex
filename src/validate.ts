@@ -12,13 +12,19 @@ export function validate(program: Syntax.Program): Note[] {
   issues.push(...traverse<Syntax.Element, Note>(program, el => {
     const subIssues: Note[] = [];
 
+    // TODO: Use topExp property from parser for determining subexpressions
+    // instead
     let potentialSubExpressions = (
       el.t === 'e' ?
       Syntax.Children(el.v) :
       Syntax.Children(el)
     );
 
-    if (el.t === 'for' && el.v[0][0] === 'traditional') {
+    if (
+      el.t === 'for' &&
+      el.v.control !== null &&
+      el.v.control.t === 'setup; condition; next'
+    ) {
       // Don't consider init from (init; cond; inc) to be a subexpression
       potentialSubExpressions = potentialSubExpressions.slice(1);
     }
@@ -388,8 +394,7 @@ function validateStatementWillReturn(statement: Syntax.Statement): Note[] {
   }
 
   if (statement.t === 'for') {
-    const [typeClause, block] = statement.v;
-    const [type] = typeClause;
+    const { control, block } = statement.v;
 
     const issues: Note[] = [];
 
@@ -400,7 +405,7 @@ function validateStatementWillReturn(statement: Syntax.Statement): Note[] {
       )));
     }
 
-    if (type === 'loop') {
+    if (control === null) {
       const breaks = findBreaks(block);
 
       issues.push(...breaks.map(brk => Note(brk, 'error', (
@@ -408,18 +413,10 @@ function validateStatementWillReturn(statement: Syntax.Statement): Note[] {
         'value (either add a return statement after the loop or remove it)'
       ))));
     } else {
-      const clauseStr: string = (() => {
-        switch (type) {
-          case 'condition': return '(condition)';
-          case 'of': return '(item of range)';
-          case 'traditional': return '(init; condition; inc)';
-        }
-      })();
-
       issues.push(Note(statement, 'error', (
-        `${clauseStr} clause not allowed in for loop which needs to ` +
+        `(${control.t}) clause not allowed in for loop which needs to ` +
         `return a value (either add a return statement after the loop or ` +
-        `remove ${clauseStr})`
+        `remove (${control.t}))`
       )));
     }
 
@@ -454,8 +451,16 @@ function hasReturn(block: Syntax.Block) {
       return true;
     }
 
-    if (statement.t === 'if' || statement.t === 'for') {
+    if (statement.t === 'if') {
       const [, subBlock] = statement.v;
+
+      if (hasReturn(subBlock)) {
+        return true;
+      }
+    }
+
+    if (statement.t === 'for') {
+      const { block: subBlock } = statement.v;
 
       if (hasReturn(subBlock)) {
         return true;
