@@ -206,11 +206,11 @@ function analyzeInContext(
               return null;
             }
 
-            if (iterations >= 16384) {
+            if (iterations >= 1024) {
               // TODO: Count total operations and limit execution based on that
               // instead.
               context.notes.push(Note(statement, 'warning',
-                'Hit iteration limit of 16384',
+                'Hit iteration limit of 1024',
               ));
 
               context.value = unknown;
@@ -289,7 +289,7 @@ function evalExpression(
         notes.push(...right.notes);
 
         if (left.t !== 'IDENTIFIER') {
-          notes.push(Note(exp, 'error',
+          notes.push(Note(left, 'error',
             'NotImplemented: non-identifier lvalues',
           ));
 
@@ -304,6 +304,54 @@ function evalExpression(
             notes: [],
           },
         });
+
+        return null;
+      }
+
+      case '=': {
+        const left = exp.v[0];
+
+        const right = evalExpression(scope, exp.v[1]);
+        notes.push(...right.notes);
+
+        if (left.t !== 'IDENTIFIER') {
+          notes.push(Note(left, 'error',
+            'NotImplemented: non-identifier lvalues',
+          ));
+
+          return null;
+        }
+
+        const existing = Scope.get<Context>(scope, left.v);
+
+        if (!existing) {
+          notes.push(Note(exp, 'error',
+            'Attempt to assign to a variable that does not exist',
+          ));
+
+          return null;
+        }
+
+        // TODO: Should the scope data really be Context? Not seeming
+        // appropriate here. (What's the purpose of scope, notes?)
+        scope = Scope.set<Context>(scope, left.v, { value: right.value });
+
+        return null;
+      }
+
+      case '+=':
+      case '-=':
+      case '*=':
+      case '/=':
+      case '%=':
+      case '<<=':
+      case '>>=':
+      case '&=':
+      case '^=':
+      case '|=': {
+        notes.push(Note(exp, 'warning',
+          `Not implemented: ${exp.t} assignment`,
+        ));
 
         return null;
       }
@@ -524,24 +572,13 @@ function evalExpression(
       case 'object':
       case 'class':
       case 'switch':
-      case 'import':
-
-      case '+=':
-      case '-=':
-      case '*=':
-      case '/=':
-      case '%=':
-      case '<<=':
-      case '>>=':
-      case '&=':
-      case '^=':
-      case '|=':
-      case '=':
+      case 'import': {
         notes.push(Note(exp, 'warning',
           `Not implemented: ${exp.t} expression`,
         ));
 
         return null;
+      }
     }
   })());
 
