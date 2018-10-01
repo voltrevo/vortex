@@ -234,11 +234,11 @@ function analyzeInContext(
               break;
             }
 
-            if (iterations >= 1024) {
+            if (iterations >= 2048) {
               // TODO: Count total operations and limit execution based on that
               // instead.
               context.notes.push(Note(statement, 'warning',
-                'Hit iteration limit of 1024',
+                'Hit iteration limit of 2048',
               ));
 
               context.value = unknown;
