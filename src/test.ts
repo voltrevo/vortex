@@ -4,6 +4,7 @@ import { spawnSync } from 'child_process';
 import colorize from './colorize';
 import compile from './compile';
 import prettyErrorContext from './prettyErrorContext';
+import SecondsDiff from './SecondsDiff';
 
 const files = (spawnSync('git', ['ls-files'])
   .stdout
@@ -52,10 +53,10 @@ for (const file of files) {
   }
 
   const fileText = readFileSync(file).toString();
-  const before = Date.now();
+  const before = process.hrtime();
   const notes = compile(fileText);
-  const after = Date.now();
-  compileTime += after - before;
+  const after = process.hrtime();
+  compileTime += SecondsDiff(before, after);
   compiledFiles++;
 
   const lines = fileText.split('\n');
@@ -114,7 +115,7 @@ for (const file of files) {
 }
 
 log.info('>>> info: ' +
-  `Compiled ${compiledFiles} files in ${compileTime}ms`
+  `Compiled ${compiledFiles} files in ${(1000 * compileTime).toFixed(3)}ms`
 );
 
 if (ok) {

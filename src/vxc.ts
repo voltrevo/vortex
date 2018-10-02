@@ -7,6 +7,7 @@ import formatLocation from './formatLocation';
 import getStdin from './getStdin';
 import Note from './Note';
 import prettyErrorContext from './prettyErrorContext';
+import SecondsDiff from './SecondsDiff';
 
 const args = minimist(process.argv.slice(2));
 
@@ -151,12 +152,12 @@ const inputs: ({ type: 'file', name: string } | string)[] = [];
 
     const file = typeof input === 'string' ? '(stdin)' : input.name;
 
-    const startTime = Date.now();
+    const before = process.hrtime();
     const notes = compile(text);
-    const endTime = Date.now();
+    const after = process.hrtime();
 
     notes.push(Note({}, 'info',
-      `compiled in ${endTime - startTime}ms`
+      `compiled in ${(1000 * SecondsDiff(before, after)).toFixed(3)}ms`
     ));
 
     if (format.value === 'pretty' && notes.length > 0) {
