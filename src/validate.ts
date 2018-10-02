@@ -47,7 +47,7 @@ export function validate(program: Syntax.Program): Note[] {
         ));
       }
     } else if (el.t === 'func') {
-      const [, , body] = el.v;
+      const { body } = el.v;
 
       if (body.t === 'block') {
         subIssues.push(...validateBody(body));
@@ -158,7 +158,7 @@ function validateScope(elements: ScopeItem[]): Note[] {
           case 'func': {
             const res: ScopeItem[] = [];
 
-            const [name] = el.v;
+            const { name } = el.v;
 
             if (name !== null) {
               res.push({

@@ -167,9 +167,9 @@ import
 
 func
     : FUNC funcName '(' args ')' block
-        {$$ = { t: 'func', v: [$2, $4, $6], p: @$ }}
+        {$$ = { t: 'func', v: { name: $2, args: $4, body: $6 }, p: @$ }}
     | FUNC funcName '(' args ')' '=>' e %prec FUNC
-        {$$ = { t: 'func', v: [$2, $4, { t: 'expBody', v: $7, p: @7 }], p: @$ }}
+        {$$ = { t: 'func', v: { name: $2, args: $4, body: { t: 'expBody', v: $7, p: @7 } }, p: @$ }}
     ;
 
 funcName

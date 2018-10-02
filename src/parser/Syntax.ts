@@ -100,6 +100,16 @@ namespace Syntax {
   export type NULL = { t: 'NULL', v: null, p: Pos };
   export type STRING = { t: 'STRING', v: string, p: Pos };
 
+  export type FunctionExpression = {
+    t: 'func';
+    v: {
+      name: Identifier | null,
+      args: Arg[],
+      body: Block | ExpressionBody
+    },
+    p: Pos;
+  };
+
   export type Expression = { topExp?: true } & (
     Identifier |
     NUMBER |
@@ -112,15 +122,7 @@ namespace Syntax {
     { t: 'functionCall', v: [Expression, Expression[]], p: Pos } |
     { t: 'methodCall', v: [Expression, Identifier, Expression[]], p: Pos } |
     { t: 'subscript', v: [Expression, Expression], p: Pos } |
-    {
-      t: 'func',
-      v: [
-        Identifier | null,
-        Arg[],
-        Block | ExpressionBody
-      ],
-      p: Pos,
-    } |
+    FunctionExpression |
     { t: 'array', v: Expression[], p: Pos } |
     { t: 'object', v: [Identifier, Expression][], p: Pos } |
     {
@@ -288,7 +290,7 @@ namespace Syntax {
 
       case 'func': {
         // TODO: Identifiers
-        const [, args, body] = el.v;
+        const { args, body } = el.v;
         return body.t === 'block' ? [...args, body] : [...args, body.v];
       }
 
