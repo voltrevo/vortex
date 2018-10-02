@@ -21,6 +21,7 @@ type Value = (
   { t: 'bool', v: boolean } |
   { t: 'null', v: null } |
   Syntax.FunctionExpression |
+  { t: 'array', v: ValidValue[] } |
   { t: 'unknown', v: null } |
   { t: 'missing', v: null } |
   Exception |
@@ -34,6 +35,7 @@ type ValidValue = (
   { t: 'bool', v: boolean } |
   { t: 'null', v: null } |
   Syntax.FunctionExpression |
+  { t: 'array', v: ValidValue[] } |
   never
 );
 
@@ -51,6 +53,8 @@ namespace Value {
       // TODO: include argument names
       case 'func': return `<func ${v.v.name ? v.v.name.v : '(anonymous)'}>`;
 
+      case 'array': return `[${v.v.map(Value.String).join(', ')}]`;
+
       case 'unknown': return '<unknown>';
       case 'missing': return '<missing>';
       case 'exception': return `<exception: ${v.v.message}>`;
@@ -64,6 +68,7 @@ namespace Value {
       case 'bool':
       case 'null':
       case 'func':
+      case 'array':
         return v;
 
       case 'unknown':
@@ -373,6 +378,7 @@ function analyzeInContext(
       case 'bool':
       case 'null':
       case 'func':
+      case 'array':
         return [];
     }
   })();
@@ -759,6 +765,11 @@ function evalExpression(
               return null;
             }
 
+            if (left.t === 'array' || right.t === 'array') {
+              // TODO: Define array comparison
+              return null;
+            }
+
             const v = (
               // Special case: typescript doesn't allow comparison with nulls,
               // but we want to allow it when both sides are null
@@ -843,6 +854,7 @@ function evalExpression(
             case 'number':
             case 'bool':
             case 'null':
+            case 'array':
             // TODO: Expressions should never be missing, so 'missing'
             // shouldn't have to be handled
             case 'missing': {
@@ -948,10 +960,51 @@ function evalExpression(
         return null;
       }
 
+      case 'array': {
+        value = { t: 'array', v: [] };
+        let arrUnknown = false;
+        let arrMissing = false;
+
+        for (const elExp of exp.v) {
+          const elCtx = evalExpression(scope, elExp);
+
+          scope = elCtx.scope;
+          notes.push(...elCtx.notes);
+
+          if (elCtx.value.t === 'exception') {
+            value = elCtx.value;
+            return null;
+          }
+
+          if (elCtx.value.t === 'unknown') {
+            arrUnknown = true;
+            continue;
+          }
+
+          if (elCtx.value.t === 'missing') {
+            arrMissing = true;
+            continue;
+          }
+
+          value.v.push(elCtx.value);
+        }
+
+        if (arrMissing) {
+          value = missing;
+          return null;
+        }
+
+        if (arrUnknown) {
+          value = unknown;
+          return null;
+        }
+
+        return null;
+      }
+
       case '.':
       case 'methodCall':
       case 'subscript':
-      case 'array':
       case 'object':
       case 'class':
       case 'switch':
