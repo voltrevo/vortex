@@ -2,6 +2,18 @@ import Note from './Note';
 import Scope from './Scope';
 import Syntax from './parser/Syntax';
 
+type Exception = {
+  t: 'exception';
+  v: {
+    origin: Syntax.Element;
+    message: string;
+  };
+};
+
+function Exception(origin: Syntax.Element, message: string): Exception {
+  return { t: 'exception', v: { origin, message } };
+}
+
 // TODO: Types start with capitals
 type Value = (
   { t: 'string', v: string } |
@@ -10,9 +22,11 @@ type Value = (
   { t: 'null', v: null } |
   { t: 'unknown', v: null } |
   { t: 'missing', v: null } |
+  Exception |
   never
 );
 
+// TODO: Valid -> Concrete (?)
 type ValidValue = (
   { t: 'string', v: string } |
   { t: 'number', v: number } |
@@ -33,6 +47,7 @@ namespace Value {
       case 'null': return 'null';
       case 'unknown': return '<unknown>';
       case 'missing': return '<missing>';
+      case 'exception': return `<exception: ${v.v.message}>`;
     }
   }
 
@@ -46,6 +61,7 @@ namespace Value {
 
       case 'unknown':
       case 'missing':
+      case 'exception':
         return null;
     }
   }
@@ -66,7 +82,17 @@ function Context(): Context {
 }
 
 export default function analyze(program: Syntax.Program) {
-  return analyzeInContext(Context(), program);
+  let context = Context();
+
+  context = analyzeInContext(context, program);
+
+  if (context.value.t === 'missing') {
+    context.notes.push(Note(program, 'error',
+      `Returned ${Value.String(context.value)}`,
+    ));
+  }
+
+  return context;
 }
 
 function analyzeInContext(
@@ -93,11 +119,16 @@ function analyzeInContext(
           context.value = value;
           context.notes.push(...notes);
 
-          context.notes.push(Note(
-            statement,
-            value.t === 'missing' ? 'error' : 'info',
-            `Returned ${Value.String(value)}`,
-          ));
+          if (value.t === 'missing') {
+            context.value = Exception(
+              statement.v,
+              `Return expression was ${Value.String(value)}`,
+            );
+          } else if (value.t !== 'exception') {
+            context.notes.push(Note(statement, 'info',
+              `Returned ${Value.String(value)}`,
+            ));
+          }
 
           return null;
         }
@@ -122,13 +153,11 @@ function analyzeInContext(
               `Type error: assert ${validValue.t}`,
             ));
           } else if (validValue.v !== true) {
-            context.notes.push(Note(statement.v, 'error',
+            // TODO: Format code for other exceptions like this
+            context.value = Exception(statement.v,
               // TODO: Show detail
               'Asserted false',
-            ));
-
-            // TODO: Should be exception
-            context.value = unknown;
+            );
           }
 
           return null;
@@ -141,27 +170,30 @@ function analyzeInContext(
 
           const validCond = Value.getValidOrNull(condCtx.value);
 
-          if (validCond) {
-            if (validCond.t === 'bool') {
-              if (validCond.v) {
-                context.scope = { parent: context.scope, variables: {} };
-                context = analyzeInContext(context, block);
+          if (!validCond) {
+            // TODO: unknown should be handled differently
+            context.value = Exception(cond,
+              `Didn't get a valid condition: ${Value.String(condCtx.value)}`,
+            );
 
-                if (context.scope.parent === null) {
-                  throw new Error('This should not be possible');
-                }
+            return null;
+          }
 
-                context.scope = context.scope.parent;
+          if (validCond.t === 'bool') {
+            if (validCond.v) {
+              context.scope = { parent: context.scope, variables: {} };
+              context = analyzeInContext(context, block);
+
+              if (context.scope.parent === null) {
+                throw new Error('This should not be possible');
               }
-            } else {
-              context.notes.push(Note(cond, 'error',
-                `Type error: Non-bool condition: ${validCond.t}`,
-              ));
 
-              context.value = unknown;
+              context.scope = context.scope.parent;
             }
           } else {
-            context.value = unknown;
+            context.value = Exception(cond,
+              `Type error: Non-bool condition: ${validCond.t}`,
+            );
           }
 
           return null;
@@ -175,10 +207,11 @@ function analyzeInContext(
             control.t !== 'condition' &&
             control.t !== 'setup; condition; next'
           ) {
-            context.notes.push(Note(statement, 'warning',
+            context.value = Exception(
+              statement,
               // TODO: Need to capture more structure in compiler notes
               `Not implemented: for loop with (${control.t}) control clause`,
-            ));
+            );
 
             return null;
           }
@@ -217,23 +250,27 @@ function analyzeInContext(
           while (true) {
             const condCtx = evalExpression(context.scope, cond);
 
-            // TODO: Note counting / deduplication
+            // TODO: Note counting, deduplication with if
 
             context.notes.push(...condCtx.notes);
 
             const validCond = Value.getValidOrNull(condCtx.value);
 
             if (!validCond) {
-              context.value = unknown;
+              // TODO: unknown should be handled differently
+              context.value = Exception(cond,
+                `Didn't get a valid condition: ${Value.String(condCtx.value)}`,
+              );
+
               break;
             }
 
             if (validCond.t !== 'bool') {
-              context.notes.push(Note(cond, 'error',
+              context.value = Exception(
+                cond,
                 `Type error: Non-bool condition: ${validCond.t}`,
-              ));
+              );
 
-              context.value = unknown;
               break;
             }
 
@@ -294,10 +331,11 @@ function analyzeInContext(
         case 'break':
         case 'continue':
         case 'import': {
-          context.notes.push(Note(statement, 'warning',
+          context.value = Exception(
+            statement,
             // TODO: Need to capture more structure in compiler notes
             `Not implemented: ${statement.t} statement`,
-          ));
+          );
 
           return null;
         }
@@ -305,9 +343,28 @@ function analyzeInContext(
     })());
 
     if (context.value.t !== 'missing') {
-      return context;
+      break;
     }
   }
+
+  const finalNotes: Note[] = (() => {
+    switch (context.value.t) {
+      case 'exception':
+        return [Note(context.value.v.origin, 'error',
+          `Threw exception: ${context.value.v.message}`,
+        )];
+
+      case 'missing':
+      case 'unknown':
+      case 'string':
+      case 'number':
+      case 'bool':
+      case 'null':
+        return [];
+    }
+  })();
+
+  context.notes.push(...finalNotes);
 
   return context;
 }
@@ -344,7 +401,7 @@ function evalExpression(
         const entry = Scope.get(scope, exp.v);
 
         if (entry === null) {
-          value = missing;
+          value = Exception(exp, `Variable does not exist: ${exp.v}`);
           return null;
         }
 
@@ -359,9 +416,10 @@ function evalExpression(
         notes.push(...right.notes);
 
         if (left.t !== 'IDENTIFIER') {
-          notes.push(Note(left, 'error',
-            'NotImplemented: non-identifier lvalues',
-          ));
+          value = Exception(
+            left,
+            'Not implemented: non-identifier lvalues',
+          );
 
           return null;
         }
@@ -428,9 +486,10 @@ function evalExpression(
         notes.push(...right.notes);
 
         if (left.t !== 'IDENTIFIER') {
-          notes.push(Note(left, 'error',
-            'NotImplemented: non-identifier lvalues',
-          ));
+          value = Exception(
+            left,
+            'Not implemented: non-identifier lvalues',
+          );
 
           return null;
         }
@@ -494,18 +553,22 @@ function evalExpression(
           notes.push(Note(exp, 'error',
             `Type error: ${typeExpStr}`
           ));
+
+          value = unknown;
         }
 
         if (subExp.t !== 'IDENTIFIER') {
-          notes.push(Note(exp, 'warning',
+          value = Exception(
+            exp,
             `Not implemented: non-identifier lvalues`,
-          ));
+          );
+
+          return null;
         }
 
         if (
           validValue &&
-          validValue.t === 'number' &&
-          subExp.t === 'IDENTIFIER'
+          validValue.t === 'number'
         ) {
           const newValue = {
             t: 'number' as 'number',
@@ -717,11 +780,10 @@ function evalExpression(
           return null;
         }
 
-        notes.push(Note(exp, 'error',
+        value = Exception(
+          exp,
           `Type error: ${exp.t.slice(6)}${right.value.t}`,
-        ));
-
-        value = missing;
+        );
 
         return null;
       }
@@ -736,9 +798,10 @@ function evalExpression(
       case 'class':
       case 'switch':
       case 'import': {
-        notes.push(Note(exp, 'warning',
+        value = Exception(
+          exp,
           `Not implemented: ${exp.t} expression`,
-        ));
+        );
 
         return null;
       }
@@ -749,7 +812,7 @@ function evalExpression(
 }
 
 function evalVanillaOperator<T extends {
-  t: string,
+  t: Syntax.NonSpecialBinaryOperator,
   v: [Syntax.Expression, Syntax.Expression],
   p: Syntax.Pos
 }>(
@@ -757,34 +820,35 @@ function evalVanillaOperator<T extends {
   exp: T,
   combine: (a: ValidValue, b: ValidValue) => Value | null,
 ): Context {
-  let value: Value | null = missing;
   let notes = [] as Note[];
 
   const left = evalExpression(scope, exp.v[0]);
   scope = left.scope;
+  notes.push(...left.notes);
+  const validLeft = Value.getValidOrNull(left.value);
+
+  if (!validLeft) {
+    return { scope, value: left.value, notes };
+  }
+
   const right = evalExpression(scope, exp.v[1]);
   scope = right.scope;
+  notes.push(...right.notes);
+  const validRight = Value.getValidOrNull(right.value);
 
-  notes.push(...left.notes, ...right.notes);
-
-  if (left.value.t === 'missing' || right.value.t === 'missing') {
-    value = missing;
-    return { scope, value, notes };
+  if (!validRight) {
+    return { scope, value: right.value, notes };
   }
 
-  if (left.value.t === 'unknown' || right.value.t === 'unknown') {
-    value = unknown;
-    return { scope, value, notes };
-  }
-
-  value = combine(left.value, right.value);
+  let value = combine(validLeft, validRight);
 
   if (value === null) {
-    notes.push(Note(exp, 'error',
+    // TODO: Combine should return something more informative than null to
+    // indicate that a type error should result.
+    value = Exception(
+      exp,
       `Type error: ${left.value.t} ${exp.t} ${right.value.t}`,
-    ));
-
-    value = missing;
+    );
   }
 
   return { scope, value, notes };
