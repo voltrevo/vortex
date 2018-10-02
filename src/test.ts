@@ -149,6 +149,8 @@ function TodoSortPriority(line: string) {
   return [
     /^TODOs:/.test(line) ? 0 : 1,
     /^[^:]*\.vx:/.test(line) ? 0 : 1,
+    line.split(':')[0],
+    Number(line.split(':')[1]),
     line,
   ];
 }
