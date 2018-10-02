@@ -2,45 +2,78 @@ import Note from './Note';
 import Scope from './Scope';
 import Syntax from './parser/Syntax';
 
-type Exception = {
+// TODO: Types start with capitals
+// (primitive types can be lowercase?)
+export type VString = { t: 'string', v: string };
+export type VNumber = { t: 'number', v: number };
+export type VBool = { t: 'bool', v: boolean };
+export type VNull = { t: 'null', v: null };
+export type VFunc = Syntax.FunctionExpression;
+export type VArray = { t: 'array', v: ValidValue[] };
+export type VUnknown = { t: 'unknown', v: null };
+export type VMissing = { t: 'missing', v: null };
+
+export type VException = {
   t: 'exception';
   v: {
     origin: Syntax.Element;
     message: string;
   };
-};
+}
 
-function Exception(origin: Syntax.Element, message: string): Exception {
+function VException(origin: Syntax.Element, message: string): VException {
   return { t: 'exception', v: { origin, message } };
 }
 
-// TODO: Types start with capitals
-type Value = (
-  { t: 'string', v: string } |
-  { t: 'number', v: number } |
-  { t: 'bool', v: boolean } |
-  { t: 'null', v: null } |
-  Syntax.FunctionExpression |
-  { t: 'array', v: ValidValue[] } |
-  { t: 'unknown', v: null } |
-  { t: 'missing', v: null } |
-  Exception |
-  never
-);
-
 // TODO: Valid -> Concrete (?)
 type ValidValue = (
-  { t: 'string', v: string } |
-  { t: 'number', v: number } |
-  { t: 'bool', v: boolean } |
-  { t: 'null', v: null } |
-  Syntax.FunctionExpression |
-  { t: 'array', v: ValidValue[] } |
+  VString |
+  VNumber |
+  VBool |
+  VNull |
+  VFunc |
+  VArray |
   never
 );
 
-const unknown = { t: 'unknown' as 'unknown', v: null };
-const missing = { t: 'missing' as 'missing', v: null };
+type InvalidValue = (
+  VUnknown |
+  VMissing |
+  VException |
+  never
+);
+
+type Value = (
+  ValidValue |
+  InvalidValue |
+  never
+);
+
+type ValidInvalidValue = (
+  { t: 'valid', v: ValidValue } |
+  { t: 'invalid', v: InvalidValue } |
+  never
+);
+
+function ValidInvalidValue(v: Value): ValidInvalidValue {
+  switch (v.t) {
+    case 'string':
+    case 'number':
+    case 'bool':
+    case 'null':
+    case 'func':
+    case 'array':
+      return { t: 'valid', v };
+
+    case 'unknown':
+    case 'missing':
+    case 'exception':
+      return { t: 'invalid', v };
+  }
+}
+
+const unknown: VUnknown = { t: 'unknown', v: null };
+const missing: VMissing = { t: 'missing', v: null };
 
 namespace Value {
   export function String(v: Value): string {
@@ -62,21 +95,31 @@ namespace Value {
   }
 
   export function getValidOrNull(v: Value): ValidValue | null {
-    switch (v.t) {
-      case 'string':
-      case 'number':
-      case 'bool':
-      case 'null':
-      case 'func':
-      case 'array':
-        return v;
+    const vinvValue = ValidInvalidValue(v);
 
-      case 'unknown':
-      case 'missing':
-      case 'exception':
-        return null;
+    if (vinvValue.t === 'valid') {
+      return vinvValue.v;
     }
+
+    return null;
   }
+}
+
+function stringMul(s: VString, n: VNumber): VString {
+  // TODO: Check n is an appropriate number (wait for integer implementation?)
+  return { t: 'string', v: s.v.repeat(n.v) };
+}
+
+function arrayMul(a: VArray, n: VNumber): VArray {
+  // TODO: Check n is an appropriate number (wait for integer implementation?)
+
+  const res: VArray = { t: 'array', v: [] };
+
+  for (let i = 0; i < n.v; i++) {
+    res.v.push(...a.v);
+  }
+
+  return res;
 }
 
 type Context = {
@@ -127,7 +170,7 @@ function analyzeInContext(
           context.notes.push(...notes);
 
           if (value.t === 'missing') {
-            context.value = Exception(
+            context.value = VException(
               statement.v,
               `Return expression was ${Value.String(value)}`,
             );
@@ -162,7 +205,7 @@ function analyzeInContext(
             ));
           } else if (validValue.v !== true) {
             // TODO: Format code for other exceptions like this
-            context.value = Exception(statement.v,
+            context.value = VException(statement.v,
               // TODO: Show detail
               `Asserted ${ExpressionString(context.scope, statement.v)}`,
             );
@@ -180,7 +223,7 @@ function analyzeInContext(
 
           if (!validCond) {
             // TODO: unknown should be handled differently
-            context.value = Exception(cond,
+            context.value = VException(cond,
               `Didn't get a valid condition: ${Value.String(condCtx.value)}`,
             );
 
@@ -199,7 +242,7 @@ function analyzeInContext(
               context.scope = context.scope.parent;
             }
           } else {
-            context.value = Exception(cond,
+            context.value = VException(cond,
               `Type error: Non-bool condition: ${validCond.t}`,
             );
           }
@@ -215,7 +258,7 @@ function analyzeInContext(
             control.t !== 'condition' &&
             control.t !== 'setup; condition; next'
           ) {
-            context.value = Exception(
+            context.value = VException(
               statement,
               // TODO: Need to capture more structure in compiler notes
               `Not implemented: for loop with (${control.t}) control clause`,
@@ -266,7 +309,7 @@ function analyzeInContext(
 
             if (!validCond) {
               // TODO: unknown should be handled differently
-              context.value = Exception(cond,
+              context.value = VException(cond,
                 `Didn't get a valid condition: ${Value.String(condCtx.value)}`,
               );
 
@@ -274,7 +317,7 @@ function analyzeInContext(
             }
 
             if (validCond.t !== 'bool') {
-              context.value = Exception(
+              context.value = VException(
                 cond,
                 `Type error: Non-bool condition: ${validCond.t}`,
               );
@@ -297,9 +340,6 @@ function analyzeInContext(
             }
 
             if (context.scope.parent === null) {
-              // This is one of those cases that vortex will hopefully not need
-              // this (since you can know context.scope is currently a
-              // ScopeWithParent)
               throw new Error('This should not be possible');
             }
 
@@ -339,7 +379,7 @@ function analyzeInContext(
         case 'break':
         case 'continue':
         case 'import': {
-          context.value = Exception(
+          context.value = VException(
             statement,
             // TODO: Need to capture more structure in compiler notes
             `Not implemented: ${statement.t} statement`,
@@ -420,7 +460,7 @@ function evalExpression(
         const entry = Scope.get(scope, exp.v);
 
         if (entry === null) {
-          value = Exception(exp, `Variable does not exist: ${exp.v}`);
+          value = VException(exp, `Variable does not exist: ${exp.v}`);
           return null;
         }
 
@@ -435,7 +475,7 @@ function evalExpression(
         notes.push(...right.notes);
 
         if (left.t !== 'IDENTIFIER') {
-          value = Exception(
+          value = VException(
             left,
             'Not implemented: non-identifier lvalues',
           );
@@ -505,7 +545,7 @@ function evalExpression(
         notes.push(...right.notes);
 
         if (left.t !== 'IDENTIFIER') {
-          value = Exception(
+          value = VException(
             left,
             'Not implemented: non-identifier lvalues',
           );
@@ -577,7 +617,7 @@ function evalExpression(
         }
 
         if (subExp.t !== 'IDENTIFIER') {
-          value = Exception(
+          value = VException(
             exp,
             `Not implemented: non-identifier lvalues`,
           );
@@ -618,6 +658,10 @@ function evalExpression(
               return { t: 'string', v: left.v + right.v };
             }
 
+            if (left.t === 'array' && right.t === 'array') {
+              return { t: 'array', v: [...left.v, ...right.v] };
+            }
+
             return null;
           },
         ));
@@ -634,16 +678,34 @@ function evalExpression(
               return { t: 'number', v: left.v * right.v };
             }
 
+            const str = (
+              left.t === 'string' ? left :
+              right.t === 'string' ? right :
+              null
+            );
+
+            const arr = (
+              left.t === 'array' ? left :
+              right.t === 'array' ? right :
+              null
+            );
+
+            const num = (
+              left.t === 'number' ? left :
+              right.t === 'number' ? right :
+              null
+            );
+
             // TODO: Implement generic version of this which just requires
             // non-number type to have a + operator
             // TODO: Possibly configure limit for this behaviour during
             // analysis?
-            if (left.t === 'string' && right.t === 'number') {
-              return { t: 'string', v: left.v.repeat(right.v) };
+            if (str && num) {
+              return stringMul(str, num);
             }
 
-            if (left.t === 'number' && right.t === 'string') {
-              return { t: 'string', v: right.v.repeat(left.v) };
+            if (arr && num) {
+              return arrayMul(arr, num);
             }
 
             return null;
@@ -809,7 +871,7 @@ function evalExpression(
           return null;
         }
 
-        value = Exception(
+        value = VException(
           exp,
           `Type error: ${exp.t.slice(6)}${right.value.t}`,
         );
@@ -858,7 +920,7 @@ function evalExpression(
             // TODO: Expressions should never be missing, so 'missing'
             // shouldn't have to be handled
             case 'missing': {
-              return Exception(funcExp,
+              return VException(funcExp,
                 `Type error: attempt to call a ${func.t} as a function`
               );
             }
@@ -885,7 +947,7 @@ function evalExpression(
           }
 
           if (arg.t === 'missing') {
-            value = Exception(argExp,
+            value = VException(argExp,
               `Argument was ${Value.String(arg)}`,
             );
 
@@ -908,7 +970,7 @@ function evalExpression(
 
             case 'func': {
               if (func.v.args.length !== args.length) {
-                return Exception(exp, [
+                return VException(exp, [
                   'Arguments length mismatch: ',
                   Value.String(func),
                   ' requires ',
@@ -1012,7 +1074,7 @@ function evalExpression(
         const indexCtx = evalExpression(scope, indexExp);
 
         if (arrCtx.value.t !== 'array') {
-          value = Exception(exp,
+          value = VException(exp,
             `Type error: ${arrCtx.value.t}[${indexCtx.value.t}]`,
           );
 
@@ -1023,7 +1085,7 @@ function evalExpression(
         notes.push(...indexCtx.notes);
 
         if (indexCtx.value.t !== 'number') {
-          value = Exception(exp,
+          value = VException(exp,
             `Type error: ${arrCtx.value.t}[${indexCtx.value.t}]`,
           );
 
@@ -1034,7 +1096,7 @@ function evalExpression(
           indexCtx.value.v < 0 ||
           indexCtx.value.v !== Math.floor(indexCtx.value.v)
         ) {
-          value = Exception(indexExp,
+          value = VException(indexExp,
             `Invalid array index: ${indexCtx.value.v}`,
           );
 
@@ -1042,7 +1104,7 @@ function evalExpression(
         }
 
         if (indexCtx.value.v >= arrCtx.value.v.length) {
-          value = Exception(exp, [
+          value = VException(exp, [
             'Out of bounds: index ',
             indexCtx.value.v,
             ' but array is only length ',
@@ -1062,7 +1124,7 @@ function evalExpression(
       case 'class':
       case 'switch':
       case 'import': {
-        value = Exception(
+        value = VException(
           exp,
           `Not implemented: ${exp.t} expression`,
         );
@@ -1109,7 +1171,7 @@ function evalVanillaOperator<T extends {
   if (value === null) {
     // TODO: Combine should return something more informative than null to
     // indicate that a type error should result.
-    value = Exception(
+    value = VException(
       exp,
       `Type error: ${left.value.t} ${exp.t} ${right.value.t}`,
     );
