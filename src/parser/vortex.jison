@@ -24,6 +24,7 @@
 'true'                return 'TRUE'
 'false'               return 'FALSE'
 'null'                return 'NULL'
+'assert'              return 'ASSERT'
 [a-zA-Z]\w*           return 'IDENTIFIER'
 ";"                   return ';'
 [0-9]+("."[0-9]+)?\b  return 'NUMBER'
@@ -132,6 +133,8 @@ statement
         {$$ = $1}
     | import ';'
         {$$ = $1}
+    | ASSERT e ';'
+        {$$ = { t: 'assert', v: $2, p: @$ }}
     ;
 
 if

@@ -100,3 +100,5 @@ return func factorial(n: i32) => switch {
   (n == 0) => 1;
   (true) => n * factorial(n - 1);
 };
+
+assert 1 > 2;

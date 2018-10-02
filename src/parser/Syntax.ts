@@ -155,6 +155,7 @@ namespace Syntax {
   export type Statement = (
     ExpressionStatement |
     { t: 'return', v: Expression, p: Pos } |
+    { t: 'assert', v: Expression, p: Pos } |
     BreakStatement |
     { t: 'continue', p: Pos } |
     IfStatement |
@@ -314,6 +315,7 @@ namespace Syntax {
       }
 
       default: {
+        // TODO: This default is working correctly for assert. Is that ok?
         // Operators. TODO: Need an extra layer with .t so there aren't an
         // unmanageable number of cases.
         const value: (
@@ -335,6 +337,7 @@ namespace Syntax {
       case 'arg':
       case 'e':
       case 'return':
+      case 'assert':
       case 'break':
       case 'continue':
       case 'if':

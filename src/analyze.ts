@@ -102,6 +102,38 @@ function analyzeInContext(
           return null;
         }
 
+        case 'assert': {
+          const { scope, value, notes } = evalExpression(
+            context.scope,
+            statement.v
+          );
+
+          context.scope = scope;
+          context.notes.push(...notes);
+
+          const validValue = Value.getValidOrNull(value);
+
+          if (!validValue) {
+            return null;
+          }
+
+          if (validValue.t !== 'bool') {
+            context.notes.push(Note(statement.v, 'error',
+              `Type error: assert ${validValue.t}`,
+            ));
+          } else if (validValue.v !== true) {
+            context.notes.push(Note(statement.v, 'error',
+              // TODO: Show detail
+              'Asserted false',
+            ));
+
+            // TODO: Should be exception
+            context.value = unknown;
+          }
+
+          return null;
+        }
+
         case 'if': {
           const [cond, block] = statement.v;
           const condCtx = evalExpression(context.scope, cond);
