@@ -134,6 +134,7 @@ function analyzeInContext(
         }
 
         case 'assert': {
+          // TODO: Disallow scope mutations
           const { scope, value, notes } = evalExpression(
             context.scope,
             statement.v
@@ -156,7 +157,7 @@ function analyzeInContext(
             // TODO: Format code for other exceptions like this
             context.value = Exception(statement.v,
               // TODO: Show detail
-              'Asserted false',
+              `Asserted ${ExpressionString(context.scope, statement.v)}`,
             );
           }
 
@@ -852,6 +853,49 @@ function evalVanillaOperator<T extends {
   }
 
   return { scope, value, notes };
+}
+
+function ExpressionString(
+  scope: Scope<Context>,
+  exp: Syntax.Expression
+): string {
+  switch (exp.t) {
+    case 'IDENTIFIER':
+    case 'NUMBER':
+    case 'STRING':
+    case 'BOOL':
+    case 'NULL':
+    case '.':
+    case 'functionCall':
+    case 'methodCall':
+    case 'subscript':
+    case 'func':
+    case 'array':
+    case 'object':
+    case 'class':
+    case 'switch':
+    case 'import':
+    case 'unary -':
+    case 'unary +':
+    case 'prefix --':
+    case 'prefix ++':
+    case 'postfix --':
+    case 'postfix ++': {
+      const ctx = evalExpression(scope, exp);
+      return Value.String(ctx.value);
+    }
+
+    default: {
+      const [left, right] = exp.v;
+      return [
+        '(',
+        ExpressionString(scope, left),
+        ` ${exp.t} `,
+        ExpressionString(scope, right),
+        ')'
+      ].join('');
+    }
+  }
 }
 
 function checkNull(ignored: null) {}

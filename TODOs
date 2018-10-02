@@ -1,4 +1,3 @@
-TODO: Show assertion detail
 TODO: Count operations in analyzer
 TODO: implement: if (foo := maybeFoo(); foo != null) { return foo; }
 TODO: Do something about confusing info labels for compile time in vim (can't ale render infos differently than warnings?)
