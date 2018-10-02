@@ -3,11 +3,11 @@ x := 1; // #warning unused
 func() {
   y := 1; // #warning only assigned
   y += 1;
-  z := 1; // #warning ... hmm how to handle this one?
+  z := 1; // TODO should be warning ... hmm how to handle this one?
   z++;
-  zz := 1; // shouldn't be a warning (similar to ++ issue)
+  zz := 1; // #warning TODO shouldn't be a warning (similar to ++ issue)
   a := (zz += 1);
   return a;
 };
 
-return 1;
+return 1; // #info

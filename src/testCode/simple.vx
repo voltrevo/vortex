@@ -1,2 +1,2 @@
-a := 1; // #info #warning
+a := 1; // #info #warning #error
 a := 1; // #error #error

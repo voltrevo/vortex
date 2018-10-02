@@ -1,4 +1,4 @@
-import Error from 'core';
+import Error from 'core'; // #error
 
 return func factorial(n: i32) => switch {
   (n < 0) => Error('Invalid input'); // #error TODO variables from import and params

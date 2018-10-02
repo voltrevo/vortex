@@ -1,1 +1,1 @@
-return func wrongName() => 42; // #warning TODO name doesn't match file
+return func wrongName() => 42; // #error #warning TODO name doesn't match file

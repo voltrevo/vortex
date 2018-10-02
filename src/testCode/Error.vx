@@ -1,1 +1,1 @@
-return class Error: string {}; // #warning
+return class Error: string {}; // #warning #error

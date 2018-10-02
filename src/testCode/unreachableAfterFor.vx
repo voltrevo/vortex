@@ -12,7 +12,7 @@ func foo() {
     }
   }
 
-  return sum; // TODO this is unreachable
+  return sum; // TODO should be error because this is unreachable
 };
 
-return foo();
+return foo(); // #error

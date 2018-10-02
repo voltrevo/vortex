@@ -12,10 +12,12 @@ for {
 
   if (i * i > n) {
     if (p > n) {
+      assert false;
       return p;
     }
 
-    return n;
+    assert n == 6857;
+    return n; // #info
   }
 }
 

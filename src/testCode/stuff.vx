@@ -1,2 +1,2 @@
 foo := 'bar';
-return foo:length();
+return foo:length(); // #error

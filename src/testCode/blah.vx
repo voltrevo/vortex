@@ -1,4 +1,4 @@
-foo := {
+foo := { // #error TODO emit lack of return at end of scope
   a: 10,
   b: 2,
 };

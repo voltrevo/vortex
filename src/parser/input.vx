@@ -1,4 +1,4 @@
-import math from 'core';
+import math from 'core'; // #error
 
 import factorial;
 
@@ -95,10 +95,10 @@ class Error: string {
   :message() { return this; }
 };
 
+assert 1 == 1;
+
 return func factorial(n: i32) => switch {
   (n < 0) => Error('Invalid input');
   (n == 0) => 1;
   (true) => n * factorial(n - 1);
 };
-
-assert 1 > 2;
