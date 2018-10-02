@@ -1002,9 +1002,62 @@ function evalExpression(
         return null;
       }
 
+      case 'subscript': {
+        const [arrExp, indexExp] = exp.v;
+
+        const arrCtx = evalExpression(scope, arrExp);
+        scope = arrCtx.scope;
+        notes.push(...arrCtx.notes);
+
+        const indexCtx = evalExpression(scope, indexExp);
+
+        if (arrCtx.value.t !== 'array') {
+          value = Exception(exp,
+            `Type error: ${arrCtx.value.t}[${indexCtx.value.t}]`,
+          );
+
+          return null;
+        }
+
+        scope = indexCtx.scope;
+        notes.push(...indexCtx.notes);
+
+        if (indexCtx.value.t !== 'number') {
+          value = Exception(exp,
+            `Type error: ${arrCtx.value.t}[${indexCtx.value.t}]`,
+          );
+
+          return null;
+        }
+
+        if (
+          indexCtx.value.v < 0 ||
+          indexCtx.value.v !== Math.floor(indexCtx.value.v)
+        ) {
+          value = Exception(indexExp,
+            `Invalid array index: ${indexCtx.value.v}`,
+          );
+
+          return null;
+        }
+
+        if (indexCtx.value.v >= arrCtx.value.v.length) {
+          value = Exception(exp, [
+            'Out of bounds: index ',
+            indexCtx.value.v,
+            ' but array is only length ',
+            arrCtx.value.v.length
+          ].join(''));
+
+          return null;
+        }
+
+        value = arrCtx.value.v[indexCtx.value.v];
+        return null;
+      }
+
       case '.':
       case 'methodCall':
-      case 'subscript':
       case 'object':
       case 'class':
       case 'switch':
