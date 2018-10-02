@@ -43,6 +43,8 @@ const log = {
 };
 
 let ok = true;
+let compileTime = 0;
+let compiledFiles = 0;
 
 for (const file of files) {
   if (!/\.vx$/.test(file)) {
@@ -50,7 +52,11 @@ for (const file of files) {
   }
 
   const fileText = readFileSync(file).toString();
+  const before = Date.now();
   const notes = compile(fileText);
+  const after = Date.now();
+  compileTime += after - before;
+  compiledFiles++;
 
   const lines = fileText.split('\n');
 
@@ -107,6 +113,10 @@ for (const file of files) {
   }
 }
 
+log.info('>>> info: ' +
+  `Compiled ${compiledFiles} files in ${compileTime}ms`
+);
+
 if (ok) {
   log.info('>>> info: Tag matching succeeded');
 } else {
@@ -114,8 +124,6 @@ if (ok) {
 }
 
 console.log('\n' + (new Array(80).fill('-').join('')) + '\n');
-
-debugger;
 
 function compareArrays(a: any[], b: any[]) {
   for (let i = 0; true; i++) {
