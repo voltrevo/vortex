@@ -1,6 +1,6 @@
 import formatLocation from './formatLocation';
 import Note from './Note';
-import { Syntax } from './parser/parse';
+import Syntax from './parser/Syntax';
 import Scope from './Scope';
 import traverse from './traverse';
 

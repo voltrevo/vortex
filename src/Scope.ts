@@ -1,4 +1,4 @@
-import { Syntax } from './parser/parse';
+import Syntax from './parser/Syntax';
 
 type Scope<T> = {
   parent: Scope<T> | null;

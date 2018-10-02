@@ -7,7 +7,7 @@ if [ ${#jisonStdout} -gt 0 ]; then
   exit 1
 fi
 
-echo "import { Syntax } from './parse';" >testProgram.ts
+echo "import Syntax from './Syntax';" >testProgram.ts
 echo >>testProgram.ts
 echo "export const testProgram: Syntax.Program =" >>testProgram.ts
 DEPTH=100 PRINT=1 node vortex.js input.vx >>testProgram.ts

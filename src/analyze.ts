@@ -1,6 +1,6 @@
 import Note from './Note';
 import Scope from './Scope';
-import { Syntax } from './parser/parse';
+import Syntax from './parser/Syntax';
 
 // TODO: Types start with capitals
 type Value = (

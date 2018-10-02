@@ -1,6 +1,6 @@
 import analyze from './analyze';
 import Note from './Note';
-import { Syntax, parse } from './parser/parse';
+import Syntax from './parser/Syntax';
 import { validate } from './validate';
 
 export default function compile(text: string) {
@@ -9,7 +9,7 @@ export default function compile(text: string) {
   let program: null | Syntax.Program = null;
 
   try {
-    program = parse(text);
+    program = Syntax.Program(text);
   } catch (e) {
     if (e.hash) {
       notes.push({

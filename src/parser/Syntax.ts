@@ -2,7 +2,7 @@ declare function require(name: string): any;
 
 const { parser: parserUntyped } = require('./vortex.js');
 
-export namespace Syntax {
+namespace Syntax {
   export type CreationOperator = ':=';
 
   export type AssignmentOperator = (
@@ -362,8 +362,10 @@ export namespace Syntax {
 
     return expChildren;
   }
+
+  export function Program(programText: string): Program {
+    return parserUntyped.parse(programText);
+  }
 }
 
-export function parse(programText: string): Syntax.Program {
-  return parserUntyped.parse(programText);
-}
+export default Syntax;

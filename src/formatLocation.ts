@@ -1,4 +1,4 @@
-import { Syntax } from './parser/parse';
+import Syntax from './parser/Syntax';
 
 export default function formatLocation(pos: Syntax.Pos) {
   if (pos.first_line === pos.last_line) {
