@@ -1,0 +1,8 @@
+sayHello := func(name) {
+  return 'Hi ' + name;
+};
+
+msg := sayHello('computer');
+assert msg == 'Hi computer';
+
+return msg;

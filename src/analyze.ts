@@ -20,6 +20,7 @@ type Value = (
   { t: 'number', v: number } |
   { t: 'bool', v: boolean } |
   { t: 'null', v: null } |
+  Syntax.FunctionExpression |
   { t: 'unknown', v: null } |
   { t: 'missing', v: null } |
   Exception |
@@ -32,6 +33,7 @@ type ValidValue = (
   { t: 'number', v: number } |
   { t: 'bool', v: boolean } |
   { t: 'null', v: null } |
+  Syntax.FunctionExpression |
   never
 );
 
@@ -45,6 +47,10 @@ namespace Value {
       case 'number': return v.v.toString();
       case 'bool': return v.v.toString();
       case 'null': return 'null';
+
+      // TODO: include argument names
+      case 'func': return `<func ${v.v.name ? v.v.name.v : '(anonymous)'}>`;
+
       case 'unknown': return '<unknown>';
       case 'missing': return '<missing>';
       case 'exception': return `<exception: ${v.v.message}>`;
@@ -57,6 +63,7 @@ namespace Value {
       case 'number':
       case 'bool':
       case 'null':
+      case 'func':
         return v;
 
       case 'unknown':
@@ -84,19 +91,14 @@ function Context(): Context {
 export default function analyze(program: Syntax.Program) {
   let context = Context();
 
-  context = analyzeInContext(context, program);
-
-  if (context.value.t === 'missing') {
-    context.notes.push(Note(program, 'error',
-      `Returned ${Value.String(context.value)}`,
-    ));
-  }
+  context = analyzeInContext(context, true, program);
 
   return context;
 }
 
 function analyzeInContext(
   context: Context,
+  needsValue: boolean,
   program: Syntax.Program
 ): Context {
   for (const statement of program.v) {
@@ -183,7 +185,7 @@ function analyzeInContext(
           if (validCond.t === 'bool') {
             if (validCond.v) {
               context.scope = { parent: context.scope, variables: {} };
-              context = analyzeInContext(context, block);
+              context = analyzeInContext(context, false, block);
 
               if (context.scope.parent === null) {
                 throw new Error('This should not be possible');
@@ -280,7 +282,7 @@ function analyzeInContext(
             }
 
             context.scope = Scope.push(context.scope);
-            context = analyzeInContext(context, block);
+            context = analyzeInContext(context, false, block);
 
             if (control && control.t === 'setup; condition; next') {
               const [, , next] = control.v;
@@ -355,12 +357,22 @@ function analyzeInContext(
           `Threw exception: ${context.value.v.message}`,
         )];
 
-      case 'missing':
+      case 'missing': {
+        if (needsValue) {
+          return [Note(program, 'error',
+            `Returned ${Value.String(context.value)}`,
+          )];
+        }
+
+        return [];
+      }
+
       case 'unknown':
       case 'string':
       case 'number':
       case 'bool':
       case 'null':
+      case 'func':
         return [];
     }
   })();
@@ -742,6 +754,11 @@ function evalExpression(
               return null;
             }
 
+            if (left.t === 'func' || right.t === 'func') {
+              // TODO: Define function comparison?
+              return null;
+            }
+
             const v = (
               // Special case: typescript doesn't allow comparison with nulls,
               // but we want to allow it when both sides are null
@@ -789,11 +806,151 @@ function evalExpression(
         return null;
       }
 
+      case 'func': {
+        if (exp.topExp && exp.v.name) {
+          scope = Scope.add(scope, exp.v.name.v, {
+            origin: exp,
+            data: {
+              scope,
+              value: exp,
+              notes: [],
+            },
+          });
+        }
+
+        value = exp;
+        return null;
+      }
+
+      case 'functionCall': {
+        const [funcExp, argExps] = exp.v;
+
+        const funcCtx = evalExpression(scope, funcExp);
+
+        scope = funcCtx.scope;
+        let func = funcCtx.value;
+        notes.push(...funcCtx.notes);
+
+        func = (() => {
+          switch (func.t) {
+            case 'func':
+            case 'unknown':
+            case 'exception': {
+              return func;
+            }
+
+            case 'string':
+            case 'number':
+            case 'bool':
+            case 'null':
+            // TODO: Expressions should never be missing, so 'missing'
+            // shouldn't have to be handled
+            case 'missing': {
+              return Exception(funcExp,
+                `Type error: attempt to call a ${func.t} as a function`
+              );
+            }
+          }
+        })();
+
+        if (func.t === 'exception') {
+          value = func;
+          return null;
+        }
+
+        const args: ValidValue[] = [];
+
+        for (const argExp of argExps) {
+          const argCtx = evalExpression(scope, argExp);
+
+          scope = argCtx.scope;
+          const arg = argCtx.value;
+          notes.push(...argCtx.notes);
+
+          if (arg.t === 'exception') {
+            value = arg;
+            return null;
+          }
+
+          if (arg.t === 'missing') {
+            value = Exception(argExp,
+              `Argument was ${Value.String(arg)}`,
+            );
+
+            return null;
+          }
+
+          if (arg.t === 'unknown') {
+            value = unknown;
+            return null;
+          }
+
+          args.push(arg);
+        }
+
+        value = (() => {
+          switch (func.t) {
+            case 'unknown': {
+              return unknown;
+            }
+
+            case 'func': {
+              if (func.v.args.length !== args.length) {
+                return Exception(exp, [
+                  'Arguments length mismatch: ',
+                  Value.String(func),
+                  ' requires ',
+                  func.v.args.length,
+                  ' arguments but ',
+                  args.length,
+                  ' were provided'
+                ].join(''));
+              }
+
+              let funcScope = Scope<Context>();
+
+              for (let i = 0; i < args.length; i++) {
+                const arg = args[i];
+                const [argIdentifier] = func.v.args[i].v;
+                funcScope = Scope.add(
+                  funcScope,
+                  argIdentifier.v,
+                  {
+                    origin: argExps[i],
+                    data: {
+                      scope: funcScope,
+                      value: arg,
+                      notes: [],
+                    },
+                  }
+                );
+              }
+
+              const body = func.v.body;
+              let funcCtx = Context();
+              funcCtx.scope = funcScope;
+
+              if (body.t === 'expBody') {
+                funcCtx = evalExpression(funcScope, body.v);
+              } else {
+                funcCtx = analyzeInContext(funcCtx, true, body);
+              }
+
+              // TODO: Do some processing with the notes here. Return info
+              // should be suppressed (and all infos?) and others should be
+              // duplicated at the call site.
+              notes.push(...funcCtx.notes);
+              return funcCtx.value;
+            }
+          }
+        })();
+
+        return null;
+      }
+
       case '.':
-      case 'functionCall':
       case 'methodCall':
       case 'subscript':
-      case 'func':
       case 'array':
       case 'object':
       case 'class':

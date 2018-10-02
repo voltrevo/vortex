@@ -1,3 +1,6 @@
+TODO: Sort TODOs by line number instead of line string
+TODO: Notes revamp - give all notes a type, always include filename, implement multiple locations to deal with call stacks
+TODO: Implement imports
 TODO: Count operations in analyzer
 TODO: implement: if (foo := maybeFoo(); foo != null) { return foo; }
 TODO: Do something about confusing info labels for compile time in vim (can't ale render infos differently than warnings?)
