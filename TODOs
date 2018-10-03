@@ -1,5 +1,11 @@
+TODO: Array comparison operators
 TODO: Notes revamp - give all notes a type, always include filename, implement multiple locations to deal with call stacks
 TODO: Implement imports
+TODO: Cross-type comparison operators e.g. :<:
+TODO: Element-wise arithmetic
+TODO: log.info, log.warning etc
+TODO: analyzer.info, analyzer.error etc
+TODO: debugger.breakpoint;
 TODO: Count operations in analyzer
 TODO: implement: if (foo := maybeFoo(); foo != null) { return foo; }
 TODO: Do something about confusing info labels for compile time in vim (can't ale render infos differently than warnings?)
@@ -7,4 +13,23 @@ TODO: 0b 0x 0o literals (allow floats and e, e.g. 0b1.1e5 == 48 (what to do abou
 TODO: Scope validation for class syntax
 TODO: Implement TODO prioritization and sorting
 TODO: Mechanism for removing TODO false positives
-TODO: Variable/code references in comments
+TODO: Variable/code references in comments (jsdoc?)
+TODO: parser guessing
+TODO: interactive debugger
+
+TODO: syntactic sugar for function chains?
+  func chain doThings() {
+    json := chain fetch('http://blah');
+    bytes := chain os.readFile('/tmp/{json.filename}');
+    return bytes.length;
+  }
+
+  is equivalent to:
+
+  func doThings() {
+    func step1() => [fetch('http://blah'), step2];
+    func step2(json) => [os.readFile('/tmp/{json.filename}'), step3];
+    func step3(bytes) => bytes.length;
+
+    return step1();
+  }
