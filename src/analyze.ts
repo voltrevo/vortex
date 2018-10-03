@@ -36,6 +36,165 @@ type ValidValue = (
   never
 );
 
+function SameType(left: ValidValue, right: ValidValue): boolean | null {
+  if (left.t === 'func' || right.t === 'func') {
+    // TODO: func typing
+    return null;
+  }
+
+  if (left.t !== 'array') {
+    return left.t === right.t;
+  }
+
+  if (right.t !== 'array') {
+    // left is an array here, so right needs to be an array too
+    return false;
+  }
+
+  if (left.v.length !== right.v.length) {
+    return false;
+  }
+
+  for (let i = 0; i < left.v.length; i++) {
+    const subSameType = SameType(left.v[i], right.v[i]);
+
+    if (subSameType === null) {
+      return null;
+    }
+
+    if (!subSameType) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function TypedEqual(left: ValidValue, right: ValidValue): boolean | null {
+  if (!SameType(left, right)) {
+    return null;
+  }
+
+  switch (left.t) {
+    case 'string':
+    case 'number':
+    case 'bool':
+    case 'null':
+      return left.v === right.v;
+
+    case 'func':
+      throw new Error('Shouldn\'t be possible to get here');
+
+    case 'array': {
+      if (right.t !== 'array') {
+        throw new Error('Shouldn\'t be possible to get here');
+      }
+
+      for (let i = 0; i < left.v.length; i++) {
+        const subEq = TypedEqual(left.v[i], right.v[i]);
+
+        if (subEq === null) {
+          throw new Error('Shouldn\'t be possible to get here');
+        }
+
+        if (!subEq) {
+          return false;
+        }
+      }
+
+      return true;
+    }
+  }
+}
+
+function TypedLessThan(left: ValidValue, right: ValidValue): boolean | null {
+  if (!SameType(left, right)) {
+    return null;
+  }
+
+  switch (left.t) {
+    case 'string':
+    case 'number':
+    case 'bool':
+    case 'null':
+      // Need to use any here because typescript thinks null comparison is bad
+      // but we're ok with it and it does the right thing.
+      return (left.v as any) < (right.v as any);
+
+    case 'func':
+      throw new Error('Shouldn\'t be possible to get here');
+
+    case 'array': {
+      if (right.t !== 'array') {
+        throw new Error('Shouldn\'t be possible to get here');
+      }
+
+      for (let i = 0; i < left.v.length; i++) {
+        const subLT = TypedLessThan(left.v[i], right.v[i]);
+
+        if (subLT === null) {
+          throw new Error('Shouldn\'t be possible to get here');
+        }
+
+        if (subLT) {
+          return true;
+        }
+
+        const subGT = TypedLessThan(right.v[i], left.v[i]);
+
+        if (subGT === null) {
+          throw new Error('Shouldn\'t be possible to get here');
+        }
+
+        if (subGT) {
+          return false;
+        }
+      }
+
+      return false;
+    }
+  }
+}
+
+function InvertNonNull(x: boolean | null): boolean | null {
+  if (x === null) {
+    return null;
+  }
+
+  return !x;
+}
+
+type ComparisonOp = '==' | '!=' | '<' | '>' | '<=' | '>=';
+
+function TypedComparison(
+  op: ComparisonOp,
+  left: ValidValue,
+  right: ValidValue,
+): boolean | null {
+  switch (op) {
+    case '==': return TypedEqual(left, right);
+    case '!=': return InvertNonNull(TypedEqual(left, right));
+    case '<': return TypedLessThan(left, right);
+    case '>': return TypedLessThan(right, left);
+    case '<=': return InvertNonNull(TypedLessThan(right, left));
+    case '>=': return InvertNonNull(TypedLessThan(left, right));
+  }
+}
+
+function TypedComparisonValue(
+  op: ComparisonOp,
+  left: ValidValue,
+  right: ValidValue,
+): ValidValue | null {
+  const cmp = TypedComparison(op, left, right);
+
+  if (cmp === null) {
+    return null;
+  }
+
+  return { t: 'bool', v: cmp };
+}
+
 function SynthExpFromValidValue(
   value: ValidValue,
   p: Syntax.Pos,
@@ -874,69 +1033,17 @@ function evalExpression(
       }
 
       case '==':
-      case '!=': {
-        ({ scope, value, notes } = evalVanillaOperator(
-          { scope, value, notes },
-          exp,
-          (left, right) => {
-            if (left.t !== right.t) {
-              // ==, != require types to match
-              return null;
-            }
-
-            return {
-              t: 'bool',
-              v: exp.t === '==' ? left.v === right.v : left.v !== right.v,
-            };
-          },
-        ));
-
-        return null;
-      }
-
-      case '<=':
-      case '>=':
+      case '!=':
       case '<':
-      case '>': {
-        type V = string | number | boolean;
-        const op: (a: V, b: V) => boolean = (() => {
-          switch (exp.t) {
-            case '<=': return (a: V, b: V) => a <= b;
-            case '>=': return (a: V, b: V) => a >= b;
-            case '<': return (a: V, b: V) => a < b;
-            case '>': return (a: V, b: V) => a > b;
-          }
-        })();
+      case '>':
+      case '<=':
+      case '>=': {
+        const op = exp.t;
 
         ({ scope, value, notes } = evalVanillaOperator(
           { scope, value, notes },
           exp,
-          (left, right) => {
-            if (left.t !== right.t) {
-              // ==, != require types to match
-              return null;
-            }
-
-            if (left.t === 'func' || right.t === 'func') {
-              // TODO: Define function comparison?
-              return null;
-            }
-
-            if (left.t === 'array' || right.t === 'array') {
-              // TODO: Define array comparison
-              return null;
-            }
-
-            const v = (
-              // Special case: typescript doesn't allow comparison with nulls,
-              // but we want to allow it when both sides are null
-              left.t === 'null' || right.t === 'null' ?
-              op(left.v as any, right.v as any) :
-              op(left.v, right.v)
-            );
-
-            return { t: 'bool', v };
-          },
+          (left, right) => TypedComparisonValue(op, left, right),
         ));
 
         return null;
