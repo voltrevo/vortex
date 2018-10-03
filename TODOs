@@ -1,6 +1,9 @@
+TODO: Finish implementing objects - need addition, multiplication, subscript, key assignment, key deletion
+TODO: Better function scoping and variable capture, constraints on captured variables
 TODO: Notes revamp - give all notes a type, always include filename, implement multiple locations to deal with call stacks
 TODO: Implement imports
 TODO: Cross-type comparison operators e.g. :<:
+TODO: Spaceship operator <=>
 TODO: Element-wise arithmetic
 TODO: log.info, log.warning etc
 TODO: analyzer.info, analyzer.error etc
