@@ -86,7 +86,7 @@ syn match       vxMethod            "\(:\)\@<=\<[a-zA-Z]\w*\>"
 hi def link     vxMethod            Function
 
 " Operators
-syn match       vxOperator          "\(^\|[a-zA-Z0-9; ()]\)\@<=\(=>\|:=\|++\|--\|in\|delete\|\(+\|-\|\*\*\?\|\/\|%\|\^\|||\?\|&&\?\|=\|!\|<<\?\|>>\?\|\~\)=\?\)\($\|[a-zA-Z0-9; ()]\)\@="
+syn match       vxOperator          "\(^\|[a-zA-Z0-9; ()]\)\@<=\(=>\|:=\|++\|--\|delete\|\(+\|-\|\*\*\?\|\/\|%\|\^\|||\?\|&&\?\|=\|!\|<<\?\|>>\?\|\~\)=\?\)\($\|[a-zA-Z0-9; ()]\)\@="
 hi def link     vxOperator          Operator
 
 " Name creation
