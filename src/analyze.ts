@@ -598,8 +598,6 @@ function evalExpression(
             return null;
           }
 
-          const scopeBefore = scope;
-
           for (let i = 0; i < leftExp.v.length; i++) {
             const subLeft = leftExp.v[i];
 
@@ -620,7 +618,7 @@ function evalExpression(
               p: exp.p,
             };
 
-            const subCtx = evalExpression(scopeBefore, synthExp);
+            const subCtx = evalExpression(scope, synthExp);
             scope = subCtx.scope;
             notes.push(...subCtx.notes);
 

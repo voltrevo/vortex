@@ -4,7 +4,6 @@ f1 := 1;
 f2 := 1;
 
 for {
-  assert false; // #error #error TODO Fix duplicate assertion error
   [f1, f2] = [f2, f1 + f2];
 
   if (f2 % 2 == 0) {
@@ -12,6 +11,7 @@ for {
   }
 
   if (f2 > 4000000) {
-    return sum;
+    assert sum == 4613732;
+    return sum; // #info
   }
 }

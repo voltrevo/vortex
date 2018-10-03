@@ -1,0 +1,5 @@
+for {
+  assert false; // #error
+}
+
+return 0; // #info TODO: Actually this should be unreachable
