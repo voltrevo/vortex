@@ -371,11 +371,30 @@ function analyzeInContext(
           context.scope = scope;
           context.notes.push(...notes);
 
-          const validValue = Value.getValidOrNull(value);
+          const vinvValue = ValidInvalidValue(value);
 
-          if (!validValue) {
+          if (vinvValue.t === 'invalid') {
+            const invalidValue = vinvValue.v;
+
+            context.value = (() => {
+              switch (invalidValue.t) {
+                case 'unknown':
+                case 'exception':
+                  return invalidValue;
+
+                case 'missing':
+                  // TODO: Is this actually possible? I think evalExpression
+                  // can't actually produce <missing> anymore.
+                  return VException(statement.v,
+                    'Assertion expression is missing a value',
+                  );
+              }
+            })();
+
             return null;
           }
+
+          const validValue = vinvValue.v;
 
           if (validValue.t !== 'bool') {
             context.notes.push(Note(statement.v, 'error',

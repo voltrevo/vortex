@@ -1,0 +1,2 @@
+assert 'foo' > 1; // #error
+return 0;
