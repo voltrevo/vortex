@@ -10,6 +10,7 @@ export type VBool = { t: 'bool', v: boolean };
 export type VNull = { t: 'null', v: null };
 export type VFunc = Syntax.FunctionExpression;
 export type VArray = { t: 'array', v: ValidValue[] };
+export type VObject = { t: 'object', v: { [key: string]: ValidValue } };
 export type VUnknown = { t: 'unknown', v: null };
 export type VMissing = { t: 'missing', v: null };
 
@@ -33,41 +34,80 @@ type ValidValue = (
   VNull |
   VFunc |
   VArray |
+  VObject |
   never
 );
 
 function SameType(left: ValidValue, right: ValidValue): boolean | null {
-  if (left.t === 'func' || right.t === 'func') {
-    // TODO: func typing
-    return null;
-  }
+  switch (left.t) {
+    case 'func': {
+      if (right.t !== 'func') {
+        return false;
+      }
 
-  if (left.t !== 'array') {
-    return left.t === right.t;
-  }
-
-  if (right.t !== 'array') {
-    // left is an array here, so right needs to be an array too
-    return false;
-  }
-
-  if (left.v.length !== right.v.length) {
-    return false;
-  }
-
-  for (let i = 0; i < left.v.length; i++) {
-    const subSameType = SameType(left.v[i], right.v[i]);
-
-    if (subSameType === null) {
-      return null;
+      // TODO: Types of arguments?
+      return left.v.args.length === right.v.args.length;
     }
 
-    if (!subSameType) {
-      return false;
+    case 'array': {
+      if (right.t !== 'array') {
+        return false;
+      }
+
+      for (let i = 0; i < left.v.length; i++) {
+        const subSameType = SameType(left.v[i], right.v[i]);
+
+        if (subSameType === null) {
+          return null;
+        }
+
+        if (!subSameType) {
+          return false;
+        }
+      }
+
+      return true;
+    }
+
+    case 'object': {
+      if (right.t !== 'object') {
+        return false;
+      }
+
+      const leftKeys = Object.keys(left.v).sort();
+      const rightKeys = Object.keys(right.v).sort();
+
+      if (leftKeys.length !== rightKeys.length) {
+        return false;
+      }
+
+      for (let i = 0; i < leftKeys.length; i++) {
+        const subSameType = SameType(
+          left.v[leftKeys[i]],
+          right.v[rightKeys[i]],
+        )
+
+        if (subSameType === null) {
+          return null;
+        }
+
+        if (!subSameType) {
+          return false;
+        }
+
+        return true;
+      }
+
+      return true;
+    }
+
+    case 'string':
+    case 'number':
+    case 'bool':
+    case 'null': {
+      return left.t === right.t;
     }
   }
-
-  return true;
 }
 
 function TypedEqual(left: ValidValue, right: ValidValue): boolean | null {
@@ -79,22 +119,57 @@ function TypedEqual(left: ValidValue, right: ValidValue): boolean | null {
     case 'string':
     case 'number':
     case 'bool':
-    case 'null':
+    case 'null': {
       return left.v === right.v;
+    }
 
-    case 'func':
-      throw new Error('Shouldn\'t be possible to get here');
+    case 'func': {
+      // Not defining a way to compare functions right now. In general, it's
+      // impossible to tell whether functions behave the same way, so there
+      // will have to be null sometimes.
+      // In general, perhaps the syntax trees of the optimised functions can
+      // be compared, true if the same, but still null rather than false if
+      // different.
+      throw new Error('Shouldn\'t be possible, but may be later');
+      // return null;
+    }
 
     case 'array': {
       if (right.t !== 'array') {
-        throw new Error('Shouldn\'t be possible to get here');
+        throw new Error('Shouldn\'t be possible');
       }
 
       for (let i = 0; i < left.v.length; i++) {
         const subEq = TypedEqual(left.v[i], right.v[i]);
 
         if (subEq === null) {
-          throw new Error('Shouldn\'t be possible to get here');
+          throw new Error('Shouldn\'t be possible right now');
+          // return null;
+        }
+
+        if (!subEq) {
+          return false;
+        }
+      }
+
+      return true;
+    }
+
+    case 'object': {
+      if (right.t !== 'object') {
+        throw new Error('Shouldn\'t be possible');
+      }
+
+      // Already checked types are equal so we know that the left keys are also
+      // the right keys.
+      const keys = Object.keys(left.v).sort();
+
+      for (const key of keys) {
+        const subEq = TypedEqual(left.v[key], right.v[key]);
+
+        if (subEq === null) {
+          throw new Error('Shouldn\'t be possible right now');
+          // return null;
         }
 
         if (!subEq) {
@@ -116,24 +191,28 @@ function TypedLessThan(left: ValidValue, right: ValidValue): boolean | null {
     case 'string':
     case 'number':
     case 'bool':
-    case 'null':
+    case 'null': {
       // Need to use any here because typescript thinks null comparison is bad
       // but we're ok with it and it does the right thing.
       return (left.v as any) < (right.v as any);
+    }
 
-    case 'func':
-      throw new Error('Shouldn\'t be possible to get here');
+    case 'func': {
+      // Not defining a way to compare functions right now.
+      return null;
+    }
 
     case 'array': {
       if (right.t !== 'array') {
-        throw new Error('Shouldn\'t be possible to get here');
+        throw new Error('Shouldn\'t be possible');
       }
 
       for (let i = 0; i < left.v.length; i++) {
         const subLT = TypedLessThan(left.v[i], right.v[i]);
 
         if (subLT === null) {
-          throw new Error('Shouldn\'t be possible to get here');
+          throw new Error('Shouldn\'t be possible right now');
+          // return null;
         }
 
         if (subLT) {
@@ -143,7 +222,44 @@ function TypedLessThan(left: ValidValue, right: ValidValue): boolean | null {
         const subGT = TypedLessThan(right.v[i], left.v[i]);
 
         if (subGT === null) {
-          throw new Error('Shouldn\'t be possible to get here');
+          throw new Error('Shouldn\'t be possible');
+        }
+
+        if (subGT) {
+          return false;
+        }
+      }
+
+      return false;
+    }
+
+    case 'object': {
+      debugger;
+      if (right.t !== 'object') {
+        throw new Error('Shouldn\'t be possible');
+      }
+
+      // Already checked types are equal so we know that the left keys are also
+      // the right keys.
+      const keys = Object.keys(left.v).sort();
+
+      // TODO: Deduplicate with arrays
+      for (const key of keys) {
+        const subLT = TypedLessThan(left.v[key], right.v[key]);
+
+        if (subLT === null) {
+          throw new Error('Shouldn\'t be possible right now');
+          // return null;
+        }
+
+        if (subLT) {
+          return true;
+        }
+
+        const subGT = TypedLessThan(right.v[key], left.v[key]);
+
+        if (subGT === null) {
+          throw new Error('Shouldn\'t be possible');
         }
 
         if (subGT) {
@@ -211,6 +327,15 @@ function SynthExpFromValidValue(
       v: value.v.map(v => SynthExpFromValidValue(v, p)),
       p,
     };
+
+    case 'object': return {
+      t: 'object',
+      v: Object.keys(value.v).sort().map(key => [
+        { t: 'IDENTIFIER', v: key, p },
+        SynthExpFromValidValue(value.v[key], p)
+      ] as [Syntax.Identifier, Syntax.Expression]),
+      p,
+    }
   }
 }
 
@@ -241,6 +366,7 @@ function ValidInvalidValue(v: Value): ValidInvalidValue {
     case 'null':
     case 'func':
     case 'array':
+    case 'object':
       return { t: 'valid', v };
 
     case 'unknown':
@@ -265,6 +391,14 @@ namespace Value {
       case 'func': return `<func ${v.v.name ? v.v.name.v : '(anonymous)'}>`;
 
       case 'array': return `[${v.v.map(Value.String).join(', ')}]`;
+
+      case 'object': return `{${
+        Object.keys(v.v).sort().map(key => (
+          // TODO: In future keys can be non-identifiers and will need to be
+          // quoted
+          `${key}: ${Value.String(v.v[key])}`
+        )).join(', ')
+      }}`;
 
       case 'unknown': return '<unknown>';
       case 'missing': return '<missing>';
@@ -624,6 +758,7 @@ function analyzeInContext(
       case 'null':
       case 'func':
       case 'array':
+      case 'object':
         return [];
     }
   })();
@@ -1138,6 +1273,7 @@ function evalExpression(
             case 'bool':
             case 'null':
             case 'array':
+            case 'object':
             // TODO: Expressions should never be missing, so 'missing'
             // shouldn't have to be handled
             case 'missing': {
@@ -1339,9 +1475,62 @@ function evalExpression(
         return null;
       }
 
+      case 'object': {
+        value = { t: 'object', v: {} as { [key: string]: ValidValue } };
+        let objMissing = false;
+        let objUnknown = false;
+
+        for (const [identifierKey, subExp] of exp.v) {
+          const subCtx = evalExpression(scope, subExp);
+          scope = subCtx.scope;
+          notes.push(...subCtx.notes);
+
+          const vinvValue = ValidInvalidValue(subCtx.value);
+
+          if (vinvValue.t === 'invalid') {
+            const invalidValue = vinvValue.v;
+
+            if (invalidValue.t === 'exception') {
+              value = invalidValue;
+              return null;
+            }
+
+            checkNull((() => {
+              switch (invalidValue.t) {
+                case 'unknown': {
+                  objUnknown = true;
+                  return null;
+                }
+
+                case 'missing': {
+                  objMissing = true;
+                  return null;
+                }
+              }
+            })());
+
+            continue;
+          }
+
+          const validValue = vinvValue.v;
+          value.v[identifierKey.v] = validValue;
+        }
+
+        if (objMissing) {
+          value = missing;
+          return null;
+        }
+
+        if (objUnknown) {
+          value = unknown;
+          return null;
+        }
+
+        return null;
+      }
+
       case '.':
       case 'methodCall':
-      case 'object':
       case 'class':
       case 'switch':
       case 'import': {
