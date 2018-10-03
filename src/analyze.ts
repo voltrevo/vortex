@@ -351,11 +351,13 @@ function analyzeInContext(
             context.scope = Scope.push(context.scope);
             context = analyzeInContext(context, false, block);
 
-            if (control && control.t === 'setup; condition; next') {
-              const [, , next] = control.v;
-              const nextCtx = evalExpression(context.scope, next);
-              context.scope = nextCtx.scope;
-              context.notes.push(...nextCtx.notes);
+            if (context.value.t !== 'exception') {
+              if (control && control.t === 'setup; condition; next') {
+                const [, , next] = control.v;
+                const nextCtx = evalExpression(context.scope, next);
+                context.scope = nextCtx.scope;
+                context.notes.push(...nextCtx.notes);
+              }
             }
 
             if (context.scope.parent === null) {
@@ -417,9 +419,15 @@ function analyzeInContext(
   const finalNotes: Note[] = (() => {
     switch (context.value.t) {
       case 'exception':
-        return [Note(context.value.v.origin, 'error',
-          `Threw exception: ${context.value.v.message}`,
-        )];
+        // Exception should be picked up and result in a note elsewhere if
+        // we're not returning a value.
+        if (needsValue) {
+          return [Note(context.value.v.origin, 'error',
+            `Threw exception: ${context.value.v.message}`,
+          )];
+        }
+
+        return [];
 
       case 'missing': {
         if (needsValue) {

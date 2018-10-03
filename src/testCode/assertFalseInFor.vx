@@ -1,5 +1,3 @@
-for {
+for { // #error TODO: Shouldn't be an error if guaranteed to throw
   assert false; // #error
 }
-
-return 0; // #info TODO: Actually this should be unreachable
