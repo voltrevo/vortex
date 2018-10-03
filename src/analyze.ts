@@ -36,6 +36,25 @@ type ValidValue = (
   never
 );
 
+function SynthExpFromValidValue(
+  value: ValidValue,
+  p: Syntax.Pos,
+): Syntax.Expression {
+  switch (value.t) {
+    case 'string': return { t: 'STRING', v: JSON.stringify(value.v), p };
+    case 'number': return { t: 'NUMBER', v: JSON.stringify(value.v), p };
+    case 'bool': return { t: 'BOOL', v: value.v, p };
+    case 'null': return { t: 'NULL', v: value.v, p };
+    case 'func': return value;
+
+    case 'array': return {
+      t: 'array',
+      v: value.v.map(v => SynthExpFromValidValue(v, p)),
+      p,
+    };
+  }
+}
+
 type InvalidValue = (
   VUnknown |
   VMissing |
@@ -496,6 +515,8 @@ function evalExpression(
       }
 
       // TODO: Support more compound assignment operators
+      // TODO: Better lvalues - preserve identifiers during eval
+      // e.g. this will enable: [a, b][getIndex()] = 1;
       case '=':
       case '+=':
       case '-=':
@@ -507,7 +528,7 @@ function evalExpression(
       case '&=':
       case '^=':
       case '|=': {
-        const left = exp.v[0];
+        const leftExp = exp.v[0];
 
         const rightExp: Syntax.Expression = (() => {
           // The need for the type annotation below is a particularly strange
@@ -542,18 +563,86 @@ function evalExpression(
         })();
 
         const right = evalExpression(scope, rightExp);
+        scope = right.scope;
         notes.push(...right.notes);
 
-        if (left.t !== 'IDENTIFIER') {
+        if (right.value.t === 'exception') {
+          value = right.value;
+          return null;
+        }
+
+        if (leftExp.t === 'array') {
+          // TODO: Fail earlier / in a more informative way when attempting a
+          // destructuring and compound assignment simultaneously?
+
+          if (right.value.t !== 'array') {
+            value = VException(exp,
+              // TODO: a vs an
+              'Assignment target is an array but the value is a ' +
+              right.value.t
+            );
+
+            return null;
+          }
+
+          if (leftExp.v.length !== right.value.v.length) {
+            // TODO: Implement _ as special ignore identifier
+            value = VException(exp, [
+              'Array destructuring length mismatch: ',
+              leftExp.v.length,
+              ' targets but only ',
+              right.value.v.length,
+              ' values',
+            ].join(''));
+
+            return null;
+          }
+
+          const scopeBefore = scope;
+
+          for (let i = 0; i < leftExp.v.length; i++) {
+            const subLeft = leftExp.v[i];
+
+            // Need to use evaluated rhs rather than decomposing into
+            // assignments so that e.g. [a, b] = [b, a] works rather than
+            // producing a = b; b = a; which doesn't swap.
+            const synthSubRight = SynthExpFromValidValue(
+              right.value.v[i],
+              rightExp.p,
+            );
+
+            const synthExp = {
+              t: '=' as '=',
+              v: [
+                subLeft,
+                synthSubRight,
+              ] as [Syntax.Expression, Syntax.Expression],
+              p: exp.p,
+            };
+
+            const subCtx = evalExpression(scopeBefore, synthExp);
+            scope = subCtx.scope;
+            notes.push(...subCtx.notes);
+
+            if (subCtx.value.t === 'exception') {
+              value = subCtx.value;
+              return null;
+            }
+          }
+
+          return null;
+        }
+
+        if (leftExp.t !== 'IDENTIFIER') {
           value = VException(
-            left,
-            'Not implemented: non-identifier lvalues',
+            leftExp,
+            `Invalid assignment expression: ${leftExp.t}`,
           );
 
           return null;
         }
 
-        const existing = Scope.get<Context>(scope, left.v);
+        const existing = Scope.get<Context>(scope, leftExp.v);
 
         if (!existing) {
           notes.push(Note(exp, 'error',
@@ -565,7 +654,7 @@ function evalExpression(
 
         // TODO: Should the scope data really be Context? Not seeming
         // appropriate here. (What's the purpose of scope, notes?)
-        scope = Scope.set<Context>(scope, left.v, { value: right.value });
+        scope = Scope.set<Context>(scope, leftExp.v, { value: right.value });
 
         return null;
       }
