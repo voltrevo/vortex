@@ -537,6 +537,11 @@ function analyzeInContext(
           const ctx = evalExpression(context.scope, statement.v);
           context.scope = ctx.scope;
           context.notes.push(...ctx.notes);
+
+          if (ctx.value.t === 'exception') {
+            context.value = ctx.value;
+          }
+
           return null;
         }
 
@@ -920,6 +925,8 @@ function evalExpression(
       case '|=': {
         const leftExp = exp.v[0];
 
+        // TODO: Fix double mutation issue from double evaluation of lhs in
+        // compound assignment
         const rightExp: Syntax.Expression = (() => {
           // The need for the type annotation below is a particularly strange
           // quirk of typescript - without it, synthOp is a string when
@@ -958,6 +965,12 @@ function evalExpression(
 
         if (right.value.t === 'exception') {
           value = right.value;
+          return null;
+        }
+
+        if (right.value.t === 'missing') {
+          // TODO: Better message
+          value = VException(rightExp, 'Value required');
           return null;
         }
 
@@ -1021,16 +1034,66 @@ function evalExpression(
           return null;
         }
 
-        if (leftExp.t !== 'IDENTIFIER') {
-          value = VException(
-            leftExp,
-            `Invalid assignment expression: ${leftExp.t}`,
+        let leftBaseExp: Syntax.Expression = leftExp;
+        const accessChain: (string | number)[] = [];
+
+        while (true) {
+          if (leftBaseExp.t === 'IDENTIFIER') {
+            break;
+          }
+
+          if (leftBaseExp.t === '.') {
+            const [newBase, identifier]: [
+              // Not quite sure why typescript needs this annotation
+              Syntax.Expression,
+              Syntax.Identifier // Typescript disallows trailing comma?
+            ] = leftBaseExp.v;
+
+            leftBaseExp = newBase;
+            accessChain.unshift(identifier.v);
+
+            continue;
+          }
+
+          if (leftBaseExp.t === 'subscript') {
+            const [newBase, accessor]: [
+              // Not quite sure why typescript needs this annotation
+              Syntax.Expression,
+              Syntax.Expression // Typescript disallows trailing comma?
+            ] = leftBaseExp.v;
+
+            const accessorCtx = evalExpression(scope, accessor);
+            scope = accessorCtx.scope;
+            notes.push(...accessorCtx.notes);
+
+            if (
+              accessorCtx.value.t !== 'string' &&
+              accessorCtx.value.t !== 'number'
+            ) {
+              value = VException(accessor,
+                `Type error: ${accessorCtx.value.t} subscript`,
+              );
+
+              return null;
+            }
+
+            leftBaseExp = newBase;
+            accessChain.unshift(accessorCtx.value.v);
+
+            continue;
+          }
+
+          value = VException(leftBaseExp,
+            // TODO: Don't analyze if failed validation and throw internal
+            // error here instead
+            `(redundant) Invalid assignment target: ${leftBaseExp.t} ` +
+            'expression',
           );
 
           return null;
         }
 
-        const existing = Scope.get<Context>(scope, leftExp.v);
+        const existing = Scope.get<Context>(scope, leftBaseExp.v);
 
         if (!existing) {
           notes.push(Note(exp, 'error',
@@ -1040,9 +1103,140 @@ function evalExpression(
           return null;
         }
 
+        function modifyChain(
+          oldValue: ValidValue | VUnknown,
+          chain: (string | number)[],
+          newValue: ValidValue | VUnknown,
+        ): Value {
+          const [index, ...newChain] = chain;
+
+          if (index === undefined) {
+            return newValue;
+          }
+
+          if (oldValue.t === 'object' && typeof index === 'string') {
+            // TODO: Improve typing so that typescript knows this can be
+            // undefined instead of using its permissive (incorrect) analysis
+            // of index typing.
+            const oldSubValue = oldValue.v[index];
+
+            if (oldSubValue === undefined) {
+              return VException(leftExp,
+                // TODO: Better message, location
+                'Key not found',
+              );
+            }
+
+            const newValueAtIndex = modifyChain(
+              oldValue.v[index],
+              newChain,
+              newValue,
+            );
+
+            const validNewValueAtIndex = Value.getValidOrNull(newValueAtIndex);
+
+            if (!validNewValueAtIndex) {
+              // TODO: Unknown currently has to make the entire object/array
+              // become unknown but it shouldn't
+              return newValueAtIndex;
+            }
+
+            return {
+              t: 'object',
+              v: {
+                ...oldValue.v,
+                [index]: validNewValueAtIndex,
+              },
+            };
+          }
+
+          if (oldValue.t === 'array' && typeof index === 'number') {
+            if (
+              index !== Math.floor(index) ||
+              index < 0
+            ) {
+              // TODO: More accurate expression reference (just providing
+              // entire lhs instead of specifically the bad subscript/.)
+              return VException(leftExp,
+                `Invalid index: ${index}`,
+              );
+            }
+
+            if (index >= oldValue.v.length) {
+              // TODO: More accurate expression reference (just providing
+              // entire lhs instead of specifically the bad subscript/.)
+              return VException(leftExp, [
+                'Out of bounds: index ',
+                index,
+                ' but array is only length ',
+                oldValue.v.length
+              ].join(''));
+            }
+
+            const newValueAtIndex = modifyChain(
+              oldValue.v[index],
+              newChain,
+              newValue,
+            );
+
+            const validNewValueAtIndex = Value.getValidOrNull(newValueAtIndex);
+
+            if (!validNewValueAtIndex) {
+              // TODO: Unknown currently has to make the entire object/array
+              // become unknown but it shouldn't
+              return newValueAtIndex;
+            }
+
+            return {
+              t: 'array',
+              v: [
+                ...oldValue.v.slice(0, index),
+                validNewValueAtIndex,
+                ...oldValue.v.slice(index + 1),
+              ]
+            };
+          }
+
+          // TODO: More accurate expression reference (just providing entire
+          // lhs instead of specifically the bad subscript/.)
+          return VException(leftExp,
+            `Type error: attempt to index ${oldValue.t} with a ` +
+            typeof index,
+          );
+        }
+
+        if (
+          existing.data.value.t === 'missing' ||
+          existing.data.value.t === 'exception'
+        ) {
+          throw new Error('Shouldn\'t be possible (TODO: improve typing?)');
+        }
+
+        const newBaseValue = modifyChain(
+          existing.data.value,
+          accessChain,
+          right.value,
+        );
+
+        if (newBaseValue.t === 'exception') {
+          value = newBaseValue;
+          return null;
+        }
+
+        if (newBaseValue.t === 'missing') {
+          value = VException(exp,
+            // TODO: Better wording
+            'Expected a value',
+          );
+        }
+
         // TODO: Should the scope data really be Context? Not seeming
         // appropriate here. (What's the purpose of scope, notes?)
-        scope = Scope.set<Context>(scope, leftExp.v, { value: right.value });
+        scope = Scope.set<Context>(
+          scope,
+          leftBaseExp.v,
+          { value: newBaseValue }
+        );
 
         return null;
       }
