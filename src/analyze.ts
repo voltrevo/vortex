@@ -1139,6 +1139,24 @@ function evalExpression(
               return { t: 'array', v: [...left.v, ...right.v] };
             }
 
+            if (left.t === 'object' && right.t === 'object') {
+              const leftKeys: { [key: string]: true | undefined } = {};
+
+              for (const key of Object.keys(left.v)) {
+                leftKeys[key] = true;
+              }
+
+              for (const key of Object.keys(right.v)) {
+                if (leftKeys[key]) {
+                  // TODO: Should be exception rather than this null which will
+                  // produce a type error.
+                  return null;
+                }
+              }
+
+              return { t: 'object', v: { ...left.v, ...right.v } };
+            }
+
             return null;
           },
         ));

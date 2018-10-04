@@ -1,0 +1,11 @@
+stuff := {};
+
+stuff += { foo: 'bar' };
+stuff += { sqrt9: 3 };
+
+assert stuff == { foo: 'bar', sqrt9: 3 };
+
+assert {a: 1} + {b: 2} == {b: 2, a: 1};
+assert {a: 1} + {b: 2} == {a: 1, b: 2};
+
+return stuff; // #info
