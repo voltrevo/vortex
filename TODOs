@@ -19,6 +19,9 @@ TODO: Mechanism for removing TODO false positives
 TODO: Variable/code references in comments (jsdoc?)
 TODO: parser guessing
 TODO: interactive debugger
+TODO: range/set operators .. ., ,. ,, (commas indicate exclusion of that end)
+TODO: super terse $ style lambdas: e.g. $ > 0 is func(x) => x > 0 (research similar constructs in existing languages)
+TODO: define exactly what should/shouldn't be a valid identifier... js allows emojis, should vortex allow emojis?
 
 TODO: syntactic sugar for function chains?
   func chain doThings() {
