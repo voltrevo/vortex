@@ -154,7 +154,7 @@ for
         {$$ = { t: 'for', v: { control: { t: 'condition', v: $3 }, block: $5 }, p: @$ }}
     | FOR '(' identifier OF e ')' block
         {$$ = { t: 'for', v: { control: { t: 'range', v: [$3, $5] }, block: $7 }, p: @$ }}
-    | FOR '(' topExp ';' e ';' e ')' block
+    | FOR '(' topExp ';' e ';' topExp ')' block
         {$$ = { t: 'for', v: { control: { t: 'setup; condition; next', v: [$3, $5, $7] }, block: $9 }, p: @$ }}
     ;
 

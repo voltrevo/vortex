@@ -6,7 +6,7 @@ func() {
   z := 1; // TODO should be warning ... hmm how to handle this one?
   z++;
   zz := 1; // #warning TODO shouldn't be a warning (similar to ++ issue)
-  a := (zz += 1);
+  a := (zz += 1); // #error
   return a;
 };
 

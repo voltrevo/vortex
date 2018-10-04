@@ -343,6 +343,62 @@ function isValidTopExpression(e: Syntax.Expression) {
   return false;
 }
 
+function InvalidAssignmentTargets(
+  exp: Syntax.Expression
+): Syntax.Expression[] {
+  const invalids: Syntax.Expression[] = [];
+
+  (() => {
+    if (exp.t === 'IDENTIFIER') {
+      return;
+    }
+
+    if (exp.t === 'array') {
+      if (exp.v.length === 0) {
+        invalids.push(exp);
+        return;
+      }
+
+      for (const itemExp of exp.v) {
+        invalids.push(...InvalidAssignmentTargets(itemExp));
+      }
+
+      return;
+    }
+
+    if (exp.t === 'object') {
+      if (exp.v.length === 0) {
+        invalids.push(exp);
+        return;
+      }
+
+      for (const [, targetExp] of exp.v) {
+        invalids.push(...InvalidAssignmentTargets(targetExp));
+      }
+
+      return;
+    }
+
+    if (exp.t === 'subscript' || exp.t === '.') {
+      let baseExp = exp.v[0];
+
+      while (baseExp.t === 'subscript' || baseExp.t === '.') {
+        baseExp = baseExp.v[0];
+      }
+
+      if (baseExp.t !== 'IDENTIFIER') {
+        invalids.push(exp);
+      }
+
+      return;
+    }
+
+    invalids.push(exp);
+  })();
+
+  return invalids;
+}
+
 function validateExpression(exp: Syntax.Expression): Note[] {
   const notes: Note[] = [];
 
@@ -354,12 +410,32 @@ function validateExpression(exp: Syntax.Expression): Note[] {
 
   checkNull((() => {
     switch (exp.t) {
+      case '=':
+      case '+=':
+      case '-=':
+      case '*=':
+      case '/=':
+      case '%=':
+      case '<<=':
+      case '>>=':
+      case '&=':
+      case '^=':
+      case '|=':
       case ':=': {
-        if (!exp.topExp && exp.v[0].t === 'IDENTIFIER') {
-          // a.b.c := 1 is ok in a subexpression
+        for (const invalid of InvalidAssignmentTargets(exp.v[0])) {
+          notes.push(Note(invalid, 'error', [
+            'Invalid assignment target: ',
+            invalid.t,
+            ' expression',
+            // TODO: Link documentation explaining assignment targets
+          ].join('')));
+        }
+
+        if (!exp.topExp) {
+          const action = exp.t === ':=' ? 'Creating' : 'Assigning to';
+
           notes.push(Note(exp, 'error',
-            // TODO: Should assignment be allowed?
-            'Creating a variable in a subexpression is not allowed'
+            `${action} a variable in a subexpression is not allowed`,
           ));
         }
 
@@ -387,17 +463,6 @@ function validateExpression(exp: Syntax.Expression): Note[] {
       case 'NULL':
       case 'STRING':
       case 'IDENTIFIER':
-      case '=':
-      case '+=':
-      case '-=':
-      case '*=':
-      case '/=':
-      case '%=':
-      case '<<=':
-      case '>>=':
-      case '&=':
-      case '^=':
-      case '|=':
       case 'prefix --':
       case 'postfix --':
       case 'prefix ++':
