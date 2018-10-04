@@ -1,0 +1,26 @@
+{
+    "name": "vortex",
+    "displayName": "Vortex",
+    "description": "Vortex Language Support",
+    "version": "0.0.1",
+    "publisher": "voltrevo",
+    "engines": {
+        "vscode": "^1.27.0"
+    },
+    "categories": [
+        "Programming Languages"
+    ],
+    "contributes": {
+        "languages": [{
+            "id": "vortex",
+            "aliases": ["Vortex", "vortex"],
+            "extensions": [".vx"],
+            "configuration": "./language-configuration.json"
+        }],
+        "grammars": [{
+            "language": "vortex",
+            "scopeName": "source.vortex",
+            "path": "./syntaxes/vortex.tmLanguage.json"
+        }]
+    }
+}
