@@ -411,6 +411,8 @@ propListNonEmpty
 prop
     : identifier ':' e
         {$$ = [$1, $3]}
+    | identifier
+        {$$ = [$1, $1]}
     ;
 
 class
