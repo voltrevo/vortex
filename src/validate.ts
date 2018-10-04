@@ -1,3 +1,4 @@
+import checkNull from './checkNull';
 import formatLocation from './formatLocation';
 import Note from './Note';
 import Syntax from './parser/Syntax';
@@ -5,52 +6,26 @@ import Scope from './Scope';
 import traverse from './traverse';
 
 export function validate(program: Syntax.Program): Note[] {
-  const issues: Note[] = [];
+  const notes: Note[] = [];
 
-  issues.push(...validateBody(program));
+  notes.push(...validateBody(program));
 
-  issues.push(...traverse<Syntax.Element, Note>(program, el => {
-    const subIssues: Note[] = [];
+  notes.push(...traverse<Syntax.Element, Note>(program, el => {
+    const subNotes: Note[] = [];
 
-    // TODO: Use topExp property from parser for determining subexpressions
-    // instead
-    let potentialSubExpressions = (
-      el.t === 'e' ?
-      Syntax.Children(el.v) :
-      Syntax.Children(el)
-    );
+    // TODO: Use a switch?
 
-    if (
-      el.t === 'for' &&
-      el.v.control !== null &&
-      el.v.control.t === 'setup; condition; next'
-    ) {
-      // Don't consider init from (init; cond; inc) to be a subexpression
-      potentialSubExpressions = potentialSubExpressions.slice(1);
+    const exp = Syntax.expressionFromElement(el);
+
+    if (exp) {
+      subNotes.push(...validateExpression(exp));
     }
 
-    for (const child of potentialSubExpressions) {
-      const subexpression = Syntax.expressionFromElement(child);
-
-      if (subexpression !== null) {
-        subIssues.push(...validateSubexpression(subexpression));
-      }
-    }
-
-    if (el.t === 'e') {
-      // TODO: rename e -> expressionStatement?
-
-      // TODO: Dear typescript: why do I need el.t === 'e' again here?
-      if (el.t === 'e' && !isValidTopExpression(el.v)) {
-        subIssues.push(Note(el, 'warning',
-          'Statement has no effect' // TODO: better wording
-        ));
-      }
-    } else if (el.t === 'func') {
+    if (el.t === 'func') {
       const { body } = el.v;
 
       if (body.t === 'block') {
-        subIssues.push(...validateBody(body));
+        subNotes.push(...validateBody(body));
       }
     } else if (el.t === 'for') {
       // TODO: Disallow shallow return unless continue might occur
@@ -64,7 +39,7 @@ export function validate(program: Syntax.Program): Note[] {
         if (body.t === 'block') {
           // TODO: Allow methods to implicitly return this? Enforce return
           // consistency at least.
-          subIssues.push(...validateMethodBody(body));
+          subNotes.push(...validateMethodBody(body));
         }
       }
     } else if (el.t === 'block') {
@@ -72,7 +47,7 @@ export function validate(program: Syntax.Program): Note[] {
 
       for (const statement of el.v) {
         if (returned) {
-          subIssues.push(
+          subNotes.push(
             Note(statement, 'error', 'Statement is unreachable')
           );
         }
@@ -83,12 +58,12 @@ export function validate(program: Syntax.Program): Note[] {
       }
     }
 
-    return subIssues;
+    return subNotes;
   }, Syntax.Children));
 
-  issues.push(...validateScope(program.v));
+  notes.push(...validateScope(program.v));
 
-  return issues;
+  return notes;
 }
 
 type Push = { t: 'Push' };
@@ -368,24 +343,85 @@ function isValidTopExpression(e: Syntax.Expression) {
   return false;
 }
 
-function validateSubexpression(e: Syntax.Expression): Note[] {
-  // TODO: e is not a good variable name because 'e' is used for expression
-  // statements... really the issue is that 'e' should be good and expression
-  // statements should have some other .t value.
+function validateExpression(exp: Syntax.Expression): Note[] {
+  const notes: Note[] = [];
 
-  const issues: Note[] = [];
-
-  if (e.t === ':=' && e.v[0].t === 'IDENTIFIER') {
-    issues.push(Note(e, 'error',
-      'Creating a variable in a subexpression is not allowed'
+  if (exp.topExp && !isValidTopExpression(exp)) {
+    notes.push(Note(exp, 'warning',
+      'Statement has no effect' // TODO: better wording
     ));
   }
 
-  // Note: don't need to go down into the subexpression since we're already
-  // recursively descending the tree and each subexpression will be called and
-  // asked to shallowly validate its child subexpressions
+  checkNull((() => {
+    switch (exp.t) {
+      case ':=': {
+        if (!exp.topExp && exp.v[0].t === 'IDENTIFIER') {
+          // a.b.c := 1 is ok in a subexpression
+          notes.push(Note(exp, 'error',
+            // TODO: Should assignment be allowed?
+            'Creating a variable in a subexpression is not allowed'
+          ));
+        }
 
-  return issues;
+        return null;
+      }
+
+      case 'NUMBER':
+      case 'BOOL':
+      case 'NULL':
+      case 'STRING':
+      case 'IDENTIFIER':
+      case '=':
+      case '+=':
+      case '-=':
+      case '*=':
+      case '/=':
+      case '%=':
+      case '<<=':
+      case '>>=':
+      case '&=':
+      case '^=':
+      case '|=':
+      case 'prefix --':
+      case 'postfix --':
+      case 'prefix ++':
+      case 'postfix ++':
+      case '+':
+      case '*':
+      case '-':
+      case '<<':
+      case '>>':
+      case '&':
+      case '^':
+      case '|':
+      case '/':
+      case '%':
+      case '**':
+      case '&&':
+      case '||':
+      case '==':
+      case '!=':
+      case '<':
+      case '>':
+      case '<=':
+      case '>=':
+      case 'unary -':
+      case 'unary +':
+      case 'func':
+      case 'functionCall':
+      case 'array':
+      case 'subscript':
+      case 'object':
+      case '.':
+      case 'methodCall':
+      case 'class':
+      case 'switch':
+      case 'import':
+        return null;
+    }
+  })());
+
+  return notes;
 }
 
 function validateStatementWillReturn(statement: Syntax.Statement): Note[] {

@@ -1,0 +1,3 @@
+assert false; // #error (disable analyzer)
+assert a := 1; // #error variable creation in subexpression
+return a;

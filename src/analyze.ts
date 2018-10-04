@@ -1,3 +1,4 @@
+import checkNull from './checkNull';
 import Note from './Note';
 import Scope from './Scope';
 import Syntax from './parser/Syntax';
@@ -234,7 +235,6 @@ function TypedLessThan(left: ValidValue, right: ValidValue): boolean | null {
     }
 
     case 'object': {
-      debugger;
       if (right.t !== 'object') {
         throw new Error('Shouldn\'t be possible');
       }
@@ -1632,5 +1632,3 @@ function ExpressionString(
     }
   }
 }
-
-function checkNull(ignored: null) {}

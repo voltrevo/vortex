@@ -1,0 +1,5 @@
+assert false; // #error
+
+a := b := 0; // #error
+
+return a + b;

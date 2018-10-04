@@ -206,7 +206,67 @@ namespace Syntax {
   export type Element = Block | Statement | Expression | Arg;
 
   export function Children(el: Element): Element[] {
+    // TODO: Need an extra layer with .t so there aren't an unmanageable number
+    // of cases.
     switch (el.t) {
+      case 'NUMBER':
+      case 'BOOL':
+      case 'NULL':
+      case 'STRING':
+      case 'IDENTIFIER': {
+        return [];
+      }
+
+      case ':=':
+      case '=':
+      case '+=':
+      case '-=':
+      case '*=':
+      case '/=':
+      case '%=':
+      case '<<=':
+      case '>>=':
+      case '&=':
+      case '^=':
+      case '|=':
+      case 'prefix --':
+      case 'postfix --':
+      case 'prefix ++':
+      case 'postfix ++':
+      case '+':
+      case '*':
+      case '-':
+      case '<<':
+      case '>>':
+      case '&':
+      case '^':
+      case '|':
+      case '/':
+      case '%':
+      case '**':
+      case '&&':
+      case '||':
+      case '==':
+      case '!=':
+      case '<':
+      case '>':
+      case '<=':
+      case '>=':
+      case 'unary -':
+      case 'unary +':
+      case 'assert': {
+        const value: (
+          [Expression, Expression] |
+          Expression
+        ) = el.v;
+
+        if (Array.isArray(value)) {
+          return value;
+        }
+
+        return [value];
+      }
+
       case 'arg': { return []; }
       case 'block': { return el.v; }
       case 'array': { return el.v; }
@@ -267,12 +327,6 @@ namespace Syntax {
         return fromString ? [fromString] : [];
       }
 
-      case 'IDENTIFIER': { return []; }
-      case 'NUMBER': { return []; }
-      case 'BOOL': { return []; }
-      case 'NULL': { return []; }
-      case 'STRING': { return []; }
-
       case 'switch': {
         const res: Element[] = [];
 
@@ -315,22 +369,6 @@ namespace Syntax {
       case '.': {
         const [expression] = el.v;
         return [expression];
-      }
-
-      default: {
-        // TODO: This default is working correctly for assert. Is that ok?
-        // Operators. TODO: Need an extra layer with .t so there aren't an
-        // unmanageable number of cases.
-        const value: (
-          [Expression, Expression] |
-          Expression
-        ) = el.v;
-
-        if (Array.isArray(value)) {
-          return value;
-        }
-
-        return [value];
       }
     }
   }

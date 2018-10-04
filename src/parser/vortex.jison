@@ -118,9 +118,14 @@ statements
         {$$ = [...$1, $2]}
     ;
 
+topExp
+    : e
+        {$$ = { ...$1, topExp: true }}
+    ;
+
 statement
-    : e ';'
-        {$$ = { t: 'e', v: { ...$1, topExp: true }, p: @$ }}
+    : topExp ';'
+        {$$ = { t: 'e', v: $1, p: @$ }}
     | RETURN e ';'
         {$$ = { t: 'return', v: $2, p: @$ }}
     | BREAK ';'
@@ -149,7 +154,7 @@ for
         {$$ = { t: 'for', v: { control: { t: 'condition', v: $3 }, block: $5 }, p: @$ }}
     | FOR '(' identifier OF e ')' block
         {$$ = { t: 'for', v: { control: { t: 'range', v: [$3, $5] }, block: $7 }, p: @$ }}
-    | FOR '(' e ';' e ';' e ')' block
+    | FOR '(' topExp ';' e ';' e ')' block
         {$$ = { t: 'for', v: { control: { t: 'setup; condition; next', v: [$3, $5, $7] }, block: $9 }, p: @$ }}
     ;
 
