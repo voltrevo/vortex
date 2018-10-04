@@ -66,7 +66,7 @@ for (const file of files) {
     lineNo++;
 
     const tags = Tags(line);
-    const lineNotes = notes.filter(n => n.pos && n.pos.first_line === lineNo);
+    const lineNotes = notes.filter(n => n.pos && n.pos[0][0] === lineNo);
 
     for (const level of ['error', 'warning', 'info']) {
       const levelTags = tags.filter(t => t === `#${level}`);

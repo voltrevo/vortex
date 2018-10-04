@@ -186,18 +186,13 @@ const inputs: ({ type: 'file', name: string } | string)[] = [];
         }
 
         case 'vim-ale': {
-          const pos = note.pos || {
-            first_line: 1,
-            last_line: 1,
-            first_column: 1,
-            last_column: 1,
-          };
+          const pos = note.pos || [[1, 1], [1, 1]];
 
           console.error(JSON.stringify({
-            lnum: pos.first_line,
-            end_lnum: pos.last_line,
-            col: pos.first_column,
-            end_col: pos.last_column,
+            lnum: pos[0][0],
+            end_lnum: pos[1][0],
+            col: pos[0][1],
+            end_col: pos[1][1],
             text: note.message,
             type: note.level[0].toUpperCase(),
           }));

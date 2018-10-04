@@ -677,12 +677,7 @@ function analyzeInContext(
               return {
                 t: 'BOOL' as 'BOOL',
                 v: true,
-                p: {
-                  first_line: 0,
-                  last_line: 0,
-                  first_column: 0,
-                  last_column: 0,
-                },
+                p: [[0, 0], [0, 0]] as Syntax.Pos,
               };
             }
 

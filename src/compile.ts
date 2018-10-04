@@ -15,18 +15,16 @@ export default function compile(text: string) {
       notes.push({
         level: 'error',
         message: e.message.split('\n')[3],
-        pos: e.hash.loc,
+        pos: [
+          [e.hash.loc.first_line, e.hash.loc.first_column],
+          [e.hash.loc.last_line, e.hash.loc.last_column],
+        ],
       });
     } else {
       notes.push({
         level: 'error',
         message: e.message,
-        pos: {
-          first_line: 1,
-          last_line: 1,
-          first_column: 1,
-          last_column: 1,
-        },
+        pos: [[1, 1], [1, 1]],
       });
     }
   }

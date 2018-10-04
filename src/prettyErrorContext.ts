@@ -2,6 +2,11 @@ import chalk from 'chalk';
 
 import Note from './Note';
 
+const iStart = 0;
+const iEnd = 1;
+const iLine = 0;
+const iCol = 1;
+
 export default function prettyErrorContext(
   note: Note & { file: string, text: string },
 ): string[] {
@@ -29,8 +34,8 @@ export default function prettyErrorContext(
   }
 
   // Add a line of context before and after
-  const ctxFirstLine = Math.max(0, pos.first_line - 2);
-  const ctxLastLine = Math.min(pos.last_line + 1, textLines.length);
+  const ctxFirstLine = Math.max(0, pos[iStart][iLine] - 2);
+  const ctxLastLine = Math.min(pos[iEnd][iLine] + 1, textLines.length);
 
   const numWidth = Math.max(3, 1 + (ctxLastLine + 1).toString().length);
 
@@ -83,32 +88,32 @@ export default function prettyErrorContext(
       }
     }
 
-    if (lineNo === pos.first_line && lineNo === pos.last_line) {
+    if (lineNo === pos[iStart][iLine] && lineNo === pos[iEnd][iLine]) {
       line = (
-        line.slice(0, pos.first_column) +
+        line.slice(0, pos[iStart][iCol]) +
         addLevelColor(line.slice(
-          pos.first_column,
-          pos.last_column + 1,
+          pos[iStart][iCol],
+          pos[iEnd][iCol] + 1,
         )) +
-        line.slice(pos.last_column + 1)
+        line.slice(pos[iEnd][iCol] + 1)
       );
-    } else if (lineNo === pos.first_line) {
+    } else if (lineNo === pos[iStart][iLine]) {
       line = (
-        line.slice(0, pos.first_column) +
-        addLevelColor(line.slice(pos.first_column))
+        line.slice(0, pos[iStart][iCol]) +
+        addLevelColor(line.slice(pos[iStart][iCol]))
       );
-    } else if (lineNo === pos.last_line) {
+    } else if (lineNo === pos[iEnd][iLine]) {
       line = (
-        addLevelColor(line.slice(0, pos.last_column + 1)) +
-        line.slice(pos.last_column + 1)
+        addLevelColor(line.slice(0, pos[iEnd][iCol] + 1)) +
+        line.slice(pos[iEnd][iCol] + 1)
       );
-    } else if (pos.first_line < lineNo && lineNo < pos.last_line) {
+    } else if (pos[iStart][iLine] < lineNo && lineNo < pos[iEnd][iLine]) {
       line = addLevelColor(line);
     }
 
-    if (lineNo === pos.last_line) {
+    if (lineNo === pos[iEnd][iLine]) {
       let spacer = '';
-      const len = Math.min(pos.first_column, pos.last_column);
+      const len = Math.min(pos[iStart][iCol], pos[iEnd][iCol]);
 
       while (spacer.length < len) {
         spacer += ' ';

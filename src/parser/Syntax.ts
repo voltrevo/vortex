@@ -87,12 +87,7 @@ namespace Syntax {
     never
   );
 
-  export type Pos = {
-    first_line: number;
-    last_line: number;
-    first_column: number;
-    last_column: number;
-  };
+  export type Pos = [[number, number], [number, number]];
 
   export type Identifier = { t: 'IDENTIFIER', v: string, p: Pos };
   export type ArrayExpression = { t: 'array', v: Expression[], p: Pos };

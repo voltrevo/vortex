@@ -1,12 +1,14 @@
 import Syntax from './parser/Syntax';
 
 export default function formatLocation(pos: Syntax.Pos) {
-  if (pos.first_line === pos.last_line) {
-    return `${pos.first_line}:${pos.first_column}-${pos.last_column}`;
+  const [start, end] = pos;
+
+  if (start[0] === end[0]) {
+    return `${start[0]}:${start[1]}-${end[1]}`;
   }
 
   return (
-    `L${pos.first_line}C${pos.first_column}-` +
-    `L${pos.last_line}C${pos.last_column}`
+    `L${start[0]}C${start[1]}-` +
+    `L${end[0]}C${end[1]}`
   );
 }
