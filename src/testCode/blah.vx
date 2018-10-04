@@ -1,11 +1,11 @@
-foo := { // #error TODO emit lack of return at end of scope
+foo := {
   a: 10,
   b: 2,
 };
 
 x := 1; // #info
 y := 1; // #info #warning #info
-foo.a = x := 2; // #error #error TODO: duplicate sub creation error?
+foo.a = x := 2; // #error #error #error
 foo.a = (x = (y := 2)); // #error #error #error (creation just more deeply nested)
 foo.a = (x.y := 2); // #error also not ok (removed exception for adding props)
 foo.c := 3;
