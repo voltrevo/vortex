@@ -1,0 +1,2 @@
+for (i := 0; i < 0; i++) {}
+return 0; // #info
