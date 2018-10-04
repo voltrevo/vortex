@@ -434,6 +434,52 @@ function arrayMul(a: VArray, n: VNumber): VArray {
   return res;
 }
 
+function ReduceToInvalid(first: Value, ...rest: Value[]): InvalidValue | null {
+  const allInvalids = [first, ...rest];
+
+  for (const t of [
+    'exception' as 'exception',
+    'missing' as 'missing',
+    'unknown' as 'unknown',
+  ]) {
+    for (const i of allInvalids) {
+      if (i.t === t) {
+        return i;
+      }
+    }
+  }
+
+  return null;
+}
+
+function objectLookup(
+  exp: Syntax.Expression,
+  obj: Value,
+  index: Value
+): Value {
+  const invalidValue = ReduceToInvalid(obj, index);
+
+  if (invalidValue) {
+    return invalidValue;
+  }
+
+  if (obj.t !== 'object' || index.t !== 'string') {
+    return VException(exp,
+      `Type error: ${obj.t}[${index.t}]`,
+    );
+  }
+
+  const maybeValue = obj.v[index.v];
+
+  if (maybeValue === undefined) {
+    return VException(exp,
+      `Object key not found: ${index.v}`,
+    );
+  }
+
+  return maybeValue;
+}
+
 type Context = {
   scope: Scope<Context>;
   value: Value;
@@ -1472,25 +1518,7 @@ function evalExpression(
           scope = indexCtx.scope;
           notes.push(...indexCtx.notes);
 
-          if (indexCtx.value.t !== 'string') {
-            value = VException(exp,
-              `Type error: ${containerCtx.value.t}[${indexCtx.value.t}]`,
-            );
-
-            return null;
-          }
-
-          const maybeValue = containerCtx.value.v[indexCtx.value.v];
-
-          if (maybeValue === undefined) {
-            value = VException(exp,
-              `Object key not found: ${indexCtx.value.v}`,
-            );
-
-            return null;
-          }
-
-          value = maybeValue;
+          value = objectLookup(exp, containerCtx.value, indexCtx.value);
           return null;
         }
 
@@ -1555,7 +1583,17 @@ function evalExpression(
         return null;
       }
 
-      case '.':
+      case '.': {
+        const [objExp, keyExp] = exp.v;
+
+        const objCtx = evalExpression(scope, objExp);
+        scope = objCtx.scope;
+        notes.push(...objCtx.notes);
+        value = objectLookup(exp, objCtx.value, { t: 'string', v: keyExp.v });
+
+        return null;
+      }
+
       case 'methodCall':
       case 'class':
       case 'switch':
