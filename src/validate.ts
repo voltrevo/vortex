@@ -366,6 +366,22 @@ function validateExpression(exp: Syntax.Expression): Note[] {
         return null;
       }
 
+      case 'object': {
+        const keys: { [key: string]: true | undefined } = {};
+
+        for (const [identifier] of exp.v) {
+          if (keys[identifier.v]) {
+            notes.push(Note(identifier, 'error',
+              `Duplicate key '${identifier.v}' in object literal`,
+            ));
+          }
+
+          keys[identifier.v] = true;
+        }
+
+        return null;
+      }
+
       case 'NUMBER':
       case 'BOOL':
       case 'NULL':
@@ -411,7 +427,6 @@ function validateExpression(exp: Syntax.Expression): Note[] {
       case 'functionCall':
       case 'array':
       case 'subscript':
-      case 'object':
       case '.':
       case 'methodCall':
       case 'class':

@@ -1,1 +1,1 @@
-return {a: 0, a: 0}; // #error
+return {a: 0, a: 0}; // #error // #info
