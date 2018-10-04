@@ -1,0 +1,3 @@
+obj := {a: 1, b: 2};
+assert [obj['a'], obj['b']] == [1, 2];
+return 0; // #info

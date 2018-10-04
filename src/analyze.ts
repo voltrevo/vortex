@@ -1422,56 +1422,82 @@ function evalExpression(
       }
 
       case 'subscript': {
-        const [arrExp, indexExp] = exp.v;
+        const [containerExp, indexExp] = exp.v;
 
-        const arrCtx = evalExpression(scope, arrExp);
-        scope = arrCtx.scope;
-        notes.push(...arrCtx.notes);
+        const containerCtx = evalExpression(scope, containerExp);
+        scope = containerCtx.scope;
+        notes.push(...containerCtx.notes);
 
         const indexCtx = evalExpression(scope, indexExp);
 
-        if (arrCtx.value.t !== 'array') {
-          value = VException(exp,
-            `Type error: ${arrCtx.value.t}[${indexCtx.value.t}]`,
-          );
+        if (containerCtx.value.t === 'array') {
+          scope = indexCtx.scope;
+          notes.push(...indexCtx.notes);
 
+          if (indexCtx.value.t !== 'number') {
+            value = VException(exp,
+              `Type error: ${containerCtx.value.t}[${indexCtx.value.t}]`,
+            );
+
+            return null;
+          }
+
+          if (
+            indexCtx.value.v < 0 ||
+            indexCtx.value.v !== Math.floor(indexCtx.value.v)
+          ) {
+            value = VException(indexExp,
+              `Invalid array index: ${indexCtx.value.v}`,
+            );
+
+            return null;
+          }
+
+          if (indexCtx.value.v >= containerCtx.value.v.length) {
+            value = VException(exp, [
+              'Out of bounds: index ',
+              indexCtx.value.v,
+              ' but array is only length ',
+              containerCtx.value.v.length
+            ].join(''));
+
+            return null;
+          }
+
+          value = containerCtx.value.v[indexCtx.value.v];
           return null;
         }
 
-        scope = indexCtx.scope;
-        notes.push(...indexCtx.notes);
+        if (containerCtx.value.t === 'object') {
+          scope = indexCtx.scope;
+          notes.push(...indexCtx.notes);
 
-        if (indexCtx.value.t !== 'number') {
-          value = VException(exp,
-            `Type error: ${arrCtx.value.t}[${indexCtx.value.t}]`,
-          );
+          if (indexCtx.value.t !== 'string') {
+            value = VException(exp,
+              `Type error: ${containerCtx.value.t}[${indexCtx.value.t}]`,
+            );
 
+            return null;
+          }
+
+          const maybeValue = containerCtx.value.v[indexCtx.value.v];
+
+          if (maybeValue === undefined) {
+            value = VException(exp,
+              `Object key not found: ${indexCtx.value.v}`,
+            );
+
+            return null;
+          }
+
+          value = maybeValue;
           return null;
         }
 
-        if (
-          indexCtx.value.v < 0 ||
-          indexCtx.value.v !== Math.floor(indexCtx.value.v)
-        ) {
-          value = VException(indexExp,
-            `Invalid array index: ${indexCtx.value.v}`,
-          );
+        value = VException(exp,
+          `Type error: ${containerCtx.value.t}[${indexCtx.value.t}]`,
+        );
 
-          return null;
-        }
-
-        if (indexCtx.value.v >= arrCtx.value.v.length) {
-          value = VException(exp, [
-            'Out of bounds: index ',
-            indexCtx.value.v,
-            ' but array is only length ',
-            arrCtx.value.v.length
-          ].join(''));
-
-          return null;
-        }
-
-        value = arrCtx.value.v[indexCtx.value.v];
         return null;
       }
 
