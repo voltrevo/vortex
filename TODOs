@@ -1,4 +1,3 @@
-TODO: Finish implementing objects - need addition, multiplication, subscript, key assignment, key deletion
 TODO: Better function scoping and variable capture, constraints on captured variables
 TODO: Notes revamp - give all notes a type, always include filename, implement multiple locations to deal with call stacks, include type in test code tags
 TODO: Add tests for every possible note
