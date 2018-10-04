@@ -1,0 +1,4 @@
+assert {a: 1, b: 2} * 0 == {};
+assert {msg: 'hi'} * 1 == {msg: 'hi'};
+assert {} * 10 == {};
+return 0; // #info

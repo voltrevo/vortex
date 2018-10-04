@@ -434,6 +434,29 @@ function arrayMul(a: VArray, n: VNumber): VArray {
   return res;
 }
 
+function objMul(
+  exp: Syntax.Expression,
+  obj: VObject,
+  n: VNumber
+): VObject | VException {
+  if (n.v === 0) {
+    return { t: 'object', v: {} };
+  }
+
+  if (n.v === 1) {
+    return obj;
+  }
+
+  if (Object.keys(obj.v).length === 0) {
+    return obj;
+  }
+
+  return VException(exp,
+    `Attempt to multiply non-empty object by ${n.v} (can only multiply ` +
+    'non-empty objects by 0 or 1)',
+  );
+}
+
 function ReduceToInvalid(first: Value, ...rest: Value[]): InvalidValue | null {
   const allInvalids = [first, ...rest];
 
@@ -1150,6 +1173,12 @@ function evalExpression(
               null
             );
 
+            const obj = (
+              left.t === 'object' ? left :
+              right.t === 'object' ? right :
+              null
+            );
+
             // TODO: Implement generic version of this which just requires
             // non-number type to have a + operator
             // TODO: Possibly configure limit for this behaviour during
@@ -1160,6 +1189,10 @@ function evalExpression(
 
             if (arr && num) {
               return arrayMul(arr, num);
+            }
+
+            if (obj && num) {
+              return objMul(exp, obj, num);
             }
 
             return null;
