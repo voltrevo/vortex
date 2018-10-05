@@ -2,31 +2,75 @@
 	"$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
 	"name": "Vortex",
 	"patterns": [
-		{
-			"include": "#keywords"
-		},
-		{
-			"include": "#strings"
-		}
+    { "include": "#main" }
 	],
 	"repository": {
-		"keywords": {
-			"patterns": [{
-				"name": "keyword.control.vortex",
-				"match": "\\b(if|while|for|return)\\b"
-			}]
-		},
-		"strings": {
-			"name": "string.quoted.double.vortex",
-			"begin": "\"",
-			"end": "\"",
-			"patterns": [
-				{
-					"name": "constant.character.escape.vortex",
-					"match": "\\\\."
-				}
-			]
-		}
+    "main": {
+      "patterns": [
+        {
+          "name": "keyword.vortex",
+          "match": "\\b(func|static|class|true|false|null)\\b"
+        },
+        {
+          "name": "keyword.control.vortex",
+          "match": "\\b(assert|import|from|if|else|for|of|return|break|continue|switch)\\b"
+        },
+        {
+          "name": "string.quoted.single.vortex",
+          "begin": "'",
+          "end": "'",
+          "patterns": [
+            {
+              "name": "constant.character.escape.vortex",
+              "match": "\\\\."
+            }
+          ]
+        },
+        {
+          "match": "(//.*)",
+          "name": "comment.vortex"
+        },
+        {
+          "begin": "(/\\*)",
+          "beginCaptures": {
+            "1": {
+              "name": "comment.vortex"
+            }
+          },
+          "contentName": "comment.vortex",
+          "end": "(\\*/)",
+          "endCaptures": {
+            "1": {
+              "name": "comment.vortex"
+            }
+          }
+        },
+        {
+          "match": "(\\b([ui](8|16|32|64)|f(32|64)|string)\\b)",
+          "name": "keyword.vortex"
+        },
+        {
+          "match": "((?<=func)|(?<=import)|(?<=class))\\s+[a-zA-Z0-9]+",
+          "name": "entity.name.type.vortex"
+        },
+        {
+          "match": "((?<=:)[a-zA-Z0-9]+)",
+          "name": "entity.name.function"
+        },
+        {
+          "match": "[a-zA-Z0-9]+\\s*((?=:)|(?=of))",
+          "name": "entity.name.type.vortex"
+        },
+        {
+          "match": "(\\b\\d+(\\.\\d+)?)",
+          "name": "constant.numeric.vortex"
+        },
+        {
+          "match": "([a-zA-Z0-9]+)",
+          "name": "entity.name.variable.vortex"
+        }
+      ]
+    }
 	},
 	"scopeName": "source.vortex"
 }
