@@ -1,9 +1,9 @@
 {
-  "name": "parser",
+  "name": "vortex",
   "version": "0.0.0",
   "description": "",
-  "main": "index.js",
-  "author": "",
+  "main": "build/compile.js",
+  "author": "Andrew Morris",
   "scripts": {
     "build": "rm -r build && jison src/parser/vortex.jison -o $(pwd)/src/parser/vortex.js && tsc",
     "test": "node build/src/test.js"

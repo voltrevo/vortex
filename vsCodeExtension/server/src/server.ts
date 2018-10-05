@@ -18,6 +18,8 @@ import {
   TextDocumentPositionParams
 } from 'vscode-languageserver';
 
+import compile from 'vortex';
+
 // Create a connection for the server. The connection uses Node's IPC as a transport.
 // Also include all preview / proposed LSP features.
 let connection = createConnection(ProposedFeatures.all);
@@ -28,21 +30,28 @@ let documents: TextDocuments = new TextDocuments();
 
 let hasConfigurationCapability: boolean = false;
 let hasWorkspaceFolderCapability: boolean = false;
-let hasDiagnosticRelatedInformationCapability: boolean = false;
+// let hasDiagnosticRelatedInformationCapability: boolean = false;
 
 connection.onInitialize((params: InitializeParams) => {
   let capabilities = params.capabilities;
 
   // Does the client support the `workspace/configuration` request?
   // If not, we will fall back using global settings
-  hasConfigurationCapability =
-    capabilities.workspace && !!capabilities.workspace.configuration;
-  hasWorkspaceFolderCapability =
-    capabilities.workspace && !!capabilities.workspace.workspaceFolders;
-  hasDiagnosticRelatedInformationCapability =
+  hasConfigurationCapability = Boolean(
+    capabilities.workspace && !!capabilities.workspace.configuration
+  );
+
+  hasWorkspaceFolderCapability = Boolean(
+    capabilities.workspace && !!capabilities.workspace.workspaceFolders
+  );
+
+  /*
+  hasDiagnosticRelatedInformationCapability = Boolean(
     capabilities.textDocument &&
     capabilities.textDocument.publishDiagnostics &&
-    capabilities.textDocument.publishDiagnostics.relatedInformation;
+    capabilities.textDocument.publishDiagnostics.relatedInformation
+  );
+  */
 
   return {
     capabilities: {
@@ -78,26 +87,29 @@ interface ExampleSettings {
 // The global settings, used when the `workspace/configuration` request is not supported by the client.
 // Please note that this is not the case when using this server with the client provided in this example
 // but could happen with other clients.
-const defaultSettings: ExampleSettings = { maxNumberOfProblems: 1000 };
-let globalSettings: ExampleSettings = defaultSettings;
+// const defaultSettings: ExampleSettings = { maxNumberOfProblems: 1000 };
+// let globalSettings: ExampleSettings = defaultSettings;
 
 // Cache the settings of all open documents
 let documentSettings: Map<string, Thenable<ExampleSettings>> = new Map();
 
-connection.onDidChangeConfiguration(change => {
+connection.onDidChangeConfiguration((/*change*/) => {
   if (hasConfigurationCapability) {
     // Reset all cached document settings
     documentSettings.clear();
   } else {
+    /*
     globalSettings = <ExampleSettings>(
       (change.settings.languageServerExample || defaultSettings)
     );
+    */
   }
 
   // Revalidate all open text documents
   documents.all().forEach(validateTextDocument);
 });
 
+/*
 function getDocumentSettings(resource: string): Thenable<ExampleSettings> {
   if (!hasConfigurationCapability) {
     return Promise.resolve(globalSettings);
@@ -112,6 +124,7 @@ function getDocumentSettings(resource: string): Thenable<ExampleSettings> {
   }
   return result;
 }
+*/
 
 // Only keep settings for open documents
 documents.onDidClose(e => {
@@ -126,12 +139,51 @@ documents.onDidChangeContent(change => {
 
 async function validateTextDocument(textDocument: TextDocument): Promise<void> {
   // In this simple example we get the settings for every validate run.
-  let settings = await getDocumentSettings(textDocument.uri);
+  // let settings = await getDocumentSettings(textDocument.uri);
 
   // The validator creates diagnostics for all uppercase words length 2 and more
   let text = textDocument.getText();
+  const notes = compile(text);
+  
+  const diagnostics: Diagnostic[] = [];
+
+  for (const note of notes) {
+    diagnostics.push({
+      range: (
+        note.pos ?
+        {
+          start: {
+            line: note.pos[0][0] - 1,
+            character: note.pos[0][1],
+          },
+          end: {
+            line: note.pos[0][0] - 1,
+            character: note.pos[0][1],
+          }
+        } :
+        { start: { line: 0, character: 0 }, end: { line: 0, character: 0 } }
+      ),
+      message: note.message,
+      severity: (() => {
+        switch (note.level) {
+          case 'error': return DiagnosticSeverity.Error;
+          case 'warning': return DiagnosticSeverity.Warning;
+          case 'info': return DiagnosticSeverity.Information;
+        }
+      })(),
+      source: 'vortex',
+    });
+  }
+
+  // Send the computed diagnostics to VSCode.
+  connection.sendDiagnostics({
+    uri: textDocument.uri,
+    diagnostics,
+  });
+
+  /*
   let pattern = /\b[A-Z]{2,}\b/g;
-  let m: RegExpExecArray;
+  let m: RegExpExecArray | null;
 
   let problems = 0;
   let diagnostics: Diagnostic[] = [];
@@ -169,6 +221,7 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 
   // Send the computed diagnostics to VSCode.
   connection.sendDiagnostics({ uri: textDocument.uri, diagnostics });
+  */
 }
 
 connection.onDidChangeWatchedFiles(_change => {

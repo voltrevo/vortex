@@ -2,13 +2,14 @@
   "compilerOptions": {
     "outDir": "build",
     "module": "commonjs",
-    "target": "es2015",
+    "target": "es2017",
     "lib": ["es6", "dom"],
+    "declaration": true,
+    "declarationMap": true,
     "sourceMap": true,
-    "allowJs": true,
     "jsx": "react",
     "moduleResolution": "node",
-    "rootDir": ".",
+    "rootDir": "src",
     "forceConsistentCasingInFileNames": true,
     "strict": true,
     "noImplicitReturns": true,
@@ -23,6 +24,7 @@
     "acceptance-tests",
     "webpack",
     "jest",
-    "src/setupTests.ts"
+    "src/setupTests.ts",
+    "vsCodeExtension"
   ]
 }

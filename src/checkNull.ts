@@ -1,1 +1,1 @@
-export default function checkNull(ignored: null) {}
+export default function checkNull(ignored: null) { ignored; }
