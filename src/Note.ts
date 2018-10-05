@@ -1,20 +1,23 @@
 import Syntax from './parser/Syntax';
 
 type Note = {
-  message: string;
-  level: 'error' | 'warning' | 'info';
   pos?: Syntax.Pos,
+  level: 'error' | 'warning' | 'info';
+  tags: string[],
+  message: string;
 };
 
 function Note(
   el: { p?: Syntax.Pos },
   level: 'error' | 'warning' | 'info',
-  message: string
+  tags: string[],
+  message: string,
 ) {
   return {
-    message,
-    level,
     ...(el.p ? { pos: el.p } : {}),
+    level,
+    tags: [level, ...tags],
+    message,
   };
 }
 

@@ -47,9 +47,12 @@ export function validate(program: Syntax.Program): Note[] {
 
       for (const statement of el.v) {
         if (returned) {
-          subNotes.push(
-            Note(statement, 'error', 'Statement is unreachable')
-          );
+          subNotes.push(Note(
+            statement,
+            'error',
+            ['control-flow', 'unreachable'],
+            'Statement is unreachable'
+          ));
         }
 
         if (statement.t === 'return') {
@@ -225,14 +228,20 @@ function validateScope(elements: ScopeItem[]): Note[] {
         const preExisting = Scope.get(scope, newVariableName);
 
         if (preExisting) {
-          issues.push(Note(item.v, 'error',
+          issues.push(Note(
+            item.v,
+            'error',
+            ['scope', 'variable-already-exists'],
             'Can\'t create variable that already exists'
           ));
 
           const loc = formatLocation(item.v.p);
 
-          issues.push(Note(preExisting.origin, 'info',
-            `Attempt to create this variable again at ${loc}`
+          issues.push(Note(
+            preExisting.origin,
+            'info',
+            ['scope', 'existing-variable'],
+            `Attempt to create this variable again at ${loc}`,
           ));
         } else {
           scope = Scope.add(scope, newVariableName, {
@@ -254,11 +263,17 @@ function validateScope(elements: ScopeItem[]): Note[] {
 
           if (!variable.data.used) {
             if (!variable.data.assigned) {
-              issues.push(Note(variable.origin, 'warning',
-                `Variable ${varName} is not used`
+              issues.push(Note(
+                variable.origin,
+                'warning',
+                ['no-effect', 'scope', 'unused-variable'],
+                `Variable ${varName} is not used`,
               ));
             } else {
-              issues.push(Note(variable.origin, 'warning',
+              issues.push(Note(
+                variable.origin,
+                'warning',
+                ['no-effect', 'scope', 'unused-variable', 'assigned'],
                 `Variable ${varName} is assigned but never used, so it ` +
                 `can't affect the return value`
               ));
@@ -272,7 +287,10 @@ function validateScope(elements: ScopeItem[]): Note[] {
 
         if (!scopeEntry) {
           // TODO: Look for typos
-          issues.push(Note(item, 'error',
+          issues.push(Note(
+            item,
+            'error',
+            ['scope', 'variable-does-not-exist'],
             `Variable ${item.v} does not exist`
           ));
         } else {
@@ -284,7 +302,10 @@ function validateScope(elements: ScopeItem[]): Note[] {
 
         if (!scopeEntry) {
           // TODO: Look for typos
-          issues.push(Note(item, 'error',
+          issues.push(Note(
+            item,
+            'error',
+            ['scope', 'variable-does-not-exist', 'assign-target'],
             `Variable ${item.v} does not exist`
           ));
         } else {
@@ -303,7 +324,12 @@ function validateBody(body: Syntax.Block): Note[] {
   );
 
   if (!lastStatement) {
-    return [Note(body, 'error', 'Empty body')];
+    return [Note(
+      body,
+      'error',
+      ['control-flow', 'return-failure', 'empty-body'],
+      'Empty body',
+    )];
   }
 
   return validateStatementWillReturn(lastStatement);
@@ -403,8 +429,11 @@ function validateExpression(exp: Syntax.Expression): Note[] {
   const notes: Note[] = [];
 
   if (exp.topExp && !isValidTopExpression(exp)) {
-    notes.push(Note(exp, 'warning',
-      'Statement has no effect' // TODO: better wording
+    notes.push(Note(
+      exp,
+      'warning',
+      ['no-effect', 'top-expression'],
+      'Statement has no effect', // TODO: better wording
     ));
   }
 
@@ -423,18 +452,26 @@ function validateExpression(exp: Syntax.Expression): Note[] {
       case '|=':
       case ':=': {
         for (const invalid of InvalidAssignmentTargets(exp.v[0])) {
-          notes.push(Note(invalid, 'error', [
-            'Invalid assignment target: ',
-            invalid.t,
-            ' expression',
-            // TODO: Link documentation explaining assignment targets
-          ].join('')));
+          notes.push(Note(
+            invalid,
+            'error',
+            ['invalid-assignment-target'],
+            [
+              'Invalid assignment target: ',
+              invalid.t,
+              ' expression',
+              // TODO: Link documentation explaining assignment targets
+            ].join(''),
+          ));
         }
 
         if (!exp.topExp) {
           const action = exp.t === ':=' ? 'Creating' : 'Assigning to';
 
-          notes.push(Note(exp, 'error',
+          notes.push(Note(
+            exp,
+            'error',
+            ['scope', 'subexpression-mutation'],
             `${action} a variable in a subexpression is not allowed`,
           ));
         }
@@ -447,7 +484,10 @@ function validateExpression(exp: Syntax.Expression): Note[] {
 
         for (const [identifier] of exp.v) {
           if (keys[identifier.v]) {
-            notes.push(Note(identifier, 'error',
+            notes.push(Note(
+              identifier,
+              'error',
+              ['object-literal', 'duplicate-key'],
               `Duplicate key '${identifier.v}' in object literal`,
             ));
           }
@@ -515,32 +555,60 @@ function validateStatementWillReturn(statement: Syntax.Statement): Note[] {
     const issues: Note[] = [];
 
     if (!hasReturn(block)) {
-      issues.push(Note(statement, 'error', (
-        'For loop doesn\'t return a value since it doesn\'t have any return ' +
-        'statements'
-      )));
+      issues.push(Note(
+        statement,
+        'error',
+        ['control-flow', 'return-failure', 'for-return', 'no-inner-return'],
+        (
+          'For loop doesn\'t return a value since it doesn\'t have any ' +
+          'return statements'
+        ),
+      ));
     }
 
     if (control === null) {
       const breaks = findBreaks(block);
 
-      issues.push(...breaks.map(brk => Note(brk, 'error', (
-        'Break statement not allowed in for loop which needs to return a ' +
-        'value (either add a return statement after the loop or remove it)'
-      ))));
-    } else {
-      issues.push(Note(statement, 'error', (
-        `(${control.t}) clause not allowed in for loop which needs to ` +
-        `return a value (either add a return statement after the loop or ` +
-        `remove (${control.t}))`
+      issues.push(...breaks.map(brk => Note(
+        brk,
+        'error',
+        [
+          'control-flow',
+          'return-failure',
+          'for-return',
+          'break-prevents-return',
+        ],
+        (
+          'Break statement not allowed in for loop which needs to return a ' +
+          'value (either add a return statement after the loop or remove it)'
+        ),
       )));
+    } else {
+      issues.push(Note(
+        statement,
+        'error',
+        [
+          'control-flow',
+          'return-failure',
+          'for-return',
+          'control-clause-prevents-return',
+        ],
+        (
+          `(${control.t}) clause not allowed in for loop which needs to ` +
+          `return a value (either add a return statement after the loop or ` +
+          `remove (${control.t}))`
+        ),
+      ));
     }
 
     return issues;
   }
 
-  return [Note(statement, 'error',
-    'Last statement of body does not return'
+  return [Note(
+    statement,
+    'error',
+    ['control-flow', 'return-failure'],
+    'Last statement of body does not return',
   )];
 }
 

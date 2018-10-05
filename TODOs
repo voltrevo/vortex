@@ -1,4 +1,4 @@
-TODO: Notes revamp - give all notes a type, always include filename, implement multiple locations to deal with call stacks, include type in test code tags
+TODO: Notes revamp - give all notes a type, implement multiple locations to deal with call stacks, include type in test code tags
 TODO: Better function scoping and variable capture, constraints on captured variables
 TODO: Add tests for every possible note
 TODO: Implement imports
