@@ -26,4 +26,6 @@ function Note(
   };
 }
 
+export type FileNote = Note & { file: string };
+
 export default Note;

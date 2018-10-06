@@ -5,7 +5,7 @@ import colorize from './colorize';
 import compile from './compile';
 import formatLocation from './formatLocation';
 import getStdin from './getStdin';
-import Note from './Note';
+import { default as Note, FileNote } from './Note';
 import prettyErrorContext from './prettyErrorContext';
 import SecondsDiff from './SecondsDiff';
 
@@ -171,7 +171,7 @@ const inputs: ({ type: 'file', name: string } | string)[] = [];
       switch (format.value) {
         case 'pretty': {
           // TODO: Make this better
-          prettyPrint({ file, text, ...note });
+          prettyPrint({ file, ...note }, text);
 
           break;
         }
@@ -213,7 +213,7 @@ const inputs: ({ type: 'file', name: string } | string)[] = [];
   setTimeout(() => { throw e; });
 });
 
-function prettyLocation(note: Note & { file: string }) {
+function prettyLocation(note: FileNote) {
   if (!note.pos) {
     return `${note.file}:`;
   }
@@ -221,13 +221,13 @@ function prettyLocation(note: Note & { file: string }) {
   return `${note.file}:${formatLocation(note.pos)}:`;
 }
 
-function compactPrint(note: Note & { file: string }) {
+function compactPrint(note: FileNote) {
   console.error(colorize(
     `${prettyLocation(note)} ${note.level}: ${note.message}`
   ));
 }
 
-function prettyPrint(note: Note & { file: string, text: string }) {
+function prettyPrint(note: FileNote, text: string) {
   if (!note.pos) {
     compactPrint(note);
     console.error();
@@ -236,7 +236,7 @@ function prettyPrint(note: Note & { file: string, text: string }) {
 
   console.error(colorize(`${prettyLocation(note)} ${note.level}:`));
 
-  for (const line of prettyErrorContext(note)) {
+  for (const line of prettyErrorContext(note, text)) {
     console.error(line);
   }
 }

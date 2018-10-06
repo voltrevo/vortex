@@ -101,11 +101,9 @@ for (const file of files) {
         log.error(`${file}:${lineNo}: ${wording}:`);
 
         for (const note of levelNotes) {
-          for (const prettyLine of prettyErrorContext({
-            file,
-            text: fileText,
-            ...note
-          })) {
+          const prettyLines = prettyErrorContext({ file, ...note }, fileText);
+
+          for (const prettyLine of prettyLines) {
             console.error(prettyLine);
           }
         }

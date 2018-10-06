@@ -1,6 +1,6 @@
 import chalk from 'chalk';
 
-import Note from './Note';
+import { FileNote } from './Note';
 
 const iStart = 0;
 const iEnd = 1;
@@ -8,7 +8,8 @@ const iLine = 0;
 const iCol = 1;
 
 export default function prettyErrorContext(
-  note: Note & { file: string, text: string },
+  note: FileNote,
+  text: string,
 ): string[] {
   // TODO: Why does typescript require this?
   const pos = note.pos;
@@ -19,7 +20,7 @@ export default function prettyErrorContext(
 
   const output = [];
 
-  const textLines = note.text.split('\n').map(line => {
+  const textLines = text.split('\n').map(line => {
     if (line.indexOf('//') === -1) {
       return line;
     }
