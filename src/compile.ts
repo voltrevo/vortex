@@ -24,7 +24,7 @@ export default function compile(text: string) {
     } else {
       notes.push({
         level: 'error',
-        tags: ['error', 'parse', 'internal'],
+        tags: ['error', 'syntax', 'internal'],
         message: e.message,
         pos: [[1, 1], [1, 1]],
       });

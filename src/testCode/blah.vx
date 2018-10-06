@@ -3,7 +3,7 @@ foo := {
   b: 2,
 };
 
-x := 1; // #info #is-duplicated
+x := 1; // #info #validation #is-duplicated
 y := 1; // #info #warning #info #unused #is-duplicated
 foo.a = x := 2; // #error #error #error #subexpression-mutation #duplicate #value-needed
 foo.a = (x = (y := 2)); // #error #error #error #duplicate #subexpression-mutation (creation just more deeply nested)

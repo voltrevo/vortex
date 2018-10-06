@@ -4,7 +4,7 @@ import factorial;
 
 // main doesn't have special significance
 func main(n: i32) { // #warning #unused
-  2 ** 3 ** 4; // #warning #no-effect
+  2 ** 3 ** 4; // #warning #no-effect #top-expression
   1 + 1; // #warning #no-effect
 
   100 + 2 * 3; // #warning #no-effect
@@ -75,9 +75,9 @@ func loops() { // #warning #unused
     infiniteLoop := 1; // #warning #unused TODO:infinite-loop
   }
 
-  for (1) {}
+  for (1) {} // TODO: type-error
   for (i := 1; 1; i = i + 1) {}
-  for (i of values) {} // #error #error #error #return-failure #no-inner-return #not-found
+  for (i of values) {} // #error #error #error #return-failure #no-inner-return #not-found #for-return #control-clause-prevents-return #scope
 };
 
 class Point { // #warning #unused

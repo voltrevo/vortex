@@ -19,7 +19,13 @@ const files = (spawnSync('git', ['ls-files'])
   ))
 );
 
-function Tags(line: string): string[] {
+const unseenTags: { [tag: string]: true | undefined } = {};
+
+for (const tag of Note.tags) {
+  unseenTags[tag] = true;
+}
+
+function Tags(line: string, file: string, lineNo: number): Note.Tag[] {
   // (TODO: handle false positives caused by strings)
   // TODO: get parser to emit comments somehow
   const comment = line.match(/\/\/.*$/);
@@ -30,7 +36,24 @@ function Tags(line: string): string[] {
 
   const matches = comment[0].match(/\#[a-z-]*/g) || [];
 
-  return matches.map(m => m.slice(1));
+  const tags: Note.Tag[] = [];
+
+  for (const match of matches) {
+    const t = match.slice(1);
+
+    if (Note.isTag(t)) {
+      tags.push(t);
+      delete unseenTags[t];
+    } else {
+      log.error(
+        `${file}:${lineNo}: error: unrecognized tag: ${t}\n`
+      );
+
+      ok = false;
+    }
+  }
+
+  return tags;
 }
 
 const log = {
@@ -68,7 +91,7 @@ for (const file of files) {
   for (const line of lines) {
     lineNo++;
 
-    const tags = Tags(line);
+    const tags = Tags(line, file, lineNo);
     const lineNotes = notes.filter(n => n.pos && n.pos[0][0] === lineNo);
 
     for (const level of ['error', 'warning', 'info']) {
@@ -152,6 +175,11 @@ for (const file of files) {
       }
     }
   }
+}
+
+for (const unseenTag of Object.keys(unseenTags)) {
+  log.error('>>> error: unseen tag: ' + unseenTag);
+  ok = false;
 }
 
 log.info('>>> info: ' +

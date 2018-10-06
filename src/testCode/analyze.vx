@@ -10,4 +10,4 @@ for (i := 1; i <= 4; i++) {
   }
 }
 
-return sum; // #info #return-value
+return sum; // #info #return-value #analysis

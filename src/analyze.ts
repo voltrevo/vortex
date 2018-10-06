@@ -19,14 +19,14 @@ export type VException = {
   t: 'exception';
   v: {
     origin: Syntax.Element;
-    tags: string[];
+    tags: Note.Tag[];
     message: string;
   };
 }
 
 function VException(
   origin: Syntax.Element,
-  tags: string[],
+  tags: Note.Tag[],
   message: string
 ): VException {
   return { t: 'exception', v: { origin, tags, message } };

@@ -229,7 +229,8 @@ function prettyLocation(note: FileNote) {
 
 function compactPrint(note: FileNote) {
   console.error(colorize(
-    `${prettyLocation(note)} ${note.level}: ${note.message}`
+    `${prettyLocation(note)} ${note.level}: ${note.message} ` +
+    note.tags.map(t => '#' + t).join(' ')
   ));
 }
 
