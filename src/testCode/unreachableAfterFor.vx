@@ -8,11 +8,11 @@ func foo() {
     i++;
 
     if (i == 10) {
-      return sum; // #info
+      return sum; // #info #return-value
     }
   }
 
-  return sum; // TODO should be error because this is unreachable
+  return sum; // TODO:unreachable
 };
 
-return foo(); // #info
+return foo(); // #info #return-value

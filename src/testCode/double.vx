@@ -1,1 +1,1 @@
-return func(x: f64) => 2 * x; // #info
+return func(x: f64) => 2 * x; // #info #return-value

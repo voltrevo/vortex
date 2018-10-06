@@ -1,8 +1,8 @@
-x := 1; // #info
+x := 1; // #info #is-duplicated
 
-for (x := 1; y; x++) { // #error #error #error
+for (x := 1; y; x++) { // #error #error #error #duplicate #not-found #invalid-condition
   y := 1;
   return y;
 }
 
-return y; // #error TODO also unreachable, TODO count note annotations
+return y; // #error #not-found TODO:unreachable

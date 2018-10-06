@@ -27,7 +27,9 @@ function Tags(line: string): string[] {
     return [];
   }
 
-  return comment[0].match(/\#\w*/g) || [];
+  const matches = comment[0].match(/\#[a-z-]*/g) || [];
+
+  return matches.map(m => m.slice(1));
 }
 
 const log = {
@@ -69,7 +71,7 @@ for (const file of files) {
     const lineNotes = notes.filter(n => n.pos && n.pos[0][0] === lineNo);
 
     for (const level of ['error', 'warning', 'info']) {
-      const levelTags = tags.filter(t => t === `#${level}`);
+      const levelTags = tags.filter(t => t === level);
       const levelNotes = lineNotes.filter(n => n.level === level);
 
       const nt = levelTags.length;
@@ -107,6 +109,45 @@ for (const file of files) {
             console.error(prettyLine);
           }
         }
+      }
+    }
+
+    for (const note of lineNotes) {
+      const nonLevelTags = note.tags.filter(t => (
+        ['error', 'warning', 'info'].indexOf(t) === -1
+      ));
+
+      let hasAMatch = false;
+
+      for (const tag of nonLevelTags) {
+        if (tags.indexOf(tag) !== -1) {
+          hasAMatch = true;
+        }
+      }
+
+      if (!hasAMatch) {
+        log.error(
+          `${file}:${lineNo}: line is insufficiently tagged. Need to add ` +
+          `at least one of: ${nonLevelTags.map(t => `#${t}`).join(', ')}`
+        );
+      }
+    }
+
+    for (const tag of tags) {
+      let hasAMatch = false;
+
+      for (const note of lineNotes) {
+        if (note.tags.indexOf(tag) !== -1) {
+          hasAMatch = true;
+          break;
+        }
+      }
+
+      if (!hasAMatch) {
+        log.error(
+          `${file}:${lineNo}: #${tag} tag that was not produced by the ` +
+          `compiler`
+        );
       }
     }
   }

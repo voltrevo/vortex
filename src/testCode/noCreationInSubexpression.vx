@@ -1,5 +1,5 @@
-assert false; // #error
+assert false; // #error #assert-false
 
-a := b := 0; // #error
+a := b := 0; // #error #subexpression-mutation
 
 return a + b;

@@ -196,7 +196,7 @@ const inputs: ({ type: 'file', name: string } | string)[] = [];
             end_lnum: pos[1][0],
             col: pos[0][1],
             end_col: pos[1][1],
-            text: note.message,
+            text: `${note.message} ${note.tags.map(t => '#' + t).join(' ')}`,
             type: note.level[0].toUpperCase(),
           }));
 

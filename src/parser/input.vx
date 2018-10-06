@@ -1,58 +1,58 @@
-import math from 'core'; // #error
+import math from 'core'; // #error #exception
 
 import factorial;
 
 // main doesn't have special significance
-func main(n: i32) { // #warning
-  2 ** 3 ** 4; // #warning
-  1 + 1; // #warning
+func main(n: i32) { // #warning #unused
+  2 ** 3 ** 4; // #warning #no-effect
+  1 + 1; // #warning #no-effect
 
-  100 + 2 * 3; // #warning
+  100 + 2 * 3; // #warning #no-effect
 
   foo := 7;
-  (import bar)(); // #warning
+  (import bar)(); // #warning #no-effect
 
   if (1 > 1) {
     foo = foo + 1;
   }
 
-  return multiplyAdd(n, n, n) + 'hello'; // #error TODO special function scoping
+  return multiplyAdd(n, n, n) + 'hello'; // #error #not-found TODO special function scoping
 };
 
-func multiplyAdd(a: i32, b: i32, c: i32) => a * b + c; // #warning TODO
+func multiplyAdd(a: i32, b: i32, c: i32) => a * b + c; // #warning #unused TODO
 
-func methodCalls() { // #warning
-  return getObject():method():method2(); // #error
+func methodCalls() { // #warning #unused
+  return getObject():method():method2(); // #error #not-found
 };
 
-func arrays() { // #warning
+func arrays() { // #warning #unused
   literal := [1, 2, 3, 2 + 2];
-  subscript := literal[blah()]; // #error #warning #error
+  subscript := literal[blah()]; // #error #warning #error #return-failure #not-found #unused
 };
 
-func objects() { // #warning
+func objects() { // #warning #unused
   x := { a: 1, b: 1 };
   x.b++;
-  x.c := 3; // #error
+  x.c := 3; // #error #return-failure
 };
 
-func immutableStuff() { // #warning
+func immutableStuff() { // #warning #unused
   x := { a: 0, b: 0 };
   y := x;
 
   x.a++;
 
-  y == { a: 0, b: 0 }; // #warning
-  x == { a: 1, b: 0 }; // #error #warning
+  y == { a: 0, b: 0 }; // #warning #no-effect
+  x == { a: 1, b: 0 }; // #error #warning #no-effect #return-failure
 };
 
-func trailing() { // #warning
-  { // #warning
+func trailing() { // #warning #unused
+  { // #warning #no-effect
     a: 1,
     b: 2,
   };
 
-  [ // #error #warning
+  [ // #error #warning #no-effect #return-failure
     1,
     2,
     3,
@@ -66,21 +66,21 @@ func trailing() { // #warning
 continue;
 break;
 
-func() {}; // #error
+func() {}; // #error TODO:no-effect #empty-body
 
-foo := func() {}; // #error #warning
+foo := func() {}; // #error #warning #control-flow #unused
 
-func loops() { // #warning
+func loops() { // #warning #unused
   for {
-    infiniteLoop := 1; // #warning
+    infiniteLoop := 1; // #warning #unused TODO:infinite-loop
   }
 
   for (1) {}
   for (i := 1; 1; i = i + 1) {}
-  for (i of values) {} // #error #error #error
+  for (i of values) {} // #error #error #error #return-failure #no-inner-return #not-found
 };
 
-class Point { // #warning
+class Point { // #warning #unused
   x: f64;
   y: f64;
 

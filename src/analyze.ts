@@ -19,12 +19,17 @@ export type VException = {
   t: 'exception';
   v: {
     origin: Syntax.Element;
+    tags: string[];
     message: string;
   };
 }
 
-function VException(origin: Syntax.Element, message: string): VException {
-  return { t: 'exception', v: { origin, message } };
+function VException(
+  origin: Syntax.Element,
+  tags: string[],
+  message: string
+): VException {
+  return { t: 'exception', v: { origin, tags, message } };
 }
 
 // TODO: Valid -> Concrete (?)
@@ -452,6 +457,7 @@ function objMul(
   }
 
   return VException(exp,
+    ['object-multiplication'],
     `Attempt to multiply non-empty object by ${n.v} (can only multiply ` +
     'non-empty objects by 0 or 1)',
   );
@@ -488,6 +494,7 @@ function objectLookup(
 
   if (obj.t !== 'object' || index.t !== 'string') {
     return VException(exp,
+      ['type-error', 'object-subscript'],
       `Type error: ${obj.t}[${index.t}]`,
     );
   }
@@ -496,6 +503,7 @@ function objectLookup(
 
   if (maybeValue === undefined) {
     return VException(exp,
+      ['key-not-found'],
       `Object key not found: ${index.v}`,
     );
   }
@@ -558,6 +566,7 @@ function analyzeInContext(
           if (value.t === 'missing') {
             context.value = VException(
               statement.v,
+              ['value-needed'],
               `Return expression was ${Value.String(value)}`,
             );
           } else if (value.t !== 'exception') {
@@ -597,6 +606,7 @@ function analyzeInContext(
                   // TODO: Is this actually possible? I think evalExpression
                   // can't actually produce <missing> anymore.
                   return VException(statement.v,
+                    ['value-needed', 'assert'],
                     'Assertion expression is missing a value',
                   );
               }
@@ -611,13 +621,13 @@ function analyzeInContext(
             context.notes.push(Note(
               statement.v,
               'error',
-              ['analysis', 'type-error', 'non-bool-assert'],
+              ['analysis', 'type-error', 'assert-non-bool'],
               `Type error: assert ${validValue.t}`,
             ));
           } else if (validValue.v !== true) {
             // TODO: Format code for other exceptions like this
             context.value = VException(statement.v,
-              // TODO: Show detail
+              ['assert-false'],
               `Asserted ${ExpressionString(context.scope, statement.v)}`,
             );
           }
@@ -635,6 +645,7 @@ function analyzeInContext(
           if (!validCond) {
             // TODO: unknown should be handled differently
             context.value = VException(cond,
+              ['invalid-condition', 'if'],
               `Didn't get a valid condition: ${Value.String(condCtx.value)}`,
             );
 
@@ -654,6 +665,7 @@ function analyzeInContext(
             }
           } else {
             context.value = VException(cond,
+              ['non-bool-condition'],
               `Type error: Non-bool condition: ${validCond.t}`,
             );
           }
@@ -671,6 +683,7 @@ function analyzeInContext(
           ) {
             context.value = VException(
               statement,
+              ['not-implemented', 'for-loop'],
               // TODO: Need to capture more structure in compiler notes
               `Not implemented: for loop with (${control.t}) control clause`,
             );
@@ -716,6 +729,7 @@ function analyzeInContext(
             if (!validCond) {
               // TODO: unknown should be handled differently
               context.value = VException(cond,
+                ['invalid-condition', 'for-loop'],
                 `Didn't get a valid condition: ${Value.String(condCtx.value)}`,
               );
 
@@ -725,6 +739,7 @@ function analyzeInContext(
             if (validCond.t !== 'bool') {
               context.value = VException(
                 cond,
+                ['non-bool-condition', 'for-loop'],
                 `Type error: Non-bool condition: ${validCond.t}`,
               );
 
@@ -792,6 +807,7 @@ function analyzeInContext(
           context.value = VException(
             statement,
             // TODO: Need to capture more structure in compiler notes
+            ['not-implemented'],
             `Not implemented: ${statement.t} statement`,
           );
 
@@ -814,7 +830,7 @@ function analyzeInContext(
           return [Note(
             context.value.v.origin,
             'error',
-            ['analysis', 'exception', 'value-needed'],
+            ['analysis', 'exception', 'value-needed', ...context.value.v.tags],
             `Threw exception: ${context.value.v.message}`,
           )];
         }
@@ -883,7 +899,12 @@ function evalExpression(
         const entry = Scope.get(scope, exp.v);
 
         if (entry === null) {
-          value = VException(exp, `Variable does not exist: ${exp.v}`);
+          value = VException(
+            exp,
+            ['not-found'],
+            `Variable does not exist: ${exp.v}`
+          );
+
           return null;
         }
 
@@ -900,6 +921,7 @@ function evalExpression(
         if (left.t !== 'IDENTIFIER') {
           value = VException(
             left,
+            ['not-implemented', 'non-identifier-creation-target'],
             'Not implemented: non-identifier lvalues',
           );
 
@@ -979,7 +1001,12 @@ function evalExpression(
 
         if (right.value.t === 'missing') {
           // TODO: Better message
-          value = VException(rightExp, 'Value required');
+          value = VException(
+            rightExp,
+            ['value-needed', 'compound-assignment'],
+            'Value required'
+          );
+
           return null;
         }
 
@@ -989,6 +1016,7 @@ function evalExpression(
 
           if (right.value.t !== 'array') {
             value = VException(exp,
+              ['type-error', 'destructuring-mismatch'],
               // TODO: a vs an
               'Assignment target is an array but the value is a ' +
               right.value.t
@@ -999,13 +1027,17 @@ function evalExpression(
 
           if (leftExp.v.length !== right.value.v.length) {
             // TODO: Implement _ as special ignore identifier
-            value = VException(exp, [
-              'Array destructuring length mismatch: ',
-              leftExp.v.length,
-              ' targets but only ',
-              right.value.v.length,
-              ' values',
-            ].join(''));
+            value = VException(
+              exp,
+              ['type-error', 'destructuring-mismatch', 'length-mismatch'],
+              [
+                'Array destructuring length mismatch: ',
+                leftExp.v.length,
+                ' targets but only ',
+                right.value.v.length,
+                ' values',
+              ].join(''),
+            );
 
             return null;
           }
@@ -1080,6 +1112,7 @@ function evalExpression(
               accessorCtx.value.t !== 'number'
             ) {
               value = VException(accessor,
+                ['type-error', 'subscript'],
                 `Type error: ${accessorCtx.value.t} subscript`,
               );
 
@@ -1093,6 +1126,7 @@ function evalExpression(
           }
 
           value = VException(leftBaseExp,
+            ['invalid-assignment-target', 'destructuring'],
             // TODO: Don't analyze if failed validation and throw internal
             // error here instead
             `(redundant) Invalid assignment target: ${leftBaseExp.t} ` +
@@ -1108,7 +1142,7 @@ function evalExpression(
           notes.push(Note(
             exp,
             'error',
-            ['analysis', 'variable-does-not-exist', 'assignment'],
+            ['analysis', 'not-found', 'assignment'],
             'Attempt to assign to a variable that does not exist',
           ));
 
@@ -1134,6 +1168,7 @@ function evalExpression(
 
             if (oldSubValue === undefined) {
               return VException(leftExp,
+                ['key-not-found'],
                 // TODO: Better message, location
                 'Key not found',
               );
@@ -1170,6 +1205,7 @@ function evalExpression(
               // TODO: More accurate expression reference (just providing
               // entire lhs instead of specifically the bad subscript/.)
               return VException(leftExp,
+                ['out-of-bounds', 'index-bad'],
                 `Invalid index: ${index}`,
               );
             }
@@ -1177,12 +1213,16 @@ function evalExpression(
             if (index >= oldValue.v.length) {
               // TODO: More accurate expression reference (just providing
               // entire lhs instead of specifically the bad subscript/.)
-              return VException(leftExp, [
-                'Out of bounds: index ',
-                index,
-                ' but array is only length ',
-                oldValue.v.length
-              ].join(''));
+              return VException(
+                leftExp,
+                ['out-of-bounds', 'index-too-large'],
+                [
+                  'Out of bounds: index ',
+                  index,
+                  ' but array is only length ',
+                  oldValue.v.length
+                ].join('')
+              );
             }
 
             const newValueAtIndex = modifyChain(
@@ -1212,6 +1252,7 @@ function evalExpression(
           // TODO: More accurate expression reference (just providing entire
           // lhs instead of specifically the bad subscript/.)
           return VException(leftExp,
+            ['type-error', 'index-bad'],
             `Type error: attempt to index ${oldValue.t} with a ` +
             typeof index,
           );
@@ -1237,6 +1278,7 @@ function evalExpression(
 
         if (newBaseValue.t === 'missing') {
           value = VException(exp,
+            ['value-needed'],
             // TODO: Better wording
             'Expected a value',
           );
@@ -1305,6 +1347,7 @@ function evalExpression(
         if (subExp.t !== 'IDENTIFIER') {
           value = VException(
             exp,
+            ['not-implemented', 'non-identifier-assignment-target'],
             `Not implemented: non-identifier lvalues`,
           );
 
@@ -1535,6 +1578,7 @@ function evalExpression(
 
         value = VException(
           exp,
+          ['type-error', 'unary-plus-minus'],
           `Type error: ${exp.t.slice(6)}${right.value.t}`,
         );
 
@@ -1584,6 +1628,7 @@ function evalExpression(
             // shouldn't have to be handled
             case 'missing': {
               return VException(funcExp,
+                ['type-error', 'call-non-function'],
                 `Type error: attempt to call a ${func.t} as a function`
               );
             }
@@ -1611,6 +1656,7 @@ function evalExpression(
 
           if (arg.t === 'missing') {
             value = VException(argExp,
+              ['value-needed'],
               `Argument was ${Value.String(arg)}`,
             );
 
@@ -1633,15 +1679,19 @@ function evalExpression(
 
             case 'func': {
               if (func.v.args.length !== args.length) {
-                return VException(exp, [
-                  'Arguments length mismatch: ',
-                  Value.String(func),
-                  ' requires ',
-                  func.v.args.length,
-                  ' arguments but ',
-                  args.length,
-                  ' were provided'
-                ].join(''));
+                return VException(
+                  exp,
+                  ['type-error', 'arguments-length-mismatch'],
+                  [
+                    'Arguments length mismatch: ',
+                    Value.String(func),
+                    ' requires ',
+                    func.v.args.length,
+                    ' arguments but ',
+                    args.length,
+                    ' were provided'
+                  ].join(''),
+                );
               }
 
               let funcScope = Scope<Context>();
@@ -1742,6 +1792,7 @@ function evalExpression(
 
           if (indexCtx.value.t !== 'number') {
             value = VException(exp,
+              ['type-error', 'subscript'],
               `Type error: ${containerCtx.value.t}[${indexCtx.value.t}]`,
             );
 
@@ -1753,6 +1804,7 @@ function evalExpression(
             indexCtx.value.v !== Math.floor(indexCtx.value.v)
           ) {
             value = VException(indexExp,
+              ['subscript', 'out-of-bounds', 'index-bad'],
               `Invalid array index: ${indexCtx.value.v}`,
             );
 
@@ -1760,12 +1812,16 @@ function evalExpression(
           }
 
           if (indexCtx.value.v >= containerCtx.value.v.length) {
-            value = VException(exp, [
-              'Out of bounds: index ',
-              indexCtx.value.v,
-              ' but array is only length ',
-              containerCtx.value.v.length
-            ].join(''));
+            value = VException(
+              exp,
+              ['out-of-bounds', 'index-too-large'],
+              [
+                'Out of bounds: index ',
+                indexCtx.value.v,
+                ' but array is only length ',
+                containerCtx.value.v.length
+              ].join(''),
+            );
 
             return null;
           }
@@ -1783,6 +1839,7 @@ function evalExpression(
         }
 
         value = VException(exp,
+          ['type-error', 'subscript', 'object'],
           `Type error: ${containerCtx.value.t}[${indexCtx.value.t}]`,
         );
 
@@ -1860,6 +1917,7 @@ function evalExpression(
       case 'import': {
         value = VException(
           exp,
+          ['not-implemented'],
           `Not implemented: ${exp.t} expression`,
         );
 
@@ -1907,6 +1965,7 @@ function evalVanillaOperator<T extends {
     // indicate that a type error should result.
     value = VException(
       exp,
+      ['type-error', 'operator'],
       `Type error: ${left.value.t} ${exp.t} ${right.value.t}`,
     );
   }

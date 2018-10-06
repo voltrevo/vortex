@@ -231,7 +231,7 @@ function validateScope(elements: ScopeItem[]): Note[] {
           issues.push(Note(
             item.v,
             'error',
-            ['validation', 'scope', 'variable-already-exists'],
+            ['validation', 'scope', 'duplicate'],
             'Can\'t create variable that already exists'
           ));
 
@@ -240,7 +240,7 @@ function validateScope(elements: ScopeItem[]): Note[] {
           issues.push(Note(
             preExisting.origin,
             'info',
-            ['validation', 'scope', 'existing-variable'],
+            ['validation', 'scope', 'is-duplicated'],
             `Attempt to create this variable again at ${loc}`,
           ));
         } else {
@@ -266,7 +266,7 @@ function validateScope(elements: ScopeItem[]): Note[] {
               issues.push(Note(
                 variable.origin,
                 'warning',
-                ['validation', 'no-effect', 'scope', 'unused-variable'],
+                ['validation', 'no-effect', 'scope', 'unused'],
                 `Variable ${varName} is not used`,
               ));
             } else {
@@ -277,7 +277,7 @@ function validateScope(elements: ScopeItem[]): Note[] {
                   'validation',
                   'no-effect',
                   'scope',
-                  'unused-variable',
+                  'unused',
                   'assigned'
                 ],
                 `Variable ${varName} is assigned but never used, so it ` +
@@ -296,7 +296,7 @@ function validateScope(elements: ScopeItem[]): Note[] {
           issues.push(Note(
             item,
             'error',
-            ['validation', 'scope', 'variable-does-not-exist'],
+            ['validation', 'scope', 'not-found'],
             `Variable ${item.v} does not exist`
           ));
         } else {
@@ -314,7 +314,7 @@ function validateScope(elements: ScopeItem[]): Note[] {
             [
               'validation',
               'scope',
-              'variable-does-not-exist',
+              'not-found',
               'assign-target',
             ],
             `Variable ${item.v} does not exist`
@@ -498,7 +498,7 @@ function validateExpression(exp: Syntax.Expression): Note[] {
             notes.push(Note(
               identifier,
               'error',
-              ['validation', 'object-literal', 'duplicate-key'],
+              ['validation', 'object', 'duplicate', 'duplicate-key'],
               `Duplicate key '${identifier.v}' in object literal`,
             ));
           }

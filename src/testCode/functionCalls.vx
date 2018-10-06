@@ -1,8 +1,8 @@
 sayHello := func(name) {
-  return 'Hi ' + name; // #info TODO: probably shouldn't emit an info
+  return 'Hi ' + name; // #info #return-value TODO: probably shouldn't emit an info
 };
 
 msg := sayHello('computer');
 assert msg == 'Hi computer';
 
-return msg; // #info
+return msg; // #info #return-value

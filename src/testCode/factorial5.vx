@@ -1,1 +1,1 @@
-return (import factorial)(5); // #error
+return (import factorial)(5); // #error #not-implemented

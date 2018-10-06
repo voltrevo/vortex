@@ -3,20 +3,20 @@ foo := {
   b: 2,
 };
 
-x := 1; // #info
-y := 1; // #info #warning #info
-foo.a = x := 2; // #error #error #error
-foo.a = (x = (y := 2)); // #error #error #error (creation just more deeply nested)
-foo.a = (x.y := 2); // #error also not ok (removed exception for adding props)
+x := 1; // #info #is-duplicated
+y := 1; // #info #warning #info #unused #is-duplicated
+foo.a = x := 2; // #error #error #error #subexpression-mutation #duplicate #value-needed
+foo.a = (x = (y := 2)); // #error #error #error #duplicate #subexpression-mutation (creation just more deeply nested)
+foo.a = (x.y := 2); // #error #subexpression-mutation also not ok (removed exception for adding props)
 foo.c := 3;
 foo.d := {};
-y := 3; // #error
+y := 3; // #error #duplicate
 
 func() { // TODO: top level anonymous function can't be called
-  a := 1; // #warning
-  return b := 1; // #error #warning
+  a := 1; // #warning #unused
+  return b := 1; // #error #warning #subexpression-mutation #unused
 };
 
-a++; // #error
+a++; // #error #not-found
 
-foo.d.e := 42; // #error
+foo.d.e := 42; // #error #return-failure

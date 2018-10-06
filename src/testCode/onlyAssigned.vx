@@ -1,13 +1,13 @@
-x := 1; // #warning unused
+x := 1; // #warning #unused
 
 func() {
-  y := 1; // #warning only assigned
+  y := 1; // #warning #unused only assigned
   y += 1;
   z := 1; // TODO should be warning ... hmm how to handle this one?
   z++;
-  zz := 1; // #warning TODO shouldn't be a warning (similar to ++ issue)
-  a := (zz += 1); // #error
+  zz := 1; // #warning #unused TODO shouldn't be a warning (similar to ++ issue)
+  a := (zz += 1); // #error #subexpression-mutation
   return a;
 };
 
-return 1; // #info
+return 1; // #info #return-value

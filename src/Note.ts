@@ -14,7 +14,7 @@ function Note(
   tags: string[],
   message: string,
 ) {
-  const categories = ['parse', 'validation', 'analysis', 'statistics'];
+  const categories = ['syntax', 'validation', 'analysis', 'statistics'];
   const hasCategory = tags.some(t => categories.indexOf(t) !== -1);
   assert(hasCategory);
 

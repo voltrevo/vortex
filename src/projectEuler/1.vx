@@ -6,4 +6,4 @@ for (i := 1; i < 1000; i++) {
   }
 }
 
-return sum; // #info
+return sum; // #info #return-value

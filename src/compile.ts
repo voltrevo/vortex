@@ -14,7 +14,7 @@ export default function compile(text: string) {
     if (e.hash) {
       notes.push({
         level: 'error',
-        tags: ['parse'],
+        tags: ['error', 'syntax'],
         message: e.message.split('\n')[3],
         pos: [
           [e.hash.loc.first_line, e.hash.loc.first_column],
@@ -24,7 +24,7 @@ export default function compile(text: string) {
     } else {
       notes.push({
         level: 'error',
-        tags: ['parse', 'internal'],
+        tags: ['error', 'parse', 'internal'],
         message: e.message,
         pos: [[1, 1], [1, 1]],
       });
