@@ -50,7 +50,7 @@ export function validate(program: Syntax.Program): Note[] {
           subNotes.push(Note(
             statement,
             'error',
-            ['control-flow', 'unreachable'],
+            ['validation', 'control-flow', 'unreachable'],
             'Statement is unreachable'
           ));
         }
@@ -231,7 +231,7 @@ function validateScope(elements: ScopeItem[]): Note[] {
           issues.push(Note(
             item.v,
             'error',
-            ['scope', 'variable-already-exists'],
+            ['validation', 'scope', 'variable-already-exists'],
             'Can\'t create variable that already exists'
           ));
 
@@ -240,7 +240,7 @@ function validateScope(elements: ScopeItem[]): Note[] {
           issues.push(Note(
             preExisting.origin,
             'info',
-            ['scope', 'existing-variable'],
+            ['validation', 'scope', 'existing-variable'],
             `Attempt to create this variable again at ${loc}`,
           ));
         } else {
@@ -266,14 +266,20 @@ function validateScope(elements: ScopeItem[]): Note[] {
               issues.push(Note(
                 variable.origin,
                 'warning',
-                ['no-effect', 'scope', 'unused-variable'],
+                ['validation', 'no-effect', 'scope', 'unused-variable'],
                 `Variable ${varName} is not used`,
               ));
             } else {
               issues.push(Note(
                 variable.origin,
                 'warning',
-                ['no-effect', 'scope', 'unused-variable', 'assigned'],
+                [
+                  'validation',
+                  'no-effect',
+                  'scope',
+                  'unused-variable',
+                  'assigned'
+                ],
                 `Variable ${varName} is assigned but never used, so it ` +
                 `can't affect the return value`
               ));
@@ -290,7 +296,7 @@ function validateScope(elements: ScopeItem[]): Note[] {
           issues.push(Note(
             item,
             'error',
-            ['scope', 'variable-does-not-exist'],
+            ['validation', 'scope', 'variable-does-not-exist'],
             `Variable ${item.v} does not exist`
           ));
         } else {
@@ -305,7 +311,12 @@ function validateScope(elements: ScopeItem[]): Note[] {
           issues.push(Note(
             item,
             'error',
-            ['scope', 'variable-does-not-exist', 'assign-target'],
+            [
+              'validation',
+              'scope',
+              'variable-does-not-exist',
+              'assign-target',
+            ],
             `Variable ${item.v} does not exist`
           ));
         } else {
@@ -327,7 +338,7 @@ function validateBody(body: Syntax.Block): Note[] {
     return [Note(
       body,
       'error',
-      ['control-flow', 'return-failure', 'empty-body'],
+      ['validation', 'control-flow', 'return-failure', 'empty-body'],
       'Empty body',
     )];
   }
@@ -432,7 +443,7 @@ function validateExpression(exp: Syntax.Expression): Note[] {
     notes.push(Note(
       exp,
       'warning',
-      ['no-effect', 'top-expression'],
+      ['validation', 'no-effect', 'top-expression'],
       'Statement has no effect', // TODO: better wording
     ));
   }
@@ -455,7 +466,7 @@ function validateExpression(exp: Syntax.Expression): Note[] {
           notes.push(Note(
             invalid,
             'error',
-            ['invalid-assignment-target'],
+            ['validation', 'invalid-assignment-target'],
             [
               'Invalid assignment target: ',
               invalid.t,
@@ -471,7 +482,7 @@ function validateExpression(exp: Syntax.Expression): Note[] {
           notes.push(Note(
             exp,
             'error',
-            ['scope', 'subexpression-mutation'],
+            ['validation', 'scope', 'subexpression-mutation'],
             `${action} a variable in a subexpression is not allowed`,
           ));
         }
@@ -487,7 +498,7 @@ function validateExpression(exp: Syntax.Expression): Note[] {
             notes.push(Note(
               identifier,
               'error',
-              ['object-literal', 'duplicate-key'],
+              ['validation', 'object-literal', 'duplicate-key'],
               `Duplicate key '${identifier.v}' in object literal`,
             ));
           }
@@ -558,7 +569,13 @@ function validateStatementWillReturn(statement: Syntax.Statement): Note[] {
       issues.push(Note(
         statement,
         'error',
-        ['control-flow', 'return-failure', 'for-return', 'no-inner-return'],
+        [
+          'validation',
+          'control-flow',
+          'return-failure',
+          'for-return',
+          'no-inner-return',
+        ],
         (
           'For loop doesn\'t return a value since it doesn\'t have any ' +
           'return statements'
@@ -573,6 +590,7 @@ function validateStatementWillReturn(statement: Syntax.Statement): Note[] {
         brk,
         'error',
         [
+          'validation',
           'control-flow',
           'return-failure',
           'for-return',
@@ -588,6 +606,7 @@ function validateStatementWillReturn(statement: Syntax.Statement): Note[] {
         statement,
         'error',
         [
+          'validation',
           'control-flow',
           'return-failure',
           'for-return',
@@ -607,7 +626,7 @@ function validateStatementWillReturn(statement: Syntax.Statement): Note[] {
   return [Note(
     statement,
     'error',
-    ['control-flow', 'return-failure'],
+    ['validation', 'control-flow', 'return-failure'],
     'Last statement of body does not return',
   )];
 }

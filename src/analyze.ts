@@ -561,7 +561,10 @@ function analyzeInContext(
               `Return expression was ${Value.String(value)}`,
             );
           } else if (value.t !== 'exception') {
-            context.notes.push(Note(statement, 'info',
+            context.notes.push(Note(
+              statement,
+              'info',
+              ['analysis', 'return-value'],
               `Returned ${Value.String(value)}`,
             ));
           }
@@ -605,7 +608,10 @@ function analyzeInContext(
           const validValue = vinvValue.v;
 
           if (validValue.t !== 'bool') {
-            context.notes.push(Note(statement.v, 'error',
+            context.notes.push(Note(
+              statement.v,
+              'error',
+              ['analysis', 'type-error', 'non-bool-assert'],
               `Type error: assert ${validValue.t}`,
             ));
           } else if (validValue.v !== true) {
@@ -756,7 +762,9 @@ function analyzeInContext(
             if (iterations >= 2048) {
               // TODO: Count total operations and limit execution based on that
               // instead.
-              context.notes.push(Note(statement, 'warning',
+              context.notes.push(Note(statement,
+                'warning',
+                ['analysis', 'iteration-limit'],
                 'Hit iteration limit of 2048',
               ));
 
@@ -803,7 +811,10 @@ function analyzeInContext(
         // Exception should be picked up and result in a note elsewhere if
         // we're not returning a value.
         if (needsValue) {
-          return [Note(context.value.v.origin, 'error',
+          return [Note(
+            context.value.v.origin,
+            'error',
+            ['analysis', 'exception', 'value-needed'],
             `Threw exception: ${context.value.v.message}`,
           )];
         }
@@ -812,7 +823,10 @@ function analyzeInContext(
 
       case 'missing': {
         if (needsValue) {
-          return [Note(program, 'error',
+          return [Note(
+            program,
+            'error',
+            ['analysis', 'value-needed'],
             `Returned ${Value.String(context.value)}`,
           )];
         }
@@ -1091,7 +1105,10 @@ function evalExpression(
         const existing = Scope.get<Context>(scope, leftBaseExp.v);
 
         if (!existing) {
-          notes.push(Note(exp, 'error',
+          notes.push(Note(
+            exp,
+            'error',
+            ['analysis', 'variable-does-not-exist', 'assignment'],
             'Attempt to assign to a variable that does not exist',
           ));
 
@@ -1275,7 +1292,10 @@ function evalExpression(
             }
           })();
 
-          notes.push(Note(exp, 'error',
+          notes.push(Note(
+            exp,
+            'error',
+            ['analysis', 'type-error', 'inc-dec'],
             `Type error: ${typeExpStr}`
           ));
 

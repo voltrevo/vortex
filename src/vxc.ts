@@ -156,7 +156,10 @@ const inputs: ({ type: 'file', name: string } | string)[] = [];
     const notes = compile(text);
     const after = process.hrtime();
 
-    notes.push(Note({}, 'info',
+    notes.push(Note(
+      {},
+      'info',
+      ['statistics', 'compile-time'],
       `compiled in ${(1000 * SecondsDiff(before, after)).toFixed(3)}ms`
     ));
 

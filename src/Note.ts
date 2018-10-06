@@ -1,3 +1,4 @@
+import assert from './assert';
 import Syntax from './parser/Syntax';
 
 type Note = {
@@ -13,6 +14,10 @@ function Note(
   tags: string[],
   message: string,
 ) {
+  const categories = ['parse', 'validation', 'analysis', 'statistics'];
+  const hasCategory = tags.some(t => categories.indexOf(t) !== -1);
+  assert(hasCategory);
+
   return {
     ...(el.p ? { pos: el.p } : {}),
     level,
