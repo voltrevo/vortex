@@ -228,20 +228,21 @@ function validateScope(elements: ScopeItem[]): Note[] {
         const preExisting = Scope.get(scope, newVariableName);
 
         if (preExisting) {
+          const loc = formatLocation(item.v.p);
+
           issues.push(Note(
             item.v,
             'error',
             ['validation', 'scope', 'duplicate'],
-            'Can\'t create variable that already exists'
-          ));
-
-          const loc = formatLocation(item.v.p);
-
-          issues.push(Note(
-            preExisting.origin,
-            'info',
-            ['validation', 'scope', 'is-duplicated'],
-            `Attempt to create this variable again at ${loc}`,
+            'Can\'t create variable that already exists',
+            [
+              Note(
+                preExisting.origin,
+                'info',
+                ['validation', 'scope', 'is-duplicated'],
+                `Attempt to create this variable again at ${loc}`,
+              )
+            ]
           ));
         } else {
           scope = Scope.add(scope, newVariableName, {

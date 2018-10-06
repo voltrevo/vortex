@@ -6,6 +6,7 @@ type Note = {
   level: 'error' | 'warning' | 'info';
   tags: string[],
   message: string;
+  subnotes?: Note[];
 };
 
 function Note(
@@ -13,6 +14,7 @@ function Note(
   level: 'error' | 'warning' | 'info',
   tags: string[],
   message: string,
+  subnotes?: Note[],
 ) {
   const categories = ['syntax', 'validation', 'analysis', 'statistics'];
   const hasCategory = tags.some(t => categories.indexOf(t) !== -1);
@@ -23,9 +25,26 @@ function Note(
     level,
     tags: [level, ...tags],
     message,
+    ...(subnotes ? { subnotes } : {}),
   };
 }
 
-export type FileNote = Note & { file: string };
+namespace Note {
+  export type FileNote = Note & { file: string };
+
+  export function flatten(notes: Note[]): Note[] {
+    const newNotes: Note[] = [];
+
+    for (const note of notes) {
+      newNotes.push(note);
+
+      if (note.subnotes) {
+        newNotes.push(...flatten(note.subnotes));
+      }
+    }
+
+    return newNotes;
+  }
+}
 
 export default Note;

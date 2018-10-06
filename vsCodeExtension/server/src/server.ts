@@ -18,7 +18,7 @@ import {
   TextDocumentPositionParams
 } from 'vscode-languageserver';
 
-import compile from 'vortex';
+import * as vortex from 'vortex';
 
 // Create a connection for the server. The connection uses Node's IPC as a transport.
 // Also include all preview / proposed LSP features.
@@ -143,8 +143,8 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 
   // The validator creates diagnostics for all uppercase words length 2 and more
   let text = textDocument.getText();
-  const notes = compile(text);
-  
+  const notes = vortex.Note.flatten(vortex.compile(text));
+
   const diagnostics: Diagnostic[] = [];
 
   for (const note of notes) {

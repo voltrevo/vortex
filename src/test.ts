@@ -3,6 +3,7 @@ import { spawnSync } from 'child_process';
 
 import colorize from './colorize';
 import compile from './compile';
+import Note from './Note';
 import prettyErrorContext from './prettyErrorContext';
 import SecondsDiff from './SecondsDiff';
 
@@ -56,7 +57,7 @@ for (const file of files) {
 
   const fileText = readFileSync(file).toString();
   const before = process.hrtime();
-  const notes = compile(fileText);
+  const notes = Note.flatten(compile(fileText));
   const after = process.hrtime();
   compileTime += SecondsDiff(before, after);
   compiledFiles++;

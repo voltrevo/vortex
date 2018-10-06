@@ -2,7 +2,7 @@
   "name": "vortex",
   "version": "0.0.0",
   "description": "",
-  "main": "build/compile.js",
+  "main": "build/index.js",
   "author": "Andrew Morris",
   "scripts": {
     "build": "rm -r build && jison src/parser/vortex.jison -o $(pwd)/src/parser/vortex.js && tsc",

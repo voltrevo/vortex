@@ -5,9 +5,11 @@ import colorize from './colorize';
 import compile from './compile';
 import formatLocation from './formatLocation';
 import getStdin from './getStdin';
-import { default as Note, FileNote } from './Note';
+import Note from './Note';
 import prettyErrorContext from './prettyErrorContext';
 import SecondsDiff from './SecondsDiff';
+
+type FileNote = Note.FileNote;
 
 const args = minimist(process.argv.slice(2));
 
@@ -153,8 +155,12 @@ const inputs: ({ type: 'file', name: string } | string)[] = [];
     const file = typeof input === 'string' ? '(stdin)' : input.name;
 
     const before = process.hrtime();
-    const notes = compile(text);
+    let notes = compile(text);
     const after = process.hrtime();
+
+    if (format.value !== 'native') {
+      notes = Note.flatten(notes);
+    }
 
     notes.push(Note(
       {},

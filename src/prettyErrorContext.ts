@@ -1,6 +1,7 @@
 import chalk from 'chalk';
 
-import { FileNote } from './Note';
+import Note from './Note';
+type FileNote = Note.FileNote;
 
 const iStart = 0;
 const iEnd = 1;
