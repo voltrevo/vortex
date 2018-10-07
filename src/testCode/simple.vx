@@ -1,2 +1,2 @@
-a := 1; // #info #warning #error #is-duplicated #unused #value-needed
+a := 1; // #info #warning #is-duplicated #unused
 a := 1; // #error #error #return-failure #duplicate

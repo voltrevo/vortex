@@ -33,8 +33,11 @@ export default function compile(text: string) {
 
   if (program) {
     notes.push(...validate(program));
-    const { notes: analysisNotes } = analyze(program);
-    notes.push(...analysisNotes);
+
+    if (!notes.some(n => n.level === 'error')) {
+      const { notes: analysisNotes } = analyze(program);
+      notes.push(...analysisNotes);
+    }
   }
 
   return notes;

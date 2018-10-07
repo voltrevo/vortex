@@ -1,4 +1,4 @@
-assert false; // #error #assert-false
+assert false;
 
 a := b := 0; // #error #subexpression-mutation
 

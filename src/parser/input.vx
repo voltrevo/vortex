@@ -1,4 +1,4 @@
-import math from 'core'; // #error #exception
+import math from 'core';
 
 import factorial;
 

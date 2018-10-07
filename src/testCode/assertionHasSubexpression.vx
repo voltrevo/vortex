@@ -1,3 +1,2 @@
-assert false; // #error #assert-false (disable analyzer)
 assert a := 1; // #error #subexpression-mutation variable creation in subexpression
 return a;

@@ -1,3 +1,4 @@
-for { // #error #return-failure TODO: Shouldn't be an error if guaranteed to throw
+for {
   assert false; // #error #assert-false
+  return 1;
 }

@@ -1,6 +1,6 @@
 x := 1; // #info #is-duplicated
 
-for (x := 1; y; x++) { // #error #error #error #duplicate #not-found #invalid-condition #for-loop
+for (x := 1; y; x++) { // #error #error #duplicate #not-found
   y := 1;
   return y;
 }

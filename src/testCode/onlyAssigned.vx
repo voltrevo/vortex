@@ -10,4 +10,4 @@ func() {
   return a;
 };
 
-return 1; // #info #return-value
+return 1;

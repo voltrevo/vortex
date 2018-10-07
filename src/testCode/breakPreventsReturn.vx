@@ -1,4 +1,4 @@
 for {
-  break; // #error #break-prevents-return #error #not-implemented
+  break; // #error #break-prevents-return
   return 1;
 }
