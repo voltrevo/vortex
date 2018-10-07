@@ -125,6 +125,11 @@ export default function prettyErrorContext(
         `\n${lineNoSpaces}  ${spacer}`,
         addLevelColor('^') + ' ' + note.message,
       ].join('');
+
+      line += [
+        `\n${lineNoSpaces}  ${spacer}  `,
+        note.tags.map(t => '#' + t).join(' '),
+      ].join('');
     }
 
     line = `${lineNoStr(lineNo)}  ${line}`;

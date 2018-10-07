@@ -1,2 +1,2 @@
-a := 1; // #warning #unused
-a += 'hi'; // #error #type-error #error #return-failure #compound-assignment
+a := 1; // #warning #unused #assigned
+a += 'hi'; // #error #type-error #error #return-failure

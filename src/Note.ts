@@ -79,7 +79,6 @@ namespace Note {
     'subexpression-mutation' |
     'is-duplicated' |
     'duplicate' |
-    'compound-assignment' |
     'object' |
     'duplicate-key' |
     'assigned' |
@@ -145,7 +144,6 @@ namespace Note {
     'subexpression-mutation',
     'is-duplicated',
     'duplicate',
-    'compound-assignment',
     'object',
     'duplicate-key',
     'assigned',

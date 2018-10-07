@@ -241,7 +241,9 @@ function prettyPrint(note: FileNote, text: string) {
     return;
   }
 
-  console.error(colorize(`${prettyLocation(note)} ${note.level}:`));
+  console.error(colorize(
+    `${prettyLocation(note)} ${note.level}:`
+  ));
 
   for (const line of prettyErrorContext(note, text)) {
     console.error(line);

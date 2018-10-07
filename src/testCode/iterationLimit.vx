@@ -1,0 +1,1 @@
+for { if (false) { return 1; } } // #warning #iteration-limit

@@ -1003,7 +1003,7 @@ function evalExpression(
           // TODO: Better message
           value = VException(
             rightExp,
-            ['value-needed', 'compound-assignment'],
+            ['value-needed'],
             'Value required'
           );
 

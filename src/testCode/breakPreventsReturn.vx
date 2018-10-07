@@ -1,0 +1,4 @@
+for {
+  break; // #error #break-prevents-return #error #not-implemented
+  return 1;
+}
