@@ -364,10 +364,8 @@ function isValidTopExpression(e: Syntax.Expression) {
   }
 
   const incDecOperators = [
-    'prefix ++',
-    'postfix ++',
-    'prefix --',
-    'postfix --',
+    '++',
+    '--',
   ];
 
   if (incDecOperators.indexOf(e.t) !== -1) {
@@ -515,10 +513,8 @@ function validateExpression(exp: Syntax.Expression): Note[] {
       case 'NULL':
       case 'STRING':
       case 'IDENTIFIER':
-      case 'prefix --':
-      case 'postfix --':
-      case 'prefix ++':
-      case 'postfix ++':
+      case '--':
+      case '++':
       case '+':
       case '*':
       case '-':

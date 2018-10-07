@@ -94,7 +94,7 @@
 %left '+' '-'
 %left '*' '/' '%'
 %right '**'
-%left '!' '~' PREFIX POSTFIX UMINUS UPLUS '++' '--'
+%left '!' '~' POSTFIX UMINUS UPLUS '++' '--'
 %left '(' ')' '[' ']' '.'
 
 %start program
@@ -226,14 +226,10 @@ e
         {$$ = { t: '**', v: [$1, $3], p: L(@$) }}
     | e ':=' e
         {$$ = { t: ':=', v: [$1, $3], p: L(@$) }}
-    | '++' e %prec PREFIX
-        {$$ = { t: 'prefix ++', v: $2, p: L(@$) }}
-    | '--' e %prec PREFIX
-        {$$ = { t: 'prefix --', v: $2, p: L(@$) }}
     | e '++' %prec POSTFIX
-        {$$ = { t: 'postfix ++', v: $1, p: L(@$) }}
+        {$$ = { t: '++', v: $1, p: L(@$) }}
     | e '--' %prec POSTFIX
-        {$$ = { t: 'postfix --', v: $1, p: L(@$) }}
+        {$$ = { t: '--', v: $1, p: L(@$) }}
     | e '<<' e
         {$$ = { t: '<<', v: [$1, $3], p: L(@$) }}
     | e '>>' e

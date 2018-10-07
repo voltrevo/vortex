@@ -1295,22 +1295,8 @@ function evalExpression(
         return null;
       }
 
-      case 'prefix --':
-      case 'postfix --':
-      case 'prefix ++':
-      case 'postfix ++': {
-        const fixType: 'pre' | 'post' = (
-          exp.t.indexOf('prefix') === 0 ?
-          'pre' :
-          'post'
-        );
-
-        const incDec: 'inc' | 'dec' = (
-          exp.t.indexOf('++') !== -1 ?
-          'inc' :
-          'dec'
-        );
-
+      case '--':
+      case '++': {
         const subExp = exp.v;
 
         const subExpCtx = evalExpression(scope, subExp);
@@ -1320,25 +1306,11 @@ function evalExpression(
         const validValue = Value.getValidOrNull(subExpCtx.value);
 
         if (validValue && validValue.t !== 'number') {
-          const opStr: string = (() => {
-            switch (incDec) {
-              case 'inc': return '++';
-              case 'dec': return '--';
-            }
-          })();
-
-          const typeExpStr: string = (() => {
-            switch (fixType) {
-              case 'pre': return `${opStr}${validValue.t}`;
-              case 'post': return `${validValue.t}${opStr}`;
-            }
-          })();
-
           notes.push(Note(
             exp,
             'error',
             ['analysis', 'type-error', 'inc-dec'],
-            `Type error: ${typeExpStr}`
+            `Type error: ${validValue.t}${exp.t}`
           ));
 
           value = unknown;
@@ -1361,14 +1333,13 @@ function evalExpression(
           const newValue = {
             t: 'number' as 'number',
             v: (
-              incDec === 'inc' ?
+              exp.t === '++' ?
               validValue.v + 1 :
               validValue.v - 1
             )
           };
 
           scope = Scope.set(scope, subExp.v, { value: newValue });
-          value = fixType === 'pre' ? newValue : validValue;
         }
 
         return null;
@@ -1995,10 +1966,8 @@ function ExpressionString(
     case 'import':
     case 'unary -':
     case 'unary +':
-    case 'prefix --':
-    case 'prefix ++':
-    case 'postfix --':
-    case 'postfix ++': {
+    case '--':
+    case '++': {
       const ctx = evalExpression(scope, exp);
       return Value.String(ctx.value);
     }

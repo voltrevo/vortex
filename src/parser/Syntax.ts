@@ -78,10 +78,8 @@ namespace Syntax {
   );
 
   export type UnaryOperator = (
-    'prefix --' |
-    'postfix --' |
-    'prefix ++' |
-    'postfix ++' |
+    '--' |
+    '++' |
     'unary -' |
     'unary +' |
     never
@@ -224,10 +222,8 @@ namespace Syntax {
       case '&=':
       case '^=':
       case '|=':
-      case 'prefix --':
-      case 'postfix --':
-      case 'prefix ++':
-      case 'postfix ++':
+      case '--':
+      case '++':
       case '+':
       case '*':
       case '-':
