@@ -778,7 +778,7 @@ function analyzeInContext(
               // TODO: Count total operations and limit execution based on that
               // instead.
               context.notes.push(Note(statement,
-                'warning',
+                'warn',
                 ['analysis', 'iteration-limit'],
                 'Hit iteration limit of 2048',
               ));

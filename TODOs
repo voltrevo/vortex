@@ -1,11 +1,10 @@
-TODO: warning -> warn
 TODO: Better function scoping and variable capture, constraints on captured variables
 TODO: Add tests for every possible note
 TODO: Implement imports
 TODO: Cross-type comparison operators e.g. :<:
 TODO: Spaceship operator <=>
 TODO: Element-wise arithmetic
-TODO: log.info, log.warning etc
+TODO: log.info, log.warn etc
 TODO: analyzer.info, analyzer.error etc
 TODO: debugger.breakpoint;
 TODO: Count operations in analyzer

@@ -266,14 +266,14 @@ function validateScope(elements: ScopeItem[]): Note[] {
             if (!variable.data.assigned) {
               issues.push(Note(
                 variable.origin,
-                'warning',
+                'warn',
                 ['validation', 'no-effect', 'scope', 'unused'],
                 `Variable ${varName} is not used`,
               ));
             } else {
               issues.push(Note(
                 variable.origin,
-                'warning',
+                'warn',
                 [
                   'validation',
                   'no-effect',
@@ -443,7 +443,7 @@ function validateExpression(exp: Syntax.Expression): Note[] {
   if (exp.topExp && !isValidTopExpression(exp)) {
     notes.push(Note(
       exp,
-      'warning',
+      'warn',
       ['validation', 'no-effect', 'top-expression'],
       'Statement has no effect', // TODO: better wording
     ));

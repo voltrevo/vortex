@@ -94,7 +94,7 @@ for (const file of files) {
     const tags = Tags(line, file, lineNo);
     const lineNotes = notes.filter(n => n.pos && n.pos[0][0] === lineNo);
 
-    for (const level of ['error', 'warning', 'info']) {
+    for (const level of ['error', 'warn', 'info']) {
       const levelTags = tags.filter(t => t === level);
       const levelNotes = lineNotes.filter(n => n.level === level);
 
@@ -138,7 +138,7 @@ for (const file of files) {
 
     for (const note of lineNotes) {
       const nonLevelTags = note.tags.filter(t => (
-        ['error', 'warning', 'info'].indexOf(t) === -1
+        ['error', 'warn', 'info'].indexOf(t) === -1
       ));
 
       let hasAMatch = false;

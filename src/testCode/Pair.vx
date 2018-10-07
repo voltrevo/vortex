@@ -1,4 +1,4 @@
-return class Pair { // #error #warning #unused #not-implemented TODO: shouldn't be a warning
+return class Pair { // #error #warn #unused #not-implemented TODO: shouldn't be a warn
   // TODO: implement modifier/mechanism to discourage (not prevent) property
   // access for classes designed to provide a tight abstraction over their data
   // - perhaps { ...instance }.prop could be used as a bypass

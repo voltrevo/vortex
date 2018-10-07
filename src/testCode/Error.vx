@@ -1,1 +1,1 @@
-return class Error: string {}; // #warning #error #unused #not-implemented
+return class Error: string {}; // #warn #error #unused #not-implemented

@@ -1,1 +1,1 @@
-for { if (false) { return 1; } } // #warning #iteration-limit
+for { if (false) { return 1; } } // #warn #iteration-limit

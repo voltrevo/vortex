@@ -1,2 +1,2 @@
-a := 1; // #warning #unused #assigned
+a := 1; // #warn #unused #assigned
 a += 'hi'; // #error #return-failure

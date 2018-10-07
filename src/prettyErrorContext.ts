@@ -80,7 +80,7 @@ export default function prettyErrorContext(
           return chalk.reset(chalk.red(str));
         }
 
-        case 'warning': {
+        case 'warn': {
           return chalk.reset(chalk.yellow(str));
         }
 

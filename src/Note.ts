@@ -3,7 +3,7 @@ import Syntax from './parser/Syntax';
 
 type Note = {
   pos?: Syntax.Pos,
-  level: 'error' | 'warning' | 'info';
+  level: 'error' | 'warn' | 'info';
   tags: Note.Tag[],
   message: string;
   subnotes?: Note[];
@@ -11,7 +11,7 @@ type Note = {
 
 function Note(
   el: { p?: Syntax.Pos },
-  level: 'error' | 'warning' | 'info',
+  level: 'error' | 'warn' | 'info',
   tags: Note.Tag[],
   message: string,
   subnotes?: Note[],
@@ -54,7 +54,7 @@ namespace Note {
 
   export type Tag = (
     'error' |
-    'warning' |
+    'warn' |
     'info' |
     'analysis' |
     'return-value' |
@@ -119,7 +119,7 @@ namespace Note {
 
   export const tags: Note.Tag[] = [
     'error',
-    'warning',
+    'warn',
     'info',
     'analysis',
     'return-value',

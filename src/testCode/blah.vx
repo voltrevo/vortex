@@ -4,7 +4,7 @@ foo := {
 };
 
 x := 1; // #info #validation #is-duplicated
-y := 1; // #info #warning #info #unused #is-duplicated
+y := 1; // #info #warn #info #unused #is-duplicated
 foo.a = x := 2; // #error #error #subexpression-mutation #duplicate
 foo.a = (x = (y := 2)); // #error #error #error #duplicate #subexpression-mutation (creation just more deeply nested)
 foo.a = (x.y := 2); // #error #subexpression-mutation also not ok (removed exception for adding props)
@@ -13,8 +13,8 @@ foo.d := {};
 y := 3; // #error #duplicate
 
 func() { // TODO: top level anonymous function can't be called
-  a := 1; // #warning #unused
-  return b := 1; // #error #warning #subexpression-mutation #unused
+  a := 1; // #warn #unused
+  return b := 1; // #error #warn #subexpression-mutation #unused
 };
 
 a++; // #error #not-found

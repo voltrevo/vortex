@@ -167,7 +167,7 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
       severity: (() => {
         switch (note.level) {
           case 'error': return DiagnosticSeverity.Error;
-          case 'warning': return DiagnosticSeverity.Warning;
+          case 'warn': return DiagnosticSeverity.Warning;
           case 'info': return DiagnosticSeverity.Information;
         }
       })(),

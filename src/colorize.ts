@@ -56,11 +56,11 @@ export default function colorize(line: string) {
     ) +
     chalk.reset(rest
       .replace(/\berror\b/g, chalk.reset(chalk.red('error')))
-      .replace(/\bwarning\b/g, chalk.reset(chalk.yellow('warning')))
+      .replace(/\bwarn\b/g, chalk.reset(chalk.yellow('warn')))
       .replace(/\binfo\b/g, chalk.reset(chalk.blue('info')))
       .replace(/\btodo\b/g, chalk.reset(chalk.magenta('todo')))
       .replace(/\bERROR\b/g, chalk.reset(chalk.red('ERROR')))
-      .replace(/\bWARNING\b/g, chalk.reset(chalk.yellow('WARNING')))
+      .replace(/\bWARN\b/g, chalk.reset(chalk.yellow('WARN')))
       .replace(/\bINFO\b/g, chalk.reset(chalk.blue('INFO')))
       .replace(/\bTODO\b/g, chalk.reset(chalk.magenta('TODO')))
       .replace(/\bTODOs\b/g, chalk.reset(chalk.magenta('TODO')) + 's')
