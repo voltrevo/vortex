@@ -4,6 +4,6 @@ for (i := 1; i <= 4; i++) {
   sum += i;
 }
 
-assert sum > 15; // #error #assert-false
+assert sum > 15; // #error #assert-false #value-needed
 
 return sum;

@@ -73,6 +73,8 @@ let ok = true;
 let compileTime = 0;
 let compiledFiles = 0;
 
+const allNotes: Note.FileNote[] = [];
+
 for (const file of files) {
   if (!/\.vx$/.test(file)) {
     continue;
@@ -80,7 +82,8 @@ for (const file of files) {
 
   const fileText = readFileSync(file).toString();
   const before = process.hrtime();
-  const notes = Note.flatten(compile(fileText));
+  const notes = Note.flatten(compile(fileText)).map(n => ({ file, ...n }));
+  allNotes.push(...notes);
   const after = process.hrtime();
   compileTime += SecondsDiff(before, after);
   compiledFiles++;
@@ -178,7 +181,16 @@ for (const file of files) {
 }
 
 for (const unseenTag of Object.keys(unseenTags)) {
-  log.error('>>> error: unseen tag: ' + unseenTag);
+  const matchingNote = allNotes.find(n =>
+    n.tags.indexOf(unseenTag as Note.Tag) !== -1
+  );
+
+  log.error(
+    '>>> error: unseen tag: ' +
+    unseenTag +
+    (matchingNote ? ` (produced in ${matchingNote.file})` : '')
+  );
+
   ok = false;
 }
 
