@@ -113,7 +113,6 @@ function VException(
   return { cat: 'invalid', t: 'exception', v: { origin, tags, message } };
 }
 
-// TODO: Valid -> Concrete (?)
 export type ConcreteValue = (
   VString |
   VNumber |
@@ -630,7 +629,6 @@ function analyzeInContext(
         }
 
         case 'assert': {
-          // TODO: Disallow scope mutations
           const { value, notes } = evalSubExpression(
             context.scope,
             statement.v
@@ -1260,8 +1258,6 @@ function evalTopExpression(
           return null;
         }
 
-        // TODO: Should the scope data really be Context? Not seeming
-        // appropriate here. (What's the purpose of scope, notes?)
         scope = Scope.set(
           scope,
           leftBaseExp.v,
