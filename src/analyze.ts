@@ -530,7 +530,7 @@ function objectLookup(
   exp: Syntax.Expression,
   obj: Value,
   index: Value,
-): Value {
+): ValidValue | VException {
   if (obj.t === 'exception') {
     return obj;
   }
@@ -597,7 +597,7 @@ function analyzeInContext(
     checkNull((() => {
       switch (statement.t) {
         case 'e': {
-          const ctx = evalExpression(context.scope, statement.v);
+          const ctx = evalTopExpression(context.scope, statement.v);
           context.scope = ctx.scope;
           context.notes.push(...ctx.notes);
 
@@ -609,22 +609,15 @@ function analyzeInContext(
         }
 
         case 'return': {
-          const { scope, value, notes } = evalExpression(
+          const { value, notes } = evalSubExpression(
             context.scope,
             statement.v
           );
 
-          context.scope = scope;
           context.value = value;
           context.notes.push(...notes);
 
-          if (value.t === 'missing') {
-            context.value = VException(
-              statement.v,
-              ['value-needed'],
-              `Return expression was ${Value.String(value)}`,
-            );
-          } else if (value.t !== 'exception') {
+          if (value.t !== 'exception') {
             context.notes.push(Note(
               statement,
               'info',
@@ -638,29 +631,15 @@ function analyzeInContext(
 
         case 'assert': {
           // TODO: Disallow scope mutations
-          const { scope, value, notes } = evalExpression(
+          const { value, notes } = evalSubExpression(
             context.scope,
             statement.v
           );
 
-          context.scope = scope;
           context.notes.push(...notes);
 
-          if (value.cat === 'invalid') {
-            context.value = (() => {
-              switch (value.t) {
-                case 'exception':
-                  return value;
-
-                case 'missing':
-                  // TODO: evalSubExpression should remove the need for this
-                  return VException(statement.v,
-                    ['value-needed', 'assert'],
-                    'Assertion expression is missing a value',
-                  );
-              }
-            })();
-
+          if (value.t === 'exception') {
+            context.value = value;
             return null;
           }
 
@@ -695,23 +674,13 @@ function analyzeInContext(
 
         case 'if': {
           const [cond, block] = statement.v;
-          const condCtx = evalExpression(context.scope, cond);
-          context.notes.push(...condCtx.notes);
+          const condEval = evalSubExpression(context.scope, cond);
+          context.notes.push(...condEval.notes);
 
-          const condValue = condCtx.value;
+          const condValue = condEval.value;
 
           if (condValue.t === 'exception') {
             context.value = condValue;
-            return null;
-          }
-
-          // TODO: This should be handled by evalSubExpression
-          if (condValue.t === 'missing') {
-            context.value = VException(cond,
-              ['value-needed', 'if-condition', 'non-bool-condition'],
-              'Missing condition value',
-            );
-
             return null;
           }
 
@@ -773,7 +742,7 @@ function analyzeInContext(
 
           if (control && control.t === 'setup; condition; next') {
             const [setup] = control.v;
-            const setupCtx = evalExpression(context.scope, setup);
+            const setupCtx = evalTopExpression(context.scope, setup);
             context.scope = setupCtx.scope;
             context.notes.push(...setupCtx.notes);
           }
@@ -781,21 +750,13 @@ function analyzeInContext(
           let iterations = 0;
 
           while (true) {
-            const condCtx = evalExpression(context.scope, cond);
-            context.notes.push(...condCtx.notes);
-            const condValue = condCtx.value;
+            const condEval = evalSubExpression(context.scope, cond);
+            context.notes.push(...condEval.notes);
+            const condValue = condEval.value;
 
             // TODO: Note counting, deduplication with if
 
-            if (condValue.t === 'missing') {
-              // TODO: unknown should be handled differently
-              context.value = VException(cond,
-                ['value-needed', 'for-condition', 'non-bool-condition'],
-                'Missing condition value',
-              );
-
-              break;
-            }
+            // TODO: unknown -> maybeException?
 
             if (condValue.t !== 'bool') {
               context.value = VException(
@@ -817,7 +778,7 @@ function analyzeInContext(
             if (context.value.t !== 'exception') {
               if (control && control.t === 'setup; condition; next') {
                 const [, , next] = control.v;
-                const nextCtx = evalExpression(context.scope, next);
+                const nextCtx = evalTopExpression(context.scope, next);
                 context.scope = nextCtx.scope;
                 context.notes.push(...nextCtx.notes);
               }
@@ -929,51 +890,14 @@ function analyzeInContext(
   return context;
 }
 
-function evalExpression(
+function evalTopExpression(
   scope: Scope<ValidValue>,
-  exp: Syntax.Expression
+  exp: Syntax.Expression,
 ): Context {
   let { value, notes } = Context();
 
   checkNull((() => {
     switch (exp.t) {
-      case 'NUMBER': {
-        value = VNumber(Number(exp.v));
-        return null;
-      }
-
-      case 'BOOL': {
-        value = VBool(exp.v);
-        return null;
-      }
-
-      case 'NULL': {
-        value = VNull();
-        return null;
-      }
-
-      case 'STRING': {
-        value = VString(exp.v.substring(1, exp.v.length - 1));
-        return null;
-      }
-
-      case 'IDENTIFIER': {
-        const entry = Scope.get(scope, exp.v);
-
-        if (entry === null) {
-          value = VException(
-            exp,
-            ['not-found'],
-            `Variable does not exist: ${exp.v}`
-          );
-
-          return null;
-        }
-
-        value = entry.data;
-        return null;
-      }
-
       case ':=': {
         const left = exp.v[0];
 
@@ -987,16 +911,11 @@ function evalExpression(
           return null;
         }
 
-        const right = evalExpression(scope, exp.v[1]);
+        const right = evalSubExpression(scope, exp.v[1]);
         notes.push(...right.notes);
 
-        if (right.value.cat === 'invalid') {
-          value = VException(
-            exp.v[1],
-            ['value-needed', 'creation'],
-            'Didn\'t get a value for rhs of creation operator',
-          );
-
+        if (right.value.t === 'exception') {
+          value = right.value;
           return null;
         }
 
@@ -1056,23 +975,11 @@ function evalExpression(
           };
         })();
 
-        const right = evalExpression(scope, rightExp);
-        scope = right.scope;
+        const right = evalSubExpression(scope, rightExp);
         notes.push(...right.notes);
 
         if (right.value.t === 'exception') {
           value = right.value;
-          return null;
-        }
-
-        if (right.value.t === 'missing') {
-          // TODO: Better message
-          value = VException(
-            rightExp,
-            ['value-needed'],
-            'Value required'
-          );
-
           return null;
         }
 
@@ -1139,7 +1046,7 @@ function evalExpression(
               p: exp.p,
             };
 
-            const subCtx = evalExpression(scope, synthExp);
+            const subCtx = evalTopExpression(scope, synthExp);
             scope = subCtx.scope;
             notes.push(...subCtx.notes);
 
@@ -1180,24 +1087,24 @@ function evalExpression(
               Syntax.Expression // Typescript disallows trailing comma?
             ] = leftBaseExp.v;
 
-            const accessorCtx = evalExpression(scope, accessor);
-            scope = accessorCtx.scope;
-            notes.push(...accessorCtx.notes);
+            const accessorEval = evalSubExpression(scope, accessor);
+            notes.push(...accessorEval.notes);
+            const accessorValue = accessorEval.value;
 
             if (
-              accessorCtx.value.t !== 'string' &&
-              accessorCtx.value.t !== 'number'
+              accessorValue.t !== 'string' &&
+              accessorValue.t !== 'number'
             ) {
               value = VException(accessor,
                 ['type-error', 'subscript'],
-                `Type error: ${accessorCtx.value.t} subscript`,
+                `Type error: ${accessorValue.t} subscript`,
               );
 
               return null;
             }
 
             leftBaseExp = newBase;
-            accessChain.unshift(accessorCtx.value.v);
+            accessChain.unshift(accessorValue.v);
 
             continue;
           }
@@ -1230,7 +1137,7 @@ function evalExpression(
           oldValue: ValidValue,
           chain: (string | number)[],
           newValue: ValidValue,
-        ): Value {
+        ): ValidValue | VException {
           const [index, ...newChain] = chain;
 
           if (index === undefined) {
@@ -1353,16 +1260,6 @@ function evalExpression(
           return null;
         }
 
-        if (newBaseValue.t === 'missing') {
-          value = VException(exp,
-            ['value-needed'],
-            // TODO: Better wording
-            'Expected a value',
-          );
-
-          return null;
-        }
-
         // TODO: Should the scope data really be Context? Not seeming
         // appropriate here. (What's the purpose of scope, notes?)
         scope = Scope.set(
@@ -1378,27 +1275,12 @@ function evalExpression(
       case '++': {
         const subExp = exp.v;
 
-        const subExpCtx = evalExpression(scope, subExp);
-        scope = subExpCtx.scope;
-        notes.push(...subExpCtx.notes);
+        const subEval = evalSubExpression(scope, subExp);
+        notes.push(...subEval.notes);
+        const subValue = subEval.value;
 
-        const subValue = subExpCtx.value;
-
-        if (subValue.cat === 'invalid') {
-          value = (() => {
-            switch (subValue.t) {
-              case 'exception': return subValue;
-
-              case 'missing': {
-                // TODO: This case might be unnecessary
-                return VException(subExp,
-                  ['value-needed'],
-                  `Missing value for ${exp.t} operator`,
-                );
-              }
-            }
-          })();
-
+        if (subValue.t === 'exception') {
+          value = subValue;
           return null;
         }
 
@@ -1436,9 +1318,109 @@ function evalExpression(
         return null;
       }
 
+      case 'func': {
+        value = VFunc(exp);
+
+        if (exp.topExp && exp.v.name) {
+          scope = Scope.add(scope, exp.v.name.v, {
+            origin: exp,
+            data: value,
+          });
+        }
+
+        return null;
+      }
+
+      case 'class':
+      case 'import': {
+        value = VException(
+          exp,
+          ['not-implemented'],
+          `Not implemented: ${exp.t} expression`,
+        );
+
+        return null;
+      }
+
+      case 'NUMBER':
+      case 'BOOL':
+      case 'NULL':
+      case 'STRING':
+      case 'IDENTIFIER':
+      case '--':
+      case '++':
+      case '+':
+      case '*':
+      case '-':
+      case '<<':
+      case '>>':
+      case '&':
+      case '^':
+      case '|':
+      case '/':
+      case '%':
+      case '**':
+      case '&&':
+      case '||':
+      case '==':
+      case '!=':
+      case '<':
+      case '>':
+      case '<=':
+      case '>=':
+      case 'unary -':
+      case 'unary +':
+      case 'array':
+      case 'object':
+      case 'import':
+      case 'switch':
+      case 'func':
+      case 'class':
+      case 'subscript':
+      case 'functionCall':
+      case 'methodCall':
+      case '.': {
+        throw new Error(
+          'Non-top expression at top level should have been caught during ' +
+          'validation.'
+        );
+      }
+    }
+  })());
+
+  return { scope, value, notes };
+}
+
+function evalSubExpression(
+  scope: Scope<ValidValue>,
+  exp: Syntax.Expression
+): { value: ValidValue | VException, notes: Note[] } {
+  const notes: Note[] = [];
+
+  const value: ValidValue | VException = (() => {
+    switch (exp.t) {
+      case 'NUMBER': { return VNumber(Number(exp.v)); }
+      case 'BOOL': { return VBool(exp.v); }
+      case 'NULL': { return VNull(); }
+      case 'STRING': { return VString(exp.v.substring(1, exp.v.length - 1)); }
+
+      case 'IDENTIFIER': {
+        const entry = Scope.get(scope, exp.v);
+
+        if (entry === null) {
+          return VException(
+            exp,
+            ['not-found'],
+            `Variable does not exist: ${exp.v}`
+          );
+        }
+
+        return entry.data;
+      }
+
       case '+': {
-        ({ scope, value, notes } = evalVanillaOperator(
-          { scope, value, notes },
+        const opEval = evalVanillaOperator(
+          scope,
           exp,
           (left, right) => {
             if (left.t === 'number' && right.t === 'number') {
@@ -1466,9 +1448,16 @@ function evalExpression(
 
               for (const key of Object.keys(right.v)) {
                 if (leftKeys[key]) {
-                  // TODO: Should be exception rather than this null which will
-                  // produce a type error.
-                  return null;
+                  return VException(exp,
+                    [
+                      'analysis',
+                      'duplicate',
+                      'duplicate-key',
+                      'object-addition',
+                    ],
+                    'Type error: objects cannot be added due to duplicate ' +
+                    'key ' + key,
+                  );
                 }
               }
 
@@ -1479,16 +1468,34 @@ function evalExpression(
               return VObject({ ...left.v, ...right.v });
             }
 
+            const forbiddenTypes: ValidValue['t'][] = [
+              'bool',
+              'null',
+              'func', // TODO: define function addition when appropriate
+            ];
+
+            if (
+              forbiddenTypes.indexOf(left.t) !== -1 ||
+              forbiddenTypes.indexOf(right.t) !== -1
+            ) {
+              return null;
+            }
+
+            if (left.t === 'unknown' || right.t === 'unknown') {
+              return VUnknown();
+            }
+
             return null;
           },
-        ));
+        );
 
-        return null;
+        notes.push(...opEval.notes);
+        return opEval.value;
       }
 
       case '*': {
-        ({ scope, value, notes } = evalVanillaOperator(
-          { scope, value, notes },
+        const opEval = evalVanillaOperator(
+          scope,
           exp,
           (left, right) => {
             if (left.t === 'number' && right.t === 'number') {
@@ -1535,11 +1542,29 @@ function evalExpression(
               return objMul(exp, obj, num);
             }
 
+            const forbiddenTypes: ValidValue['t'][] = [
+              'bool',
+              'null',
+              'func', // TODO: define function multiplication when appropriate
+            ];
+
+            if (
+              forbiddenTypes.indexOf(left.t) !== -1 ||
+              forbiddenTypes.indexOf(right.t) !== -1
+            ) {
+              return null;
+            }
+
+            if (left.t === 'unknown' || right.t === 'unknown') {
+              return VUnknown();
+            }
+
             return null;
           },
-        ));
+        );
 
-        return null;
+        notes.push(...opEval.notes);
+        return opEval.value;
       }
 
       // Number only operators (for now)
@@ -1566,19 +1591,27 @@ function evalExpression(
           }
         })();
 
-        ({ scope, value, notes } = evalVanillaOperator(
-          { scope, value, notes },
+        const opEval = evalVanillaOperator(
+          scope,
           exp,
           (left, right) => {
             if (left.t === 'number' && right.t === 'number') {
               return VNumber(op(left.v, right.v));
             }
 
+            if (
+              (left.t === 'unknown' || right.t === 'unknown') &&
+              (left.t === 'number' || right.t === 'number')
+            ) {
+              return VUnknown();
+            }
+
             return null;
           },
-        ));
+        );
 
-        return null;
+        notes.push(...opEval.notes);
+        return opEval.value;
       }
 
       case '&&':
@@ -1590,19 +1623,27 @@ function evalExpression(
           }
         })();
 
-        ({ scope, value, notes } = evalVanillaOperator(
-          { scope, value, notes },
+        const opEval = evalVanillaOperator(
+          scope,
           exp,
           (left, right) => {
             if (left.t === 'bool' && right.t === 'bool') {
               return VBool(op(left.v, right.v));
             }
 
+            if (
+              (left.t === 'unknown' || right.t === 'unknown') &&
+              (left.t === 'bool' || right.t === 'bool')
+            ) {
+              return VUnknown();
+            }
+
             return null;
           },
-        ));
+        );
 
-        return null;
+        notes.push(...opEval.notes);
+        return opEval.value;
       }
 
       case '==':
@@ -1613,11 +1654,16 @@ function evalExpression(
       case '>=': {
         const op = exp.t;
 
-        ({ scope, value, notes } = evalVanillaOperator(
-          { scope, value, notes },
+        const opEval = evalVanillaOperator(
+          scope,
           exp,
           (left, right) => {
-            if (left.cat !== 'concrete' || right.cat !== 'concrete') {
+            if (left.t === 'unknown' || right.t === 'unknown') {
+              return VUnknown();
+            }
+
+            if (left.cat === 'valid' || right.cat === 'valid') {
+              // (This case is for objects & arrays that have unknowns)
               // TODO: Should be possible to sometimes (often?) determine
               // ordering without concrete array/object.
               return VUnknown();
@@ -1625,61 +1671,46 @@ function evalExpression(
 
             return TypedComparison(exp, op, left, right)
           },
-        ));
+        );
 
-        return null;
+        notes.push(...opEval.notes);
+        return opEval.value;
       }
 
       case 'unary -':
       case 'unary +': {
-        const right = evalExpression(scope, exp.v);
+        const right = evalSubExpression(scope, exp.v);
         notes.push(...right.notes);
 
-        if (right.value.cat === 'invalid' || right.value.t === 'unknown') {
-          value = right.value;
-          return null;
+        if (right.value.t === 'exception' || right.value.t === 'unknown') {
+          return right.value;
         }
 
         if (right.value.t !== 'number') {
-          value = VException(
+          return VException(
             exp,
             ['type-error', 'unary-plus-minus'],
             `Type error: ${exp.t.slice(6)}${right.value.t}`,
           );
-
-          return null;
         }
 
-        value = VNumber(
+        return VNumber(
           exp.t === 'unary -' ?
           -right.value.v :
           +right.value.v
         );
-
-        return null;
       }
 
       case 'func': {
-        value = VFunc(exp);
-
-        if (exp.topExp && exp.v.name) {
-          scope = Scope.add(scope, exp.v.name.v, {
-            origin: exp,
-            data: value,
-          });
-        }
-
-        return null;
+        return VFunc(exp);
       }
 
       case 'functionCall': {
         const [funcExp, argExps] = exp.v;
 
-        const funcCtx = evalExpression(scope, funcExp);
-
-        scope = funcCtx.scope;
-        let func = funcCtx.value;
-        notes.push(...funcCtx.notes);
+        const funcEval = evalSubExpression(scope, funcExp);
+        notes.push(...funcEval.notes);
+        let func = funcEval.value;
 
         func = (() => {
           switch (func.t) {
@@ -1694,10 +1725,7 @@ function evalExpression(
             case 'bool':
             case 'null':
             case 'array':
-            case 'object':
-            // TODO: Expressions should never be missing, so 'missing'
-            // shouldn't have to be handled
-            case 'missing': {
+            case 'object': {
               return VException(funcExp,
                 ['type-error', 'call-non-function'],
                 `Type error: attempt to call a ${func.t} as a function`
@@ -1707,44 +1735,26 @@ function evalExpression(
         })();
 
         if (func.t === 'exception') {
-          value = func;
-          return null;
+          return func;
         }
 
         const args: ValidValue[] = [];
 
         for (const argExp of argExps) {
-          const argCtx = evalExpression(scope, argExp);
+          const arg = evalSubExpression(scope, argExp);
+          notes.push(...arg.notes);
 
-          scope = argCtx.scope;
-          const arg = argCtx.value;
-          notes.push(...argCtx.notes);
-
-          if (arg.t === 'exception') {
-            value = arg;
-            return null;
+          if (arg.value.t === 'exception') {
+            return arg.value;
           }
 
-          if (arg.t === 'missing') {
-            value = VException(argExp,
-              ['value-needed'],
-              `Argument was ${Value.String(arg)}`,
-            );
-
-            return null;
-          }
-
-          if (arg.t === 'unknown') {
-            value = VUnknown();
-            return null;
-          }
-
-          args.push(arg);
+          args.push(arg.value);
         }
 
-        value = (() => {
+        return (() => {
           switch (func.t) {
             case 'unknown': {
+              // TODO: maybeException?
               return VUnknown();
             }
 
@@ -1781,188 +1791,187 @@ function evalExpression(
               }
 
               const body = func.v.body;
-              let funcCtx = Context();
-              funcCtx.scope = funcScope;
 
               if (body.t === 'expBody') {
-                funcCtx = evalExpression(funcScope, body.v);
-              } else {
-                funcCtx = analyzeInContext(funcCtx, true, body);
+                const bodyEval = evalSubExpression(funcScope, body.v);
+                notes.push(...bodyEval.notes);
+                return bodyEval.value;
               }
+
+              let funcCtx = Context();
+              funcCtx.scope = funcScope;
+              funcCtx = analyzeInContext(funcCtx, true, body);
 
               // TODO: Do some processing with the notes here. Return info
               // should be suppressed (and all infos?) and others should be
               // duplicated at the call site.
               notes.push(...funcCtx.notes);
+
+              if (funcCtx.value.t === 'missing') {
+                throw new Error(
+                  'Missing value from function call should have been caught ' +
+                  'during validation'
+                );
+              }
+
               return funcCtx.value;
             }
           }
         })();
-
-        return null;
       }
 
       case 'array': {
-        value = VArray([]);
+        const res = VArray([]);
         let arrConcrete = true;
 
         for (const elExp of exp.v) {
-          const elCtx = evalExpression(scope, elExp);
+          const elEval = evalSubExpression(scope, elExp);
+          notes.push(...elEval.notes);
 
-          scope = elCtx.scope;
-          notes.push(...elCtx.notes);
+          const el = elEval.value;
 
-          if (elCtx.value.t === 'exception') {
-            value = elCtx.value;
-            return null;
+          if (el.t === 'exception') {
+            return el;
           }
 
-          if (elCtx.value.t === 'missing') {
-            value = VMissing();
-            return null;
-          }
-
-          if (elCtx.value.cat !== 'concrete') {
+          if (el.cat !== 'concrete') {
             arrConcrete = false;
           }
 
-          value.v.push(elCtx.value);
+          res.v.push(el);
         }
 
         if (arrConcrete) {
           // TODO: Breaking the type system here, but this should work. What
           // to do here?
-          (value as any).cat = 'concrete';
+          (res as any).cat = 'concrete';
         }
 
-        return null;
+        return res;
       }
 
       case 'subscript': {
         const [containerExp, indexExp] = exp.v;
 
-        const containerCtx = evalExpression(scope, containerExp);
-        scope = containerCtx.scope;
-        notes.push(...containerCtx.notes);
+        const containerEval = evalSubExpression(scope, containerExp);
+        notes.push(...containerEval.notes);
+        const container = containerEval.value;
 
-        const indexCtx = evalExpression(scope, indexExp);
+        const indexEval = evalSubExpression(scope, indexExp);
+        notes.push(...indexEval.notes);
+        const index = indexEval.value;
 
-        if (containerCtx.value.t === 'array') {
-          scope = indexCtx.scope;
-          notes.push(...indexCtx.notes);
-
-          if (indexCtx.value.t !== 'number') {
-            value = VException(exp,
+        if (container.t === 'array') {
+          if (index.t !== 'number') {
+            return VException(exp,
               ['type-error', 'subscript'],
-              `Type error: ${containerCtx.value.t}[${indexCtx.value.t}]`,
+              `Type error: ${container.t}[${index.t}]`,
             );
-
-            return null;
           }
 
-          if (
-            indexCtx.value.v < 0 ||
-            indexCtx.value.v !== Math.floor(indexCtx.value.v)
-          ) {
-            value = VException(indexExp,
+          if (index.v < 0 || index.v !== Math.floor(index.v)) {
+            return VException(indexExp,
               ['subscript', 'out-of-bounds', 'index-bad'],
-              `Invalid array index: ${indexCtx.value.v}`,
+              `Invalid array index: ${index.v}`,
             );
-
-            return null;
           }
 
-          if (indexCtx.value.v >= containerCtx.value.v.length) {
-            value = VException(
+          if (index.v >= container.v.length) {
+            return VException(
               exp,
               ['out-of-bounds', 'index-too-large'],
               [
                 'Out of bounds: index ',
-                indexCtx.value.v,
+                index.v,
                 ' but array is only length ',
-                containerCtx.value.v.length
+                container.v.length
               ].join(''),
             );
-
-            return null;
           }
 
-          value = containerCtx.value.v[indexCtx.value.v];
-          return null;
+          return container.v[index.v];
         }
 
-        if (containerCtx.value.t === 'object') {
-          scope = indexCtx.scope;
-          notes.push(...indexCtx.notes);
-          value = objectLookup(exp, containerCtx.value, indexCtx.value);
-          return null;
+        if (container.t === 'object') {
+          return objectLookup(exp, container, index);
         }
 
-        value = VException(exp,
+        return VException(exp,
           ['type-error', 'subscript', 'object'],
-          `Type error: ${containerCtx.value.t}[${indexCtx.value.t}]`,
+          `Type error: ${container.t}[${index.t}]`,
         );
-
-        return null;
       }
 
       case 'object': {
-        value = VObject({});
+        const res = VObject({});
         let objConcrete = true;
 
         for (const [identifierKey, subExp] of exp.v) {
-          const subCtx = evalExpression(scope, subExp);
-          scope = subCtx.scope;
-          notes.push(...subCtx.notes);
+          const subEval = evalSubExpression(scope, subExp);
+          notes.push(...subEval.notes);
 
-          const subValue = subCtx.value;
+          const subValue = subEval.value;
 
-          if (subValue.t === 'exception' || subValue.t === 'missing') {
-            value = subValue;
-            return null;
+          if (subValue.t === 'exception') {
+            return subValue;
           }
 
           if (subValue.cat !== 'concrete') {
             objConcrete = false;
           }
 
-          value.v[identifierKey.v] = subValue;
+          res.v[identifierKey.v] = subValue;
         }
 
         if (objConcrete) {
-          value.cat = 'concrete';
+          res.cat = 'concrete';
         }
 
-        return null;
+        return res;
       }
 
       case '.': {
         const [objExp, keyExp] = exp.v;
 
-        const objCtx = evalExpression(scope, objExp);
-        scope = objCtx.scope;
-        notes.push(...objCtx.notes);
-        value = objectLookup(exp, objCtx.value, VString(keyExp.v));
-
-        return null;
+        const objEval = evalSubExpression(scope, objExp);
+        notes.push(...objEval.notes);
+        return objectLookup(exp, objEval.value, VString(keyExp.v));
       }
 
       case 'methodCall':
       case 'class':
       case 'switch':
       case 'import': {
-        value = VException(
+        return VException(
           exp,
           ['not-implemented'],
           `Not implemented: ${exp.t} expression`,
         );
+      }
 
-        return null;
+      case ':=':
+      case '=':
+      case '+=':
+      case '-=':
+      case '*=':
+      case '/=':
+      case '%=':
+      case '<<=':
+      case '>>=':
+      case '&=':
+      case '^=':
+      case '|=':
+      case '++':
+      case '--': {
+        throw new Error(
+          'Mutation operator in subexpression should have been caught ' +
+          'during validation.'
+        );
       }
     }
-  })());
+  })();
 
-  return { scope, value, notes };
+  return { value, notes };
 }
 
 function evalVanillaOperator<T extends {
@@ -1970,26 +1979,24 @@ function evalVanillaOperator<T extends {
   v: [Syntax.Expression, Syntax.Expression],
   p: Syntax.Pos
 }>(
-  { scope }: Context,
+  scope: Scope<ValidValue>,
   exp: T,
-  combine: (a: ValidValue, b: ValidValue) => Value | null,
-): Context {
-  let notes = [] as Note[];
+  combine: (a: ValidValue, b: ValidValue) => ValidValue | VException | null,
+): { value: ValidValue | VException, notes: Note[] } {
+  const notes: Note[] = [];
 
-  const left = evalExpression(scope, exp.v[0]);
-  scope = left.scope;
+  const left = evalSubExpression(scope, exp.v[0]);
   notes.push(...left.notes);
 
-  if (left.value.cat === 'invalid') {
-    return { scope, value: left.value, notes };
+  if (left.value.t === 'exception') {
+    return { value: left.value, notes };
   }
 
-  const right = evalExpression(scope, exp.v[1]);
-  scope = right.scope;
+  const right = evalSubExpression(scope, exp.v[1]);
   notes.push(...right.notes);
 
-  if (right.value.cat === 'invalid') {
-    return { scope, value: right.value, notes };
+  if (right.value.t === 'exception') {
+    return { value: right.value, notes };
   }
 
   let value = combine(left.value, right.value);
@@ -2004,7 +2011,7 @@ function evalVanillaOperator<T extends {
     );
   }
 
-  return { scope, value, notes };
+  return { value, notes };
 }
 
 function ExpressionString(
@@ -2031,8 +2038,8 @@ function ExpressionString(
     case 'unary +':
     case '--':
     case '++': {
-      const ctx = evalExpression(scope, exp);
-      return Value.String(ctx.value);
+      const { value } = evalSubExpression(scope, exp);
+      return Value.String(value);
     }
 
     default: {

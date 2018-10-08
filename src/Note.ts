@@ -100,6 +100,7 @@ namespace Note {
     'syntax' |
     'internal' |
     'object-multiplication' |
+    'object-addition' |
     'index-bad' |
     'subscript' |
     'call-non-function' |
@@ -169,6 +170,7 @@ namespace Note {
     'syntax',
     'internal',
     'object-multiplication',
+    'object-addition',
     'index-bad',
     'subscript',
     'call-non-function',
