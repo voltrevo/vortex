@@ -291,7 +291,9 @@ function TypedLessThan(
   if (sameType.v === false) {
     return VException(exp,
       ['type-error', 'comparison'],
-      `Type error: ${left} ${exp.t} ${right}`,
+      // TODO: Surfacing this is confusing because eg '>' gets swapped to '<'
+      // and this inverts left and right (compared to user's code)
+      `Type error: ${Value.String(left)} < ${Value.String(right)}`,
     );
   }
 
