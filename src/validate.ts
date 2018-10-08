@@ -49,7 +49,7 @@ export function validate(program: Syntax.Program): Note[] {
         if (returned) {
           subNotes.push(Note(
             statement,
-            'error',
+            'warn',
             ['validation', 'control-flow', 'unreachable'],
             'Statement is unreachable'
           ));

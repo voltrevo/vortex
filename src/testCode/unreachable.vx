@@ -1,2 +1,2 @@
-return 0;
-return 0; // #error #unreachable
+return 0; // #info #return-value
+return 0; // #warn #unreachable
