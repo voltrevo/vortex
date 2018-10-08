@@ -85,7 +85,8 @@ namespace Note {
     'out-of-bounds' |
     'index-too-large' |
     'invalid-condition' |
-    'for-loop' |
+    'for-condition' |
+    'for-control' |
     'assert-non-bool' |
     'iteration-limit' |
     'assignment' |
@@ -110,10 +111,13 @@ namespace Note {
     'length-mismatch' |
     'non-identifier-creation-target' |
     'non-bool-condition' |
-    'if' |
+    'if-condition' |
     'assert' |
     'object-subscript' |
     'unary-plus-minus' |
+    'creation' |
+    'comparison' |
+    'function-comparison' |
     never
   );
 
@@ -150,7 +154,8 @@ namespace Note {
     'out-of-bounds',
     'index-too-large',
     'invalid-condition',
-    'for-loop',
+    'for-condition',
+    'for-control',
     'assert-non-bool',
     'iteration-limit',
     'assignment',
@@ -175,10 +180,13 @@ namespace Note {
     'length-mismatch',
     'non-identifier-creation-target',
     'non-bool-condition',
-    'if',
+    'if-condition',
     'assert',
     'object-subscript',
     'unary-plus-minus',
+    'creation',
+    'comparison',
+    'function-comparison',
   ];
 
   export const isTag = memberTestFromArray<Tag>(tags);
