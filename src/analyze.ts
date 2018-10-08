@@ -152,7 +152,7 @@ function SameType(left: ConcreteValue, right: ConcreteValue): VBool {
     }
 
     case 'array': {
-      if (right.t !== 'array') {
+      if (right.t !== 'array' || right.v.length !== left.v.length) {
         return VBool(false);
       }
 
