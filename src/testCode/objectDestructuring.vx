@@ -1,0 +1,16 @@
+a := 0;
+b := 0;
+
+[a, b] = [1, 2];
+{a, b} = {a: b, b: a};
+assert [a, b] == [2, 1];
+
+[a, b] = [1, 2];
+{x: b, y: a} = {x: a, y: b};
+assert [a, b] == [2, 1];
+
+[a, b] = [1, 2];
+{a: b, b: a} = {a, b};
+assert [a, b] == [2, 1];
+
+return 'done'; // #info #return-value

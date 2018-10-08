@@ -981,16 +981,16 @@ function evalTopExpression(
           return null;
         }
 
-        if (leftExp.t === 'array') {
+        if (leftExp.t === 'array' || leftExp.t === 'object') {
           // TODO: Fail earlier / in a more informative way when attempting a
           // destructuring and compound assignment simultaneously?
 
           // TODO: Unknown should also work
-          if (right.value.t !== 'array') {
+          if (right.value.t !== leftExp.t) {
             value = VException(exp,
               ['type-error', 'destructuring-mismatch'],
               // TODO: a vs an
-              'Assignment target is an array but the value is a ' +
+              `Assignment target is an ${leftExp.t} but the value is a ` +
               right.value.t
             );
 
@@ -1007,16 +1007,23 @@ function evalTopExpression(
             return null;
           }
 
-          if (leftExp.v.length !== right.value.v.length) {
+          const numRightValues = (
+            right.value.t === 'array' ?
+            right.value.v.length :
+            Object.keys(right.value.v).length
+          );
+
+          if (leftExp.v.length !== numRightValues) {
             // TODO: Implement _ as special ignore identifier
+            // TODO: Customize message for object destructuring?
             value = VException(
               exp,
               ['type-error', 'destructuring-mismatch', 'length-mismatch'],
               [
-                'Array destructuring length mismatch: ',
+                'Destructuring length mismatch: ',
                 leftExp.v.length,
                 ' targets but only ',
-                right.value.v.length,
+                numRightValues,
                 ' values',
               ].join(''),
             );
@@ -1025,20 +1032,38 @@ function evalTopExpression(
           }
 
           for (let i = 0; i < leftExp.v.length; i++) {
-            const subLeft = leftExp.v[i];
+            const { key, target } = (() => {
+              if (leftExp.t === 'object') {
+                const [{ v: key }, target] = leftExp.v[i];
+                return { key, target };
+              }
+
+              return { key: null, target: leftExp.v[i] };
+            })();
+
+            if (key !== null && !(key in right.value.v)) {
+              value = VException(
+                exp,
+                ['type-error', 'destructuring-mismatch', 'key-not-found'],
+                `Key ${key} from object destructuring expression not found ` +
+                'in the object on the right',
+              );
+
+              return null;
+            }
 
             // Need to use evaluated rhs rather than decomposing into
             // assignments so that e.g. [a, b] = [b, a] works rather than
             // producing a = b; b = a; which doesn't swap.
             const synthSubRight = SynthExp(
-              right.value.v[i],
+              right.value.v[key !== null ? key : i],
               rightExp.p,
             );
 
             const synthExp = {
               t: '=' as '=',
               v: [
-                subLeft,
+                target,
                 synthSubRight,
               ] as [Syntax.Expression, Syntax.Expression],
               p: exp.p,
