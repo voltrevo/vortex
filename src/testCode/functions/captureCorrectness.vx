@@ -1,0 +1,10 @@
+func testCapture() {
+  a := 'good-capture';
+  return func() => a; // #info #return-value
+};
+
+a := 'bad-capture'; // #warn #unused
+
+assert testCapture()() == 'good-capture';
+
+return 'done'; // #info #return-value
