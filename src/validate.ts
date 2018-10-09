@@ -168,21 +168,39 @@ function validateScope(elements: ScopeItem[]): Note[] {
           case 'for':
             return [push, ...Syntax.Children(el), pop];
 
-          case ':=':
-            let children: ScopeItem[] = Syntax.Children(el);
-            children = [...children];
-            const left = el.v[0];
+          case ':=': {
+            const [left, right] = el.v;
 
-            if (left.t === 'IDENTIFIER') {
-              if (children[0].t !== 'IDENTIFIER') {
-                throw new Error('Expected first child to be identifier');
+            const targets: Syntax.Expression[] = (
+              traverse<Syntax.Expression, Syntax.Expression>(
+                left,
+                el => (
+                  el.t === 'array' ? [] :
+                  el.t === 'object' ? [] :
+                  [el]
+                ),
+                el => (
+                  el.t === 'array' ? el.v :
+                  el.t === 'object' ? el.v.map(([k, v]) => v) :
+                  []
+                ),
+              )
+            );
+
+            const children: ScopeItem[] = [];
+
+            for (const target of targets) {
+              if (target.t === 'IDENTIFIER') {
+                children.push({ t: 'CreateVariable', v: target });
+              } else {
+                children.push(target);
               }
-
-              children.shift(); // Remove reference to self
-              children = [{ t: 'CreateVariable', v: left }, ...children];
             }
 
+            children.push(right);
+
             return children;
+          }
 
           default:
             if (Syntax.isAssignmentOperator(el.t)) {

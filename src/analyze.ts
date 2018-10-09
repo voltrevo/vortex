@@ -896,38 +896,10 @@ function evalTopExpression(
 
   checkNull((() => {
     switch (exp.t) {
-      case ':=': {
-        const left = exp.v[0];
-
-        if (left.t !== 'IDENTIFIER') {
-          value = VException(
-            left,
-            ['not-implemented', 'non-identifier-creation-target', 'creation'],
-            'Not implemented: non-identifier lvalues',
-          );
-
-          return null;
-        }
-
-        const right = evalSubExpression(scope, exp.v[1]);
-        notes.push(...right.notes);
-
-        if (right.value.t === 'exception') {
-          value = right.value;
-          return null;
-        }
-
-        scope = Scope.add(scope, left.v, {
-          origin: left,
-          data: right.value,
-        });
-
-        return null;
-      }
-
       // TODO: Support more compound assignment operators
       // TODO: Better lvalues - preserve identifiers during eval
       // e.g. this will enable: [a, b][getIndex()] = 1;
+      case ':=':
       case '=':
       case '+=':
       case '-=':
@@ -948,6 +920,7 @@ function evalTopExpression(
           // more accurate type when hovering on synthOp.
           const synthOp: Syntax.NonSpecialBinaryOperator | null = (() => {
             switch (exp.t) {
+              case ':=': return null;
               case '=': return null;
               case '+=': return '+';
               case '-=': return '-';
@@ -1061,7 +1034,7 @@ function evalTopExpression(
             );
 
             const synthExp = {
-              t: '=' as '=',
+              t: exp.t === ':=' ? exp.t : '=' as '=',
               v: [
                 target,
                 synthSubRight,
@@ -1143,6 +1116,22 @@ function evalTopExpression(
           return null;
         }
 
+        if (accessChain.length === 0 && exp.t === ':=') {
+          scope = Scope.add(
+            scope,
+
+            // leftExp would also work, but typescript doesn't know
+            leftBaseExp.v,
+
+            {
+              origin: leftExp,
+              data: right.value,
+            },
+          );
+
+          return null;
+        }
+
         const existing = Scope.get(scope, leftBaseExp.v);
 
         if (!existing) {
@@ -1173,11 +1162,18 @@ function evalTopExpression(
             // of index typing.
             const oldSubValue = oldValue.v[index];
 
-            if (oldSubValue === undefined) {
+            if (oldSubValue === undefined && exp.t !== ':=') {
               return VException(leftExp,
                 ['key-not-found'],
                 // TODO: Better message, location
                 'Key not found',
+              );
+            }
+
+            if (oldSubValue !== undefined && exp.t === ':=') {
+              return VException(leftExp,
+                ['duplicate', 'duplicate-key'],
+                `Trying to add key ${index} that already exists`,
               );
             }
 
@@ -1232,6 +1228,16 @@ function evalTopExpression(
                   ' but array is only length ',
                   oldValue.v.length
                 ].join('')
+              );
+            }
+
+            if (newChain.length === 0 && exp.t === ':=') {
+              return VException(
+                leftExp,
+                ['duplicate', 'duplicate-index'],
+                `Attempt to add duplicate index ${index} to array (the ` +
+                'creation operator := never works with an array subscript ' +
+                'on the left)',
               );
             }
 

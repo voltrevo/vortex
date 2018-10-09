@@ -1,0 +1,7 @@
+[a, {c, d}, b] := [1, {d: 4, c: 3}, 2];
+assert [a, b, c, d] == [1, 2, 3, 4];
+
+{a, b, x: [c, d]} = {a: d, b: c, x: [b, a]};
+assert [a, b, c, d] == [4, 3, 2, 1];
+
+return 'done'; // #info #return-value

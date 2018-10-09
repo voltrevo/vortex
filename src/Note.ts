@@ -81,6 +81,7 @@ namespace Note {
     'duplicate' |
     'object' |
     'duplicate-key' |
+    'duplicate-index' |
     'assigned' |
     'out-of-bounds' |
     'index-too-large' |
@@ -151,6 +152,7 @@ namespace Note {
     'duplicate',
     'object',
     'duplicate-key',
+    'duplicate-index',
     'assigned',
     'out-of-bounds',
     'index-too-large',
