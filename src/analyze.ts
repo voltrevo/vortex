@@ -30,10 +30,20 @@ export function VNull(): VNull {
   return { cat: 'concrete', t: 'null', v: null };
 }
 
-export type VFunc = { cat: 'concrete' } & Syntax.FunctionExpression;
+export type VFunc = {
+  cat: 'concrete';
+  t: 'func';
+  v: {
+    exp: Syntax.FunctionExpression;
+    scope: Scope<ValidValue>;
+  };
+};
 
-export function VFunc(v: Syntax.FunctionExpression): VFunc {
-  return { cat: 'concrete', ...v };
+export function VFunc(v: {
+  exp: Syntax.FunctionExpression;
+  scope: Scope<ValidValue>;
+}): VFunc {
+  return { cat: 'concrete', t: 'func', v };
 }
 
 export type VConcreteArray = {
@@ -147,7 +157,7 @@ function SameType(left: ConcreteValue, right: ConcreteValue): VBool {
       }
 
       // TODO: Types of arguments?
-      return VBool(left.v.args.length === right.v.args.length);
+      return VBool(left.v.exp.v.args.length === right.v.exp.v.args.length);
     }
 
     case 'array': {
@@ -407,34 +417,6 @@ function TypedComparison(
   }
 }
 
-function SynthExp(
-  value: ConcreteValue,
-  p: Syntax.Pos,
-): Syntax.Expression {
-  switch (value.t) {
-    case 'string': return { t: 'STRING', v: JSON.stringify(value.v), p };
-    case 'number': return { t: 'NUMBER', v: JSON.stringify(value.v), p };
-    case 'bool': return { t: 'BOOL', v: value.v, p };
-    case 'null': return { t: 'NULL', v: value.v, p };
-    case 'func': return value;
-
-    case 'array': return {
-      t: 'array',
-      v: value.v.map(v => SynthExp(v, p)),
-      p,
-    };
-
-    case 'object': return {
-      t: 'object',
-      v: Object.keys(value.v).sort().map(key => [
-        { t: 'IDENTIFIER', v: key, p },
-        SynthExp(value.v[key], p)
-      ] as [Syntax.Identifier, Syntax.Expression]),
-      p,
-    }
-  }
-}
-
 namespace Value {
   export function String(v: Value): string {
     switch (v.t) {
@@ -444,7 +426,9 @@ namespace Value {
       case 'null': return 'null';
 
       // TODO: include argument names
-      case 'func': return `<func ${v.v.name ? v.v.name.v : '(anonymous)'}>`;
+      case 'func': return (
+        `<func ${v.v.exp.v.name ? v.v.exp.v.name.v : '(anonymous)'}>`
+      );
 
       case 'array': {
         switch (v.cat) {
@@ -710,31 +694,46 @@ function analyzeInContext(
         case 'for': {
           const { control, block } = statement.v;
 
-          if (
-            control !== null &&
-            control.t !== 'condition' &&
-            control.t !== 'setup; condition; next'
-          ) {
-            context.value = VException(
-              statement,
-              ['not-implemented', 'for-control'],
-              // TODO: Need to capture more structure in compiler notes
-              `Not implemented: for loop with (${control.t}) control clause`,
-            );
+          // TODO: Impure function... (was too tempting, what will this look
+          // like when rewritten in vortex?)
+          function cond(): VBool | VException {
+            if (
+              control !== null &&
+              control.t !== 'condition' &&
+              control.t !== 'setup; condition; next'
+            ) {
+              return VException(
+                statement,
+                ['not-implemented', 'for-control'],
+                // TODO: Need to capture more structure in compiler notes
+                `Not implemented: for loop with (${control.t}) control clause`,
+              );
+            }
 
-            return null;
-          }
-
-          const cond: Syntax.Expression = (() => {
             if (control === null) {
-              return SynthExp(VBool(true), statement.p);
+              return VBool(true);
             }
 
-            switch (control.t) {
-              case 'condition': { return control.v; }
-              case 'setup; condition; next': { return control.v[1]; }
+            const condExp = (() => {
+              switch (control.t) {
+                case 'condition': return control.v;
+                case 'setup; condition; next': return control.v[1];
+              }
+            })();
+
+            const condEval = evalSubExpression(context.scope, condExp);
+            context.notes.push(...condEval.notes);
+
+            if (condEval.value.t !== 'bool') {
+              return VException(
+                condExp,
+                ['non-bool-condition', 'for-condition'],
+                `Type error: Non-bool condition: ${condEval.value.t}`,
+              );
             }
-          })();
+
+            return condEval.value;
+          }
 
           context.scope = Scope.push(context.scope);
 
@@ -748,23 +747,16 @@ function analyzeInContext(
           let iterations = 0;
 
           while (true) {
-            const condEval = evalSubExpression(context.scope, cond);
-            context.notes.push(...condEval.notes);
-            const condValue = condEval.value;
+            const condValue = cond();
+
+            if (condValue.t === 'exception') {
+              context.value = condValue;
+              break;
+            }
 
             // TODO: Note counting, deduplication with if
 
             // TODO: unknown -> maybeException?
-
-            if (condValue.t !== 'bool') {
-              context.value = VException(
-                cond,
-                ['non-bool-condition', 'for-condition'],
-                `Type error: Non-bool condition: ${condValue.t}`,
-              );
-
-              break;
-            }
 
             if (condValue.v === false) {
               break;
@@ -954,346 +946,13 @@ function evalTopExpression(
           return null;
         }
 
-        if (leftExp.t === 'array' || leftExp.t === 'object') {
-          // TODO: Fail earlier / in a more informative way when attempting a
-          // destructuring and compound assignment simultaneously?
-
-          // TODO: Unknown should also work
-          if (right.value.t !== leftExp.t) {
-            value = VException(exp,
-              ['type-error', 'destructuring-mismatch'],
-              // TODO: a vs an
-              `Assignment target is an ${leftExp.t} but the value is a ` +
-              right.value.t
-            );
-
-            return null;
-          }
-
-          if (right.value.cat !== 'concrete') {
-            value = VException(exp,
-              ['type-error', 'destructuring-mismatch'],
-              // TODO: This is wrong / implement proper unknown handling here
-              'Assignment target is an array but the value is unknown',
-            );
-
-            return null;
-          }
-
-          const numRightValues = (
-            right.value.t === 'array' ?
-            right.value.v.length :
-            Object.keys(right.value.v).length
-          );
-
-          if (leftExp.v.length !== numRightValues) {
-            // TODO: Implement _ as special ignore identifier
-            // TODO: Customize message for object destructuring?
-            value = VException(
-              exp,
-              ['type-error', 'destructuring-mismatch', 'length-mismatch'],
-              [
-                'Destructuring length mismatch: ',
-                leftExp.v.length,
-                ' targets but only ',
-                numRightValues,
-                ' values',
-              ].join(''),
-            );
-
-            return null;
-          }
-
-          for (let i = 0; i < leftExp.v.length; i++) {
-            const { key, target } = (() => {
-              if (leftExp.t === 'object') {
-                const [{ v: key }, target] = leftExp.v[i];
-                return { key, target };
-              }
-
-              return { key: null, target: leftExp.v[i] };
-            })();
-
-            if (key !== null && !(key in right.value.v)) {
-              value = VException(
-                exp,
-                ['type-error', 'destructuring-mismatch', 'key-not-found'],
-                `Key ${key} from object destructuring expression not found ` +
-                'in the object on the right',
-              );
-
-              return null;
-            }
-
-            // Need to use evaluated rhs rather than decomposing into
-            // assignments so that e.g. [a, b] = [b, a] works rather than
-            // producing a = b; b = a; which doesn't swap.
-            const synthSubRight = SynthExp(
-              right.value.v[key !== null ? key : i],
-              rightExp.p,
-            );
-
-            const synthExp = {
-              t: exp.t === ':=' ? exp.t : '=' as '=',
-              v: [
-                target,
-                synthSubRight,
-              ] as [Syntax.Expression, Syntax.Expression],
-              p: exp.p,
-            };
-
-            const subCtx = evalTopExpression(scope, synthExp);
-            scope = subCtx.scope;
-            notes.push(...subCtx.notes);
-
-            if (subCtx.value.t === 'exception') {
-              value = subCtx.value;
-              return null;
-            }
-          }
-
-          return null;
-        }
-
-        let leftBaseExp: Syntax.Expression = leftExp;
-        const accessChain: (string | number)[] = [];
-
-        while (true) {
-          if (leftBaseExp.t === 'IDENTIFIER') {
-            break;
-          }
-
-          if (leftBaseExp.t === '.') {
-            const [newBase, identifier]: [
-              // Not quite sure why typescript needs this annotation
-              Syntax.Expression,
-              Syntax.Identifier // Typescript disallows trailing comma?
-            ] = leftBaseExp.v;
-
-            leftBaseExp = newBase;
-            accessChain.unshift(identifier.v);
-
-            continue;
-          }
-
-          if (leftBaseExp.t === 'subscript') {
-            const [newBase, accessor]: [
-              // Not quite sure why typescript needs this annotation
-              Syntax.Expression,
-              Syntax.Expression // Typescript disallows trailing comma?
-            ] = leftBaseExp.v;
-
-            const accessorEval = evalSubExpression(scope, accessor);
-            notes.push(...accessorEval.notes);
-            const accessorValue = accessorEval.value;
-
-            if (
-              accessorValue.t !== 'string' &&
-              accessorValue.t !== 'number'
-            ) {
-              value = VException(accessor,
-                ['type-error', 'subscript'],
-                `Type error: ${accessorValue.t} subscript`,
-              );
-
-              return null;
-            }
-
-            leftBaseExp = newBase;
-            accessChain.unshift(accessorValue.v);
-
-            continue;
-          }
-
-          value = VException(leftBaseExp,
-            ['invalid-assignment-target', 'destructuring'],
-            // TODO: Don't analyze if failed validation and throw internal
-            // error here instead
-            `(redundant) Invalid assignment target: ${leftBaseExp.t} ` +
-            'expression',
-          );
-
-          return null;
-        }
-
-        if (accessChain.length === 0 && exp.t === ':=') {
-          scope = Scope.add(
-            scope,
-
-            // leftExp would also work, but typescript doesn't know
-            leftBaseExp.v,
-
-            {
-              origin: leftExp,
-              data: right.value,
-            },
-          );
-
-          return null;
-        }
-
-        const existing = Scope.get(scope, leftBaseExp.v);
-
-        if (!existing) {
-          notes.push(Note(
-            exp,
-            'error',
-            ['analysis', 'not-found', 'assignment'],
-            'Attempt to assign to a variable that does not exist',
-          ));
-
-          return null;
-        }
-
-        function modifyChain(
-          oldValue: ValidValue,
-          chain: (string | number)[],
-          newValue: ValidValue,
-        ): ValidValue | VException {
-          const [index, ...newChain] = chain;
-
-          if (index === undefined) {
-            return newValue;
-          }
-
-          if (oldValue.t === 'object' && typeof index === 'string') {
-            // TODO: Improve typing so that typescript knows this can be
-            // undefined instead of using its permissive (incorrect) analysis
-            // of index typing.
-            const oldSubValue = oldValue.v[index];
-
-            if (oldSubValue === undefined && exp.t !== ':=') {
-              return VException(leftExp,
-                ['key-not-found'],
-                // TODO: Better message, location
-                'Key not found',
-              );
-            }
-
-            if (oldSubValue !== undefined && exp.t === ':=') {
-              return VException(leftExp,
-                ['duplicate', 'duplicate-key'],
-                `Trying to add key ${index} that already exists`,
-              );
-            }
-
-            const newValueAtIndex = modifyChain(
-              oldValue.v[index],
-              newChain,
-              newValue,
-            );
-
-            if (newValueAtIndex.cat === 'invalid') {
-              return newValueAtIndex;
-            }
-
-            if (
-              oldValue.cat === 'concrete' &&
-              newValueAtIndex.cat === 'concrete'
-            ) {
-              return VConcreteObject({
-                ...oldValue.v,
-                [index]: newValueAtIndex
-              });
-            }
-
-            return VObject({
-              ...oldValue.v,
-              [index]: newValueAtIndex,
-            });
-          }
-
-          if (oldValue.t === 'array' && typeof index === 'number') {
-            if (
-              index !== Math.floor(index) ||
-              index < 0
-            ) {
-              // TODO: More accurate expression reference (just providing
-              // entire lhs instead of specifically the bad subscript/.)
-              return VException(leftExp,
-                ['out-of-bounds', 'index-bad'],
-                `Invalid index: ${index}`,
-              );
-            }
-
-            if (index >= oldValue.v.length) {
-              // TODO: More accurate expression reference (just providing
-              // entire lhs instead of specifically the bad subscript/.)
-              return VException(
-                leftExp,
-                ['out-of-bounds', 'index-too-large'],
-                [
-                  'Out of bounds: index ',
-                  index,
-                  ' but array is only length ',
-                  oldValue.v.length
-                ].join('')
-              );
-            }
-
-            if (newChain.length === 0 && exp.t === ':=') {
-              return VException(
-                leftExp,
-                ['duplicate', 'duplicate-index'],
-                `Attempt to add duplicate index ${index} to array (the ` +
-                'creation operator := never works with an array subscript ' +
-                'on the left)',
-              );
-            }
-
-            const newValueAtIndex = modifyChain(
-              oldValue.v[index],
-              newChain,
-              newValue,
-            );
-
-            if (newValueAtIndex.cat === 'invalid') {
-              return newValueAtIndex;
-            }
-
-            if (
-              oldValue.cat === 'concrete' &&
-              newValueAtIndex.cat === 'concrete'
-            ) {
-              return VConcreteArray([
-                ...oldValue.v.slice(0, index),
-                newValueAtIndex,
-                ...oldValue.v.slice(index + 1),
-              ]);
-            }
-
-            return VArray([
-              ...oldValue.v.slice(0, index),
-              newValueAtIndex,
-              ...oldValue.v.slice(index + 1),
-            ]);
-          }
-
-          // TODO: More accurate expression reference (just providing entire
-          // lhs instead of specifically the bad subscript/.)
-          return VException(leftExp,
-            ['type-error', 'index-bad'],
-            `Type error: attempt to index ${oldValue.t} with a ` +
-            typeof index,
-          );
-        }
-
-        const newBaseValue = modifyChain(
-          existing.data,
-          accessChain,
+        ({ scope, value, notes } = evalCreateOrAssign(
+          { scope, value, notes },
+          exp,
+          leftExp,
+          exp.t === ':=' ? ':=' : '=',
           right.value,
-        );
-
-        if (newBaseValue.t === 'exception') {
-          value = newBaseValue;
-          return null;
-        }
-
-        scope = Scope.set(
-          scope,
-          leftBaseExp.v,
-          newBaseValue,
-        );
+        ));
 
         return null;
       }
@@ -1346,7 +1005,7 @@ function evalTopExpression(
       }
 
       case 'func': {
-        value = VFunc(exp);
+        value = VFunc({ exp, scope });
 
         if (exp.topExp && exp.v.name) {
           scope = Scope.add(scope, exp.v.name.v, {
@@ -1414,6 +1073,350 @@ function evalTopExpression(
       }
     }
   })());
+
+  return { scope, value, notes };
+}
+
+function evalCreateOrAssign(
+  context: Context,
+  exp: Syntax.Expression,
+  leftExp: Syntax.Expression,
+  op: '=' | ':=',
+  right: ValidValue,
+): Context {
+  let { scope, value, notes } = context;
+
+  (() => {
+    if (leftExp.t === 'array' || leftExp.t === 'object') {
+      // TODO: Fail earlier / in a more informative way when attempting a
+      // destructuring and compound assignment simultaneously?
+
+      // TODO: Unknown should also work
+      if (right.t !== leftExp.t) {
+        value = VException(exp,
+          ['type-error', 'destructuring-mismatch'],
+          // TODO: a vs an
+          `Assignment target is an ${leftExp.t} but the value is a ` +
+          right.t
+        );
+
+        return null;
+      }
+
+      if (right.cat !== 'concrete') {
+        value = VException(exp,
+          ['type-error', 'destructuring-mismatch'],
+          // TODO: This is wrong / implement proper unknown handling here
+          'Assignment target is an array but the value is unknown',
+        );
+
+        return null;
+      }
+
+      const numRightValues = (
+        right.t === 'array' ?
+        right.v.length :
+        Object.keys(right.v).length
+      );
+
+      if (leftExp.v.length !== numRightValues) {
+        // TODO: Implement _ as special ignore identifier
+        // TODO: Customize message for object destructuring?
+        value = VException(
+          exp,
+          ['type-error', 'destructuring-mismatch', 'length-mismatch'],
+          [
+            'Destructuring length mismatch: ',
+            leftExp.v.length,
+            ' targets but only ',
+            numRightValues,
+            ' values',
+          ].join(''),
+        );
+
+        return null;
+      }
+
+      for (let i = 0; i < leftExp.v.length; i++) {
+        const { key, target } = (() => {
+          if (leftExp.t === 'object') {
+            const [{ v: key }, target] = leftExp.v[i];
+            return { key, target };
+          }
+
+          return { key: null, target: leftExp.v[i] };
+        })();
+
+        if (key !== null && !(key in right.v)) {
+          value = VException(
+            exp,
+            ['type-error', 'destructuring-mismatch', 'key-not-found'],
+            `Key ${key} from object destructuring expression not found ` +
+            'in the object on the right',
+          );
+
+          return null;
+        }
+
+        const subRight = right.v[key !== null ? key : i];
+        ({ scope, value, notes } = evalCreateOrAssign(
+          { scope, value, notes },
+          exp,
+          target,
+          op,
+          subRight,
+        ));
+
+        if (value.t === 'exception') {
+          return null;
+        }
+      }
+
+      return null;
+    }
+
+    let leftBaseExp: Syntax.Expression = leftExp;
+    const accessChain: (string | number)[] = [];
+
+    while (true) {
+      if (leftBaseExp.t === 'IDENTIFIER') {
+        break;
+      }
+
+      if (leftBaseExp.t === '.') {
+        const [newBase, identifier]: [
+          // Not quite sure why typescript needs this annotation
+          Syntax.Expression,
+          Syntax.Identifier // Typescript disallows trailing comma?
+        ] = leftBaseExp.v;
+
+        leftBaseExp = newBase;
+        accessChain.unshift(identifier.v);
+
+        continue;
+      }
+
+      if (leftBaseExp.t === 'subscript') {
+        const [newBase, accessor]: [
+          // Not quite sure why typescript needs this annotation
+          Syntax.Expression,
+          Syntax.Expression // Typescript disallows trailing comma?
+        ] = leftBaseExp.v;
+
+        const accessorEval = evalSubExpression(scope, accessor);
+        notes.push(...accessorEval.notes);
+        const accessorValue = accessorEval.value;
+
+        if (
+          accessorValue.t !== 'string' &&
+          accessorValue.t !== 'number'
+        ) {
+          value = VException(accessor,
+            ['type-error', 'subscript'],
+            `Type error: ${accessorValue.t} subscript`,
+          );
+
+          return null;
+        }
+
+        leftBaseExp = newBase;
+        accessChain.unshift(accessorValue.v);
+
+        continue;
+      }
+
+      value = VException(leftBaseExp,
+        ['invalid-assignment-target', 'destructuring'],
+        // TODO: Don't analyze if failed validation and throw internal
+        // error here instead
+        `(redundant) Invalid assignment target: ${leftBaseExp.t} ` +
+        'expression',
+      );
+
+      return null;
+    }
+
+    if (accessChain.length === 0 && op === ':=') {
+      scope = Scope.add(
+        scope,
+
+        // leftExp would also work, but typescript doesn't know
+        leftBaseExp.v,
+
+        {
+          origin: leftExp,
+          data: right,
+        },
+      );
+
+      return null;
+    }
+
+    const existing = Scope.get(scope, leftBaseExp.v);
+
+    if (!existing) {
+      notes.push(Note(
+        exp,
+        'error',
+        ['analysis', 'not-found', 'assignment'],
+        'Attempt to assign to a variable that does not exist',
+      ));
+
+      return null;
+    }
+
+    function modifyChain(
+      oldValue: ValidValue,
+      chain: (string | number)[],
+      newValue: ValidValue,
+    ): ValidValue | VException {
+      const [index, ...newChain] = chain;
+
+      if (index === undefined) {
+        return newValue;
+      }
+
+      if (oldValue.t === 'object' && typeof index === 'string') {
+        // TODO: Improve typing so that typescript knows this can be
+        // undefined instead of using its permissive (incorrect) analysis
+        // of index typing.
+        const oldSubValue = oldValue.v[index];
+
+        if (oldSubValue === undefined && op !== ':=') {
+          return VException(leftExp,
+            ['key-not-found'],
+            // TODO: Better message, location
+            'Key not found',
+          );
+        }
+
+        if (oldSubValue !== undefined && op === ':=') {
+          return VException(leftExp,
+            ['duplicate', 'duplicate-key'],
+            `Trying to add key ${index} that already exists`,
+          );
+        }
+
+        const newValueAtIndex = modifyChain(
+          oldValue.v[index],
+          newChain,
+          newValue,
+        );
+
+        if (newValueAtIndex.cat === 'invalid') {
+          return newValueAtIndex;
+        }
+
+        if (
+          oldValue.cat === 'concrete' &&
+          newValueAtIndex.cat === 'concrete'
+        ) {
+          return VConcreteObject({
+            ...oldValue.v,
+            [index]: newValueAtIndex
+          });
+        }
+
+        return VObject({
+          ...oldValue.v,
+          [index]: newValueAtIndex,
+        });
+      }
+
+      if (oldValue.t === 'array' && typeof index === 'number') {
+        if (
+          index !== Math.floor(index) ||
+          index < 0
+        ) {
+          // TODO: More accurate expression reference (just providing
+          // entire lhs instead of specifically the bad subscript/.)
+          return VException(leftExp,
+            ['out-of-bounds', 'index-bad'],
+            `Invalid index: ${index}`,
+          );
+        }
+
+        if (index >= oldValue.v.length) {
+          // TODO: More accurate expression reference (just providing
+          // entire lhs instead of specifically the bad subscript/.)
+          return VException(
+            leftExp,
+            ['out-of-bounds', 'index-too-large'],
+            [
+              'Out of bounds: index ',
+              index,
+              ' but array is only length ',
+              oldValue.v.length
+            ].join('')
+          );
+        }
+
+        if (newChain.length === 0 && op === ':=') {
+          return VException(
+            leftExp,
+            ['duplicate', 'duplicate-index'],
+            `Attempt to add duplicate index ${index} to array (the ` +
+            'creation operator := never works with an array subscript ' +
+            'on the left)',
+          );
+        }
+
+        const newValueAtIndex = modifyChain(
+          oldValue.v[index],
+          newChain,
+          newValue,
+        );
+
+        if (newValueAtIndex.cat === 'invalid') {
+          return newValueAtIndex;
+        }
+
+        if (
+          oldValue.cat === 'concrete' &&
+          newValueAtIndex.cat === 'concrete'
+        ) {
+          return VConcreteArray([
+            ...oldValue.v.slice(0, index),
+            newValueAtIndex,
+            ...oldValue.v.slice(index + 1),
+          ]);
+        }
+
+        return VArray([
+          ...oldValue.v.slice(0, index),
+          newValueAtIndex,
+          ...oldValue.v.slice(index + 1),
+        ]);
+      }
+
+      // TODO: More accurate expression reference (just providing entire
+      // lhs instead of specifically the bad subscript/.)
+      return VException(leftExp,
+        ['type-error', 'index-bad'],
+        `Type error: attempt to index ${oldValue.t} with a ` +
+        typeof index,
+      );
+    }
+
+    const newBaseValue = modifyChain(
+      existing.data,
+      accessChain,
+      right,
+    );
+
+    if (newBaseValue.t === 'exception') {
+      value = newBaseValue;
+      return null;
+    }
+
+    scope = Scope.set(
+      scope,
+      leftBaseExp.v,
+      newBaseValue,
+    );
+
+    return null;
+  })();
 
   return { scope, value, notes };
 }
@@ -1729,7 +1732,7 @@ function evalSubExpression(
       }
 
       case 'func': {
-        return VFunc(exp);
+        return VFunc({ exp, scope });
       }
 
       case 'functionCall': {
@@ -1786,7 +1789,7 @@ function evalSubExpression(
             }
 
             case 'func': {
-              if (func.v.args.length !== args.length) {
+              if (func.v.exp.v.args.length !== args.length) {
                 return VException(
                   exp,
                   ['type-error', 'arguments-length-mismatch'],
@@ -1794,7 +1797,7 @@ function evalSubExpression(
                     'Arguments length mismatch: ',
                     Value.String(func),
                     ' requires ',
-                    func.v.args.length,
+                    func.v.exp.v.args.length,
                     ' arguments but ',
                     args.length,
                     ' were provided'
@@ -1802,22 +1805,33 @@ function evalSubExpression(
                 );
               }
 
-              let funcScope = Scope.push(scope);
+              let funcScope = func.v.scope;
+
+              if (func.v.exp.v.name !== null) {
+                funcScope = Scope.add(
+                  funcScope,
+                  func.v.exp.v.name.v,
+                  {
+                    origin: func.v.exp,
+                    data: func,
+                  },
+                );
+              }
 
               for (let i = 0; i < args.length; i++) {
                 const arg = args[i];
-                const [argIdentifier] = func.v.args[i].v;
+                const [argIdentifier] = func.v.exp.v.args[i].v;
                 funcScope = Scope.add(
                   funcScope,
                   argIdentifier.v,
                   {
                     origin: argExps[i],
                     data: arg,
-                  }
+                  },
                 );
               }
 
-              const body = func.v.body;
+              const body = func.v.exp.v.body;
 
               if (body.t === 'expBody') {
                 const bodyEval = evalSubExpression(funcScope, body.v);
@@ -2027,7 +2041,6 @@ function evalVanillaOperator<T extends {
   }
 
   let value = combine(left.value, right.value);
-
   if (value === null) {
     // TODO: Combine should return something more informative than null to
     // indicate that a type error should result.
