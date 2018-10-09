@@ -1,0 +1,4 @@
+res := calc();
+func calc() => 37;
+
+return res;

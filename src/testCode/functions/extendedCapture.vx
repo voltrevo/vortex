@@ -1,0 +1,12 @@
+a := 1;
+
+foo := null;
+
+if (true) {
+  func twiceA() => 2 * a;
+  foo = twiceA;
+}
+
+a++; // #error #capture-mutation
+
+return foo();

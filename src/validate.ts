@@ -72,13 +72,19 @@ export function validate(program: Syntax.Program): Note[] {
 type Push = { t: 'Push' };
 const push: Push = { t: 'Push' };
 
+type PushCapture = { t: 'PushCapture' };
+const pushCapture: PushCapture = { t: 'PushCapture' };
+
 type Pop = { t: 'Pop' };
 const pop: Pop = { t: 'Pop' };
 
+type PopCapture = { t: 'PopCapture' };
+const popCapture: PopCapture = { t: 'PopCapture' };
+
 type CreateVariable = { t: 'CreateVariable', v: Syntax.Identifier };
 
-type IdentifierAssignTarget = {
-  t: 'IDENTIFIER-assignTarget',
+type IdentifierMutationTarget = {
+  t: 'IDENTIFIER-mutationTarget',
   v: string,
   p: Syntax.Pos,
 };
@@ -86,9 +92,11 @@ type IdentifierAssignTarget = {
 type ScopeItem = (
   Syntax.Element |
   Push |
+  PushCapture |
   Pop |
+  PopCapture |
   CreateVariable |
-  IdentifierAssignTarget |
+  IdentifierMutationTarget |
   never
 );
 
@@ -97,8 +105,10 @@ function validateScope(elements: ScopeItem[]): Note[] {
   const issues: Note[] = [];
 
   type VInfo = {
-    used: boolean;
-    assigned: boolean;
+    captureDepth: number;
+    uses: Syntax.Identifier[];
+    mutations: Syntax.Identifier[];
+    captures: Syntax.Identifier[];
   };
 
   let scope: Scope<VInfo> | null = { parent: null, variables: {} };
@@ -110,10 +120,13 @@ function validateScope(elements: ScopeItem[]): Note[] {
       el => {
         switch (el.t) {
           case 'Push':
+          case 'PushCapture':
           case 'Pop':
+          case 'PopCapture':
           case 'CreateVariable':
-          case 'IDENTIFIER-assignTarget':
+          case 'IDENTIFIER-mutationTarget': {
             return [];
+          }
 
           case 'class': {
             const res: ScopeItem[] = [{
@@ -122,13 +135,13 @@ function validateScope(elements: ScopeItem[]): Note[] {
             }];
 
             if (el.topExp) {
-              res.push(push);
+              res.push(pushCapture);
             } else {
-              res.unshift(push);
+              res.unshift(pushCapture);
             }
 
             res.push(...Syntax.Children(el));
-            res.push(pop);
+            res.push(popCapture);
 
             return res;
           }
@@ -146,13 +159,13 @@ function validateScope(elements: ScopeItem[]): Note[] {
             }
 
             if (el.topExp) {
-              res.push(push);
+              res.push(pushCapture);
             } else {
-              res.unshift(push);
+              res.unshift(pushCapture);
             }
 
             res.push(...Syntax.Children(el));
-            res.push(pop);
+            res.push(popCapture);
 
             return res;
           }
@@ -165,8 +178,9 @@ function validateScope(elements: ScopeItem[]): Note[] {
           }
 
           case 'block':
-          case 'for':
+          case 'for': {
             return [push, ...Syntax.Children(el), pop];
+          }
 
           case ':=': {
             const [left, right] = el.v;
@@ -202,39 +216,51 @@ function validateScope(elements: ScopeItem[]): Note[] {
             return children;
           }
 
-          default:
+          default: {
+            let mutationTarget: Syntax.Element | null = null;
+
             if (Syntax.isAssignmentOperator(el.t)) {
               // TODO: any usage below... needed because typescript can't
               // figure this situation out I think
-              let assignTarget: Syntax.Element = (el as any).v[0];
+              mutationTarget = (el as any).v[0];
+            } else if (el.t === '++' || el.t === '--') {
+              mutationTarget = el.v;
+            }
 
-              while (assignTarget.t === '.') {
-                assignTarget = assignTarget.v[0];
+            if (mutationTarget !== null) {
+              while (
+                mutationTarget.t === '.' ||
+                mutationTarget.t === 'subscript'
+              ) {
+                mutationTarget = mutationTarget.v[0];
               }
 
-              if (assignTarget.t === 'IDENTIFIER') {
-                const name = assignTarget.v;
+              if (mutationTarget.t === 'IDENTIFIER') {
+                const name = mutationTarget.v;
 
                 return Syntax.Children(el).map(child => {
-                  if (child !== assignTarget) {
+                  if (child !== mutationTarget) {
                     return child;
                   }
 
                   // More typescript griping: it's really silly that typescript
                   // requires 'as' below
                   return {
-                    t: 'IDENTIFIER-assignTarget' as 'IDENTIFIER-assignTarget',
+                    t: 'IDENTIFIER-mutationTarget' as 'IDENTIFIER-mutationTarget',
                     v: name,
-                    p: assignTarget.p,
+                    p: mutationTarget.p,
                   };
                 });
               }
             }
 
             return Syntax.Children(el);
+          }
         }
       }
     );
+
+    let captureDepth = 0;
 
     for (const item of items) {
       if (scope === null) {
@@ -266,22 +292,28 @@ function validateScope(elements: ScopeItem[]): Note[] {
           scope = Scope.add(scope, newVariableName, {
             origin: item.v,
             data: {
-              used: false,
-              assigned: false,
+              captureDepth,
+              uses: [],
+              mutations: [],
+              captures: [],
             },
           });
         }
-      } else if (item.t === 'Push') {
+      } else if (item.t === 'Push' || item.t === 'PushCapture') {
         scope = {
           parent: scope,
           variables: {},
         };
-      } else if (item.t === 'Pop') {
+
+        if (item.t === 'PushCapture') {
+          captureDepth++;
+        }
+      } else if (item.t === 'Pop' || item.t === 'PopCapture') {
         for (const varName of Object.keys(scope.variables)) {
           const variable = scope.variables[varName];
 
-          if (!variable.data.used) {
-            if (!variable.data.assigned) {
+          if (variable.data.uses.length === 0) {
+            if (variable.data.mutations.length === 0) {
               issues.push(Note(
                 variable.origin,
                 'warn',
@@ -297,16 +329,79 @@ function validateScope(elements: ScopeItem[]): Note[] {
                   'no-effect',
                   'scope',
                   'unused',
-                  'assigned'
+                  'mutation'
                 ],
-                `Variable ${varName} is assigned but never used, so it ` +
+                `Variable ${varName} is mutated but never used, so it ` +
                 `can't affect the return value`
               ));
             }
           }
+
+          if (
+            variable.data.captures.length > 0 &&
+            variable.data.mutations.length > 0
+          ) {
+            const [headMutation, ...tailMutations] = variable.data.mutations;
+            const captureLoc = formatLocation(variable.data.captures[0].p);
+            const mutationLoc = formatLocation(headMutation.p);
+
+            const tags: Note.Tag[] = [
+              'validation',
+              'scope',
+              'mutation',
+              'capture',
+              'capture-mutation',
+            ];
+
+            function getErrorMsg(mut: Syntax.Identifier) {
+              if (variable.data.captures.indexOf(mut) !== -1) {
+                return `Can't mutate captured variable {${varName}}`;
+              }
+
+              return (
+                `Can't mutate {${varName}} because it is captured at ` +
+                captureLoc
+              );
+            }
+
+            issues.push(Note(
+              headMutation,
+              'error',
+              tags,
+              getErrorMsg(headMutation),
+              [
+                Note(
+                  variable.origin,
+                  'info',
+                  tags,
+                  `{${varName}} is captured at ${captureLoc} and mutated ` +
+                  `at ${mutationLoc}`
+                ),
+                ...variable.data.captures.map(cap => Note(
+                  cap,
+                  'info',
+                  tags,
+                  (
+                    `Capturing {${varName}} here prevents mutation at ` +
+                    mutationLoc
+                  ),
+                )),
+                ...tailMutations.map(mut => Note(
+                  mut,
+                  'error',
+                  tags,
+                  getErrorMsg(mut),
+                )),
+              ],
+            ));
+          }
         }
 
         scope = scope.parent;
+
+        if (item.t === 'PopCapture') {
+          captureDepth--;
+        }
       } else if (item.t === 'IDENTIFIER') {
         const scopeEntry = Scope.get(scope, item.v);
 
@@ -319,10 +414,17 @@ function validateScope(elements: ScopeItem[]): Note[] {
             `Variable ${item.v} does not exist`
           ));
         } else {
-          // imagine... scope[item.v].used = true... :-D
-          scope = Scope.set(scope, item.v, { used: true });
+          const mods: Partial<VInfo> = {
+            uses: [...scopeEntry.data.uses, item]
+          };
+
+          if (captureDepth > scopeEntry.data.captureDepth) {
+            mods.captures = [...scopeEntry.data.captures, item];
+          }
+
+          scope = Scope.set(scope, item.v, mods);
         }
-      } else if (item.t === 'IDENTIFIER-assignTarget') {
+      } else if (item.t === 'IDENTIFIER-mutationTarget') {
         const scopeEntry = Scope.get(scope, item.v);
 
         if (!scopeEntry) {
@@ -334,12 +436,22 @@ function validateScope(elements: ScopeItem[]): Note[] {
               'validation',
               'scope',
               'not-found',
-              'assign-target',
+              'mutation-target',
             ],
             `Variable ${item.v} does not exist`
           ));
         } else {
-          scope = Scope.set(scope, item.v, { assigned: true });
+          const ident: Syntax.Identifier = { ...item, t: 'IDENTIFIER' };
+
+          const mods: Partial<VInfo> = {
+            mutations: [...scopeEntry.data.mutations, ident],
+          };
+
+          if (captureDepth > scopeEntry.data.captureDepth) {
+            mods.captures = [...scopeEntry.data.captures, ident];
+          }
+
+          scope = Scope.set(scope, item.v, mods);
         }
       }
     }

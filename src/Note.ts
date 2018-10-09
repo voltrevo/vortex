@@ -15,7 +15,7 @@ function Note(
   tags: Note.Tag[],
   message: string,
   subnotes?: Note[],
-) {
+): Note {
   const categories = ['syntax', 'validation', 'analysis', 'statistics'];
   const hasCategory = tags.some(t => categories.indexOf(t) !== -1);
   assert(hasCategory);
@@ -82,7 +82,9 @@ namespace Note {
     'object' |
     'duplicate-key' |
     'duplicate-index' |
-    'assigned' |
+    'mutation' |
+    'capture' |
+    'capture-mutation' |
     'out-of-bounds' |
     'index-too-large' |
     'invalid-condition' |
@@ -95,7 +97,7 @@ namespace Note {
     'compile-time' |
     'break-prevents-return' |
     'invalid-assignment-target' |
-    'assign-target' |
+    'mutation-target' |
     'unreachable' |
     'inc-dec' |
     'syntax' |
@@ -153,7 +155,9 @@ namespace Note {
     'object',
     'duplicate-key',
     'duplicate-index',
-    'assigned',
+    'mutation',
+    'capture',
+    'capture-mutation',
     'out-of-bounds',
     'index-too-large',
     'invalid-condition',
@@ -166,7 +170,7 @@ namespace Note {
     'compile-time',
     'break-prevents-return',
     'invalid-assignment-target',
-    'assign-target',
+    'mutation-target',
     'unreachable',
     'inc-dec',
     'syntax',

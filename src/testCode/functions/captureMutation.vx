@@ -1,0 +1,4 @@
+a := 1;
+func twiceA() => 2 * a;
+a++; // #error #capture-mutation #validation
+return twiceA();
