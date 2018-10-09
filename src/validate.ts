@@ -64,7 +64,7 @@ export function validate(program: Syntax.Program): Note[] {
     return subNotes;
   }, Syntax.Children));
 
-  notes.push(...validateScope(program.v));
+  notes.push(...validateScope(program));
 
   return notes;
 }
@@ -100,8 +100,7 @@ type ScopeItem = (
   never
 );
 
-function validateScope(elements: ScopeItem[]): Note[] {
-  elements.push(pop);
+function validateScope(block: Syntax.Block): Note[] {
   const issues: Note[] = [];
 
   type VInfo = {
@@ -113,351 +112,350 @@ function validateScope(elements: ScopeItem[]): Note[] {
 
   let scope: Scope<VInfo> | null = { parent: null, variables: {} };
 
-  for (const element of elements) {
-    const items: ScopeItem[] = traverse<ScopeItem, ScopeItem>(
-      element,
-      el => [el],
-      el => {
-        switch (el.t) {
-          case 'Push':
-          case 'PushCapture':
-          case 'Pop':
-          case 'PopCapture':
-          case 'CreateVariable':
-          case 'IDENTIFIER-mutationTarget': {
-            return [];
+  const items: ScopeItem[] = traverse<ScopeItem, ScopeItem>(
+    block,
+    el => [el],
+    el => {
+      switch (el.t) {
+        case 'Push':
+        case 'PushCapture':
+        case 'Pop':
+        case 'PopCapture':
+        case 'CreateVariable':
+        case 'IDENTIFIER-mutationTarget': {
+          return [];
+        }
+
+        case 'class': {
+          const res: ScopeItem[] = [{
+            t: 'CreateVariable' as 'CreateVariable',
+            v: el.v.name,
+          }];
+
+          if (el.topExp) {
+            res.push(pushCapture);
+          } else {
+            res.unshift(pushCapture);
           }
 
-          case 'class': {
-            const res: ScopeItem[] = [{
-              t: 'CreateVariable' as 'CreateVariable',
-              v: el.v.name,
-            }];
+          res.push(...Syntax.Children(el));
+          res.push(popCapture);
 
-            if (el.topExp) {
-              res.push(pushCapture);
+          return res;
+        }
+
+        case 'func': {
+          const res: ScopeItem[] = [];
+
+          const { name } = el.v;
+
+          if (name !== null) {
+            res.push({
+              t: 'CreateVariable' as 'CreateVariable',
+              v: name,
+            });
+          }
+
+          if (el.topExp) {
+            res.push(pushCapture);
+          } else {
+            res.unshift(pushCapture);
+          }
+
+          res.push(...Syntax.Children(el));
+          res.push(popCapture);
+
+          return res;
+        }
+
+        case 'arg': {
+          return [{
+            t: 'CreateVariable',
+            v: el.v[0],
+          }];
+        }
+
+        case 'block':
+        case 'for': {
+          return [push, ...Syntax.Children(el), pop];
+        }
+
+        case ':=': {
+          const [left, right] = el.v;
+
+          const targets: Syntax.Expression[] = (
+            traverse<Syntax.Expression, Syntax.Expression>(
+              left,
+              el => (
+                el.t === 'array' ? [] :
+                el.t === 'object' ? [] :
+                [el]
+              ),
+              el => (
+                el.t === 'array' ? el.v :
+                el.t === 'object' ? el.v.map(([k, v]) => v) :
+                []
+              ),
+            )
+          );
+
+          const children: ScopeItem[] = [];
+
+          for (const target of targets) {
+            if (target.t === 'IDENTIFIER') {
+              children.push({ t: 'CreateVariable', v: target });
             } else {
-              res.unshift(pushCapture);
+              children.push(target);
+            }
+          }
+
+          children.push(right);
+
+          return children;
+        }
+
+        default: {
+          let mutationTarget: Syntax.Element | null = null;
+
+          if (Syntax.isAssignmentOperator(el.t)) {
+            // TODO: any usage below... needed because typescript can't
+            // figure this situation out I think
+            mutationTarget = (el as any).v[0];
+          } else if (el.t === '++' || el.t === '--') {
+            mutationTarget = el.v;
+          }
+
+          if (mutationTarget !== null) {
+            while (
+              mutationTarget.t === '.' ||
+              mutationTarget.t === 'subscript'
+            ) {
+              mutationTarget = mutationTarget.v[0];
             }
 
-            res.push(...Syntax.Children(el));
-            res.push(popCapture);
+            if (mutationTarget.t === 'IDENTIFIER') {
+              const name = mutationTarget.v;
 
-            return res;
-          }
+              return Syntax.Children(el).map(child => {
+                if (child !== mutationTarget) {
+                  return child;
+                }
 
-          case 'func': {
-            const res: ScopeItem[] = [];
-
-            const { name } = el.v;
-
-            if (name !== null) {
-              res.push({
-                t: 'CreateVariable' as 'CreateVariable',
-                v: name,
+                // More typescript griping: it's really silly that typescript
+                // requires 'as' below
+                return {
+                  t: 'IDENTIFIER-mutationTarget' as 'IDENTIFIER-mutationTarget',
+                  v: name,
+                  p: mutationTarget.p,
+                };
               });
             }
-
-            if (el.topExp) {
-              res.push(pushCapture);
-            } else {
-              res.unshift(pushCapture);
-            }
-
-            res.push(...Syntax.Children(el));
-            res.push(popCapture);
-
-            return res;
           }
 
-          case 'arg': {
-            return [{
-              t: 'CreateVariable',
-              v: el.v[0],
-            }];
-          }
-
-          case 'block':
-          case 'for': {
-            return [push, ...Syntax.Children(el), pop];
-          }
-
-          case ':=': {
-            const [left, right] = el.v;
-
-            const targets: Syntax.Expression[] = (
-              traverse<Syntax.Expression, Syntax.Expression>(
-                left,
-                el => (
-                  el.t === 'array' ? [] :
-                  el.t === 'object' ? [] :
-                  [el]
-                ),
-                el => (
-                  el.t === 'array' ? el.v :
-                  el.t === 'object' ? el.v.map(([k, v]) => v) :
-                  []
-                ),
-              )
-            );
-
-            const children: ScopeItem[] = [];
-
-            for (const target of targets) {
-              if (target.t === 'IDENTIFIER') {
-                children.push({ t: 'CreateVariable', v: target });
-              } else {
-                children.push(target);
-              }
-            }
-
-            children.push(right);
-
-            return children;
-          }
-
-          default: {
-            let mutationTarget: Syntax.Element | null = null;
-
-            if (Syntax.isAssignmentOperator(el.t)) {
-              // TODO: any usage below... needed because typescript can't
-              // figure this situation out I think
-              mutationTarget = (el as any).v[0];
-            } else if (el.t === '++' || el.t === '--') {
-              mutationTarget = el.v;
-            }
-
-            if (mutationTarget !== null) {
-              while (
-                mutationTarget.t === '.' ||
-                mutationTarget.t === 'subscript'
-              ) {
-                mutationTarget = mutationTarget.v[0];
-              }
-
-              if (mutationTarget.t === 'IDENTIFIER') {
-                const name = mutationTarget.v;
-
-                return Syntax.Children(el).map(child => {
-                  if (child !== mutationTarget) {
-                    return child;
-                  }
-
-                  // More typescript griping: it's really silly that typescript
-                  // requires 'as' below
-                  return {
-                    t: 'IDENTIFIER-mutationTarget' as 'IDENTIFIER-mutationTarget',
-                    v: name,
-                    p: mutationTarget.p,
-                  };
-                });
-              }
-            }
-
-            return Syntax.Children(el);
-          }
+          return Syntax.Children(el);
         }
       }
-    );
+    }
+  );
 
-    let captureDepth = 0;
+  let captureDepth = 0;
 
-    for (const item of items) {
-      if (scope === null) {
-        throw new Error('Attempt to process item without a scope');
+  for (const item of items) {
+
+    if (scope === null) {
+      throw new Error('Attempt to process item without a scope');
+    }
+
+    if (item.t === 'CreateVariable') {
+      const newVariableName = item.v.v;
+      const preExisting = Scope.get(scope, newVariableName);
+
+      if (preExisting) {
+        const loc = formatLocation(item.v.p);
+
+        issues.push(Note(
+          item.v,
+          'error',
+          ['validation', 'scope', 'duplicate'],
+          'Can\'t create variable that already exists',
+          [
+            Note(
+              preExisting.origin,
+              'info',
+              ['validation', 'scope', 'is-duplicated'],
+              `Attempt to create this variable again at ${loc}`,
+            )
+          ]
+        ));
+      } else {
+        scope = Scope.add(scope, newVariableName, {
+          origin: item.v,
+          data: {
+            captureDepth,
+            uses: [],
+            mutations: [],
+            captures: [],
+          },
+        });
       }
+    } else if (item.t === 'Push' || item.t === 'PushCapture') {
+      scope = {
+        parent: scope,
+        variables: {},
+      };
 
-      if (item.t === 'CreateVariable') {
-        const newVariableName = item.v.v;
-        const preExisting = Scope.get(scope, newVariableName);
+      if (item.t === 'PushCapture') {
+        captureDepth++;
+      }
+    } else if (item.t === 'Pop' || item.t === 'PopCapture') {
+      for (const varName of Object.keys(scope.variables)) {
+        const variable = scope.variables[varName];
 
-        if (preExisting) {
-          const loc = formatLocation(item.v.p);
-
-          issues.push(Note(
-            item.v,
-            'error',
-            ['validation', 'scope', 'duplicate'],
-            'Can\'t create variable that already exists',
-            [
-              Note(
-                preExisting.origin,
-                'info',
-                ['validation', 'scope', 'is-duplicated'],
-                `Attempt to create this variable again at ${loc}`,
-              )
-            ]
-          ));
-        } else {
-          scope = Scope.add(scope, newVariableName, {
-            origin: item.v,
-            data: {
-              captureDepth,
-              uses: [],
-              mutations: [],
-              captures: [],
-            },
-          });
-        }
-      } else if (item.t === 'Push' || item.t === 'PushCapture') {
-        scope = {
-          parent: scope,
-          variables: {},
-        };
-
-        if (item.t === 'PushCapture') {
-          captureDepth++;
-        }
-      } else if (item.t === 'Pop' || item.t === 'PopCapture') {
-        for (const varName of Object.keys(scope.variables)) {
-          const variable = scope.variables[varName];
-
-          if (variable.data.uses.length === 0) {
-            if (variable.data.mutations.length === 0) {
-              issues.push(Note(
-                variable.origin,
-                'warn',
-                ['validation', 'no-effect', 'scope', 'unused'],
-                `Variable ${varName} is not used`,
-              ));
-            } else {
-              issues.push(Note(
-                variable.origin,
-                'warn',
-                [
-                  'validation',
-                  'no-effect',
-                  'scope',
-                  'unused',
-                  'mutation'
-                ],
-                `Variable ${varName} is mutated but never used, so it ` +
-                `can't affect the return value`
-              ));
-            }
-          }
-
-          if (
-            variable.data.captures.length > 0 &&
-            variable.data.mutations.length > 0
-          ) {
-            const [headMutation, ...tailMutations] = variable.data.mutations;
-            const captureLoc = formatLocation(variable.data.captures[0].p);
-            const mutationLoc = formatLocation(headMutation.p);
-
-            const tags: Note.Tag[] = [
-              'validation',
-              'scope',
-              'mutation',
-              'capture',
-              'capture-mutation',
-            ];
-
-            function getErrorMsg(mut: Syntax.Identifier) {
-              if (variable.data.captures.indexOf(mut) !== -1) {
-                return `Can't mutate captured variable {${varName}}`;
-              }
-
-              return (
-                `Can't mutate {${varName}} because it is captured at ` +
-                captureLoc
-              );
-            }
-
+        if (variable.data.uses.length === 0) {
+          if (variable.data.mutations.length === 0) {
             issues.push(Note(
-              headMutation,
-              'error',
-              tags,
-              getErrorMsg(headMutation),
+              variable.origin,
+              'warn',
+              ['validation', 'no-effect', 'scope', 'unused'],
+              `Variable ${varName} is not used`,
+            ));
+          } else {
+            issues.push(Note(
+              variable.origin,
+              'warn',
               [
-                Note(
-                  variable.origin,
-                  'info',
-                  tags,
-                  `{${varName}} is captured at ${captureLoc} and mutated ` +
-                  `at ${mutationLoc}`
-                ),
-                ...(variable
-                  .data
-                  .captures
-                  .filter(cap => variable.data.mutations.indexOf(cap) === -1)
-                  .map(cap => Note(
-                    cap,
-                    'info',
-                    tags,
-                    (
-                      `Capturing {${varName}} here prevents mutation at ` +
-                      mutationLoc
-                    ),
-                  ))
-                ),
-                ...tailMutations.map(mut => Note(
-                  mut,
-                  'error',
-                  tags,
-                  getErrorMsg(mut),
-                )),
+                'validation',
+                'no-effect',
+                'scope',
+                'unused',
+                'mutation'
               ],
+              `Variable ${varName} is mutated but never used, so it ` +
+              `can't affect the return value`
             ));
           }
         }
 
-        scope = scope.parent;
+        if (
+          variable.data.captures.length > 0 &&
+          variable.data.mutations.length > 0
+        ) {
+          const [headMutation, ...tailMutations] = variable.data.mutations;
+          const captureLoc = formatLocation(variable.data.captures[0].p);
+          const mutationLoc = formatLocation(headMutation.p);
 
-        if (item.t === 'PopCapture') {
-          captureDepth--;
-        }
-      } else if (item.t === 'IDENTIFIER') {
-        const scopeEntry = Scope.get(scope, item.v);
+          const tags: Note.Tag[] = [
+            'validation',
+            'scope',
+            'mutation',
+            'capture',
+            'capture-mutation',
+          ];
 
-        if (!scopeEntry) {
-          // TODO: Look for typos
-          issues.push(Note(
-            item,
-            'error',
-            ['validation', 'scope', 'not-found'],
-            `Variable ${item.v} does not exist`
-          ));
-        } else {
-          const mods: Partial<VInfo> = {
-            uses: [...scopeEntry.data.uses, item]
-          };
+          function getErrorMsg(mut: Syntax.Identifier) {
+            if (variable.data.captures.indexOf(mut) !== -1) {
+              return `Can't mutate captured variable {${varName}}`;
+            }
 
-          if (captureDepth > scopeEntry.data.captureDepth) {
-            mods.captures = [...scopeEntry.data.captures, item];
+            return (
+              `Can't mutate {${varName}} because it is captured at ` +
+              captureLoc
+            );
           }
 
-          scope = Scope.set(scope, item.v, mods);
-        }
-      } else if (item.t === 'IDENTIFIER-mutationTarget') {
-        const scopeEntry = Scope.get(scope, item.v);
-
-        if (!scopeEntry) {
-          // TODO: Look for typos
           issues.push(Note(
-            item,
+            headMutation,
             'error',
+            tags,
+            getErrorMsg(headMutation),
             [
-              'validation',
-              'scope',
-              'not-found',
-              'mutation-target',
+              Note(
+                variable.origin,
+                'info',
+                tags,
+                `{${varName}} is captured at ${captureLoc} and mutated ` +
+                `at ${mutationLoc}`
+              ),
+              ...(variable
+                .data
+                .captures
+                .filter(cap => variable.data.mutations.indexOf(cap) === -1)
+                .map(cap => Note(
+                  cap,
+                  'info',
+                  tags,
+                  (
+                    `Capturing {${varName}} here prevents mutation at ` +
+                    mutationLoc
+                  ),
+                ))
+              ),
+              ...tailMutations.map(mut => Note(
+                mut,
+                'error',
+                tags,
+                getErrorMsg(mut),
+              )),
             ],
-            `Variable ${item.v} does not exist`
           ));
-        } else {
-          const ident: Syntax.Identifier = { ...item, t: 'IDENTIFIER' };
-
-          const mods: Partial<VInfo> = {
-            mutations: [...scopeEntry.data.mutations, ident],
-          };
-
-          if (captureDepth > scopeEntry.data.captureDepth) {
-            mods.captures = [...scopeEntry.data.captures, ident];
-          }
-
-          scope = Scope.set(scope, item.v, mods);
         }
+      }
+
+      scope = scope.parent;
+
+      if (item.t === 'PopCapture') {
+        captureDepth--;
+      }
+    } else if (item.t === 'IDENTIFIER') {
+      const scopeEntry = Scope.get(scope, item.v);
+
+      if (!scopeEntry) {
+        // TODO: Look for typos
+        issues.push(Note(
+          item,
+          'error',
+          ['validation', 'scope', 'not-found'],
+          `Variable ${item.v} does not exist`
+        ));
+      } else {
+        const mods: Partial<VInfo> = {
+          uses: [...scopeEntry.data.uses, item]
+        };
+
+        if (captureDepth > scopeEntry.data.captureDepth) {
+          mods.captures = [...scopeEntry.data.captures, item];
+        }
+
+        scope = Scope.set(scope, item.v, mods);
+      }
+    } else if (item.t === 'IDENTIFIER-mutationTarget') {
+      const scopeEntry = Scope.get(scope, item.v);
+
+      if (!scopeEntry) {
+        // TODO: Look for typos
+        issues.push(Note(
+          item,
+          'error',
+          [
+            'validation',
+            'scope',
+            'not-found',
+            'mutation-target',
+          ],
+          `Variable ${item.v} does not exist`
+        ));
+      } else {
+        const ident: Syntax.Identifier = { ...item, t: 'IDENTIFIER' };
+
+        const mods: Partial<VInfo> = {
+          mutations: [...scopeEntry.data.mutations, ident],
+        };
+
+        if (captureDepth > scopeEntry.data.captureDepth) {
+          mods.captures = [...scopeEntry.data.captures, ident];
+        }
+
+        scope = Scope.set(scope, item.v, mods);
       }
     }
   }
