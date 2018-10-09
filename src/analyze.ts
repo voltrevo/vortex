@@ -1802,7 +1802,7 @@ function evalSubExpression(
                 );
               }
 
-              let funcScope = Scope<ValidValue>();
+              let funcScope = Scope.push(scope);
 
               for (let i = 0; i < args.length; i++) {
                 const arg = args[i];

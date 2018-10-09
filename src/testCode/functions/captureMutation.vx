@@ -1,4 +1,13 @@
-a := 1;
-func twiceA() => 2 * a;
-a++; // #error #capture-mutation #validation
-return twiceA();
+a := 1; // #info #capture-mutation
+b := 1; // #info #capture-mutation
+
+if (true) {
+  a++; // #error #capture-mutation
+}
+
+func foo() {
+  b++; // #error #capture-mutation
+  return a + b; // #info #info #capture-mutation
+};
+
+return foo();

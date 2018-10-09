@@ -377,15 +377,20 @@ function validateScope(elements: ScopeItem[]): Note[] {
                   `{${varName}} is captured at ${captureLoc} and mutated ` +
                   `at ${mutationLoc}`
                 ),
-                ...variable.data.captures.map(cap => Note(
-                  cap,
-                  'info',
-                  tags,
-                  (
-                    `Capturing {${varName}} here prevents mutation at ` +
-                    mutationLoc
-                  ),
-                )),
+                ...(variable
+                  .data
+                  .captures
+                  .filter(cap => variable.data.mutations.indexOf(cap) === -1)
+                  .map(cap => Note(
+                    cap,
+                    'info',
+                    tags,
+                    (
+                      `Capturing {${varName}} here prevents mutation at ` +
+                      mutationLoc
+                    ),
+                  ))
+                ),
                 ...tailMutations.map(mut => Note(
                   mut,
                   'error',

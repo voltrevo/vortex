@@ -7,11 +7,6 @@ type Scope<T> = {
   };
 };
 
-type ScopeWithParent<T> = {
-  parent: Scope<T>,
-  variables: Scope<T>['variables'];
-};
-
 function Scope<T>(): Scope<T> {
   return {
     parent: null,
@@ -84,14 +79,14 @@ namespace Scope {
     };
   }
 
-  export function push<T>(s: Scope<T>): ScopeWithParent<T> {
+  export function push<T>(s: Scope<T>): Scope<T> {
     return {
       parent: s,
       variables: {},
     };
   }
 
-  export function pop<T>(s: ScopeWithParent<T>): Scope<T> {
+  export function pop<T>(s: Scope<T>): Scope<T> | null {
     return s.parent;
   }
 }

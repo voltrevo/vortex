@@ -1,4 +1,4 @@
-x := 1; // #info #is-duplicated
+x := 1; // #info #is-duplicated #warn #unused
 
 for (x := 1; y; x++) { // #error #error #duplicate #not-found
   y := 1;

@@ -1,2 +1,2 @@
-a = 1; // #error #scope #assign-target
+a = 1; // #error #scope #mutation-target
 return 1;

@@ -1,9 +1,9 @@
-a := 1;
+a := 1; // #info #capture-mutation
 
 foo := null;
 
 if (true) {
-  func twiceA() => 2 * a;
+  func twiceA() => 2 * a; // #info #capture-mutation
   foo = twiceA;
 }
 
