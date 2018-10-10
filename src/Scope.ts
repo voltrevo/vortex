@@ -1,13 +1,16 @@
-import Syntax from './parser/Syntax';
+type VT = {
+  origin: {};
+  data: {};
+};
 
-type Scope<T> = {
+type Scope<T extends VT> = {
   parent: Scope<T> | null;
   variables: {
-    [name: string]: Scope.Variable<T>;
+    [name: string]: T;
   };
 };
 
-function Scope<T>(): Scope<T> {
+function Scope<T extends VT>(): Scope<T> {
   return {
     parent: null,
     variables: {},
@@ -15,15 +18,10 @@ function Scope<T>(): Scope<T> {
 }
 
 namespace Scope {
-  export type Variable<T> = {
-    origin: Syntax.Identifier;
-    data: T;
-  };
-
-  export function add<T>(
+  export function add<T extends VT>(
     s: Scope<T>,
     name: string,
-    variable: Variable<T>,
+    variable: T,
   ): Scope<T> {
     return {
       parent: s.parent,
@@ -33,20 +31,20 @@ namespace Scope {
     };
   }
 
-  export function get<T>(
+  export function get<T extends VT>(
     s: Scope<T> | null,
     name: string
-  ): Variable<T> | null {
+  ): T | null {
     return s && (
       (s.variables[name] || null) ||
       get(s.parent, name)
     );
   }
 
-  export function set<T>(
+  export function set<T extends VT>(
     s: Scope<T>,
     name: string,
-    mods: Partial<T>,
+    mods: Partial<T['data']>,
   ): Scope<T> {
     const curr = s.variables[name];
 
@@ -59,12 +57,12 @@ namespace Scope {
           // https://github.com/Microsoft/TypeScript/issues/20510
           // 'working as intended' they say...
           [name]: {
-            ...curr,
+            origin: curr.origin,
             data: {
               ...(curr as any).data,
               ...(mods as any)
             }
-          }
+          } as any // (hmm...)
         }
       };
     }
@@ -79,14 +77,14 @@ namespace Scope {
     };
   }
 
-  export function push<T>(s: Scope<T> | null): Scope<T> {
+  export function push<T extends VT>(s: Scope<T> | null): Scope<T> {
     return {
       parent: s,
       variables: {},
     };
   }
 
-  export function pop<T>(s: Scope<T>): Scope<T> | null {
+  export function pop<T extends VT>(s: Scope<T>): Scope<T> | null {
     return s.parent;
   }
 }

@@ -100,15 +100,18 @@ type Closure = {
 }[];
 
 type VInfo = {
-  uses: Syntax.Identifier[];
-  mutations: Syntax.Identifier[];
-  captures: Syntax.Identifier[];
-  funcInfo: null | {
-    uses: {
-      origin: Syntax.Identifier;
-      scope: Scope<VInfo>;
-    }[];
-    closure: null | Closure;
+  origin: Syntax.Identifier;
+  data: {
+    uses: Syntax.Identifier[];
+    mutations: Syntax.Identifier[];
+    captures: Syntax.Identifier[];
+    funcInfo: null | {
+      uses: {
+        origin: Syntax.Identifier;
+        scope: Scope<VInfo>;
+      }[];
+      closure: null | Closure;
+    };
   };
 };
 
@@ -528,7 +531,7 @@ function validateFunctionScope(
           p: item.p
         };
 
-        const mods: Partial<VInfo> = {};
+        const mods: Partial<VInfo['data']> = {};
 
         checkNull((() => {
           switch (item.t) {

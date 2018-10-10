@@ -30,18 +30,23 @@ export function VNull(): VNull {
   return { cat: 'concrete', t: 'null', v: null };
 }
 
+type SEntry = {
+  origin: Syntax.Element;
+  data: ValidValue;
+};
+
 export type VFunc = {
   cat: 'concrete';
   t: 'func';
   v: {
     exp: Syntax.FunctionExpression;
-    scope: Scope<ValidValue>;
+    scope: Scope<SEntry>;
   };
 };
 
 export function VFunc(v: {
   exp: Syntax.FunctionExpression;
-  scope: Scope<ValidValue>;
+  scope: Scope<SEntry>;
 }): VFunc {
   return { cat: 'concrete', t: 'func', v };
 }
@@ -550,14 +555,14 @@ function objectLookup(
 }
 
 type Context = {
-  scope: Scope<ValidValue>;
+  scope: Scope<SEntry>;
   value: Value;
   notes: Note[];
 };
 
 function Context(): Context {
   return {
-    scope: Scope<ValidValue>(),
+    scope: Scope<SEntry>(),
     value: VMissing(),
     notes: [],
   };
@@ -576,7 +581,20 @@ function analyzeInContext(
   needsValue: boolean,
   program: Syntax.Program
 ): Context {
+  const hoists: Syntax.Statement[] = [];
+  let statements: Syntax.Statement[] = [];
+
   for (const statement of program.v) {
+    if (statement.t === 'e' && statement.v.t === 'func') {
+      hoists.push(statement);
+    } else {
+      statements.push(statement);
+    }
+  }
+
+  statements = [...hoists, ...statements];
+
+  for (const statement of statements) {
     checkNull((() => {
       switch (statement.t) {
         case 'e': {
@@ -881,7 +899,7 @@ function analyzeInContext(
 }
 
 function evalTopExpression(
-  scope: Scope<ValidValue>,
+  scope: Scope<SEntry>,
   exp: Syntax.Expression,
 ): Context {
   let { value, notes } = Context();
@@ -1422,7 +1440,7 @@ function evalCreateOrAssign(
 }
 
 function evalSubExpression(
-  scope: Scope<ValidValue>,
+  scope: Scope<SEntry>,
   exp: Syntax.Expression
 ): { value: ValidValue | VException, notes: Note[] } {
   const notes: Note[] = [];
@@ -2020,7 +2038,7 @@ function evalVanillaOperator<T extends {
   v: [Syntax.Expression, Syntax.Expression],
   p: Syntax.Pos
 }>(
-  scope: Scope<ValidValue>,
+  scope: Scope<SEntry>,
   exp: T,
   combine: (a: ValidValue, b: ValidValue) => ValidValue | VException | null,
 ): { value: ValidValue | VException, notes: Note[] } {
@@ -2055,7 +2073,7 @@ function evalVanillaOperator<T extends {
 }
 
 function ExpressionString(
-  scope: Scope<ValidValue>,
+  scope: Scope<SEntry>,
   exp: Syntax.Expression
 ): string {
   switch (exp.t) {
