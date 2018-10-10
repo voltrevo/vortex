@@ -1,9 +1,11 @@
+assert false; // Validation should not pass
+
 sum := 0;
 
 if (true) {
   a := 1;
   sum += a;
-  sum += outer();
+  sum += outer(); // #error closure incomplete
 }
 
 a := 100;
@@ -16,4 +18,4 @@ func outer() {
   return inner();
 };
 
-return b;
+return sum;

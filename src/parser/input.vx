@@ -16,10 +16,10 @@ func main(n: i32) { // #warn #unused
     foo = foo + 1;
   }
 
-  return multiplyAdd(n, n, n) + 'hello'; // #error #not-found TODO special function scoping
+  return multiplyAdd(n, n, n) + 'hello';
 };
 
-func multiplyAdd(a: i32, b: i32, c: i32) => a * b + c; // #warn #unused TODO
+func multiplyAdd(a: i32, b: i32, c: i32) => a * b + c;
 
 func methodCalls() { // #warn #unused
   return getObject():method():method2(); // #error #not-found

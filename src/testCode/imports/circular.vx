@@ -3,7 +3,7 @@
 import circular;
 
 return {
-  foo: func(n) => {
+  foo: func(n) => { // #error #syntax TODO: Not sure why this syntax is bad
     if (n % 2 == 0) {
       // This works because imports are lazy, so the circular variable doesn't
       // get its value until we use it here

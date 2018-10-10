@@ -1,3 +1,5 @@
+assert false; // Validation should not pass
+
 sum := 0;
 
 if (true) {

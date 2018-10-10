@@ -1,12 +1,12 @@
 sum := 0;
 
-sum += (func foo() => 1)();
+sum += (func foo() => 1)(); // #error #duplicate
 
 a := 10;
 
 sum += foo();
 
-func foo() {
+func foo() { // #info #is-duplicated
   return a + 100;
 };
 

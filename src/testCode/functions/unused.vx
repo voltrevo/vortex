@@ -1,4 +1,4 @@
 func foo() => 37; // #warn #unused
-func() => 42; // #warn #unused
+func() => 42; // TODO:warn:unused
 
 return 'done'; // #info #return-value

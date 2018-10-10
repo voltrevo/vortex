@@ -1,10 +1,10 @@
 sum := 0;
 
-sum += foo(); // #error closure not satisfied
+sum += foo(); // #error #incomplete-closure
 
-a := 1;
+a := 1; // #info #incomplete-closure
 
 func foo() => bar();
-func bar() => a;
+func bar() => a; // #info #incomplete-closure
 
 return sum;
