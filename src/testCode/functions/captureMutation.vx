@@ -1,5 +1,5 @@
 a := 1; // #info #capture-mutation
-b := 1; // #info #capture-mutation
+b := 1; // #info #capture-mutation #capture
 
 if (true) {
   a++; // #error #capture-mutation
