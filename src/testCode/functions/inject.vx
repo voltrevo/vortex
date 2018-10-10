@@ -1,0 +1,31 @@
+func findLargest(arr, len, lessThan) {
+  largest := arr[0];
+
+  for (i := 1; i < len; i++) {
+    el := arr[i];
+
+    if (lessThan(largest, el)) {
+      largest = el;
+    }
+  }
+
+  return largest;
+};
+
+absLargest := findLargest(
+  [8, 1, 17, -34, 10],
+  5,
+  func(a, b) => abs(a) < abs(b),
+);
+
+assert absLargest == -34;
+
+func abs(x) {
+  if (x < 0) {
+    return -x;
+  }
+
+  return x;
+};
+
+return 'done'; // #info #return-value
