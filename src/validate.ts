@@ -285,8 +285,6 @@ function validateFunctionScope(
       const preExisting = Scope.get(scope, newVariableName);
 
       if (preExisting) {
-        const loc = formatLocation(item.v.p);
-
         notes.push(Note(
           item.v,
           'error',
@@ -297,7 +295,10 @@ function validateFunctionScope(
               preExisting.origin,
               'info',
               ['validation', 'scope', 'is-duplicated'],
-              `Attempt to create this variable again at ${loc}`,
+              (
+                `There is an attempt to create {${preExisting.origin.v}} ` +
+                `again at ${formatLocation(item.v.p)}`
+              ),
             )
           ]
         ));
@@ -434,7 +435,7 @@ function validateFunctionScope(
                     'error',
                     ['validation', 'incomplete-closure'],
                     (
-                      `Function {${use.origin.v}} is not usable here ` +
+                      `Function {${use.origin.v}} is not available here ` +
                       `because it captures {${clItem.identifier.v}} which ` +
                       `doesn't exist until ${formatLocation(clItem.origin.p)}`
                     ),
@@ -444,9 +445,9 @@ function validateFunctionScope(
                         'info',
                         ['validation', 'incomplete-closure'],
                         (
-                          `Captured variable {${clItem.identifier.v}} does ` +
-                          `not exist when {${use.origin.v}} is used at ` +
-                          formatLocation(use.origin.p)
+                          `Captured variable {${clItem.identifier.v}} ` +
+                          `doesn't exist when {${use.origin.v}} is accessed ` +
+                          `at ${formatLocation(use.origin.p)}`
                         ),
                       ),
                       Note(
@@ -454,9 +455,9 @@ function validateFunctionScope(
                         'info',
                         ['validation', 'incomplete-closure'],
                         (
-                          'Attempt to use indirectly access variable ' +
-                          `{${clItem.origin.v}} at ` +
-                          formatLocation(use.origin.p)
+                          'There is an attempt to indirectly access ' +
+                          `variable {${clItem.origin.v}} when it doesn't ` +
+                          `exist at ${formatLocation(use.origin.p)}`
                         ),
                       ),
                     ],
