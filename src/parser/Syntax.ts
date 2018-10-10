@@ -96,6 +96,7 @@ namespace Syntax {
 
   export type FunctionExpression = {
     t: 'func';
+    topExp?: true;
     v: {
       name: Identifier | null,
       args: Arg[],

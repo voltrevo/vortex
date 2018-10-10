@@ -94,6 +94,11 @@ type ScopeItem = (
   never
 );
 
+type Closure = {
+  identifier: Syntax.Identifier;
+  origin: Syntax.Identifier;
+}[];
+
 type VInfo = {
   uses: Syntax.Identifier[];
   mutations: Syntax.Identifier[];
@@ -103,7 +108,7 @@ type VInfo = {
       origin: Syntax.Identifier;
       scope: Scope<VInfo>;
     }[];
-    closure: null | Syntax.Identifier[];
+    closure: null | Closure;
   };
 };
 
@@ -132,14 +137,21 @@ function validateFunctionScope(
   func: Syntax.FunctionExpression,
 ): {
   notes: Note[];
-  closure: Syntax.Identifier[];
+  closure: Closure;
   scope: Scope<VInfo> | null,
 } {
   const notes: Note[] = [];
   let scope: Scope<VInfo> | null = Scope.push<VInfo>(outerScope);
-  const closure: Syntax.Identifier[] = [];
+  const closure: Closure = [];
 
   const items: ScopeItem[] = [];
+
+  if (!func.topExp && func.v.name) {
+    items.push({
+      t: 'CreateVariable',
+      v: func.v.name,
+    });
+  }
 
   for (const arg of func.v.args) {
     items.push({
@@ -153,7 +165,6 @@ function validateFunctionScope(
     el => [el],
     el => {
       switch (el.t) {
-        case 'class':
         case 'func':
         case 'Push':
         case 'Pop':
@@ -161,6 +172,10 @@ function validateFunctionScope(
         case 'CreateTopFunction':
         case 'IDENTIFIER-mutationTarget': {
           return [];
+        }
+
+        case 'class': {
+          return [{ t: 'CreateVariable', v: el.v.name }];
         }
 
         case 'block':
@@ -412,24 +427,35 @@ function validateFunctionScope(
             for (let i = 0; i < closuresToProcess.length; i++) {
               const closure = closuresToProcess[i];
 
-              for (const capturedIdentifier of closure) {
-                if (!Scope.get(use.scope, capturedIdentifier.v)) {
+              for (const clItem of closure) {
+                if (!Scope.get(use.scope, clItem.identifier.v)) {
                   notes.push(Note(
                     use.origin,
                     'error',
                     ['validation', 'incomplete-closure'],
                     (
-                      'This function is not usable yet because it captures ' +
-                      `{${capturedIdentifier.v}} but it doesn't exist yet`
+                      `Function {${use.origin.v}} is not usable here ` +
+                      `because it captures {${clItem.identifier.v}} which ` +
+                      `doesn't exist until ${formatLocation(clItem.origin.p)}`
                     ),
                     [
                       Note(
-                        capturedIdentifier,
+                        clItem.identifier,
                         'info',
                         ['validation', 'incomplete-closure'],
                         (
-                          `Captured variable {${capturedIdentifier.v}} does ` +
-                          'not yet exist when the function is used at ' +
+                          `Captured variable {${clItem.identifier.v}} does ` +
+                          `not exist when {${use.origin.v}} is used at ` +
+                          formatLocation(use.origin.p)
+                        ),
+                      ),
+                      Note(
+                        clItem.origin,
+                        'info',
+                        ['validation', 'incomplete-closure'],
+                        (
+                          'Attempt to use indirectly access variable ' +
+                          `{${clItem.origin.v}} at ` +
                           formatLocation(use.origin.p)
                         ),
                       ),
@@ -437,7 +463,7 @@ function validateFunctionScope(
                   ));
                 }
 
-                const captureEntry = Scope.get(scope, capturedIdentifier.v);
+                const captureEntry = Scope.get(scope, clItem.identifier.v);
 
                 if (captureEntry && captureEntry.data.funcInfo) {
                   const extraClosure = captureEntry.data.funcInfo.closure;
@@ -507,15 +533,20 @@ function validateFunctionScope(
             }
 
             case 'IDENTIFIER-mutationTarget': {
-              mods.mutations = [...scopeEntry.data.uses, ident];
+              mods.mutations = [...scopeEntry.data.mutations, ident];
               return null;
             }
           }
         })());
 
-        if (Scope.get(outerScope, ident.v)) {
+        const outerEntry = Scope.get(outerScope, ident.v);
+
+        if (outerEntry) {
           mods.captures = [...scopeEntry.data.captures, ident];
-          closure.push(ident);
+          closure.push({
+            origin: outerEntry.origin,
+            identifier: ident,
+          });
         }
 
         scope = Scope.set(scope, ident.v, mods);
@@ -532,9 +563,9 @@ function validateFunctionScope(
         throw new Error('Shouldn\'t be possible');
       }
 
-      for (const identifier of funcValidation.closure) {
-        if (Scope.get(outerScope, identifier.v)) {
-          closure.push(identifier);
+      for (const clItem of funcValidation.closure) {
+        if (Scope.get(outerScope, clItem.identifier.v)) {
+          closure.push(clItem);
         }
       }
 
