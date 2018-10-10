@@ -1,6 +1,6 @@
 b := outer(); // #error #incomplete-closure
 
-a := 1; // #info #incomplete-closure
+a := 1 + b; // #info #incomplete-closure
 
 func outer() {
   func inner() {

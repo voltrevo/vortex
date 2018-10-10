@@ -82,7 +82,16 @@ for (const file of files) {
 
   const fileText = readFileSync(file).toString();
   const before = process.hrtime();
-  const notes = Note.flatten(compile(fileText)).map(n => ({ file, ...n }));
+
+  let notes = null;
+
+  try {
+    notes = Note.flatten(compile(fileText)).map(n => ({ file, ...n }));
+  } catch (e) {
+    console.error(`Error while compiling ${file}: ${e.message}`);
+    throw e;
+  }
+
   allNotes.push(...notes);
   const after = process.hrtime();
   compileTime += SecondsDiff(before, after);

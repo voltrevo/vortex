@@ -1,10 +1,9 @@
 func factorial(n) {
   if (n == 0) {
-    return 1; // #info #return-value
+    return 1;
   }
 
-  // TODO: Suppress excessive return-value notes
-  return n * factorial(n - 1); // #info #return-value #info #info #info #info
+  return n * factorial(n - 1);
 };
 
 assert factorial(5) == 120;

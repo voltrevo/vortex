@@ -663,8 +663,9 @@ function isValidTopExpression(e: Syntax.Expression) {
     return true;
   }
 
-  if (['func', 'class'].indexOf(e.t) !== -1) {
-    return true;
+  if (e.t === 'func' || e.t === 'class') {
+    // TODO: Better message, #unused
+    return e.v.name !== null;
   }
 
   return false;

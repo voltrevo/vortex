@@ -30,10 +30,41 @@ export function VNull(): VNull {
   return { cat: 'concrete', t: 'null', v: null };
 }
 
+export type FuncRef = {
+  cat: 'ref';
+  t: 'func-ref';
+  v: Syntax.FunctionExpression;
+};
+
 type SEntry = {
   origin: Syntax.Element;
-  data: ValidValue;
+  data: ValidValue | FuncRef;
 };
+
+export function ScopeGetExt(
+  scope: Scope<SEntry>,
+  name: string,
+): { origin: Syntax.Element, data: ValidValue } | null {
+  const entry = Scope.get(scope, name);
+
+  if (entry === null) {
+    return null;
+  }
+
+  if (entry.data.cat !== 'ref') {
+    // The intention is {return entry} but a limitation in typescript requires
+    // it to be reconstructed like this.
+    return {
+      origin: entry.origin,
+      data: entry.data,
+    };
+  }
+
+  return {
+    origin: entry.origin,
+    data: VFunc({ exp: entry.data.v, scope }),
+  };
+}
 
 export type VFunc = {
   cat: 'concrete';
@@ -571,7 +602,7 @@ function Context(): Context {
 export default function analyze(program: Syntax.Program) {
   let context = Context();
 
-  context = analyzeInContext(context, true, program);
+  context = analyzeInContext(context, true, program, true);
 
   return context;
 }
@@ -579,20 +610,35 @@ export default function analyze(program: Syntax.Program) {
 function analyzeInContext(
   context: Context,
   needsValue: boolean,
-  program: Syntax.Program
+  program: Syntax.Program,
+  topLevel: boolean,
 ): Context {
-  const hoists: Syntax.Statement[] = [];
-  let statements: Syntax.Statement[] = [];
+  const hoists: Syntax.FunctionExpression[] = [];
+  const statements: Syntax.Statement[] = [];
 
   for (const statement of program.v) {
     if (statement.t === 'e' && statement.v.t === 'func') {
-      hoists.push(statement);
+      hoists.push(statement.v);
     } else {
       statements.push(statement);
     }
   }
 
-  statements = [...hoists, ...statements];
+  for (const hoist of hoists) {
+    if (hoist.v.name === null) {
+      // Anonymous hoist is meaningless. Validation emits a warn about this.
+      continue;
+    }
+
+    context.scope = Scope.add(context.scope, hoist.v.name.v, {
+      origin: hoist,
+      data: {
+        cat: 'ref',
+        t: 'func-ref',
+        v: hoist,
+      },
+    });
+  }
 
   for (const statement of statements) {
     checkNull((() => {
@@ -618,7 +664,7 @@ function analyzeInContext(
           context.value = value;
           context.notes.push(...notes);
 
-          if (value.t !== 'exception') {
+          if (value.t !== 'exception' && topLevel) {
             context.notes.push(Note(
               statement,
               'info',
@@ -697,7 +743,7 @@ function analyzeInContext(
 
           if (condValue.v) {
             context.scope = { parent: context.scope, variables: {} };
-            context = analyzeInContext(context, false, block);
+            context = analyzeInContext(context, false, block, topLevel);
 
             if (context.scope.parent === null) {
               throw new Error('This should not be possible');
@@ -781,7 +827,7 @@ function analyzeInContext(
             }
 
             context.scope = Scope.push(context.scope);
-            context = analyzeInContext(context, false, block);
+            context = analyzeInContext(context, false, block, topLevel);
 
             if (context.value.t !== 'exception') {
               if (control && control.t === 'setup; condition; next') {
@@ -1270,7 +1316,7 @@ function evalCreateOrAssign(
       return null;
     }
 
-    const existing = Scope.get(scope, leftBaseExp.v);
+    const existing = ScopeGetExt(scope, leftBaseExp.v);
 
     if (!existing) {
       notes.push(Note(
@@ -1453,7 +1499,7 @@ function evalSubExpression(
       case 'STRING': { return VString(exp.v.substring(1, exp.v.length - 1)); }
 
       case 'IDENTIFIER': {
-        const entry = Scope.get(scope, exp.v);
+        const entry = ScopeGetExt(scope, exp.v);
 
         if (entry === null) {
           return VException(
@@ -1859,7 +1905,7 @@ function evalSubExpression(
 
               let funcCtx = Context();
               funcCtx.scope = funcScope;
-              funcCtx = analyzeInContext(funcCtx, true, body);
+              funcCtx = analyzeInContext(funcCtx, true, body, false);
 
               // TODO: Do some processing with the notes here. Return info
               // should be suppressed (and all infos?) and others should be

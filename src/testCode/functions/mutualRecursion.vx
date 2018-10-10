@@ -12,7 +12,7 @@ func collatz(n) {
 
 func collatzEven(n) {
   assert n % 2 == 0;
-  return collatz(n % 2);
+  return collatz(n / 2);
 };
 
 func collatzOdd(n) {
@@ -22,4 +22,4 @@ func collatzOdd(n) {
 
 assert collatz(20) == 1;
 
-return collatz(20);
+return 'done'; // #info #return-value

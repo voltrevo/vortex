@@ -1,0 +1,17 @@
+func foo(n) {
+  if (n <= 0) {
+    return 'completed in foo';
+  }
+
+  return bar(n - 1);
+};
+
+func bar(n) {
+  if (n <= 0) {
+    return 'completed in bar';
+  }
+
+  return foo(n - 1);
+};
+
+return foo(5); // #info #return-value

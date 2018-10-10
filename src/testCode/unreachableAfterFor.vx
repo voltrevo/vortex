@@ -8,7 +8,7 @@ func foo() {
     i++;
 
     if (i == 10) {
-      return sum; // #info #return-value
+      return sum;
     }
   }
 

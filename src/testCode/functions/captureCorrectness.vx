@@ -1,6 +1,6 @@
 func testCapture() {
   a := 'good-capture';
-  return func() => a; // #info #return-value
+  return func() => a;
 };
 
 a := 'bad-capture'; // #warn #unused

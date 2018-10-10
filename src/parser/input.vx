@@ -66,7 +66,7 @@ func trailing() { // #warn #unused
 continue;
 break;
 
-func() {}; // #error TODO:no-effect #empty-body
+func() {}; // #error #empty-body #warn #no-effect
 
 foo := func() {}; // #error #warn #control-flow #unused
 

@@ -1,6 +1,6 @@
 x := 1; // #warn #unused
 
-func() {
+func() { // #warn #no-effect
   y := 1; // #warn #unused #mutation
   y += 1;
   z := 1; // #warn #unused

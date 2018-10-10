@@ -12,7 +12,7 @@ foo.c := 3;
 foo.d := {};
 y := 3; // #error #duplicate
 
-func() { // TODO: top level anonymous function can't be called
+func() { // #warn #no-effect #top-expression
   a := 1; // #warn #unused
   return b := 1; // #error #warn #subexpression-mutation #unused
 };
