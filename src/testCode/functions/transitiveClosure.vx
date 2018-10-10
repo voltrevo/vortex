@@ -1,6 +1,6 @@
 sum := 0;
 
-sum += foo(); // #error #incomplete-closure
+sum += foo(); // #error #incomplete-closure #transitive-closure
 
 a := 1; // #info #incomplete-closure
 

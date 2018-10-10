@@ -429,11 +429,28 @@ function validateFunctionScope(
               const closure = closuresToProcess[i];
 
               for (const clItem of closure) {
-                if (!Scope.get(use.scope, clItem.identifier.v)) {
+                const tags: Note.Tag[] = ['validation', 'incomplete-closure'];
+                let match = Scope.get(use.scope, clItem.identifier.v);
+
+                // Vortex's strict scoping rules generally make it unnecessary
+                // to look beyond the name of a variable to find out whether
+                // it's a match, but hoisting functions breaks the rules a
+                // little bit, making it necessary to find out whether the same
+                // name is actually the same variable here.
+                if (match && !identifiersEqual(match.origin, clItem.origin)) {
+                  match = null;
+                  tags.push('variable-disambiguation');
+                }
+
+                if (!match) {
+                  if (i > 0) {
+                    tags.push('transitive-closure');
+                  }
+
                   notes.push(Note(
                     use.origin,
                     'error',
-                    ['validation', 'incomplete-closure'],
+                    tags,
                     (
                       `Function {${use.origin.v}} is not available here ` +
                       `because it captures {${clItem.identifier.v}} which ` +
@@ -443,7 +460,7 @@ function validateFunctionScope(
                       Note(
                         clItem.identifier,
                         'info',
-                        ['validation', 'incomplete-closure'],
+                        tags,
                         (
                           `Captured variable {${clItem.identifier.v}} ` +
                           `doesn't exist when {${use.origin.v}} is accessed ` +
@@ -453,7 +470,7 @@ function validateFunctionScope(
                       Note(
                         clItem.origin,
                         'info',
-                        ['validation', 'incomplete-closure'],
+                        tags,
                         (
                           'There is an attempt to indirectly access ' +
                           `variable {${clItem.origin.v}} when it doesn't ` +
@@ -939,4 +956,14 @@ function hasReturn(block: Syntax.Block) {
   }
 
   return false;
+}
+
+function identifiersEqual(a: Syntax.Identifier, b: Syntax.Identifier) {
+  return (
+    a.v === b.v &&
+    a.p[0][0] === b.p[0][0] &&
+    a.p[0][1] === b.p[0][1] &&
+    a.p[1][0] === b.p[1][0] &&
+    a.p[1][1] === b.p[1][1]
+  );
 }

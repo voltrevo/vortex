@@ -5,11 +5,11 @@ sum := 0;
 if (true) {
   a := 1;
   sum += a;
-  sum += foo(); // #error closure not satisfied (wrong a)
+  sum += foo(); // #error #incomplete-closure #variable-disambiguation
 }
 
-a := 100;
+a := 100; // #info #incomplete-closure
 
-func foo() => a;
+func foo() => a; // #info #incomplete-closure
 
 return sum;

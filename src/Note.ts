@@ -70,6 +70,8 @@ namespace Note {
     'scope' |
     'not-found' |
     'incomplete-closure' |
+    'transitive-closure' |
+    'variable-disambiguation' |
     'unused' |
     'exception' |
     'value-needed' |
@@ -144,6 +146,8 @@ namespace Note {
     'scope',
     'not-found',
     'incomplete-closure',
+    'transitive-closure',
+    'variable-disambiguation',
     'unused',
     'exception',
     'value-needed',

@@ -5,14 +5,14 @@ sum := 0;
 if (true) {
   a := 1;
   sum += a;
-  sum += outer(); // #error closure incomplete
+  sum += outer(); // #error #incomplete-closure
 }
 
-a := 100;
+a := 100; // #info #incomplete-closure
 
 func outer() {
   func inner() {
-    return a;
+    return a; // #info #incomplete-closure
   };
 
   return inner();
