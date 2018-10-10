@@ -34,12 +34,12 @@ namespace Scope {
   }
 
   export function get<T>(
-    s: Scope<T>,
+    s: Scope<T> | null,
     name: string
   ): Variable<T> | null {
-    return (
+    return s && (
       (s.variables[name] || null) ||
-      s.parent && get(s.parent, name)
+      get(s.parent, name)
     );
   }
 
@@ -79,7 +79,7 @@ namespace Scope {
     };
   }
 
-  export function push<T>(s: Scope<T>): Scope<T> {
+  export function push<T>(s: Scope<T> | null): Scope<T> {
     return {
       parent: s,
       variables: {},

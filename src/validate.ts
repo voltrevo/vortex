@@ -72,16 +72,11 @@ export function validate(program: Syntax.Program): Note[] {
 type Push = { t: 'Push' };
 const push: Push = { t: 'Push' };
 
-type PushCapture = { t: 'PushCapture' };
-const pushCapture: PushCapture = { t: 'PushCapture' };
-
 type Pop = { t: 'Pop' };
 const pop: Pop = { t: 'Pop' };
 
-type PopCapture = { t: 'PopCapture' };
-const popCapture: PopCapture = { t: 'PopCapture' };
-
 type CreateVariable = { t: 'CreateVariable', v: Syntax.Identifier };
+type CreateTopFunction = { t: 'CreateTopFunction', v: Syntax.Identifier };
 
 type IdentifierMutationTarget = {
   t: 'IDENTIFIER-mutationTarget',
@@ -92,92 +87,97 @@ type IdentifierMutationTarget = {
 type ScopeItem = (
   Syntax.Element |
   Push |
-  PushCapture |
   Pop |
-  PopCapture |
   CreateVariable |
+  CreateTopFunction |
   IdentifierMutationTarget |
   never
 );
 
-function validateScope(block: Syntax.Block): Note[] {
-  const issues: Note[] = [];
+type VInfo = {
+  uses: Syntax.Identifier[];
+  mutations: Syntax.Identifier[];
+  captures: Syntax.Identifier[];
+  funcInfo: null | {
+    uses: {
+      origin: Syntax.Identifier;
+      scope: Scope<VInfo>;
+    }[];
+    closure: null | Syntax.Identifier[];
+  };
+};
 
-  type VInfo = {
-    captureDepth: number;
-    uses: Syntax.Identifier[];
-    mutations: Syntax.Identifier[];
-    captures: Syntax.Identifier[];
+function validateScope(block: Syntax.Block) {
+  const synthFunction: Syntax.FunctionExpression = {
+    t: 'func',
+    v: {
+      name: null,
+      args: [],
+      body: block,
+    },
+    p: block.p,
   };
 
-  let scope: Scope<VInfo> | null = { parent: null, variables: {} };
+  const funcValidation = validateFunctionScope(null, synthFunction);
 
-  const items: ScopeItem[] = traverse<ScopeItem, ScopeItem>(
-    block,
+  if (funcValidation.closure.length > 0 || funcValidation.scope !== null) {
+    throw new Error('Should not be possible');
+  }
+
+  return funcValidation.notes;
+}
+
+function validateFunctionScope(
+  outerScope: Scope<VInfo> | null,
+  func: Syntax.FunctionExpression,
+): {
+  notes: Note[];
+  closure: Syntax.Identifier[];
+  scope: Scope<VInfo> | null,
+} {
+  const notes: Note[] = [];
+  let scope: Scope<VInfo> | null = Scope.push<VInfo>(outerScope);
+  const closure: Syntax.Identifier[] = [];
+
+  const items: ScopeItem[] = [];
+
+  for (const arg of func.v.args) {
+    items.push({
+      t: 'CreateVariable',
+      v: arg.v[0],
+    });
+  }
+
+  items.push(...traverse<ScopeItem, ScopeItem>(
+    func.v.body.t === 'block' ? func.v.body : func.v.body.v,
     el => [el],
     el => {
       switch (el.t) {
+        case 'class':
+        case 'func':
         case 'Push':
-        case 'PushCapture':
         case 'Pop':
-        case 'PopCapture':
         case 'CreateVariable':
+        case 'CreateTopFunction':
         case 'IDENTIFIER-mutationTarget': {
           return [];
         }
 
-        case 'class': {
-          const res: ScopeItem[] = [{
-            t: 'CreateVariable' as 'CreateVariable',
-            v: el.v.name,
-          }];
-
-          if (el.topExp) {
-            res.push(pushCapture);
-          } else {
-            res.unshift(pushCapture);
-          }
-
-          res.push(...Syntax.Children(el));
-          res.push(popCapture);
-
-          return res;
-        }
-
-        case 'func': {
-          const res: ScopeItem[] = [];
-
-          const { name } = el.v;
-
-          if (name !== null) {
-            res.push({
-              t: 'CreateVariable' as 'CreateVariable',
-              v: name,
-            });
-          }
-
-          if (el.topExp) {
-            res.push(pushCapture);
-          } else {
-            res.unshift(pushCapture);
-          }
-
-          res.push(...Syntax.Children(el));
-          res.push(popCapture);
-
-          return res;
-        }
-
-        case 'arg': {
-          return [{
-            t: 'CreateVariable',
-            v: el.v[0],
-          }];
-        }
-
         case 'block':
         case 'for': {
-          return [push, ...Syntax.Children(el), pop];
+          const children: ScopeItem[] = Syntax.Children(el);
+          const hoists: CreateTopFunction[] = [];
+
+          for (const child of children) {
+            if (child.t === 'e' && child.v.t === 'func' && child.v.v.name) {
+              hoists.push({
+                t: 'CreateTopFunction',
+                v: child.v.v.name,
+              });
+            }
+          }
+
+          return [push, ...hoists, ...children, pop];
         }
 
         case ':=': {
@@ -256,24 +256,23 @@ function validateScope(block: Syntax.Block): Note[] {
         }
       }
     }
-  );
+  ));
 
-  let captureDepth = 0;
+  items.push(pop);
 
   for (const item of items) {
-
     if (scope === null) {
       throw new Error('Attempt to process item without a scope');
     }
 
-    if (item.t === 'CreateVariable') {
+    if (item.t === 'CreateVariable' || item.t === 'CreateTopFunction') {
       const newVariableName = item.v.v;
       const preExisting = Scope.get(scope, newVariableName);
 
       if (preExisting) {
         const loc = formatLocation(item.v.p);
 
-        issues.push(Note(
+        notes.push(Note(
           item.v,
           'error',
           ['validation', 'scope', 'duplicate'],
@@ -291,36 +290,36 @@ function validateScope(block: Syntax.Block): Note[] {
         scope = Scope.add(scope, newVariableName, {
           origin: item.v,
           data: {
-            captureDepth,
             uses: [],
             mutations: [],
             captures: [],
+            funcInfo: (
+              item.t === 'CreateTopFunction' ?
+              { uses: [], closure: null } :
+              null
+            ),
           },
         });
       }
-    } else if (item.t === 'Push' || item.t === 'PushCapture') {
+    } else if (item.t === 'Push') {
       scope = {
         parent: scope,
         variables: {},
       };
-
-      if (item.t === 'PushCapture') {
-        captureDepth++;
-      }
-    } else if (item.t === 'Pop' || item.t === 'PopCapture') {
+    } else if (item.t === 'Pop') {
       for (const varName of Object.keys(scope.variables)) {
         const variable = scope.variables[varName];
 
         if (variable.data.uses.length === 0) {
           if (variable.data.mutations.length === 0) {
-            issues.push(Note(
+            notes.push(Note(
               variable.origin,
               'warn',
               ['validation', 'no-effect', 'scope', 'unused'],
               `Variable ${varName} is not used`,
             ));
           } else {
-            issues.push(Note(
+            notes.push(Note(
               variable.origin,
               'warn',
               [
@@ -363,7 +362,7 @@ function validateScope(block: Syntax.Block): Note[] {
             );
           }
 
-          issues.push(Note(
+          notes.push(Note(
             headMutation,
             'error',
             tags,
@@ -399,68 +398,174 @@ function validateScope(block: Syntax.Block): Note[] {
             ],
           ));
         }
+
+        const { funcInfo } = variable.data;
+
+        if (funcInfo !== null) {
+          for (const use of funcInfo.uses) {
+            if (funcInfo.closure === null) {
+              throw new Error('Shouldn\'t be possible');
+            }
+
+            const closuresToProcess = [funcInfo.closure];
+
+            for (let i = 0; i < closuresToProcess.length; i++) {
+              const closure = closuresToProcess[i];
+
+              for (const capturedIdentifier of closure) {
+                if (!Scope.get(use.scope, capturedIdentifier.v)) {
+                  notes.push(Note(
+                    use.origin,
+                    'error',
+                    ['validation', 'incomplete-closure'],
+                    (
+                      'This function is not usable yet because it captures ' +
+                      `{${capturedIdentifier.v}} but it doesn't exist yet`
+                    ),
+                    [
+                      Note(
+                        capturedIdentifier,
+                        'info',
+                        ['validation', 'incomplete-closure'],
+                        (
+                          `Captured variable {${capturedIdentifier.v}} does ` +
+                          'not yet exist when the function is used at ' +
+                          formatLocation(use.origin.p)
+                        ),
+                      ),
+                    ],
+                  ));
+                }
+
+                const captureEntry = Scope.get(scope, capturedIdentifier.v);
+
+                if (captureEntry && captureEntry.data.funcInfo) {
+                  const extraClosure = captureEntry.data.funcInfo.closure;
+
+                  if (extraClosure === null) {
+                    throw new Error('Shouldn\'t be possible');
+                  }
+
+                  if (closuresToProcess.indexOf(extraClosure) === -1) {
+                    closuresToProcess.push(extraClosure);
+                  }
+                }
+              }
+            }
+          }
+        }
       }
 
       scope = scope.parent;
-
-      if (item.t === 'PopCapture') {
-        captureDepth--;
-      }
-    } else if (item.t === 'IDENTIFIER') {
-      const scopeEntry = Scope.get(scope, item.v);
+    } else if (
+      item.t === 'IDENTIFIER' ||
+      item.t === 'IDENTIFIER-mutationTarget'
+    ) {
+      const scopeEntry = Scope.get<VInfo>(scope, item.v);
 
       if (!scopeEntry) {
-        // TODO: Look for typos
-        issues.push(Note(
-          item,
-          'error',
-          ['validation', 'scope', 'not-found'],
-          `Variable ${item.v} does not exist`
-        ));
-      } else {
-        const mods: Partial<VInfo> = {
-          uses: [...scopeEntry.data.uses, item]
-        };
+        const tags: Note.Tag[] = ['validation', 'scope', 'not-found'];
 
-        if (captureDepth > scopeEntry.data.captureDepth) {
-          mods.captures = [...scopeEntry.data.captures, item];
+        if (item.t === 'IDENTIFIER-mutationTarget') {
+          tags.push('mutation-target');
         }
 
-        scope = Scope.set(scope, item.v, mods);
-      }
-    } else if (item.t === 'IDENTIFIER-mutationTarget') {
-      const scopeEntry = Scope.get(scope, item.v);
-
-      if (!scopeEntry) {
         // TODO: Look for typos
-        issues.push(Note(
+        notes.push(Note(
           item,
           'error',
-          [
-            'validation',
-            'scope',
-            'not-found',
-            'mutation-target',
-          ],
+          tags,
           `Variable ${item.v} does not exist`
         ));
       } else {
-        const ident: Syntax.Identifier = { ...item, t: 'IDENTIFIER' };
-
-        const mods: Partial<VInfo> = {
-          mutations: [...scopeEntry.data.mutations, ident],
+        const ident: Syntax.Identifier = {
+          t: 'IDENTIFIER',
+          v: item.v,
+          p: item.p
         };
 
-        if (captureDepth > scopeEntry.data.captureDepth) {
+        const mods: Partial<VInfo> = {};
+
+        checkNull((() => {
+          switch (item.t) {
+            case 'IDENTIFIER': {
+              mods.uses = [...scopeEntry.data.uses, ident];
+
+              if (scopeEntry.data.funcInfo !== null) {
+                // Functions need more detailed usage information
+                mods.funcInfo = { ...scopeEntry.data.funcInfo,
+                  uses: [...scopeEntry.data.funcInfo.uses,
+                    {
+                      origin: ident,
+                      scope,
+                    },
+                  ],
+                };
+              }
+
+              return null;
+            }
+
+            case 'IDENTIFIER-mutationTarget': {
+              mods.mutations = [...scopeEntry.data.uses, ident];
+              return null;
+            }
+          }
+        })());
+
+        if (Scope.get(outerScope, ident.v)) {
           mods.captures = [...scopeEntry.data.captures, ident];
+          closure.push(ident);
         }
 
-        scope = Scope.set(scope, item.v, mods);
+        scope = Scope.set(scope, ident.v, mods);
+      }
+    } else if (item.t === 'func') {
+      const funcValidation = validateFunctionScope(scope, item);
+
+      notes.push(...funcValidation.notes);
+      scope = funcValidation.scope;
+
+      if (scope === null) {
+        // TODO: Can this be omitted by excluding null in the return type of
+        // scope?
+        throw new Error('Shouldn\'t be possible');
+      }
+
+      for (const identifier of funcValidation.closure) {
+        if (Scope.get(outerScope, identifier.v)) {
+          closure.push(identifier);
+        }
+      }
+
+      if (item.topExp && item.v.name !== null) {
+        const scopeEntry = Scope.get(scope, item.v.name.v);
+
+        if (!scopeEntry) {
+          throw new Error('Should not be possible');
+        }
+
+        const funcInfo = scopeEntry.data.funcInfo;
+
+        if (!funcInfo) {
+          throw new Error('Should not be possible');
+        }
+
+        if (funcInfo.closure !== null) {
+          // TODO: Do function duplicates need to be handled here?
+          continue;
+        }
+
+        scope = Scope.set(scope, item.v.name.v, { ...scopeEntry.data,
+          funcInfo: { ...funcInfo,
+            closure: funcValidation.closure,
+          },
+        });
       }
     }
   }
 
-  return issues;
+  return { notes, closure, scope };
 }
 
 function validateBody(body: Syntax.Block): Note[] {

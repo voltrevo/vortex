@@ -1,0 +1,19 @@
+sum := 0;
+
+if (true) {
+  a := 1;
+  sum += a;
+  sum += outer();
+}
+
+a := 100;
+
+func outer() {
+  func inner() {
+    return a;
+  };
+
+  return inner();
+};
+
+return b;

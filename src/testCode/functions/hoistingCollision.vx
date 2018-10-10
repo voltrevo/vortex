@@ -1,0 +1,11 @@
+sum := 0;
+
+if (true) {
+  func foo() => 1; // #error #duplicate
+  sum += foo();
+}
+
+func foo() => 100; // #info #is-duplicated
+sum += foo();
+
+return sum;

@@ -1,0 +1,13 @@
+b := outer(); // #error closure not satisfied
+
+a := 1;
+
+func outer() {
+  func inner() {
+    return a;
+  };
+
+  return inner();
+};
+
+return b;

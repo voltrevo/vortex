@@ -1,0 +1,10 @@
+sum := 0;
+
+sum += foo(); // #error closure not satisfied
+
+a := 1;
+
+func foo() => bar();
+func bar() => a;
+
+return sum;

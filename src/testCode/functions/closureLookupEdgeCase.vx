@@ -1,0 +1,13 @@
+sum := 0;
+
+if (true) {
+  a := 1;
+  sum += a;
+  sum += foo(); // #error closure not satisfied (wrong a)
+}
+
+a := 100;
+
+func foo() => a;
+
+return sum;

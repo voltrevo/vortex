@@ -69,6 +69,7 @@ namespace Note {
     'control-clause-prevents-return' |
     'scope' |
     'not-found' |
+    'incomplete-closure' |
     'unused' |
     'exception' |
     'value-needed' |
@@ -142,6 +143,7 @@ namespace Note {
     'control-clause-prevents-return',
     'scope',
     'not-found',
+    'incomplete-closure',
     'unused',
     'exception',
     'value-needed',
