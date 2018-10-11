@@ -1,5 +1,6 @@
-TODO: Add tests for every possible note
 TODO: Implement imports
+TODO: - Make parser aware of imports, establish location indexing/linking so that caching the result of programs with equivalent syntax trees is possible
+TODO: Add tests for every possible note
 TODO: Cross-type comparison operators e.g. :<:
 TODO: Spaceship operator <=>
 TODO: Element-wise arithmetic
