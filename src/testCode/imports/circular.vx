@@ -3,21 +3,21 @@
 import circular;
 
 return {
-  foo: func(n) => { // #error #syntax TODO: Not sure why this syntax is bad
+  foo: func(n) {
     if (n % 2 == 0) {
       // This works because imports are lazy, so the circular variable doesn't
       // get its value until we use it here
-      return circular.bar();
+      return circular.bar(); // #error #not-found TODO: this is ok
     }
 
     return 'odd';
   },
 
-  bar: func(n) => {
+  bar: func(n) {
     if (n % 2 == 1) {
       // This works because imports are lazy, and the circular variable doesn't
       // get its value until we use it here
-      return circular.foo();
+      return circular.foo(); // #error #not-found TODO: this is ok
     }
 
     return 'even';
