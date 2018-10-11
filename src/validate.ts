@@ -714,6 +714,10 @@ function isValidTopExpression(e: Syntax.Expression) {
     return e.v.name !== null;
   }
 
+  if (e.t === 'import') {
+    return true;
+  }
+
   return false;
 }
 
@@ -851,6 +855,7 @@ function validateExpression(
 
       case 'import': {
         notes.push(...importer(exp));
+        return null;
       }
 
       case 'NUMBER':

@@ -383,9 +383,8 @@ namespace Syntax {
       case 'continue':
       case 'if':
       case 'for':
-      case 'import':
       case 'block':
-      case 'IDENTIFIER':
+      case 'IDENTIFIER': // TODO: identifiers are not expressions?
         return null;
 
       default:

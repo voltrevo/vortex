@@ -7,6 +7,7 @@ import formatLocation from './formatLocation';
 import getStdin from './getStdin';
 import Note from './Note';
 import prettyErrorContext from './prettyErrorContext';
+import Reader from './Reader';
 import SecondsDiff from './SecondsDiff';
 
 type FileNote = Note.FileNote;
@@ -132,6 +133,8 @@ if (args._.indexOf('-') !== -1 && args._.length > 1) {
 
 const inputs: ({ type: 'file', name: string } | string)[] = [];
 
+const reader = Reader('.');
+
 (async () => {
   for (const arg of args._) {
     if (arg === '-') {
@@ -155,7 +158,7 @@ const inputs: ({ type: 'file', name: string } | string)[] = [];
     const file = typeof input === 'string' ? '(stdin)' : input.name;
 
     const before = process.hrtime();
-    let notes = compile(text);
+    let notes = compile(text, reader);
     const after = process.hrtime();
 
     if (format.value !== 'native') {

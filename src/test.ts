@@ -5,6 +5,7 @@ import colorize from './colorize';
 import compile from './compile';
 import Note from './Note';
 import prettyErrorContext from './prettyErrorContext';
+import Reader from './Reader';
 import SecondsDiff from './SecondsDiff';
 
 const files = (spawnSync('git', ['ls-files'])
@@ -86,7 +87,9 @@ for (const file of files) {
   let notes = null;
 
   try {
-    notes = Note.flatten(compile(fileText)).map(n => ({ file, ...n }));
+    notes = Note.flatten(
+      compile(fileText, Reader(file))
+    ).map(n => ({ file, ...n }));
   } catch (e) {
     console.error(`Error while compiling ${file}: ${e.message}`);
     throw e;
