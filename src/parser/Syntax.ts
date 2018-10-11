@@ -105,6 +105,26 @@ namespace Syntax {
     p: Pos;
   };
 
+  export type ClassExpression = {
+    t: 'class',
+    v: {
+      name: Identifier,
+      type: (
+        ['members', [Identifier, Identifier][]] |
+        ['whole', Identifier] |
+        never
+      ),
+      methods: {
+        modifiers: 'static'[]
+        name: Identifier,
+        args: Arg[],
+        body: Block | ExpressionBody,
+        p: Pos,
+      }[],
+    },
+    p: Pos,
+  };
+
   export type Expression = { topExp?: true } & (
     Identifier |
     NUMBER |
@@ -120,25 +140,7 @@ namespace Syntax {
     FunctionExpression |
     ArrayExpression |
     { t: 'object', v: [Identifier, Expression][], p: Pos } |
-    {
-      t: 'class',
-      v: {
-        name: Identifier,
-        type: (
-          ['members', [Identifier, Identifier][]] |
-          ['whole', Identifier] |
-          never
-        ),
-        methods: {
-          modifiers: 'static'[]
-          name: Identifier,
-          args: Arg[],
-          body: Block | ExpressionBody,
-          p: Pos,
-        }[],
-      },
-      p: Pos,
-    } |
+    ClassExpression |
     { t: 'switch', v: [Expression | null, [Expression, Expression][]], p: Pos } |
     Import |
     never

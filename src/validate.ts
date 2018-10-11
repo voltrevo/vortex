@@ -76,8 +76,17 @@ const push: Push = { t: 'Push' };
 type Pop = { t: 'Pop' };
 const pop: Pop = { t: 'Pop' };
 
-type CreateVariable = { t: 'CreateVariable', v: Syntax.Identifier };
-type CreateTopFunction = { t: 'CreateTopFunction', v: Syntax.Identifier };
+type CreateVariable = {
+  t: 'CreateVariable',
+  v: (
+    Syntax.Identifier |
+    Syntax.FunctionExpression |
+    Syntax.ClassExpression |
+    never
+  ),
+};
+
+type CreateFunction = CreateVariable & { v: Syntax.FunctionExpression };
 
 type IdentifierMutationTarget = {
   t: 'IDENTIFIER-mutationTarget',
@@ -90,7 +99,6 @@ type ScopeItem = (
   Push |
   Pop |
   CreateVariable |
-  CreateTopFunction |
   IdentifierMutationTarget |
   never
 );
@@ -104,9 +112,9 @@ type VInfo = {
   origin: Syntax.Identifier;
   data: {
     uses: Syntax.Identifier[];
-    mutations: Syntax.Identifier[];
+    mutations: null | Syntax.Identifier[];
     captures: Syntax.Identifier[];
-    funcInfo: null | {
+    hoistInfo: null | {
       uses: {
         origin: Syntax.Identifier;
         scope: Scope<VInfo>;
@@ -153,7 +161,7 @@ function validateFunctionScope(
   if (!func.topExp && func.v.name) {
     items.push({
       t: 'CreateVariable',
-      v: func.v.name,
+      v: func,
     });
   }
 
@@ -173,7 +181,6 @@ function validateFunctionScope(
         case 'Push':
         case 'Pop':
         case 'CreateVariable':
-        case 'CreateTopFunction':
         case 'IDENTIFIER-mutationTarget': {
           return [];
         }
@@ -185,13 +192,13 @@ function validateFunctionScope(
         case 'block':
         case 'for': {
           const children: ScopeItem[] = Syntax.Children(el);
-          const hoists: CreateTopFunction[] = [];
+          const hoists: CreateFunction[] = [];
 
           for (const child of children) {
             if (child.t === 'e' && child.v.t === 'func' && child.v.v.name) {
               hoists.push({
-                t: 'CreateTopFunction',
-                v: child.v.v.name,
+                t: 'CreateVariable',
+                v: child.v,
               });
             }
           }
@@ -284,9 +291,17 @@ function validateFunctionScope(
       throw new Error('Attempt to process item without a scope');
     }
 
-    if (item.t === 'CreateVariable' || item.t === 'CreateTopFunction') {
-      const newVariableName = item.v.v;
-      const preExisting = Scope.get(scope, newVariableName);
+    if (item.t === 'CreateVariable') {
+      const origin: Syntax.Identifier | null = (
+        item.v.t === 'IDENTIFIER' ? item.v :
+        item.v.v.name
+      );
+
+      if (origin === null) {
+        throw new Error('Shouldn\'t be possible');
+      }
+
+      const preExisting = Scope.get(scope, origin.v);
 
       if (preExisting) {
         notes.push(Note(
@@ -307,14 +322,14 @@ function validateFunctionScope(
           ]
         ));
       } else {
-        scope = Scope.add(scope, newVariableName, {
-          origin: item.v,
+        scope = Scope.add(scope, origin.v, {
+          origin,
           data: {
             uses: [],
-            mutations: [],
+            mutations: item.v.t === 'IDENTIFIER' ? [] : null,
             captures: [],
-            funcInfo: (
-              item.t === 'CreateTopFunction' ?
+            hoistInfo: (
+              item.v.t === 'func' && item.v.topExp ?
               { uses: [], closure: null } :
               null
             ),
@@ -331,7 +346,10 @@ function validateFunctionScope(
         const variable = scope.variables[varName];
 
         if (variable.data.uses.length === 0) {
-          if (variable.data.mutations.length === 0) {
+          if (
+            variable.data.mutations === null ||
+            variable.data.mutations.length === 0
+          ) {
             notes.push(Note(
               variable.origin,
               'warn',
@@ -355,11 +373,13 @@ function validateFunctionScope(
           }
         }
 
+        const mutations = variable.data.mutations;
+
         if (
           variable.data.captures.length > 0 &&
-          variable.data.mutations.length > 0
+          mutations && mutations.length > 0
         ) {
-          const [headMutation, ...tailMutations] = variable.data.mutations;
+          const [headMutation, ...tailMutations] = mutations;
           const captureLoc = formatLocation(variable.data.captures[0].p);
           const mutationLoc = formatLocation(headMutation.p);
 
@@ -398,7 +418,7 @@ function validateFunctionScope(
               ...(variable
                 .data
                 .captures
-                .filter(cap => variable.data.mutations.indexOf(cap) === -1)
+                .filter(cap => mutations.indexOf(cap) === -1)
                 .map(cap => Note(
                   cap,
                   'info',
@@ -419,15 +439,15 @@ function validateFunctionScope(
           ));
         }
 
-        const { funcInfo } = variable.data;
+        const { hoistInfo } = variable.data;
 
-        if (funcInfo !== null) {
-          for (const use of funcInfo.uses) {
-            if (funcInfo.closure === null) {
+        if (hoistInfo !== null) {
+          for (const use of hoistInfo.uses) {
+            if (hoistInfo.closure === null) {
               throw new Error('Shouldn\'t be possible');
             }
 
-            const closuresToProcess = [funcInfo.closure];
+            const closuresToProcess = [hoistInfo.closure];
 
             for (let i = 0; i < closuresToProcess.length; i++) {
               const closure = closuresToProcess[i];
@@ -487,8 +507,8 @@ function validateFunctionScope(
 
                 const captureEntry = Scope.get(scope, clItem.identifier.v);
 
-                if (captureEntry && captureEntry.data.funcInfo) {
-                  const extraClosure = captureEntry.data.funcInfo.closure;
+                if (captureEntry && captureEntry.data.hoistInfo) {
+                  const extraClosure = captureEntry.data.hoistInfo.closure;
 
                   if (extraClosure === null) {
                     throw new Error('Shouldn\'t be possible');
@@ -539,10 +559,10 @@ function validateFunctionScope(
             case 'IDENTIFIER': {
               mods.uses = [...scopeEntry.data.uses, ident];
 
-              if (scopeEntry.data.funcInfo !== null) {
+              if (scopeEntry.data.hoistInfo !== null) {
                 // Functions need more detailed usage information
-                mods.funcInfo = { ...scopeEntry.data.funcInfo,
-                  uses: [...scopeEntry.data.funcInfo.uses,
+                mods.hoistInfo = { ...scopeEntry.data.hoistInfo,
+                  uses: [...scopeEntry.data.hoistInfo.uses,
                     {
                       origin: ident,
                       scope,
@@ -555,6 +575,18 @@ function validateFunctionScope(
             }
 
             case 'IDENTIFIER-mutationTarget': {
+              if (scopeEntry.data.mutations === null) {
+                notes.push(Note(
+                  item,
+                  'error',
+                  ['validation', 'mutation'],
+                  // TODO: include reason it's not allowed
+                  `Mutating {${scopeEntry.origin.v}} is not allowed`,
+                ));
+
+                return null;
+              }
+
               mods.mutations = [...scopeEntry.data.mutations, ident];
               return null;
             }
@@ -598,19 +630,19 @@ function validateFunctionScope(
           throw new Error('Should not be possible');
         }
 
-        const funcInfo = scopeEntry.data.funcInfo;
+        const hoistInfo = scopeEntry.data.hoistInfo;
 
-        if (!funcInfo) {
+        if (!hoistInfo) {
           throw new Error('Should not be possible');
         }
 
-        if (funcInfo.closure !== null) {
+        if (hoistInfo.closure !== null) {
           // TODO: Do function duplicates need to be handled here?
           continue;
         }
 
         scope = Scope.set(scope, item.v.name.v, { ...scopeEntry.data,
-          funcInfo: { ...funcInfo,
+          hoistInfo: { ...hoistInfo,
             closure: funcValidation.closure,
           },
         });

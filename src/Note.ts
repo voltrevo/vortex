@@ -80,6 +80,7 @@ namespace Note {
     'type-error' |
     'operator' |
     'subexpression-mutation' |
+    'function-mutation' |
     'is-duplicated' |
     'duplicate' |
     'object' |
@@ -156,6 +157,7 @@ namespace Note {
     'type-error',
     'operator',
     'subexpression-mutation',
+    'function-mutation',
     'is-duplicated',
     'duplicate',
     'object',
