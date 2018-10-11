@@ -1,7 +1,7 @@
-import Error from 'core';
+import Error from 'core'; // #error #not-implemented
 
 return func factorial(n: i32) => switch {
-  (n < 0) => Error('Invalid input'); // #error #not-found TODO variables from import and params
+  (n < 0) => Error('Invalid input');
   (n == 0) => 1;
   (true) => n * factorial(n - 1);
 };

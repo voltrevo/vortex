@@ -6,7 +6,12 @@ import Syntax from './parser/Syntax';
 import Scope from './Scope';
 import traverse from './traverse';
 
-export function validate(program: Syntax.Program): Note[] {
+export type Importer = (importExp: Syntax.Import) => Note[];
+
+export function validate(
+  program: Syntax.Program,
+  importer: Importer,
+): Note[] {
   const notes: Note[] = [];
 
   notes.push(...validateBody(program));
@@ -19,7 +24,7 @@ export function validate(program: Syntax.Program): Note[] {
     const exp = Syntax.expressionFromElement(el);
 
     if (exp) {
-      subNotes.push(...validateExpression(exp));
+      subNotes.push(...validateExpression(exp, importer));
     }
 
     if (el.t === 'func') {
@@ -238,6 +243,15 @@ function validateFunctionScope(
           children.push(right);
 
           return children;
+        }
+
+        case 'import': {
+          if (!el.topExp) {
+            return [];
+          }
+
+          const [identifier] = el.v;
+          return [{ t: 'CreateVariable', v: identifier }];
         }
 
         default: {
@@ -759,7 +773,10 @@ function InvalidAssignmentTargets(
   return invalids;
 }
 
-function validateExpression(exp: Syntax.Expression): Note[] {
+function validateExpression(
+  exp: Syntax.Expression,
+  importer: Importer,
+): Note[] {
   const notes: Note[] = [];
 
   if (exp.topExp && !isValidTopExpression(exp)) {
@@ -832,6 +849,10 @@ function validateExpression(exp: Syntax.Expression): Note[] {
         return null;
       }
 
+      case 'import': {
+        notes.push(...importer(exp));
+      }
+
       case 'NUMBER':
       case 'BOOL':
       case 'NULL':
@@ -868,7 +889,6 @@ function validateExpression(exp: Syntax.Expression): Note[] {
       case 'methodCall':
       case 'class':
       case 'switch':
-      case 'import':
         return null;
     }
   })());

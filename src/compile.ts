@@ -32,7 +32,15 @@ export default function compile(text: string) {
   }
 
   if (program) {
-    notes.push(...validate(program));
+    notes.push(...validate(
+      program,
+      (importExp) => [Note(
+        importExp,
+        'error',
+        ['validation', 'not-implemented'],
+        'Not implemented: import expression',
+      )],
+    ));
 
     if (!notes.some(n => n.level === 'error')) {
       const { notes: analysisNotes } = analyze(program);

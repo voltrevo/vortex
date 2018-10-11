@@ -1,13 +1,13 @@
 // Doesn't cause an infinite loop - not executed until used (type analysis
 // should occur though)
-import circular;
+import circular; // #error #not-implemented
 
 return {
   foo: func(n) {
     if (n % 2 == 0) {
       // This works because imports are lazy, so the circular variable doesn't
       // get its value until we use it here
-      return circular.bar(); // #error #not-found TODO: this is ok
+      return circular.bar();
     }
 
     return 'odd';
@@ -17,7 +17,7 @@ return {
     if (n % 2 == 1) {
       // This works because imports are lazy, and the circular variable doesn't
       // get its value until we use it here
-      return circular.foo(); // #error #not-found TODO: this is ok
+      return circular.foo();
     }
 
     return 'even';

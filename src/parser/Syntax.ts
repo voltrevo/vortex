@@ -154,7 +154,7 @@ namespace Syntax {
   export type Statement = (
     ExpressionStatement |
     { t: 'return', v: Expression, p: Pos } |
-    { t: 'assert', v: Expression, p: Pos } |
+    { t: 'assert', v: Expression, p: Pos, topExp?: true } |
     BreakStatement |
     { t: 'continue', p: Pos } |
     IfStatement |
@@ -176,7 +176,7 @@ namespace Syntax {
     p: Pos
   };
 
-  export type Import = (
+  export type Import = { topExp?: true } & (
     { t: 'import', v: [Identifier], p: Pos } |
     { t: 'import', v: [Identifier, STRING], p: Pos } |
     never
@@ -199,7 +199,13 @@ namespace Syntax {
   // needs a return and block that doesn't.)
   export type Program = Block;
 
-  export type Element = Block | Statement | Expression | Arg;
+  export type Element = { topExp?: true } & (
+    Block |
+    Statement |
+    Expression |
+    Arg |
+    never
+  );
 
   export function Children(el: Element): Element[] {
     // TODO: Need an extra layer with .t so there aren't an unmanageable number

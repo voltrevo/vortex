@@ -1,6 +1,6 @@
-import math from 'core';
+import math from 'core'; // #warn #unused
 
-import factorial;
+import factorial; // #info #is-duplicated
 
 // main doesn't have special significance
 func main(n: i32) { // #warn #unused
@@ -101,7 +101,7 @@ foo = switch (37) {
   37 => 42;
 };
 
-return func factorial(n: i32) => switch {
+return func factorial(n: i32) => switch { // #error #duplicate
   (n < 0) => Error('Invalid input');
   (n == 0) => 1;
   (true) => n * factorial(n - 1);

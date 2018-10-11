@@ -147,9 +147,9 @@ statement
     | for
         {$$ = $1}
     | import ';'
-        {$$ = $1}
+        {$$ = { ...$1, topExp: true }}
     | ASSERT e ';'
-        {$$ = { t: 'assert', v: $2, p: L(@$) }}
+        {$$ = { t: 'assert', v: $2, p: L(@$), topExp: true }}
     ;
 
 if
