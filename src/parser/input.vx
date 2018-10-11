@@ -97,6 +97,10 @@ class Error: string {
 
 assert 1 == 1;
 
+foo = switch (37) {
+  37 => 42;
+};
+
 return func factorial(n: i32) => switch {
   (n < 0) => Error('Invalid input');
   (n == 0) => 1;

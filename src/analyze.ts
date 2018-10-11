@@ -2043,9 +2043,99 @@ function evalSubExpression(
         return objectLookup(exp, objEval.value, VString(keyExp.v));
       }
 
+      case 'switch': {
+        const [testExp, cases] = exp.v;
+
+        let testValue: ConcreteValue | null = null;
+
+        if (testExp !== null) {
+          const testExpEval = evalSubExpression(scope, testExp);
+          notes.push(...testExpEval.notes);
+
+          if (testExpEval.value.t === 'exception') {
+            return testExpEval.value;
+          }
+
+          if (testExpEval.value.cat !== 'concrete') {
+            // TODO: Bailing with unknown here because comparison can't yet
+            // handle non-concrete values
+            return VUnknown();
+          }
+
+          testValue = testExpEval.value;
+        }
+
+        for (const [labelExp, resultExp] of cases) {
+          const labelExpEval = evalSubExpression(scope, labelExp);
+          notes.push(...labelExpEval.notes);
+
+          const labelValue = labelExpEval.value;
+
+          if (labelValue.t === 'exception' || labelValue.t === 'unknown') {
+            return labelValue;
+          }
+
+          let combinedLabelValue: ValidValue | VException = labelValue;
+
+          if (testValue !== null) {
+            if (labelValue.cat !== 'concrete') {
+              // TODO: Bailing with unknown here because comparison can't yet
+              // handle non-concrete values
+              return VUnknown();
+            }
+
+            if (!SameType(testValue, labelValue)) {
+              continue;
+            }
+
+            combinedLabelValue = TypedEqual(
+              labelExp,
+              testValue,
+              labelValue
+            );
+
+            if (combinedLabelValue.t === 'exception') {
+              // TODO: If it somehow did generate an exception, labelExp is
+              // the wrong reference expression to pass into TypedEqual. Need
+              // a better solution here.
+              throw new Error('Shouldn\'t be possible to get here');
+            }
+          }
+
+          if (combinedLabelValue.t !== 'bool') {
+            if (testValue !== null) {
+              // If the test value is present, it shouldn't be possible to get
+              // a non-bool here. This check is here because the diagnostic
+              // generated below assumes the switch lacks a test value.
+              throw new Error('Shouldn\'t be possible');
+            }
+
+            return VException(
+              labelExp,
+              ['type-error', 'non-bool-switch-case'],
+              `Switch case was type {${labelValue.t}} instead of {bool}`,
+            );
+          }
+
+          if (combinedLabelValue.v === true) {
+            const resultExpEval = evalSubExpression(scope, resultExp);
+            notes.push(...resultExpEval.notes);
+            return resultExpEval.value;
+          }
+        }
+
+        // TODO: Often the analyzer should be producing error notes and
+        // continuing with an unknown instead of an exception. This is
+        // definitely one of those cases.
+        return VException(
+          exp,
+          ['analysis', 'incomplete-switch', 'value-needed'],
+          'Switch did not handle every possibility',
+        );
+      }
+
       case 'methodCall':
       case 'class':
-      case 'switch':
       case 'import': {
         return VException(
           exp,

@@ -1,0 +1,27 @@
+func commentary(n) {
+  result := switch {
+    (n < 10) => 'less than 10';
+    (n == 10) => 'equal to 10';
+    (n > 10) => 'more than 10';
+  };
+
+  result += switch (n) {
+    3 => ', prime';
+    10 => '';
+    20 => '';
+  };
+
+  return result;
+};
+
+assert [
+  commentary(3),
+  commentary(10),
+  commentary(20),
+] == [
+  'less than 10, prime',
+  'equal to 10',
+  'more than 10',
+];
+
+return 'done'; // #info #return-value

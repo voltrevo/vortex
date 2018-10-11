@@ -120,6 +120,8 @@ namespace Note {
     'non-identifier-creation-target' |
     'non-bool-condition' |
     'if-condition' |
+    'non-bool-switch-case' |
+    'incomplete-switch' |
     'assert' |
     'object-subscript' |
     'unary-plus-minus' |
@@ -197,6 +199,8 @@ namespace Note {
     'non-identifier-creation-target',
     'non-bool-condition',
     'if-condition',
+    'non-bool-switch-case',
+    'incomplete-switch',
     'assert',
     'object-subscript',
     'unary-plus-minus',

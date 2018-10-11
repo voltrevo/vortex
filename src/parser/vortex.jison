@@ -306,12 +306,12 @@ e
         {$$ = { t: 'methodCall', v: [$1, $3, $5], p: L(@$) }}
     | e '[' e ']'
         {$$ = { t: 'subscript', v: [$1, $3], p: L(@$) }}
-    | NUMBER
-        {$$ = { t: 'NUMBER', v: $1, p: L(@$) }}
+    | number
+        {$$ = $1}
     | bool
         {$$ = $1}
-    | NULL
-        {$$ = { t: 'NUMBER', v: null, p: L(@$) }}
+    | null
+        {$$ = $1}
     | identifier
         {$$ = $1}
     | string
@@ -342,12 +342,22 @@ bool
         {$$ = { t: 'BOOL', v: false, p: L(@$) } }
     ;
 
-atomicExp
+null
+    : NULL
+        {$$ = { t: 'NULL', v: null, p: L(@$) }}
+    ;
+
+number
     : NUMBER
+        {$$ = { t: 'NUMBER', v: $1, p: L(@$) }}
+    ;
+
+atomicExp
+    : number
         {$$ = $1}
     | bool
         {$$ = $1}
-    | NULL
+    | null
         {$$ = $1}
     | identifier
         {$$ = $1}
