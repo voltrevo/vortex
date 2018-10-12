@@ -2,13 +2,11 @@ import * as fs from 'fs';
 import * as minimist from 'minimist';
 
 import colorize from './colorize';
-import compile from './compile';
+import Compiler from './Compiler';
 import formatLocation from './formatLocation';
 import getStdin from './getStdin';
 import Note from './Note';
 import prettyErrorContext from './prettyErrorContext';
-import Reader from './Reader';
-import SecondsDiff from './SecondsDiff';
 
 type FileNote = Note.FileNote;
 
@@ -133,8 +131,6 @@ if (args._.indexOf('-') !== -1 && args._.length > 1) {
 
 const inputs: ({ type: 'file', name: string } | string)[] = [];
 
-const reader = Reader('.');
-
 (async () => {
   for (const arg of args._) {
     if (arg === '-') {
@@ -149,28 +145,24 @@ const reader = Reader('.');
   }
 
   for (const input of inputs) {
-    const text = (
-      typeof input === 'string' ?
-      input :
-      fs.readFileSync(input.name).toString()
-    );
+    let text: string | null = null;
+
+    try {
+      text = (
+        typeof input === 'string' ?
+        input :
+        fs.readFileSync(input.name).toString()
+      );
+    } catch {}
 
     const file = typeof input === 'string' ? '(stdin)' : input.name;
 
-    const before = process.hrtime();
-    let notes = compile(text, reader);
-    const after = process.hrtime();
+    let notes = Compiler.compile([file], f => f === file ? text : null);
 
     if (format.value !== 'native') {
-      notes = Note.flatten(notes);
+      // TODO: Need to remove Note/FileNote distinction
+      notes = Note.flatten(notes as Note[]) as any;
     }
-
-    notes.push(Note(
-      {},
-      'info',
-      ['statistics', 'compile-time'],
-      `compiled in ${(1000 * SecondsDiff(before, after)).toFixed(3)}ms`
-    ));
 
     if (format.value === 'pretty' && notes.length > 0) {
       console.log();
@@ -180,7 +172,7 @@ const reader = Reader('.');
       switch (format.value) {
         case 'pretty': {
           // TODO: Make this better
-          prettyPrint({ file, ...note }, text);
+          prettyPrint({ file, ...note }, text || '');
 
           break;
         }

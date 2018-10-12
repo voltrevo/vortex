@@ -16,7 +16,14 @@ function Note(
   message: string,
   subnotes?: Note[],
 ): Note {
-  const categories = ['syntax', 'validation', 'analysis', 'statistics'];
+  const categories = [
+    'syntax',
+    'validation',
+    'analysis',
+    'statistics',
+    'package',
+  ];
+
   const hasCategory = tags.some(t => categories.indexOf(t) !== -1);
   assert(hasCategory);
 
@@ -37,6 +44,18 @@ function Note(
 
 namespace Note {
   export type FileNote = Note & { file: string };
+
+  export function FileNote(
+    file: string, 
+    el: { p?: Syntax.Pos },
+    level: 'error' | 'warn' | 'info',
+    tags: Note.Tag[],
+    message: string,
+    subnotes?: Note[],
+  ): FileNote {
+    const note = Note(el, level, tags, message, subnotes);
+    return { ...note, file };
+  }
 
   export function flatten(notes: Note[]): Note[] {
     const newNotes: Note[] = [];
@@ -59,6 +78,8 @@ namespace Note {
     'analysis' |
     'return-value' |
     'validation' |
+    'package' |
+    'invalid-import-source' |
     'no-effect' |
     'top-expression' |
     'control-flow' |
@@ -138,6 +159,8 @@ namespace Note {
     'analysis',
     'return-value',
     'validation',
+    'package',
+    'invalid-import-source',
     'no-effect',
     'top-expression',
     'control-flow',

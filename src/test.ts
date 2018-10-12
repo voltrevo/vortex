@@ -2,17 +2,15 @@ import { readFileSync } from 'fs';
 import { spawnSync } from 'child_process';
 
 import colorize from './colorize';
-import compile from './compile';
+import Compiler from './Compiler';
 import Note from './Note';
 import prettyErrorContext from './prettyErrorContext';
-import Reader from './Reader';
-import SecondsDiff from './SecondsDiff';
 
 const files = (spawnSync('git', ['ls-files'])
   .stdout
   .toString()
   .split('\n')
-  .filter(line => line !== '')
+  .filter(line => line !== '' && /\.vx$/.test(line))
   .sort((a, b) => (
     a.toUpperCase() < b.toUpperCase() ? -1 :
     a.toUpperCase() === b.toUpperCase() ? 0 :
@@ -74,119 +72,119 @@ let ok = true;
 let compileTime = 0;
 let compiledFiles = 0;
 
-const allNotes: Note.FileNote[] = [];
-
-for (const file of files) {
-  if (!/\.vx$/.test(file)) {
-    continue;
-  }
-
-  const fileText = readFileSync(file).toString();
-  const before = process.hrtime();
-
-  let notes = null;
+const readFile = (file: string): string | null => {
+  let text: string | null = null;
 
   try {
-    notes = Note.flatten(
-      compile(fileText, Reader(file))
-    ).map(n => ({ file, ...n }));
-  } catch (e) {
-    console.error(`Error while compiling ${file}: ${e.message}`);
-    throw e;
+    text = readFileSync(file).toString();
+  } catch {}
+
+  return text;
+};
+
+const allNotes: Note.FileNote[] = Compiler.compile(files, readFile);
+
+const moreFiles = [...files];
+
+for (const note of allNotes) {
+  if (moreFiles.indexOf(note.file) === -1) {
+    moreFiles.push(note.file);
   }
+}
 
-  allNotes.push(...notes);
-  const after = process.hrtime();
-  compileTime += SecondsDiff(before, after);
-  compiledFiles++;
+for (const file of moreFiles) {
+  const fileText = readFile(file);
 
-  const lines = fileText.split('\n');
+  const notes = allNotes.filter(n => n.file === file);
 
-  let lineNo = 0;
-  for (const line of lines) {
-    lineNo++;
+  if (fileText !== null) {
+    const lines = fileText.split('\n');
+    let lineNo = 0;
+    for (const line of lines) {
+      lineNo++;
 
-    const tags = Tags(line, file, lineNo);
-    const lineNotes = notes.filter(n => n.pos && n.pos[0][0] === lineNo);
+      const tags = Tags(line, file, lineNo);
+      const lineNotes = notes.filter(n => n.pos && n.pos[0][0] === lineNo);
 
-    for (const level of ['error', 'warn', 'info']) {
-      const levelTags = tags.filter(t => t === level);
-      const levelNotes = lineNotes.filter(n => n.level === level);
+      for (const level of ['error', 'warn', 'info']) {
+        const levelTags = tags.filter(t => t === level);
+        const levelNotes = lineNotes.filter(n => n.level === level);
 
-      const nt = levelTags.length;
-      const nn = levelNotes.length;
+        const nt = levelTags.length;
+        const nn = levelNotes.length;
 
-      if (nt > nn) {
-        ok = false;
+        if (nt > nn) {
+          ok = false;
 
-        if (nn === 0) {
-          log.error(
-            `${file}:${lineNo}: ${level} tag that was not ` +
-            `produced by the compiler\n`
+          if (nn === 0) {
+            log.error(
+              `${file}:${lineNo}: ${level} tag that was not ` +
+              `produced by the compiler\n`
+            );
+          } else {
+            log.error(
+              `${file}:${lineNo}: ${nt} ${level} tags but only ` +
+              `${nn} ${nn > 1 ? 'were' : 'was'} produced by the compiler`
+            );
+          }
+        } else if (nn > nt) {
+          ok = false;
+
+          const wording = (
+            nt === 0 ?
+            `untagged ${level}${nn > 1 ? 's' : ''}` :
+            `${nn} ${level}s but only ${nt} tag${nt > 1 ? 's' : ''}`
           );
-        } else {
-          log.error(
-            `${file}:${lineNo}: ${nt} ${level} tags but only ` +
-            `${nn} ${nn > 1 ? 'were' : 'was'} produced by the compiler`
-          );
-        }
-      } else if (nn > nt) {
-        ok = false;
 
-        const wording = (
-          nt === 0 ?
-          `untagged ${level}${nn > 1 ? 's' : ''}` :
-          `${nn} ${level}s but only ${nt} tag${nt > 1 ? 's' : ''}`
-        );
+          log.error(`${file}:${lineNo}: ${wording}:`);
 
-        log.error(`${file}:${lineNo}: ${wording}:`);
+          for (const note of levelNotes) {
+            const prettyLines = prettyErrorContext({ file, ...note }, fileText);
 
-        for (const note of levelNotes) {
-          const prettyLines = prettyErrorContext({ file, ...note }, fileText);
-
-          for (const prettyLine of prettyLines) {
-            console.error(prettyLine);
+            for (const prettyLine of prettyLines) {
+              console.error(prettyLine);
+            }
           }
         }
       }
-    }
-
-    for (const note of lineNotes) {
-      const nonLevelTags = note.tags.filter(t => (
-        ['error', 'warn', 'info'].indexOf(t) === -1
-      ));
-
-      let hasAMatch = false;
-
-      for (const tag of nonLevelTags) {
-        if (tags.indexOf(tag) !== -1) {
-          hasAMatch = true;
-        }
-      }
-
-      if (!hasAMatch) {
-        log.error(
-          `${file}:${lineNo}: line is insufficiently tagged. Need to add ` +
-          `at least one of: ${nonLevelTags.map(t => `#${t}`).join(', ')}`
-        );
-      }
-    }
-
-    for (const tag of tags) {
-      let hasAMatch = false;
 
       for (const note of lineNotes) {
-        if (note.tags.indexOf(tag) !== -1) {
-          hasAMatch = true;
-          break;
+        const nonLevelTags = note.tags.filter(t => (
+          ['error', 'warn', 'info'].indexOf(t) === -1
+        ));
+
+        let hasAMatch = false;
+
+        for (const tag of nonLevelTags) {
+          if (tags.indexOf(tag) !== -1) {
+            hasAMatch = true;
+          }
+        }
+
+        if (!hasAMatch) {
+          log.error(
+            `${file}:${lineNo}: line is insufficiently tagged. Need to add ` +
+            `at least one of: ${nonLevelTags.map(t => `#${t}`).join(', ')}`
+          );
         }
       }
 
-      if (!hasAMatch) {
-        log.error(
-          `${file}:${lineNo}: #${tag} tag that was not produced by the ` +
-          `compiler`
-        );
+      for (const tag of tags) {
+        let hasAMatch = false;
+
+        for (const note of lineNotes) {
+          if (note.tags.indexOf(tag) !== -1) {
+            hasAMatch = true;
+            break;
+          }
+        }
+
+        if (!hasAMatch) {
+          log.error(
+            `${file}:${lineNo}: #${tag} tag that was not produced by the ` +
+            `compiler`
+          );
+        }
       }
     }
   }

@@ -8,10 +8,7 @@ import traverse from './traverse';
 
 export type Importer = (importExp: Syntax.Import) => Note[];
 
-export function validate(
-  program: Syntax.Program,
-  importer: Importer,
-): Note[] {
+export function validate(program: Syntax.Program): Note[] {
   const notes: Note[] = [];
 
   notes.push(...validateBody(program));
@@ -24,7 +21,7 @@ export function validate(
     const exp = Syntax.expressionFromElement(el);
 
     if (exp) {
-      subNotes.push(...validateExpression(exp, importer));
+      subNotes.push(...validateExpression(exp));
     }
 
     if (el.t === 'func') {
@@ -777,10 +774,7 @@ function InvalidAssignmentTargets(
   return invalids;
 }
 
-function validateExpression(
-  exp: Syntax.Expression,
-  importer: Importer,
-): Note[] {
+function validateExpression(exp: Syntax.Expression): Note[] {
   const notes: Note[] = [];
 
   if (exp.topExp && !isValidTopExpression(exp)) {
@@ -853,11 +847,6 @@ function validateExpression(
         return null;
       }
 
-      case 'import': {
-        notes.push(...importer(exp));
-        return null;
-      }
-
       case 'NUMBER':
       case 'BOOL':
       case 'NULL':
@@ -893,6 +882,7 @@ function validateExpression(
       case '.':
       case 'methodCall':
       case 'class':
+      case 'import':
       case 'switch':
         return null;
     }

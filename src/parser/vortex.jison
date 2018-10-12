@@ -175,7 +175,7 @@ string
 
 import
     : IMPORT identifier
-        {$$ = { t: 'import', v: [$2], p: L(@$) }}
+        {$$ = { t: 'import', v: [$2, null], p: L(@$) }}
     | IMPORT identifier FROM string
         {$$ = { t: 'import', v: [$2, $4], p: L(@$) }}
     ;

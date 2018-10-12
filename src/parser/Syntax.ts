@@ -177,7 +177,7 @@ namespace Syntax {
   };
 
   export type Import = { topExp?: true } & (
-    { t: 'import', v: [Identifier], p: Pos } |
+    { t: 'import', v: [Identifier, null], p: Pos } |
     { t: 'import', v: [Identifier, STRING], p: Pos } |
     never
   );

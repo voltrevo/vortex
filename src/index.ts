@@ -1,2 +1,2 @@
-export { default as compile } from './compile';
+export { default as Compiler } from './Compiler';
 export { default as Note } from './Note';
