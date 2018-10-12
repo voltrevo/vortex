@@ -144,6 +144,16 @@ const inputs: ({ type: 'file', name: string } | string)[] = [];
     throw new Error('no input files');
   }
 
+  const readFile = (file: string) => {
+    let text: string | null = null;
+
+    try {
+      text = fs.readFileSync(file).toString()
+    } catch {}
+
+    return text;
+  };
+
   for (const input of inputs) {
     let text: string | null = null;
 
@@ -157,7 +167,7 @@ const inputs: ({ type: 'file', name: string } | string)[] = [];
 
     const file = typeof input === 'string' ? '(stdin)' : input.name;
 
-    let notes = Compiler.compile([file], f => f === file ? text : null);
+    let notes = Compiler.compile([file], f => f === file ? text : readFile(f));
 
     if (format.value !== 'native') {
       // TODO: Need to remove Note/FileNote distinction
@@ -190,6 +200,10 @@ const inputs: ({ type: 'file', name: string } | string)[] = [];
         }
 
         case 'vim-ale': {
+          if (note.file !== '(stdin)') {
+            break;
+          }
+
           const pos = note.pos || [[1, 1], [1, 1]];
 
           console.error(JSON.stringify({

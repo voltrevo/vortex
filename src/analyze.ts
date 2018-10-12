@@ -1,5 +1,6 @@
 import checkNull from './checkNull';
 import Note from './Note';
+import Package from './Package';
 import Scope from './Scope';
 import Syntax from './parser/Syntax';
 
@@ -599,10 +600,49 @@ function Context(): Context {
   };
 }
 
-export default function analyze(program: Syntax.Program) {
+export default function analyze(pack: Package, file: string) {
   let context = Context();
 
-  context = analyzeInContext(context, true, program, true);
+  const moduleEntry = pack.modules[file];
+
+  if (moduleEntry === undefined || moduleEntry.t === 'ParserNotes') {
+    context.value = VUnknown();
+    return context;
+  }
+
+  for (const dep of moduleEntry.dependencies.local) {
+    const importCtx = analyze(pack, dep);
+
+    if (importCtx.value.cat === 'invalid') {
+      context.value = (() => {
+        switch (importCtx.value.t) {
+          case 'missing': return VException(
+            // TODO: better location
+            moduleEntry.program,
+            ['analysis', 'value-needed'],
+            'Didn\'t get a value for import ' + dep,
+          );
+
+          case 'exception': return importCtx.value;
+        }
+      })();
+
+      return context;
+    }
+
+    context.scope = Scope.add(context.scope, `import:@:${dep}`, {
+      origin: moduleEntry.program,
+      data: importCtx.value,
+    });
+  }
+
+  // TODO: This is pretty hacky
+  context.scope = Scope.add(context.scope, ':file', {
+    origin: moduleEntry.program,
+    data: VString(file),
+  });
+
+  context = analyzeInContext(context, true, moduleEntry.program, true);
 
   return context;
 }
@@ -878,9 +918,44 @@ function analyzeInContext(
           return null;
         }
 
-        case 'break':
-        case 'continue':
         case 'import': {
+          const importValue = (() => {
+            const fileEntry = Scope.get(context.scope, ':file');
+
+            if (fileEntry === null || fileEntry.data.t !== 'string') {
+              throw new Error('Shouldn\'t be possible');
+            }
+
+            const resolved = Package.resolveImport(fileEntry.data.v, statement);
+
+            if (!Array.isArray(resolved)) {
+              return VUnknown();
+            }
+
+            const importScopeName = ['import', ...resolved].join(':');
+
+            const importEntry = Scope.get(context.scope, importScopeName);
+
+            if (importEntry === null) {
+              // TODO: will this be possible?
+              return VUnknown();
+            }
+
+            return importEntry.data;
+          })();
+
+          const [importIdentifier] = statement.v;
+
+          context.scope = Scope.add(context.scope, importIdentifier.v, {
+            origin: importIdentifier,
+            data: importValue,
+          });
+
+          return null;
+        }
+
+        case 'break':
+        case 'continue': {
           context.value = VException(
             statement,
             // TODO: Need to capture more structure in compiler notes

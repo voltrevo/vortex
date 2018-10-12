@@ -120,6 +120,7 @@ namespace Package {
     pack: Package,
     readFile: (file: string) => string | null,
   ): Package {
+    debugger;
     while (pack.dependencies.local.length > 0) {
       const file = pack.dependencies.local[0];
       pack = Package.set(pack, file, readFile(file));
@@ -143,9 +144,6 @@ namespace Package {
         }],
       };
     }
-
-    const fileParts = file.split('/');
-    const dirname = fileParts.slice(0, fileParts.length - 1).join('/');
 
     const notes: Note.FileNote[] = [];
     let program: Syntax.Program | null = null;
@@ -191,68 +189,27 @@ namespace Package {
     };
 
     for (const import_ of imports) {
-      let { v: [name, source] } = import_;
-      const nameStr = name.v + '.vx';
+      const resolved = resolveImport(file, import_);
 
-      const sourceStr = (
-        source === null ?
-        '.' :
-        source.v.slice(1, source.v.length - 1)
-      );
-
-      let [sourceEntry, ...sourceRest] = sourceStr.split('/');
-
-      if (sourceEntry !== '.' && sourceEntry !== '..') {
-        let packageDeps = (
-          sourceEntry === '@' ?
-          dependencies.local :
-          dependencies.remote[sourceEntry]
-        );
-
-        if (packageDeps === undefined) {
-          packageDeps = [];
-          dependencies.remote[sourceEntry] = packageDeps;
-        }
-
-        packageDeps.push([...sourceRest, nameStr].join('/'));
+      if (!Array.isArray(resolved)) {
+        notes.push(resolved);
         continue;
       }
 
-      let dirPath = dirname === '' ? [] : dirname.split('/');
+      const [sourceEntry, resolvedPath] = resolved;
 
-      while (sourceEntry === '..') {
-        if (dirPath.length === 0) {
-          notes.push(Note.FileNote(
-            file,
-            import_,
-            'error',
-            ['package', 'invalid-import-source'],
-            'Import source is above the package root',
-          ));
+      let packageDeps = (
+        sourceEntry === '@' ?
+        dependencies.local :
+        dependencies.remote[sourceEntry]
+      );
 
-          break;
-        }
-
-        dirPath.pop();
-        [sourceEntry, ...sourceRest] = sourceRest;
+      if (packageDeps === undefined) {
+        packageDeps = [];
+        dependencies.remote[sourceEntry] = packageDeps;
       }
 
-      if (sourceEntry === '..') {
-        break;
-      }
-
-      const resolvedPath = [
-        ...dirPath,
-        ...(
-          sourceEntry === undefined || sourceEntry === '.' ?
-          [] :
-          [sourceEntry]
-        ),
-        ...sourceRest,
-        nameStr,
-      ].join('/');
-
-      dependencies.local.push(resolvedPath);
+      packageDeps.push(resolvedPath);
     }
 
     return {
@@ -261,6 +218,59 @@ namespace Package {
       dependencies,
       notes,
     };
+  }
+
+  export function resolveImport(
+    file: string,
+    import_: Syntax.Import,
+  ): [string, string] | Note.FileNote {
+    let { v: [name, source] } = import_;
+    const nameStr = name.v + '.vx';
+
+    const sourceStr = (
+      source === null ?
+      '.' :
+      source.v.slice(1, source.v.length - 1)
+    );
+
+    let [sourceEntry, ...sourceRest] = sourceStr.split('/');
+
+    if (sourceEntry !== '.' && sourceEntry !== '..') {
+      return [sourceEntry, [...sourceRest, nameStr].join('/')];
+    }
+
+    const fileParts = file.split('/');
+    const dirname = fileParts.slice(0, fileParts.length - 1).join('/');
+
+    let dirPath = dirname === '' ? [] : dirname.split('/');
+
+    while (sourceEntry === '..') {
+      if (dirPath.length === 0) {
+        return Note.FileNote(
+          file,
+          import_,
+          'error',
+          ['package', 'invalid-import-source'],
+          'Import source is above the package root',
+        );
+      }
+
+      dirPath.pop();
+      [sourceEntry, ...sourceRest] = sourceRest;
+    }
+
+    const resolvedPath = [
+      ...dirPath,
+      ...(
+        sourceEntry === undefined || sourceEntry === '.' ?
+        [] :
+        [sourceEntry]
+      ),
+      ...sourceRest,
+      nameStr,
+    ].join('/');
+
+    return ['@', resolvedPath];
   }
 }
 

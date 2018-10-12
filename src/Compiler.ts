@@ -35,7 +35,7 @@ namespace Compiler {
       );
 
       if (!validationNotes.some(n => n.level === 'error')) {
-        const { notes: analysisNotes } = analyze(m.program);
+        const { notes: analysisNotes } = analyze(pack, f);
         notes.push(...analysisNotes.map(n => ({ ...n, file: f })));
       }
     }
