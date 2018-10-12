@@ -1,6 +1,6 @@
-import Error from 'core'; // #error #not-implemented
+import Error from 'core';
 
-return func factorial(n: i32) => switch {
+return func factorial(n: i32) => switch { // #info #return-value
   (n < 0) => Error('Invalid input');
   (n == 0) => 1;
   (true) => n * factorial(n - 1);

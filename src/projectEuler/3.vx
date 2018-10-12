@@ -1,4 +1,4 @@
-import Math from 'core'; // #error #not-implemented
+import Math from 'core';
 
 n := 600851475143;
 i := 2;
@@ -13,6 +13,6 @@ for {
   i++;
 
   if (i * i > n) {
-    return Math.max(p, n);
+    return Math.max(p, n); // #info #return-value
   }
 }

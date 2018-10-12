@@ -1,0 +1,15 @@
+import findLargest from './core';
+
+func abs(x) {
+  if (x < 0) {
+    return -x;
+  }
+
+  return x;
+};
+
+return findLargest( // #info #return-value
+  [8, 1, 17, -34, 10],
+  5,
+  func(a, b) => abs(a) < abs(b),
+);
