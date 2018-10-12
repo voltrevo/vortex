@@ -1,6 +1,6 @@
-import math from 'core'; // #warn #unused #error #not-implemented
+import math from 'core'; // #warn #unused
 
-import factorial; // #info #is-duplicated #error #not-found
+import factorial; // #info #is-duplicated TODO:error:not-found
 
 // main doesn't have special significance
 func main(n: i32) { // #warn #unused
@@ -10,7 +10,7 @@ func main(n: i32) { // #warn #unused
   100 + 2 * 3; // #warn #no-effect
 
   foo := 7;
-  (import bar)(); // #warn #no-effect #error #not-found
+  (import bar)(); // #warn #no-effect TODO:error:not-found
 
   if (1 > 1) {
     foo = foo + 1;

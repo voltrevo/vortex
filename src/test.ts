@@ -95,7 +95,7 @@ for (const note of allNotes) {
 for (const file of moreFiles) {
   const fileText = readFile(file);
 
-  const notes = allNotes.filter(n => n.file === file);
+  const notes = Note.flatten(allNotes.filter(n => n.file === file));
 
   if (fileText !== null) {
     const lines = fileText.split('\n');

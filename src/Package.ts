@@ -69,6 +69,7 @@ namespace Package {
         local: [
           ...pack.dependencies.local,
           ...moduleEntry.dependencies.local.filter(dep => (
+            dep !== file &&
             pack.dependencies.local.indexOf(dep) === -1
           ))
         ],
@@ -242,7 +243,11 @@ namespace Package {
 
       const resolvedPath = [
         ...dirPath,
-        ...(sourceEntry === undefined ? [] : [sourceEntry]),
+        ...(
+          sourceEntry === undefined || sourceEntry === '.' ?
+          [] :
+          [sourceEntry]
+        ),
         ...sourceRest,
         nameStr,
       ].join('/');
