@@ -1,0 +1,13 @@
+return func first(arr, len, before) { // #info #return-value #warn #unused TODO: not unused
+  result := arr[0];
+
+  for (i := 1; i < len; i++) {
+    el := arr[i];
+
+    if (before(el, result)) {
+      result = el;
+    }
+  }
+
+  return result;
+};

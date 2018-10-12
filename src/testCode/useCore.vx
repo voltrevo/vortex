@@ -1,4 +1,4 @@
-import findLargest from './core';
+import first from './core';
 
 func abs(x) {
   if (x < 0) {
@@ -8,8 +8,10 @@ func abs(x) {
   return x;
 };
 
-return findLargest( // #info #return-value
+assert -34 == first(
   [8, 1, 17, -34, 10],
   5,
-  func(a, b) => abs(a) < abs(b),
+  func(a, b) => abs(a) > abs(b),
 );
+
+return 'done'; // #info #return-value
