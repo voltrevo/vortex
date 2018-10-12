@@ -217,7 +217,7 @@ namespace Package {
         continue;
       }
 
-      let dirPath = dirname.split('/');
+      let dirPath = dirname === '' ? [] : dirname.split('/');
 
       while (sourceEntry === '..') {
         if (dirPath.length === 0) {

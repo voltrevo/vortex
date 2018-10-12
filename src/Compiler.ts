@@ -43,7 +43,7 @@ namespace Compiler {
     const after = process.hrtime();
 
     notes.push(Note.FileNote(
-      '(package)',
+      '(compiler)',
       {},
       'info',
       ['statistics', 'compile-time'],
