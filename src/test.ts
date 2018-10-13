@@ -6,6 +6,8 @@ import Compiler from './Compiler';
 import Note from './Note';
 import prettyErrorContext from './prettyErrorContext';
 
+const start = Date.now();
+
 const files = (spawnSync('git', ['ls-files'])
   .stdout
   .toString()
@@ -69,8 +71,6 @@ const log = {
 };
 
 let ok = true;
-let compileTime = 0;
-let compiledFiles = 0;
 
 const readFile = (file: string): string | null => {
   let text: string | null = null;
@@ -190,7 +190,11 @@ for (const file of moreFiles) {
   }
 }
 
-for (const unseenTag of Object.keys(unseenTags)) {
+const unseenTagLimit = 5;
+const unseenTagList = Object.keys(unseenTags);
+const unseenTagLen = unseenTagList.length;
+
+for (const unseenTag of unseenTagList.slice(0, unseenTagLimit)) {
   const matchingNote = allNotes.find(n =>
     n.tags.indexOf(unseenTag as Note.Tag) !== -1
   );
@@ -204,8 +208,12 @@ for (const unseenTag of Object.keys(unseenTags)) {
   ok = false;
 }
 
+if (unseenTagLen > 5) {
+  log.error(`>>> error: ${unseenTagLen - 5} more unseen tags`);
+}
+
 log.info('>>> info: ' +
-  `Compiled ${compiledFiles} files in ${(1000 * compileTime).toFixed(3)}ms`
+  `Compiled ${moreFiles.length} files in ${Date.now() - start}ms`
 );
 
 if (ok) {
