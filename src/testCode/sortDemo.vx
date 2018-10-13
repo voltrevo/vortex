@@ -1,0 +1,41 @@
+import sort from './core';
+
+less := func(a, b) => a < b;
+more := func(a, b) => a > b;
+
+assert [1, 2, 3] == sort([3, 1, 2], 3, less);
+assert [3, 2, 1] == sort([3, 1, 2], 3, more);
+
+players := [
+  { name: 'Federer', sport: 'tennis' },
+  { name: 'Djokovic', sport: 'tennis' },
+  { name: 'Ronaldo', sport: 'soccer' },
+  { name: 'Messi', sport: 'soccer' },
+  { name: 'Beckham', sport: 'soccer' },
+];
+
+assert sort(
+  players,
+  5,
+  less,
+) == [
+  { name: 'Beckham', sport: 'soccer' },
+  { name: 'Djokovic', sport: 'tennis' },
+  { name: 'Federer', sport: 'tennis' },
+  { name: 'Messi', sport: 'soccer' },
+  { name: 'Ronaldo', sport: 'soccer' },
+];
+
+assert sort(
+  players,
+  5,
+  func(a, b) => [a.sport, a.name] < [b.sport, b.name],
+) == [
+  { name: 'Beckham', sport: 'soccer' },
+  { name: 'Messi', sport: 'soccer' },
+  { name: 'Ronaldo', sport: 'soccer' },
+  { name: 'Djokovic', sport: 'tennis' },
+  { name: 'Federer', sport: 'tennis' },
+];
+
+return 'done'; // #info #return-value
