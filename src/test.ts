@@ -191,18 +191,36 @@ for (const file of moreFiles) {
 }
 
 const unseenTagLimit = 5;
-const unseenTagList = Object.keys(unseenTags);
+
+const unseenTagList = (Object
+  .keys(unseenTags)
+  .map(tag => {
+    const matchingNote = allNotes.find(n =>
+      n.tags.indexOf(tag as Note.Tag) !== -1
+    );
+
+    return { tag, matchingNote };
+  })
+  .sort((a, b) => {
+    if (a.matchingNote && !b.matchingNote) {
+      return -1;
+    }
+
+    if (b.matchingNote && !a.matchingNote) {
+      return 1;
+    }
+
+    return a.tag < b.tag ? -1 : a.tag > b.tag ? 1 : 0;
+  })
+);
+
 const unseenTagLen = unseenTagList.length;
 
-for (const unseenTag of unseenTagList.slice(0, unseenTagLimit)) {
-  const matchingNote = allNotes.find(n =>
-    n.tags.indexOf(unseenTag as Note.Tag) !== -1
-  );
-
+for (const tagInfo of unseenTagList.slice(0, unseenTagLimit)) {
   log.error(
     '>>> error: unseen tag: ' +
-    unseenTag +
-    (matchingNote ? ` (produced in ${matchingNote.file})` : '')
+    tagInfo.tag +
+    (tagInfo.matchingNote ? ` (produced in ${tagInfo.matchingNote.file})` : '')
   );
 
   ok = false;
