@@ -56,7 +56,7 @@ type ST = {
       [f: string]: (
         {
           program: Syntax.Program;
-          cache: null | Value;
+          cache: null | Value | Exception;
         } |
         {
           program: null;
@@ -68,14 +68,14 @@ type ST = {
   };
   entry: {
     origin: Syntax.Element;
-    data: ValidValue | RefValue;
+    data: Value | RefValue;
   };
 };
 
 export function ScopeGetExt(
   scope: Scope.Map<ST>,
   name: string,
-): { origin: Syntax.Element, data: ValidValue } | null {
+): { origin: Syntax.Element, data: Value } | null {
   const entry = Scope.get(scope, name);
 
   if (entry === null) {
@@ -91,7 +91,7 @@ export function ScopeGetExt(
     };
   }
 
-  const value: ValidValue = (() => {
+  const value: Value = (() => {
     switch (entry.data.t) {
       case 'func-ref': {
         return VFunc({ exp: entry.data.v, scope });
@@ -144,7 +144,7 @@ export function VConcreteArray(v: ConcreteValue[]): VConcreteArray {
   return { cat: 'concrete', t: 'array', v };
 }
 
-type VValidArray = { cat: 'valid', t: 'array', v: ValidValue[] };
+type VValidArray = { cat: 'valid', t: 'array', v: Value[] };
 
 export type VArray = (
   VConcreteArray |
@@ -152,7 +152,7 @@ export type VArray = (
   never
 );
 
-export function VArray(v: ValidValue[]): VValidArray {
+export function VArray(v: Value[]): VValidArray {
   return { cat: 'valid', t: 'array', v };
 }
 
@@ -173,12 +173,12 @@ export type VObject = (
   {
     cat: 'valid',
     t: 'object',
-    v: { [key: string]: ValidValue },
+    v: { [key: string]: Value },
   } |
   never
 );
 
-export function VObject(v: { [key: string]: ValidValue }): VObject {
+export function VObject(v: { [key: string]: Value }): VObject {
   return { cat: 'valid', t: 'object', v };
 }
 
@@ -188,7 +188,7 @@ function VUnknown(): VUnknown {
   return { cat: 'valid', t: 'unknown', v: null };
 }
 
-export type VException = {
+export type Exception = {
   cat: 'invalid';
   t: 'exception';
   v: {
@@ -198,11 +198,11 @@ export type VException = {
   };
 }
 
-function VException(
+function Exception(
   origin: Syntax.Element,
   tags: Note.Tag[],
   message: string
-): VException {
+): Exception {
   return { cat: 'invalid', t: 'exception', v: { origin, tags, message } };
 }
 
@@ -217,17 +217,11 @@ export type ConcreteValue = (
   never
 );
 
-export type ValidValue = (
+export type Value = (
   ConcreteValue |
   VArray |
   VObject |
   VUnknown |
-  never
-);
-
-export type Value = (
-  ValidValue |
-  VException |
   never
 );
 
@@ -299,9 +293,9 @@ function TypedEqual(
   exp: Syntax.Expression,
   left: ConcreteValue,
   right: ConcreteValue,
-): VBool | VException {
+): VBool | Exception {
   if (!SameType(left, right)) {
-    return VException(exp,
+    return Exception(exp,
       ['type-error', 'comparison'],
       `Type error: ${left} ${exp.t} ${right}`,
     );
@@ -376,11 +370,11 @@ function TypedLessThan(
   exp: Syntax.Expression,
   left: ConcreteValue,
   right: ConcreteValue,
-): VBool | VException {
+): VBool | Exception {
   const sameType = SameType(left, right);
 
   if (sameType.v === false) {
-    return VException(exp,
+    return Exception(exp,
       ['type-error', 'comparison'],
       // TODO: Surfacing this is confusing because eg '>' gets swapped to '<'
       // and this inverts left and right (compared to user's code)
@@ -400,7 +394,7 @@ function TypedLessThan(
 
     case 'func': {
       // Not defining a way to compare functions right now.
-      return VException(exp,
+      return Exception(exp,
         ['type-error', 'function-comparison'],
         `Type error: ${left} ${exp.t} ${right}`,
       );
@@ -473,7 +467,7 @@ function TypedLessThan(
   }
 }
 
-function InvertIfBool<V extends Value>(x: V): V {
+function InvertIfBool<V extends Value | Exception>(x: V): V {
   if (x.t !== 'bool') {
     return x;
   }
@@ -488,7 +482,7 @@ function TypedComparison(
   op: ComparisonOp,
   left: ConcreteValue,
   right: ConcreteValue,
-): VBool | VException {
+): VBool | Exception {
   switch (op) {
     case '==': return TypedEqual(exp, left, right);
     case '!=': return InvertIfBool(TypedEqual(exp, left, right));
@@ -500,7 +494,7 @@ function TypedComparison(
 }
 
 namespace Value {
-  export function String(v: Value): string {
+  export function String(v: Value | Exception): string {
     switch (v.t) {
       case 'string': return JSON.stringify(v.v);
       case 'number': return v.v.toString();
@@ -570,7 +564,7 @@ function objMul(
   exp: Syntax.Expression,
   obj: VObject,
   n: VNumber
-): VObject | VException {
+): VObject | Exception {
   if (n.v === 0) {
     return VConcreteObject({});
   }
@@ -583,7 +577,7 @@ function objMul(
     return obj;
   }
 
-  return VException(exp,
+  return Exception(exp,
     ['object-multiplication'],
     `Attempt to multiply non-empty object by ${n.v} (can only multiply ` +
     'non-empty objects by 0 or 1)',
@@ -594,20 +588,12 @@ function objectLookup(
   exp: Syntax.Expression,
   obj: Value,
   index: Value,
-): Value {
-  if (obj.t === 'exception') {
-    return obj;
-  }
-
-  if (index.t === 'exception') {
-    return index;
-  }
-
+): Value | Exception {
   if (
     (obj.t !== 'object' && obj.t !== 'unknown') ||
     (index.t !== 'string' && index.t !== 'unknown')
   ) {
-    return VException(exp,
+    return Exception(exp,
       ['type-error', 'object-subscript'],
       `Type error: ${obj.t}[${index.t}]`,
     );
@@ -621,7 +607,7 @@ function objectLookup(
   const maybeValue = obj.v[index.v];
 
   if (maybeValue === undefined) {
-    return VException(exp,
+    return Exception(exp,
       ['key-not-found'],
       `Object key not found: ${index.v}`,
     );
@@ -632,11 +618,11 @@ function objectLookup(
 
 type Context = {
   scope: Scope.Map<ST>;
-  value: Value | null;
+  value: Value | Exception | null;
   notes: Note[];
 };
 
-type ValuedContext = Context & { value: Value };
+type ValuedContext = Context & { value: Value | Exception };
 
 function Context(root: ST['root']): Context {
   return {
@@ -792,7 +778,7 @@ function analyzeBlock(
 
           if (value.v === false) {
             // TODO: Format code for other exceptions like this
-            context.value = VException(statement.v,
+            context.value = Exception(statement.v,
               ['assert-false'],
               `Asserted ${ExpressionString(context.scope, statement.v)}`,
             );
@@ -818,7 +804,7 @@ function analyzeBlock(
           // TODO: unknown -> maybeException?
 
           if (condValue.t !== 'bool') {
-            context.value = VException(cond,
+            context.value = Exception(cond,
               ['non-bool-condition', 'if-condition'],
               `Type error: Non-bool condition: ${condValue.t}`,
             );
@@ -846,13 +832,13 @@ function analyzeBlock(
 
           // TODO: Impure function... (was too tempting, what will this look
           // like when rewritten in vortex?)
-          function cond(): VBool | VException {
+          function cond(): VBool | Exception {
             if (
               control !== null &&
               control.t !== 'condition' &&
               control.t !== 'setup; condition; next'
             ) {
-              return VException(
+              return Exception(
                 statement,
                 ['not-implemented', 'for-control'],
                 // TODO: Need to capture more structure in compiler notes
@@ -875,7 +861,7 @@ function analyzeBlock(
             context.notes.push(...condEval.notes);
 
             if (condEval.value.t !== 'bool') {
-              return VException(
+              return Exception(
                 condExp,
                 ['non-bool-condition', 'for-condition'],
                 `Type error: Non-bool condition: ${condEval.value.t}`,
@@ -983,7 +969,7 @@ function analyzeBlock(
 
         case 'break':
         case 'continue': {
-          context.value = VException(
+          context.value = Exception(
             statement,
             // TODO: Need to capture more structure in compiler notes
             ['not-implemented'],
@@ -1006,12 +992,12 @@ function analyzeBlock(
 function cachedImportRetrieval(
   scope: Scope<ST>,
   import_: Syntax.Import
-): Value {
+): Value | Exception {
   let { file, modules } = Scope.getRoot(scope);
   const resolved = Package.resolveImport(file, import_);
 
   if (typeof resolved !== 'string') {
-    return VException(
+    return Exception(
       import_,
       ['analysis', 'not-found'], // TODO: extra tag
       'Import not found: ' + resolved,
@@ -1025,7 +1011,7 @@ function cachedImportRetrieval(
       throw new Error('Shouldn\'t be possible');
     }
 
-    return VException(
+    return Exception(
       import_,
       ['analysis', 'not-implemented'],
       'Not implemented: external packages',
@@ -1069,7 +1055,7 @@ function cachedImportRetrieval(
 type TopExpressionResult = {
   scope: Scope.Map<ST>;
   notes: Note[];
-  exception: VException | null;
+  exception: Exception | null;
 };
 
 function TopExpressionResult(scope: Scope.Map<ST>): TopExpressionResult {
@@ -1167,7 +1153,7 @@ function evalTopExpression(
         }
 
         if (subValue.t !== 'number') {
-          exception = VException(
+          exception = Exception(
             subExp,
             ['analysis', 'type-error', 'inc-dec'],
             `Type error: ${subValue.t}${exp.t}`,
@@ -1177,7 +1163,7 @@ function evalTopExpression(
         }
 
         if (subExp.t !== 'IDENTIFIER') {
-          exception = VException(
+          exception = Exception(
             exp,
             ['not-implemented', 'non-identifier-assignment-target'],
             `Not implemented: non-identifier lvalues`,
@@ -1219,7 +1205,7 @@ function evalTopExpression(
       }
 
       case 'class': {
-        exception = VException(
+        exception = Exception(
           exp,
           ['not-implemented'],
           `Not implemented: ${exp.t} expression`,
@@ -1286,7 +1272,7 @@ function evalCreateOrAssign(
   exp: Syntax.Expression,
   leftExp: Syntax.Expression,
   op: '=' | ':=',
-  right: ValidValue,
+  right: Value,
 ): TopExpressionResult {
   let { scope, exception, notes } = topExpressionResult;
 
@@ -1297,7 +1283,7 @@ function evalCreateOrAssign(
 
       // TODO: Unknown should also work
       if (right.t !== leftExp.t) {
-        exception = VException(exp,
+        exception = Exception(exp,
           ['type-error', 'destructuring-mismatch'],
           // TODO: a vs an
           `Assignment target is an ${leftExp.t} but the value is a ` +
@@ -1308,7 +1294,7 @@ function evalCreateOrAssign(
       }
 
       if (right.cat !== 'concrete') {
-        exception = VException(exp,
+        exception = Exception(exp,
           ['type-error', 'destructuring-mismatch'],
           // TODO: This is wrong / implement proper unknown handling here
           'Assignment target is an array but the value is unknown',
@@ -1326,7 +1312,7 @@ function evalCreateOrAssign(
       if (leftExp.v.length !== numRightValues) {
         // TODO: Implement _ as special ignore identifier
         // TODO: Customize message for object destructuring?
-        exception = VException(
+        exception = Exception(
           exp,
           ['type-error', 'destructuring-mismatch', 'length-mismatch'],
           [
@@ -1352,7 +1338,7 @@ function evalCreateOrAssign(
         })();
 
         if (key !== null && !(key in right.v)) {
-          exception = VException(
+          exception = Exception(
             exp,
             ['type-error', 'destructuring-mismatch', 'key-not-found'],
             `Key ${key} from object destructuring expression not found ` +
@@ -1415,7 +1401,7 @@ function evalCreateOrAssign(
           accessorValue.t !== 'string' &&
           accessorValue.t !== 'number'
         ) {
-          exception = VException(accessor,
+          exception = Exception(accessor,
             ['type-error', 'subscript'],
             `Type error: ${accessorValue.t} subscript`,
           );
@@ -1429,7 +1415,7 @@ function evalCreateOrAssign(
         continue;
       }
 
-      exception = VException(leftBaseExp,
+      exception = Exception(leftBaseExp,
         ['invalid-assignment-target', 'destructuring'],
         // TODO: Don't analyze if failed validation and throw internal
         // error here instead
@@ -1470,10 +1456,10 @@ function evalCreateOrAssign(
     }
 
     function modifyChain(
-      oldValue: ValidValue,
+      oldValue: Value,
       chain: (string | number)[],
-      newValue: ValidValue,
-    ): Value {
+      newValue: Value,
+    ): Value | Exception {
       const [index, ...newChain] = chain;
 
       if (index === undefined) {
@@ -1487,7 +1473,7 @@ function evalCreateOrAssign(
         const oldSubValue = oldValue.v[index];
 
         if (oldSubValue === undefined && op !== ':=') {
-          return VException(leftExp,
+          return Exception(leftExp,
             ['key-not-found'],
             // TODO: Better message, location
             'Key not found',
@@ -1495,7 +1481,7 @@ function evalCreateOrAssign(
         }
 
         if (oldSubValue !== undefined && op === ':=') {
-          return VException(leftExp,
+          return Exception(leftExp,
             ['duplicate', 'duplicate-key'],
             `Trying to add key ${index} that already exists`,
           );
@@ -1534,7 +1520,7 @@ function evalCreateOrAssign(
         ) {
           // TODO: More accurate expression reference (just providing
           // entire lhs instead of specifically the bad subscript/.)
-          return VException(leftExp,
+          return Exception(leftExp,
             ['out-of-bounds', 'index-bad'],
             `Invalid index: ${index}`,
           );
@@ -1543,7 +1529,7 @@ function evalCreateOrAssign(
         if (index >= oldValue.v.length) {
           // TODO: More accurate expression reference (just providing
           // entire lhs instead of specifically the bad subscript/.)
-          return VException(
+          return Exception(
             leftExp,
             ['out-of-bounds', 'index-too-large'],
             [
@@ -1556,7 +1542,7 @@ function evalCreateOrAssign(
         }
 
         if (newChain.length === 0 && op === ':=') {
-          return VException(
+          return Exception(
             leftExp,
             ['duplicate', 'duplicate-index'],
             `Attempt to add duplicate index ${index} to array (the ` +
@@ -1595,7 +1581,7 @@ function evalCreateOrAssign(
 
       // TODO: More accurate expression reference (just providing entire
       // lhs instead of specifically the bad subscript/.)
-      return VException(leftExp,
+      return Exception(leftExp,
         ['type-error', 'index-bad'],
         `Type error: attempt to index ${oldValue.t} with a ` +
         typeof index,
@@ -1626,7 +1612,7 @@ function evalCreateOrAssign(
 }
 
 type SubExpressionResult = {
-  value: Value;
+  value: Value | Exception;
   notes: Note[];
 };
 
@@ -1636,7 +1622,7 @@ function evalSubExpression(
 ): SubExpressionResult {
   const notes: Note[] = [];
 
-  const value: Value = (() => {
+  const value: Value | Exception = (() => {
     switch (exp.t) {
       case 'NUMBER': { return VNumber(Number(exp.v)); }
       case 'BOOL': { return VBool(exp.v); }
@@ -1647,7 +1633,7 @@ function evalSubExpression(
         const entry = ScopeGetExt(scope, exp.v);
 
         if (entry === null) {
-          return VException(
+          return Exception(
             exp,
             ['not-found'],
             `Variable does not exist: ${exp.v}`
@@ -1687,7 +1673,7 @@ function evalSubExpression(
 
               for (const key of Object.keys(right.v)) {
                 if (leftKeys[key]) {
-                  return VException(exp,
+                  return Exception(exp,
                     [
                       'analysis',
                       'duplicate',
@@ -1707,7 +1693,7 @@ function evalSubExpression(
               return VObject({ ...left.v, ...right.v });
             }
 
-            const forbiddenTypes: ValidValue['t'][] = [
+            const forbiddenTypes: Value['t'][] = [
               'bool',
               'null',
               'func', // TODO: define function addition when appropriate
@@ -1781,7 +1767,7 @@ function evalSubExpression(
               return objMul(exp, obj, num);
             }
 
-            const forbiddenTypes: ValidValue['t'][] = [
+            const forbiddenTypes: Value['t'][] = [
               'bool',
               'null',
               'func', // TODO: define function multiplication when appropriate
@@ -1926,7 +1912,7 @@ function evalSubExpression(
         }
 
         if (right.value.t !== 'number') {
-          return VException(
+          return Exception(
             exp,
             ['type-error', 'unary-plus-minus'],
             `Type error: ${exp.t.slice(6)}${right.value.t}`,
@@ -1965,7 +1951,7 @@ function evalSubExpression(
             case 'null':
             case 'array':
             case 'object': {
-              return VException(funcExp,
+              return Exception(funcExp,
                 ['type-error', 'call-non-function'],
                 `Type error: attempt to call a ${func.t} as a function`
               );
@@ -1977,7 +1963,7 @@ function evalSubExpression(
           return func;
         }
 
-        const args: ValidValue[] = [];
+        const args: Value[] = [];
 
         for (const argExp of argExps) {
           const arg = evalSubExpression(scope, argExp);
@@ -1999,7 +1985,7 @@ function evalSubExpression(
 
             case 'func': {
               if (func.v.exp.v.args.length !== args.length) {
-                return VException(
+                return Exception(
                   exp,
                   ['type-error', 'arguments-length-mismatch'],
                   [
@@ -2114,21 +2100,21 @@ function evalSubExpression(
 
         if (container.t === 'array') {
           if (index.t !== 'number') {
-            return VException(exp,
+            return Exception(exp,
               ['type-error', 'subscript'],
               `Type error: ${container.t}[${index.t}]`,
             );
           }
 
           if (index.v < 0 || index.v !== Math.floor(index.v)) {
-            return VException(indexExp,
+            return Exception(indexExp,
               ['subscript', 'out-of-bounds', 'index-bad'],
               `Invalid array index: ${index.v}`,
             );
           }
 
           if (index.v >= container.v.length) {
-            return VException(
+            return Exception(
               exp,
               ['out-of-bounds', 'index-too-large'],
               [
@@ -2143,11 +2129,15 @@ function evalSubExpression(
           return container.v[index.v];
         }
 
+        if (index.t === 'exception') {
+          return index;
+        }
+
         if (container.t === 'object') {
           return objectLookup(exp, container, index);
         }
 
-        return VException(exp,
+        return Exception(exp,
           ['type-error', 'subscript', 'object'],
           `Type error: ${container.t}[${index.t}]`,
         );
@@ -2186,6 +2176,11 @@ function evalSubExpression(
 
         const objEval = evalSubExpression(scope, objExp);
         notes.push(...objEval.notes);
+
+        if (objEval.value.t === 'exception') {
+          return objEval.value;
+        }
+
         return objectLookup(exp, objEval.value, VString(keyExp.v));
       }
 
@@ -2221,7 +2216,7 @@ function evalSubExpression(
             return labelValue;
           }
 
-          let combinedLabelValue: Value = labelValue;
+          let combinedLabelValue: Value | Exception = labelValue;
 
           if (testValue !== null) {
             if (labelValue.cat !== 'concrete') {
@@ -2256,7 +2251,7 @@ function evalSubExpression(
               throw new Error('Shouldn\'t be possible');
             }
 
-            return VException(
+            return Exception(
               labelExp,
               ['type-error', 'non-bool-switch-case'],
               `Switch case was type {${labelValue.t}} instead of {bool}`,
@@ -2273,7 +2268,7 @@ function evalSubExpression(
         // TODO: Often the analyzer should be producing error notes and
         // continuing with an unknown instead of an exception. This is
         // definitely one of those cases.
-        return VException(
+        return Exception(
           exp,
           ['analysis', 'incomplete-switch'],
           'Switch did not handle every possibility',
@@ -2286,7 +2281,7 @@ function evalSubExpression(
 
       case 'methodCall':
       case 'class': {
-        return VException(
+        return Exception(
           exp,
           ['not-implemented'],
           `Not implemented: ${exp.t} expression`,
@@ -2325,8 +2320,8 @@ function evalVanillaOperator<T extends {
 }>(
   scope: Scope.Map<ST>,
   exp: T,
-  combine: (a: ValidValue, b: ValidValue) => Value | null,
-): { value: Value, notes: Note[] } {
+  combine: (a: Value, b: Value) => Value | Exception | null,
+): { value: Value | Exception, notes: Note[] } {
   const notes: Note[] = [];
 
   const left = evalSubExpression(scope, exp.v[0]);
@@ -2347,7 +2342,7 @@ function evalVanillaOperator<T extends {
   if (value === null) {
     // TODO: Combine should return something more informative than null to
     // indicate that a type error should result.
-    value = VException(
+    value = Exception(
       exp,
       ['type-error', 'operator'],
       `Type error: ${left.value.t} ${exp.t} ${right.value.t}`,
