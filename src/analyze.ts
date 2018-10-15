@@ -1273,8 +1273,7 @@ function evalTopExpression(
         return null;
       }
 
-      case 'class':
-      case 'import': {
+      case 'class': {
         exception = VException(
           exp,
           ['not-implemented'],
@@ -1314,7 +1313,11 @@ function evalTopExpression(
       case 'unary +':
       case 'array':
       case 'object':
+
+      // Well, this is a top expression but it's processed as a statement, does
+      // it really belong here? Something is up TODO.
       case 'import':
+
       case 'switch':
       case 'func':
       case 'class':
@@ -2335,9 +2338,12 @@ function evalSubExpression(
         );
       }
 
-      case 'methodCall':
-      case 'class':
       case 'import': {
+        return cachedImportRetrieval(scope, exp);
+      }
+
+      case 'methodCall':
+      case 'class': {
         return VException(
           exp,
           ['not-implemented'],
