@@ -110,6 +110,11 @@ type Closure = {
   origin: Syntax.Identifier;
 }[];
 
+type ST = {
+  root: {};
+  entry: VInfo;
+};
+
 type VInfo = {
   origin: Syntax.Identifier;
   data: {
@@ -119,7 +124,7 @@ type VInfo = {
     hoistInfo: null | {
       uses: {
         origin: Syntax.Identifier;
-        scope: Scope<VInfo>;
+        scope: Scope<ST>;
       }[];
       closure: null | Closure;
     };
@@ -137,9 +142,9 @@ function validateScope(block: Syntax.Block) {
     p: block.p,
   };
 
-  const funcValidation = validateFunctionScope(null, synthFunction);
+  const funcValidation = validateFunctionScope({ root: {} }, synthFunction);
 
-  if (funcValidation.closure.length > 0 || funcValidation.scope !== null) {
+  if (funcValidation.closure.length > 0 || !('root' in funcValidation.scope)) {
     throw new Error('Should not be possible');
   }
 
@@ -147,15 +152,15 @@ function validateScope(block: Syntax.Block) {
 }
 
 function validateFunctionScope(
-  outerScope: Scope<VInfo> | null,
+  outerScope: Scope<ST>,
   func: Syntax.FunctionExpression,
 ): {
   notes: Note[];
   closure: Closure;
-  scope: Scope<VInfo> | null,
+  scope: Scope<ST>,
 } {
   const notes: Note[] = [];
-  let scope: Scope<VInfo> | null = Scope.push<VInfo>(outerScope);
+  let scope: Scope<ST> | Scope.Root<ST> = Scope.push<ST>(outerScope);
   const closure: Closure = [];
 
   const items: ScopeItem[] = [];
@@ -298,7 +303,7 @@ function validateFunctionScope(
   items.push(pop);
 
   for (const item of items) {
-    if (scope === null) {
+    if ('root' in scope) {
       throw new Error('Attempt to process item without a scope');
     }
 
@@ -348,13 +353,10 @@ function validateFunctionScope(
         });
       }
     } else if (item.t === 'Push') {
-      scope = {
-        parent: scope,
-        variables: {},
-      };
+      scope = Scope.push(scope);
     } else if (item.t === 'Pop') {
-      for (const varName of Object.keys(scope.variables)) {
-        const variable = scope.variables[varName];
+      for (const varName of Object.keys(scope.entries)) {
+        const variable = scope.entries[varName];
 
         if (variable.data.uses.length === 0) {
           if (
@@ -540,7 +542,7 @@ function validateFunctionScope(
       item.t === 'IDENTIFIER' ||
       item.t === 'IDENTIFIER-mutationTarget'
     ) {
-      const scopeEntry = Scope.get<VInfo>(scope, item.v);
+      const scopeEntry = Scope.get<ST>(scope, item.v);
 
       if (!scopeEntry) {
         const tags: Note.Tag[] = ['validation', 'scope', 'not-found'];
@@ -650,6 +652,10 @@ function validateFunctionScope(
         if (hoistInfo.closure !== null) {
           // TODO: Do function duplicates need to be handled here?
           continue;
+        }
+
+        if ('root' in scope) {
+          throw new Error('Attempt to process item without a scope');
         }
 
         scope = Scope.set(scope, item.v.name.v, { ...scopeEntry.data,

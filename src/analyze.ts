@@ -37,13 +37,16 @@ export type FuncRef = {
   v: Syntax.FunctionExpression;
 };
 
-type SEntry = {
-  origin: Syntax.Element;
-  data: ValidValue | FuncRef;
+type ST = {
+  root: {};
+  entry: {
+    origin: Syntax.Element;
+    data: ValidValue | FuncRef;
+  };
 };
 
 export function ScopeGetExt(
-  scope: Scope<SEntry>,
+  scope: Scope.Map<ST>,
   name: string,
 ): { origin: Syntax.Element, data: ValidValue } | null {
   const entry = Scope.get(scope, name);
@@ -72,13 +75,13 @@ export type VFunc = {
   t: 'func';
   v: {
     exp: Syntax.FunctionExpression;
-    scope: Scope<SEntry>;
+    scope: Scope.Map<ST>;
   };
 };
 
 export function VFunc(v: {
   exp: Syntax.FunctionExpression;
-  scope: Scope<SEntry>;
+  scope: Scope.Map<ST>;
 }): VFunc {
   return { cat: 'concrete', t: 'func', v };
 }
@@ -587,14 +590,14 @@ function objectLookup(
 }
 
 type Context = {
-  scope: Scope<SEntry>;
+  scope: Scope.Map<ST>;
   value: Value;
   notes: Note[];
 };
 
 function Context(): Context {
   return {
-    scope: Scope<SEntry>(),
+    scope: Scope.Map<ST>({}),
     value: VMissing(),
     notes: [],
   };
@@ -782,10 +785,10 @@ function analyzeInContext(
           }
 
           if (condValue.v) {
-            context.scope = { parent: context.scope, variables: {} };
+            context.scope = Scope.push(context.scope);
             context = analyzeInContext(context, false, block, topLevel);
 
-            if (context.scope.parent === null) {
+            if ('root' in context.scope.parent) {
               throw new Error('This should not be possible');
             }
 
@@ -878,7 +881,7 @@ function analyzeInContext(
               }
             }
 
-            if (context.scope.parent === null) {
+            if ('root' in context.scope.parent) {
               throw new Error('This should not be possible');
             }
 
@@ -907,7 +910,7 @@ function analyzeInContext(
 
           const innerScope = context.scope.parent;
 
-          if (innerScope === null) {
+          if ('root' in innerScope) {
             throw new Error('This should not be possible');
           }
 
@@ -1020,7 +1023,7 @@ function analyzeInContext(
 }
 
 function evalTopExpression(
-  scope: Scope<SEntry>,
+  scope: Scope.Map<ST>,
   exp: Syntax.Expression,
 ): Context {
   let { value, notes } = Context();
@@ -1561,7 +1564,7 @@ function evalCreateOrAssign(
 }
 
 function evalSubExpression(
-  scope: Scope<SEntry>,
+  scope: Scope.Map<ST>,
   exp: Syntax.Expression
 ): { value: ValidValue | VException, notes: Note[] } {
   const notes: Note[] = [];
@@ -2249,7 +2252,7 @@ function evalVanillaOperator<T extends {
   v: [Syntax.Expression, Syntax.Expression],
   p: Syntax.Pos
 }>(
-  scope: Scope<SEntry>,
+  scope: Scope.Map<ST>,
   exp: T,
   combine: (a: ValidValue, b: ValidValue) => ValidValue | VException | null,
 ): { value: ValidValue | VException, notes: Note[] } {
@@ -2284,7 +2287,7 @@ function evalVanillaOperator<T extends {
 }
 
 function ExpressionString(
-  scope: Scope<SEntry>,
+  scope: Scope.Map<ST>,
   exp: Syntax.Expression
 ): string {
   switch (exp.t) {
