@@ -96,6 +96,38 @@ namespace Scope {
     };
   }
 
+  export function getRoot<S extends SB>(s: Scope<S>): S['root'] {
+    while (!('root' in s)) {
+      s = s.parent;
+    }
+
+    return s.root;
+  }
+
+  export function updateRoot<S extends SB>(
+    s: Scope<S>,
+    update: (root: S['root']) => S['root'],
+  ): Scope<S> {
+    if ('root' in s) {
+      return { ...s,
+        root: update(s.root),
+      };
+    }
+
+    return { ...s,
+      parent: updateRoot(s.parent, update),
+    };
+  }
+
+  export function updateMapRoot<S extends SB>(
+    s: Scope.Map<S>,
+    update: (root: S['root']) => S['root'],
+  ): Scope.Map<S> {
+    return { ...s,
+      parent: updateRoot(s.parent, update),
+    };
+  }
+
   export function push<S extends SB>(
     s: Scope<S> | Scope.Root<S>,
   ): Scope.Map<S> {

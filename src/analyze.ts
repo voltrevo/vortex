@@ -641,12 +641,6 @@ export default function analyze(pack: Package, file: string) {
     });
   }
 
-  // TODO: This is pretty hacky
-  context.scope = Scope.add(context.scope, ':file', {
-    origin: moduleEntry.program,
-    data: VString(file),
-  });
-
   context = analyzeInContext(context, true, moduleEntry.program, true);
 
   return context;
@@ -925,13 +919,8 @@ function analyzeInContext(
 
         case 'import': {
           const importValue = (() => {
-            const fileEntry = Scope.get(context.scope, ':file');
-
-            if (fileEntry === null || fileEntry.data.t !== 'string') {
-              throw new Error('Shouldn\'t be possible');
-            }
-
-            const resolved = Package.resolveImport(fileEntry.data.v, statement);
+            const { file } = Scope.getRoot(context.scope);
+            const resolved = Package.resolveImport(file, statement);
 
             if (!Array.isArray(resolved)) {
               return VUnknown();
