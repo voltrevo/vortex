@@ -594,7 +594,7 @@ function objectLookup(
   exp: Syntax.Expression,
   obj: Value,
   index: Value,
-): ValidValue | VException {
+): Value {
   if (obj.t === 'exception') {
     return obj;
   }
@@ -1006,7 +1006,7 @@ function analyzeBlock(
 function cachedImportRetrieval(
   scope: Scope<ST>,
   import_: Syntax.Import
-): ValidValue | VException {
+): Value {
   let { file, modules } = Scope.getRoot(scope);
   const resolved = Package.resolveImport(file, import_);
 
@@ -1473,7 +1473,7 @@ function evalCreateOrAssign(
       oldValue: ValidValue,
       chain: (string | number)[],
       newValue: ValidValue,
-    ): ValidValue | VException {
+    ): Value {
       const [index, ...newChain] = chain;
 
       if (index === undefined) {
@@ -1626,7 +1626,7 @@ function evalCreateOrAssign(
 }
 
 type SubExpressionResult = {
-  value: ValidValue | VException;
+  value: Value;
   notes: Note[];
 };
 
@@ -1636,7 +1636,7 @@ function evalSubExpression(
 ): SubExpressionResult {
   const notes: Note[] = [];
 
-  const value: ValidValue | VException = (() => {
+  const value: Value = (() => {
     switch (exp.t) {
       case 'NUMBER': { return VNumber(Number(exp.v)); }
       case 'BOOL': { return VBool(exp.v); }
@@ -2221,7 +2221,7 @@ function evalSubExpression(
             return labelValue;
           }
 
-          let combinedLabelValue: ValidValue | VException = labelValue;
+          let combinedLabelValue: Value = labelValue;
 
           if (testValue !== null) {
             if (labelValue.cat !== 'concrete') {
@@ -2325,8 +2325,8 @@ function evalVanillaOperator<T extends {
 }>(
   scope: Scope.Map<ST>,
   exp: T,
-  combine: (a: ValidValue, b: ValidValue) => ValidValue | VException | null,
-): { value: ValidValue | VException, notes: Note[] } {
+  combine: (a: ValidValue, b: ValidValue) => Value | null,
+): { value: Value, notes: Note[] } {
   const notes: Note[] = [];
 
   const left = evalSubExpression(scope, exp.v[0]);
