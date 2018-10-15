@@ -663,7 +663,7 @@ export default function analyze(pack: Package, file: string) {
     return context;
   }
 
-  for (const dep of moduleEntry.dependencies.local) {
+  for (const dep of Object.keys(pack.modules)) {
     const depEntry = pack.modules[dep];
 
     if (depEntry === undefined || depEntry.t === 'ParserNotes') {

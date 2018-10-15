@@ -69,7 +69,7 @@ namespace Package {
         local: [
           ...pack.dependencies.local,
           ...moduleEntry.dependencies.local.filter(dep => (
-            dep !== file &&
+            Object.keys(pack.modules).indexOf(dep) === -1 &&
             pack.dependencies.local.indexOf(dep) === -1
           ))
         ],

@@ -1,0 +1,9 @@
+import mutuallyCircularA;
+
+return func(n) { // #info #return-value
+  if (n > 0) {
+    return mutuallyCircularA(n - 1);
+  }
+
+  return 'B';
+};

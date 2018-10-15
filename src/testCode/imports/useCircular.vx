@@ -1,0 +1,7 @@
+import circular;
+import mutuallyCircularA;
+
+assert circular.foo(3) == 'odd';
+assert mutuallyCircularA(5) == 'B';
+
+return 'done'; // #info #return-value
