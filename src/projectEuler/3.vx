@@ -1,4 +1,4 @@
-import Math from 'core';
+import Math from 'core'; // #error #not-implemented
 
 n := 600851475143;
 i := 2;

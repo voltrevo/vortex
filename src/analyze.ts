@@ -37,9 +37,31 @@ export type FuncRef = {
   v: Syntax.FunctionExpression;
 };
 
+export type ImportRef = {
+  cat: 'ref';
+  t: 'import-ref';
+  v: Syntax.Import;
+};
+
 type ST = {
   root: {
     file: string;
+    modules: {
+      [f: string]: (
+        {
+          program: Syntax.Program;
+
+          // TODO: When functions get a copy of the scope, they won't have the
+          // latest cache
+          cache: null | Value;
+        } |
+        {
+          program: null;
+          cache: VUnknown;
+        } |
+        undefined
+      );
+    };
   };
   entry: {
     origin: Syntax.Element;
@@ -597,16 +619,17 @@ type Context = {
   notes: Note[];
 };
 
-function Context(file: string): Context {
+function Context(root: ST['root']): Context {
   return {
-    scope: Scope.Map<ST>({ file }),
+    scope: Scope.Map<ST>(root),
     value: VMissing(),
     notes: [],
   };
 }
 
 export default function analyze(pack: Package, file: string) {
-  let context = Context(file);
+  let context = Context({ file, modules: {} });
+  const modules: ST['root']['modules'] = {};
 
   const moduleEntry = pack.modules[file];
 
@@ -616,30 +639,24 @@ export default function analyze(pack: Package, file: string) {
   }
 
   for (const dep of moduleEntry.dependencies.local) {
-    const importCtx = analyze(pack, dep);
+    const depEntry = pack.modules[dep];
 
-    if (importCtx.value.cat === 'invalid') {
-      context.value = (() => {
-        switch (importCtx.value.t) {
-          case 'missing': return VException(
-            // TODO: better location
-            moduleEntry.program,
-            ['analysis', 'value-needed'],
-            'Didn\'t get a value for import ' + dep,
-          );
+    if (depEntry === undefined || depEntry.t === 'ParserNotes') {
+      modules[dep] = {
+        program: null,
+        cache: VUnknown(),
+      };
 
-          case 'exception': return importCtx.value;
-        }
-      })();
-
-      return context;
+      continue;
     }
 
-    context.scope = Scope.add(context.scope, `import:@:${dep}`, {
-      origin: moduleEntry.program,
-      data: importCtx.value,
-    });
+    modules[dep] = {
+      program: depEntry.program,
+      cache: null,
+    };
   }
+
+  context.scope = Scope.updateMapRoot(context.scope, r => ({ ...r, modules }));
 
   context = analyzeInContext(context, true, moduleEntry.program, true);
 
@@ -919,24 +936,90 @@ function analyzeInContext(
 
         case 'import': {
           const importValue = (() => {
-            const { file } = Scope.getRoot(context.scope);
+            let { file, modules } = Scope.getRoot(context.scope);
             const resolved = Package.resolveImport(file, statement);
 
-            if (!Array.isArray(resolved)) {
+            if (typeof resolved !== 'string') {
+              context.notes.push(Note(statement,
+                'warn',
+                ['analysis', 'not-found'], // TODO: extra tag
+                'Import not found: ' + resolved,
+              ));
+
               return VUnknown();
             }
 
-            const importScopeName = ['import', ...resolved].join(':');
+            const entry = modules[resolved];
 
-            const importEntry = Scope.get(context.scope, importScopeName);
+            if (entry === undefined) {
+              if (resolved.split('/')[0] === '@') {
+                throw new Error('Shouldn\'t be possible');
+              }
 
-            if (importEntry === null) {
-              // TODO: will this be possible?
+              context.notes.push(Note(
+                statement,
+                'error',
+                ['analysis', 'not-implemented'],
+                'Not implemented: external packages',
+              ));
+
               return VUnknown();
             }
 
-            return importEntry.data;
+            // This case would be handled nicely by @below but typescript
+            // has a limitation which necessitates handling it here
+            if (entry.program === null) {
+              if (entry.cache === null) {
+                // Related to the issue above, typescript really ought to know
+                // this
+                throw new Error('Shouldn\'t be possible');
+              }
+
+              return entry.cache;
+            }
+
+            // @below
+            if (entry.cache !== null) {
+              return entry.cache;
+            }
+
+            const entryCtx = analyzeInContext(
+              Context({
+                file: resolved,
+                modules,
+              }),
+              true,
+              entry.program,
+              true,
+            );
+
+            context.notes.push(...entryCtx.notes);
+            ({ modules } = Scope.getRoot(entryCtx.scope));
+
+            modules = { ...modules,
+              [resolved]: {
+                program: entry.program,
+                cache: entryCtx.value,
+              },
+            };
+
+            context.scope = Scope.updateMapRoot(
+              context.scope,
+              r => ({ file, modules })
+            );
+
+            return entryCtx.value;
           })();
+
+          if (importValue.cat === 'invalid') {
+            if (importValue.t === 'missing') {
+              // TODO: need to work on typing here
+              throw new Error('Seems impossible');
+            }
+
+            context.value = importValue;
+            return null;
+          }
 
           const [importIdentifier] = statement.v;
 

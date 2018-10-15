@@ -191,12 +191,12 @@ namespace Package {
     for (const import_ of imports) {
       const resolved = resolveImport(file, import_);
 
-      if (!Array.isArray(resolved)) {
+      if (typeof resolved !== 'string') {
         notes.push(resolved);
         continue;
       }
 
-      const [sourceEntry, resolvedPath] = resolved;
+      const [sourceEntry, ...resolvedPath] = resolved.split('/');
 
       let packageDeps = (
         sourceEntry === '@' ?
@@ -209,7 +209,7 @@ namespace Package {
         dependencies.remote[sourceEntry] = packageDeps;
       }
 
-      packageDeps.push(resolvedPath);
+      packageDeps.push(`@/${resolvedPath.join('/')}`);
     }
 
     return {
@@ -223,7 +223,7 @@ namespace Package {
   export function resolveImport(
     file: string,
     import_: Syntax.Import,
-  ): [string, string] | Note.FileNote {
+  ): string | Note.FileNote {
     let { v: [name, source] } = import_;
     const nameStr = name.v + '.vx';
 
@@ -236,7 +236,7 @@ namespace Package {
     let [sourceEntry, ...sourceRest] = sourceStr.split('/');
 
     if (sourceEntry !== '.' && sourceEntry !== '..') {
-      return [sourceEntry, [...sourceRest, nameStr].join('/')];
+      return [sourceEntry, ...sourceRest, nameStr].join('/');
     }
 
     const fileParts = file.split('/');
@@ -259,7 +259,8 @@ namespace Package {
       [sourceEntry, ...sourceRest] = sourceRest;
     }
 
-    const resolvedPath = [
+    return [
+      '@',
       ...dirPath,
       ...(
         sourceEntry === undefined || sourceEntry === '.' ?
@@ -269,8 +270,6 @@ namespace Package {
       ...sourceRest,
       nameStr,
     ].join('/');
-
-    return ['@', resolvedPath];
   }
 }
 
