@@ -18,6 +18,7 @@ const files = (spawnSync('git', ['ls-files'])
     a.toUpperCase() === b.toUpperCase() ? 0 :
     1
   ))
+  .map(f => '@/' + f)
 );
 
 const unseenTags: { [tag: string]: true | undefined } = {};
@@ -75,8 +76,13 @@ let ok = true;
 const readFile = (file: string): string | null => {
   let text: string | null = null;
 
+  // TODO: Need to handle 'files' like (stdin) and (compiler) better
+  if (file.slice(0, 2) !== '@/' && file[0] !== '(') {
+    throw new Error('Expected a local read: ' + file);
+  }
+
   try {
-    text = readFileSync(file).toString();
+    text = readFileSync(file.slice(2)).toString();
   } catch {}
 
   return text;

@@ -91,14 +91,31 @@ export function ScopeGetExt(
     };
   }
 
-  if (entry.data.t === 'import-ref') {
-    // TODO...
-    throw new Error('Shouldn\'t be possible');
-  }
+  const value: ValidValue = (() => {
+    switch (entry.data.t) {
+      case 'func-ref': {
+        return VFunc({ exp: entry.data.v, scope });
+      }
+
+      case 'import-ref': {
+        const importValue = cachedImportRetrieval(scope, entry.data.v);
+
+        if (importValue.cat === 'invalid') {
+          console.log(Scope.getRoot(scope).file);
+          throw new Error(
+            'Unable to handle invalid value from import. This possibility ' +
+            'should be prevented before here but currently it can happen.'
+          );
+        }
+
+        return importValue;
+      }
+    }
+  })();
 
   return {
     origin: entry.origin,
-    data: VFunc({ exp: entry.data.v, scope }),
+    data: value,
   };
 }
 
@@ -943,87 +960,15 @@ function analyzeInContext(
         }
 
         case 'import': {
-          const importValue = (() => {
-            let { file, modules } = Scope.getRoot(context.scope);
-            const resolved = Package.resolveImport(file, statement);
-
-            if (typeof resolved !== 'string') {
-              context.notes.push(Note(statement,
-                'warn',
-                ['analysis', 'not-found'], // TODO: extra tag
-                'Import not found: ' + resolved,
-              ));
-
-              return VUnknown();
-            }
-
-            const entry = modules[resolved];
-
-            if (entry === undefined) {
-              if (resolved.split('/')[0] === '@') {
-                throw new Error('Shouldn\'t be possible');
-              }
-
-              context.notes.push(Note(
-                statement,
-                'error',
-                ['analysis', 'not-implemented'],
-                'Not implemented: external packages',
-              ));
-
-              return VUnknown();
-            }
-
-            // This case would be handled nicely by @below but typescript
-            // has a limitation which necessitates handling it here
-            if (entry.program === null) {
-              if (entry.cache === null) {
-                // Related to the issue above, typescript really ought to know
-                // this
-                throw new Error('Shouldn\'t be possible');
-              }
-
-              return entry.cache;
-            }
-
-            // @below
-            if (entry.cache !== null) {
-              return entry.cache;
-            }
-
-            const entryCtx = analyzeInContext(
-              Context({
-                file: resolved,
-                modules,
-              }),
-              true,
-              entry.program,
-              true,
-            );
-
-            context.notes.push(...entryCtx.notes);
-
-            // cache updates use object identity... for now
-            entry.cache = entryCtx.value;
-
-            return entryCtx.value;
-          })();
-
-          if (importValue.cat === 'invalid') {
-            if (importValue.t === 'missing') {
-              // TODO: need to work on typing here
-              throw new Error('Seems impossible');
-            }
-
-            context.value = importValue;
-            return null;
-          }
-
           const [importIdentifier] = statement.v;
 
           context.scope = Scope.add(context.scope, importIdentifier.v, {
             origin: importIdentifier,
-            data: importValue,
+            data: {
+              cat: 'ref',
+              t: 'import-ref',
+              v: statement,
+            },
           });
 
           return null;
@@ -1092,6 +1037,88 @@ function analyzeInContext(
   context.notes.push(...finalNotes);
 
   return context;
+}
+
+function cachedImportRetrieval(
+  scope: Scope<ST>,
+  import_: Syntax.Import
+): ValidValue | VException {
+  let { file, modules } = Scope.getRoot(scope);
+  const resolved = Package.resolveImport(file, import_);
+
+  if (typeof resolved !== 'string') {
+    return VException(
+      import_,
+      ['analysis', 'not-found'], // TODO: extra tag
+      'Import not found: ' + resolved,
+    );
+  }
+
+  const entry = modules[resolved];
+
+  if (entry === undefined) {
+    if (resolved.split('/')[0] === '@') {
+      throw new Error('Shouldn\'t be possible');
+    }
+
+    return VException(
+      import_,
+      ['analysis', 'not-implemented'],
+      'Not implemented: external packages',
+    );
+  }
+
+  if (entry.cache && entry.cache.t === 'missing') {
+    return VException(
+      import_,
+      ['analysis', 'not-implemented'],
+      'Not implemented: external packages',
+    );
+  }
+
+  // This case would be handled nicely by @below but typescript
+  // has a limitation which necessitates handling it here
+  if (entry.program === null) {
+    if (entry.cache === null) {
+      // Related to the issue above, typescript really ought to know
+      // this
+      throw new Error('Shouldn\'t be possible');
+    }
+
+    return entry.cache;
+  }
+
+  // @below
+  if (entry.cache !== null) {
+    return entry.cache;
+  }
+
+  const entryCtx = analyzeInContext(
+    Context({
+      file: resolved,
+      modules,
+    }),
+    true,
+    entry.program,
+    true,
+  );
+
+  // TODO!!: dropping notes from entryCtx, make it part of the cache and
+  // surface them
+
+  // cache updates use object identity... for now
+  entry.cache = entryCtx.value;
+
+  // TODO: Improve typing and fix duplicating this logic
+  if (entry.cache && entry.cache.t === 'missing') {
+    return VException(
+      import_,
+      ['analysis', 'not-implemented'],
+      'Not implemented: external packages',
+    );
+  }
+
+  return entry.cache;
 }
 
 type TopExpressionResult = {
@@ -1650,10 +1677,15 @@ function evalCreateOrAssign(
   return { scope, exception, notes };
 }
 
+type SubExpressionResult = {
+  value: ValidValue | VException;
+  notes: Note[];
+};
+
 function evalSubExpression(
   scope: Scope.Map<ST>,
   exp: Syntax.Expression
-): { value: ValidValue | VException, notes: Note[] } {
+): SubExpressionResult {
   const notes: Note[] = [];
 
   const value: ValidValue | VException = (() => {

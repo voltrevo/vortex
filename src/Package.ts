@@ -120,7 +120,6 @@ namespace Package {
     pack: Package,
     readFile: (file: string) => string | null,
   ): Package {
-    debugger;
     while (pack.dependencies.local.length > 0) {
       const file = pack.dependencies.local[0];
       pack = Package.set(pack, file, readFile(file));
@@ -196,7 +195,7 @@ namespace Package {
         continue;
       }
 
-      const [sourceEntry, ...resolvedPath] = resolved.split('/');
+      const sourceEntry = resolved.split('/')[0];
 
       let packageDeps = (
         sourceEntry === '@' ?
@@ -209,7 +208,7 @@ namespace Package {
         dependencies.remote[sourceEntry] = packageDeps;
       }
 
-      packageDeps.push(`@/${resolvedPath.join('/')}`);
+      packageDeps.push(resolved);
     }
 
     return {
@@ -259,8 +258,7 @@ namespace Package {
       [sourceEntry, ...sourceRest] = sourceRest;
     }
 
-    return [
-      '@',
+    const res = [
       ...dirPath,
       ...(
         sourceEntry === undefined || sourceEntry === '.' ?
@@ -270,6 +268,8 @@ namespace Package {
       ...sourceRest,
       nameStr,
     ].join('/');
+
+    return res;
   }
 }
 

@@ -147,8 +147,12 @@ const inputs: ({ type: 'file', name: string } | string)[] = [];
   const readFile = (file: string) => {
     let text: string | null = null;
 
+    if (file.slice(0, 2) !== '@/') {
+      throw new Error('Expected a local read: ' + file);
+    }
+
     try {
-      text = fs.readFileSync(file).toString()
+      text = fs.readFileSync(file.slice(2)).toString()
     } catch {}
 
     return text;
@@ -165,7 +169,7 @@ const inputs: ({ type: 'file', name: string } | string)[] = [];
       );
     } catch {}
 
-    const file = typeof input === 'string' ? '(stdin)' : input.name;
+    const file = '@/' + (typeof input === 'string' ? '(stdin)' : input.name);
 
     let notes = Compiler.compile([file], f => f === file ? text : readFile(f));
 
@@ -200,7 +204,7 @@ const inputs: ({ type: 'file', name: string } | string)[] = [];
         }
 
         case 'vim-ale': {
-          if (note.file !== '(stdin)') {
+          if (note.file !== '@/(stdin)') {
             break;
           }
 
