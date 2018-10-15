@@ -1,3 +1,3 @@
 message := 'Hello';
 assert {message} == {message: 'Hello'};
-return {message}; // #info #return-value
+return {message};

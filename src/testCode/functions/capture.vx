@@ -2,4 +2,4 @@ a := 1;
 func twiceA() => 2 * a;
 assert twiceA() == 2;
 
-return 'done'; // #info #return-value
+return 'done';

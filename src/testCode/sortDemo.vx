@@ -38,4 +38,4 @@ assert sort(
   { name: 'Federer', sport: 'tennis' },
 ];
 
-return 'done'; // #info #return-value
+return 'done';

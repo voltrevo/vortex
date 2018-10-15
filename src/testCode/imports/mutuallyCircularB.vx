@@ -1,6 +1,6 @@
 import mutuallyCircularA;
 
-return func(n) { // #info #return-value
+return func(n) {
   if (n > 0) {
     return mutuallyCircularA(n - 1);
   }

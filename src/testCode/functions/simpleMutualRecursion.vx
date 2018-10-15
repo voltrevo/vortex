@@ -14,4 +14,4 @@ func bar(n) {
   return foo(n - 1);
 };
 
-return foo(5); // #info #return-value
+return foo(5);

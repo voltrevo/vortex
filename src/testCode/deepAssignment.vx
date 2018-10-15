@@ -13,4 +13,4 @@ a.b[0].c[0].d.e = 'hello';
 assert a == {b: [{c: [{d: {e: 'hello'}}]}]};
 assert z == {b: [{c: [{d: {e: 'hi'}}]}]};
 
-return 0; // #info #return-value
+return 0;

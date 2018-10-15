@@ -22,4 +22,4 @@ for (i := 0; i < 4; i++) {
 assert {a: 1, b: 2} == {b: 2, a: 1};
 assert {b: 10, a: 1} < {a: 10, b: 1};
 
-return 0; // #info #return-value
+return 0;

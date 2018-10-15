@@ -28,4 +28,4 @@ func abs(x) {
   return x;
 };
 
-return 'done'; // #info #return-value
+return 'done';

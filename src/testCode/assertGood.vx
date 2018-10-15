@@ -6,4 +6,4 @@ for (i := 1; i <= 4; i++) {
 
 assert sum == 10;
 
-return sum; // #info #return-value
+return sum;

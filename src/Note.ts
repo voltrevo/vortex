@@ -46,7 +46,7 @@ namespace Note {
   export type FileNote = Note & { file: string };
 
   export function FileNote(
-    file: string, 
+    file: string,
     el: { p?: Syntax.Pos },
     level: 'error' | 'warn' | 'info',
     tags: Note.Tag[],
@@ -76,7 +76,6 @@ namespace Note {
     'warn' |
     'info' |
     'analysis' |
-    'return-value' |
     'validation' |
     'package' |
     'invalid-import-source' |
@@ -95,7 +94,6 @@ namespace Note {
     'variable-disambiguation' |
     'unused' |
     'exception' |
-    'value-needed' |
     'not-implemented' |
     'assert-false' |
     'type-error' |
@@ -157,7 +155,6 @@ namespace Note {
     'warn',
     'info',
     'analysis',
-    'return-value',
     'validation',
     'package',
     'invalid-import-source',
@@ -176,7 +173,6 @@ namespace Note {
     'variable-disambiguation',
     'unused',
     'exception',
-    'value-needed',
     'not-implemented',
     'assert-false',
     'type-error',

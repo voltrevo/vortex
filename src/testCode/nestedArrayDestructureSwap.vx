@@ -5,4 +5,4 @@ c := 3;
 [[a, b], c] = [[c, b], a];
 
 assert [a, b, c] == [3, 2, 1];
-return [a, b, c]; // #info #return-value
+return [a, b, c];

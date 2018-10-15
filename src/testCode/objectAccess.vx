@@ -6,4 +6,4 @@ assert obj['c']['d'] == 3;
 assert [obj.a, obj.b] == [1, 2];
 assert obj.c.d == 3;
 
-return obj.c.d; // #info #return-value
+return obj.c.d;

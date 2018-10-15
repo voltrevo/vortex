@@ -77,4 +77,4 @@ assert [4, 3, 2, 1, 1, -7] == sort(
   func(a, b) => a > b,
 );
 
-return sort; // #info #return-value
+return sort;

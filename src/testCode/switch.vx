@@ -24,4 +24,4 @@ assert [
   'more than 10',
 ];
 
-return 'done'; // #info #return-value
+return 'done';

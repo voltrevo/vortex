@@ -5,4 +5,4 @@ sayHello := func(name) {
 msg := sayHello('computer');
 assert msg == 'Hi computer';
 
-return msg; // #info #return-value
+return msg;

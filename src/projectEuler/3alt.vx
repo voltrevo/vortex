@@ -17,7 +17,7 @@ for {
     }
 
     assert n == 6857;
-    return n; // #info #return-value
+    return n;
   }
 }
 

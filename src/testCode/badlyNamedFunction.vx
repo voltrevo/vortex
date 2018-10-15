@@ -1,1 +1,1 @@
-return func wrongName() => 42; // #info #warn #unused #return-value TODO:filename-mismatch
+return func wrongName() => 42; // #warn #unused TODO:filename-mismatch

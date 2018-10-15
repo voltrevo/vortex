@@ -6,4 +6,4 @@ for (i := 1; i <= 5; i++) {
 
 squares += [1] * 3;
 
-return squares; // #info #return-value
+return squares;

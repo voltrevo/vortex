@@ -2,7 +2,7 @@
 // should occur though)
 import circular; // TODO
 
-return { // #info #return-value
+return {
   foo: func(n) {
     if (n % 2 == 0) {
       // This works because imports are lazy, so the circular variable doesn't

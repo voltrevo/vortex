@@ -7,4 +7,4 @@ a := 'bad-capture'; // #warn #unused
 
 assert testCapture()() == 'good-capture';
 
-return 'done'; // #info #return-value
+return 'done';

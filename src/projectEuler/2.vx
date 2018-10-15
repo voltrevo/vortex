@@ -12,6 +12,6 @@ for {
 
   if (f2 > 4000000) {
     assert sum == 4613732;
-    return sum; // #info #return-value
+    return sum;
   }
 }

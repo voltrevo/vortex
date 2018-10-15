@@ -14,4 +14,4 @@ assert -34 == first(
   func(a, b) => abs(a) > abs(b),
 );
 
-return 'done'; // #info #return-value
+return 'done';

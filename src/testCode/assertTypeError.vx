@@ -1,2 +1,2 @@
 assert 1; // #error #assert-non-bool
-return 1; // #info #return-value
+return 1;

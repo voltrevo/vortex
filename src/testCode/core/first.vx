@@ -1,4 +1,4 @@
-return func first(arr, len, before) { // #info #return-value #warn #unused TODO: not unused
+return func first(arr, len, before) { // #warn #unused TODO: not unused
   result := arr[0];
 
   for (i := 1; i < len; i++) {

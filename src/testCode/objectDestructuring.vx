@@ -13,4 +13,4 @@ assert [a, b] == [2, 1];
 {a: b, b: a} = {a, b};
 assert [a, b] == [2, 1];
 
-return 'done'; // #info #return-value
+return 'done';

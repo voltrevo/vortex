@@ -1,1 +1,1 @@
-return (import factorial)(5); // #info #return-value
+return (import factorial)(5);

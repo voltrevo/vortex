@@ -1,7 +1,9 @@
+TODO: When an exception is generated, add a subnote for each level of the stack
+TODO: Make module notes part of the module result cache (especially so they don't go missing)
 TODO: Detect infinite import loops
 TODO: Fix asserts passing due to unknowns during test (generally want asserts to be graceful with unknowns in the actual language) (test requires all imports to resolve?)
+TODO: Tail recursion
 TODO: Make parser aware of imports, establish location indexing/linking so that caching the result of programs with equivalent syntax trees is possible
-TODO: Try to remove VMissing
 TODO: Add tests for every possible note
 TODO: Cross-type comparison operators e.g. :<:
 TODO: Spaceship operator <=>

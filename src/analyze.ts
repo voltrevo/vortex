@@ -188,12 +188,6 @@ function VUnknown(): VUnknown {
   return { cat: 'valid', t: 'unknown', v: null };
 }
 
-export type VMissing = { cat: 'invalid', t: 'missing', v: null };
-
-function VMissing(): VMissing {
-  return { cat: 'invalid', t: 'missing', v: null };
-}
-
 export type VException = {
   cat: 'invalid';
   t: 'exception';
@@ -233,7 +227,6 @@ export type ValidValue = (
 
 export type Value = (
   ValidValue |
-  VMissing |
   VException |
   never
 );
@@ -537,7 +530,6 @@ namespace Value {
       }}`;
 
       case 'unknown': return '<unknown>';
-      case 'missing': return '<missing>';
       case 'exception': return `<exception: ${v.v.message}>`;
     }
   }
@@ -640,27 +632,28 @@ function objectLookup(
 
 type Context = {
   scope: Scope.Map<ST>;
-  value: Value;
+  value: Value | null;
   notes: Note[];
 };
+
+type ValuedContext = Context & { value: Value };
 
 function Context(root: ST['root']): Context {
   return {
     scope: Scope.Map<ST>(root),
-    value: VMissing(),
+    value: null,
     notes: [],
   };
 }
 
-export default function analyze(pack: Package, file: string) {
+export default function analyze(pack: Package, file: string): ValuedContext {
   let context = Context({ file, modules: {} });
   const modules: ST['root']['modules'] = {};
 
   const moduleEntry = pack.modules[file];
 
   if (moduleEntry === undefined || moduleEntry.t === 'ParserNotes') {
-    context.value = VUnknown();
-    return context;
+    return { ...context, value: VUnknown() };
   }
 
   for (const dep of Object.keys(pack.modules)) {
@@ -683,16 +676,36 @@ export default function analyze(pack: Package, file: string) {
 
   context.scope = Scope.updateMapRoot(context.scope, r => ({ ...r, modules }));
 
-  context = analyzeInContext(context, true, moduleEntry.program, true);
+  const valuedContext = analyzeBody(context, moduleEntry.program);
 
-  return context;
+  if (valuedContext.value.t === 'exception') {
+    valuedContext.notes.push(Note(
+      valuedContext.value.v.origin,
+      'error',
+      ['analysis', 'exception', ...valuedContext.value.v.tags],
+      'Threw exception: ' + valuedContext.value.v.message,
+    ));
+  }
+
+  return valuedContext;
 }
 
-function analyzeInContext(
+function analyzeBody(
   context: Context,
-  needsValue: boolean,
   program: Syntax.Program,
-  topLevel: boolean,
+): ValuedContext {
+  const { scope, value, notes } = analyzeBlock(context, program);
+
+  if (value === null) {
+    throw new Error('Shouldn\'t be possible');
+  }
+
+  return { scope, value, notes };
+}
+
+function analyzeBlock(
+  context: Context,
+  program: Syntax.Program,
 ): Context {
   const hoists: Syntax.FunctionExpression[] = [];
   const statements: Syntax.Statement[] = [];
@@ -744,15 +757,6 @@ function analyzeInContext(
 
           context.value = value;
           context.notes.push(...notes);
-
-          if (value.t !== 'exception' && topLevel) {
-            context.notes.push(Note(
-              statement,
-              'info',
-              ['analysis', 'return-value'],
-              `Returned ${Value.String(value)}`,
-            ));
-          }
 
           return null;
         }
@@ -824,7 +828,7 @@ function analyzeInContext(
 
           if (condValue.v) {
             context.scope = Scope.push(context.scope);
-            context = analyzeInContext(context, false, block, topLevel);
+            context = analyzeBlock(context, block);
 
             if ('root' in context.scope.parent) {
               throw new Error('This should not be possible');
@@ -837,6 +841,7 @@ function analyzeInContext(
         }
 
         case 'for': {
+          debugger;
           const { control, block } = statement.v;
 
           // TODO: Impure function... (was too tempting, what will this look
@@ -908,15 +913,17 @@ function analyzeInContext(
             }
 
             context.scope = Scope.push(context.scope);
-            context = analyzeInContext(context, false, block, topLevel);
+            context = analyzeBlock(context, block);
 
-            if (context.value.t !== 'exception') {
-              if (control && control.t === 'setup; condition; next') {
-                const [, , next] = control.v;
-                const nextCtx = evalTopExpression(context.scope, next);
-                context.scope = nextCtx.scope;
-                context.notes.push(...nextCtx.notes);
-              }
+            if (
+              context.value === null &&
+              control &&
+              control.t === 'setup; condition; next'
+            ) {
+              const [, , next] = control.v;
+              const nextCtx = evalTopExpression(context.scope, next);
+              context.scope = nextCtx.scope;
+              context.notes.push(...nextCtx.notes);
             }
 
             if ('root' in context.scope.parent) {
@@ -927,7 +934,7 @@ function analyzeInContext(
 
             iterations++;
 
-            if (context.value.t !== 'missing') {
+            if (context.value !== null) {
               break;
             }
 
@@ -988,53 +995,10 @@ function analyzeInContext(
       }
     })());
 
-    if (context.value.t !== 'missing') {
+    if (context.value != null) {
       break;
     }
   }
-
-  const finalNotes: Note[] = (() => {
-    switch (context.value.t) {
-      case 'exception':
-        // Exception should be picked up and result in a note elsewhere if
-        // we're not returning a value.
-        if (needsValue) {
-          return [Note(
-            context.value.v.origin,
-            'error',
-            ['analysis', 'exception', 'value-needed', ...context.value.v.tags],
-            `Threw exception: ${context.value.v.message}`,
-          )];
-        }
-
-        return [];
-
-      case 'missing': {
-        if (needsValue) {
-          return [Note(
-            program,
-            'error',
-            ['analysis', 'value-needed'],
-            `Returned ${Value.String(context.value)}`,
-          )];
-        }
-
-        return [];
-      }
-
-      case 'unknown':
-      case 'string':
-      case 'number':
-      case 'bool':
-      case 'null':
-      case 'func':
-      case 'array':
-      case 'object':
-        return [];
-    }
-  })();
-
-  context.notes.push(...finalNotes);
 
   return context;
 }
@@ -1068,14 +1032,6 @@ function cachedImportRetrieval(
     );
   }
 
-  if (entry.cache && entry.cache.t === 'missing') {
-    return VException(
-      import_,
-      ['analysis', 'not-implemented'],
-      'Not implemented: external packages',
-    );
-  }
-
   // This case would be handled nicely by @below but typescript
   // has a limitation which necessitates handling it here
   if (entry.program === null) {
@@ -1093,14 +1049,12 @@ function cachedImportRetrieval(
     return entry.cache;
   }
 
-  const entryCtx = analyzeInContext(
+  const entryCtx = analyzeBody(
     Context({
       file: resolved,
       modules,
     }),
-    true,
     entry.program,
-    true,
   );
 
   // TODO!!: dropping notes from entryCtx, make it part of the cache and
@@ -1108,15 +1062,6 @@ function cachedImportRetrieval(
 
   // cache updates use object identity... for now
   entry.cache = entryCtx.value;
-
-  // TODO: Improve typing and fix duplicating this logic
-  if (entry.cache && entry.cache.t === 'missing') {
-    return VException(
-      import_,
-      ['analysis', 'not-implemented'],
-      'Not implemented: external packages',
-    );
-  }
 
   return entry.cache;
 }
@@ -2105,25 +2050,22 @@ function evalSubExpression(
 
               let funcCtx: Context = {
                 scope: funcScope,
-                value: VMissing(),
+                value: null,
                 notes: [],
               };
 
-              funcCtx = analyzeInContext(funcCtx, true, body, false);
+              // It really shouldn't be needed to make a new name here but
+              // typescript can't see that funcCtx would be a ValuedContext
+              // after this point even though that's the return type of
+              // analyzeBody.
+              const valuedFuncCtx = analyzeBody(funcCtx, body);
 
               // TODO: Do some processing with the notes here. Return info
               // should be suppressed (and all infos?) and others should be
               // duplicated at the call site.
-              notes.push(...funcCtx.notes);
+              notes.push(...valuedFuncCtx.notes);
 
-              if (funcCtx.value.t === 'missing') {
-                throw new Error(
-                  'Missing value from function call should have been caught ' +
-                  'during validation'
-                );
-              }
-
-              return funcCtx.value;
+              return valuedFuncCtx.value;
             }
           }
         })();
@@ -2333,7 +2275,7 @@ function evalSubExpression(
         // definitely one of those cases.
         return VException(
           exp,
-          ['analysis', 'incomplete-switch', 'value-needed'],
+          ['analysis', 'incomplete-switch'],
           'Switch did not handle every possibility',
         );
       }

@@ -1,1 +1,1 @@
-return (import foo); // #info #return-value
+return (import foo);

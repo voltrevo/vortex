@@ -15,4 +15,4 @@ func foo() {
   return sum; // TODO:unreachable
 };
 
-return foo(); // #info #return-value
+return foo();

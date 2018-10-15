@@ -1,4 +1,4 @@
 res := calc();
 func calc() => 37;
 
-return res; // #info #return-value
+return res;
