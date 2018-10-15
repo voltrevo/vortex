@@ -38,7 +38,9 @@ export type FuncRef = {
 };
 
 type ST = {
-  root: {};
+  root: {
+    file: string;
+  };
   entry: {
     origin: Syntax.Element;
     data: ValidValue | FuncRef;
@@ -595,16 +597,16 @@ type Context = {
   notes: Note[];
 };
 
-function Context(): Context {
+function Context(file: string): Context {
   return {
-    scope: Scope.Map<ST>({}),
+    scope: Scope.Map<ST>({ file }),
     value: VMissing(),
     notes: [],
   };
 }
 
 export default function analyze(pack: Package, file: string) {
-  let context = Context();
+  let context = Context(file);
 
   const moduleEntry = pack.modules[file];
 
@@ -691,8 +693,8 @@ function analyzeInContext(
           context.scope = ctx.scope;
           context.notes.push(...ctx.notes);
 
-          if (ctx.value.t === 'exception') {
-            context.value = ctx.value;
+          if (ctx.exception !== null) {
+            context.value = ctx.exception;
           }
 
           return null;
@@ -1022,11 +1024,21 @@ function analyzeInContext(
   return context;
 }
 
+type TopExpressionResult = {
+  scope: Scope.Map<ST>;
+  notes: Note[];
+  exception: VException | null;
+};
+
+function TopExpressionResult(scope: Scope.Map<ST>): TopExpressionResult {
+  return { scope, notes: [], exception: null };
+}
+
 function evalTopExpression(
   scope: Scope.Map<ST>,
   exp: Syntax.Expression,
-): Context {
-  let { value, notes } = Context();
+): TopExpressionResult {
+  let { notes, exception } = TopExpressionResult(scope);
 
   checkNull((() => {
     switch (exp.t) {
@@ -1084,12 +1096,12 @@ function evalTopExpression(
         notes.push(...right.notes);
 
         if (right.value.t === 'exception') {
-          value = right.value;
+          exception = right.value;
           return null;
         }
 
-        ({ scope, value, notes } = evalCreateOrAssign(
-          { scope, value, notes },
+        ({ scope, exception, notes } = evalCreateOrAssign(
+          { scope, exception, notes },
           exp,
           leftExp,
           exp.t === ':=' ? ':=' : '=',
@@ -1108,12 +1120,12 @@ function evalTopExpression(
         const subValue = subEval.value;
 
         if (subValue.t === 'exception') {
-          value = subValue;
+          exception = subValue;
           return null;
         }
 
         if (subValue.t !== 'number') {
-          value = VException(
+          exception = VException(
             subExp,
             ['analysis', 'type-error', 'inc-dec'],
             `Type error: ${subValue.t}${exp.t}`,
@@ -1123,7 +1135,7 @@ function evalTopExpression(
         }
 
         if (subExp.t !== 'IDENTIFIER') {
-          value = VException(
+          exception = VException(
             exp,
             ['not-implemented', 'non-identifier-assignment-target'],
             `Not implemented: non-identifier lvalues`,
@@ -1147,12 +1159,17 @@ function evalTopExpression(
       }
 
       case 'func': {
-        value = VFunc({ exp, scope });
+        const func = VFunc({ exp, scope });
 
-        if (exp.topExp && exp.v.name) {
+        if (!exp.topExp) {
+          // TODO: Enforce this by typing?
+          throw new Error('Shouldn\'t be possible');
+        }
+
+        if (exp.v.name) {
           scope = Scope.add(scope, exp.v.name.v, {
             origin: exp,
-            data: value,
+            data: func,
           });
         }
 
@@ -1161,7 +1178,7 @@ function evalTopExpression(
 
       case 'class':
       case 'import': {
-        value = VException(
+        exception = VException(
           exp,
           ['not-implemented'],
           `Not implemented: ${exp.t} expression`,
@@ -1216,17 +1233,17 @@ function evalTopExpression(
     }
   })());
 
-  return { scope, value, notes };
+  return { scope, exception, notes };
 }
 
 function evalCreateOrAssign(
-  context: Context,
+  topExpressionResult: TopExpressionResult,
   exp: Syntax.Expression,
   leftExp: Syntax.Expression,
   op: '=' | ':=',
   right: ValidValue,
-): Context {
-  let { scope, value, notes } = context;
+): TopExpressionResult {
+  let { scope, exception, notes } = topExpressionResult;
 
   (() => {
     if (leftExp.t === 'array' || leftExp.t === 'object') {
@@ -1235,7 +1252,7 @@ function evalCreateOrAssign(
 
       // TODO: Unknown should also work
       if (right.t !== leftExp.t) {
-        value = VException(exp,
+        exception = VException(exp,
           ['type-error', 'destructuring-mismatch'],
           // TODO: a vs an
           `Assignment target is an ${leftExp.t} but the value is a ` +
@@ -1246,7 +1263,7 @@ function evalCreateOrAssign(
       }
 
       if (right.cat !== 'concrete') {
-        value = VException(exp,
+        exception = VException(exp,
           ['type-error', 'destructuring-mismatch'],
           // TODO: This is wrong / implement proper unknown handling here
           'Assignment target is an array but the value is unknown',
@@ -1264,7 +1281,7 @@ function evalCreateOrAssign(
       if (leftExp.v.length !== numRightValues) {
         // TODO: Implement _ as special ignore identifier
         // TODO: Customize message for object destructuring?
-        value = VException(
+        exception = VException(
           exp,
           ['type-error', 'destructuring-mismatch', 'length-mismatch'],
           [
@@ -1290,7 +1307,7 @@ function evalCreateOrAssign(
         })();
 
         if (key !== null && !(key in right.v)) {
-          value = VException(
+          exception = VException(
             exp,
             ['type-error', 'destructuring-mismatch', 'key-not-found'],
             `Key ${key} from object destructuring expression not found ` +
@@ -1301,15 +1318,15 @@ function evalCreateOrAssign(
         }
 
         const subRight = right.v[key !== null ? key : i];
-        ({ scope, value, notes } = evalCreateOrAssign(
-          { scope, value, notes },
+        ({ scope, exception, notes } = evalCreateOrAssign(
+          { scope, exception, notes },
           exp,
           target,
           op,
           subRight,
         ));
 
-        if (value.t === 'exception') {
+        if (exception !== null) {
           return null;
         }
       }
@@ -1353,7 +1370,7 @@ function evalCreateOrAssign(
           accessorValue.t !== 'string' &&
           accessorValue.t !== 'number'
         ) {
-          value = VException(accessor,
+          exception = VException(accessor,
             ['type-error', 'subscript'],
             `Type error: ${accessorValue.t} subscript`,
           );
@@ -1367,7 +1384,7 @@ function evalCreateOrAssign(
         continue;
       }
 
-      value = VException(leftBaseExp,
+      exception = VException(leftBaseExp,
         ['invalid-assignment-target', 'destructuring'],
         // TODO: Don't analyze if failed validation and throw internal
         // error here instead
@@ -1547,7 +1564,7 @@ function evalCreateOrAssign(
     );
 
     if (newBaseValue.t === 'exception') {
-      value = newBaseValue;
+      exception = newBaseValue;
       return null;
     }
 
@@ -1560,7 +1577,7 @@ function evalCreateOrAssign(
     return null;
   })();
 
-  return { scope, value, notes };
+  return { scope, exception, notes };
 }
 
 function evalSubExpression(
@@ -1981,8 +1998,12 @@ function evalSubExpression(
                 return bodyEval.value;
               }
 
-              let funcCtx = Context();
-              funcCtx.scope = funcScope;
+              let funcCtx: Context = {
+                scope: funcScope,
+                value: VMissing(),
+                notes: [],
+              };
+
               funcCtx = analyzeInContext(funcCtx, true, body, false);
 
               // TODO: Do some processing with the notes here. Return info
