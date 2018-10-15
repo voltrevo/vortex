@@ -43,6 +43,12 @@ export type ImportRef = {
   v: Syntax.Import;
 };
 
+export type RefValue = (
+  FuncRef |
+  ImportRef |
+  never
+);
+
 type ST = {
   root: {
     file: string;
@@ -50,9 +56,6 @@ type ST = {
       [f: string]: (
         {
           program: Syntax.Program;
-
-          // TODO: When functions get a copy of the scope, they won't have the
-          // latest cache
           cache: null | Value;
         } |
         {
@@ -65,7 +68,7 @@ type ST = {
   };
   entry: {
     origin: Syntax.Element;
-    data: ValidValue | FuncRef;
+    data: ValidValue | RefValue;
   };
 };
 
@@ -86,6 +89,11 @@ export function ScopeGetExt(
       origin: entry.origin,
       data: entry.data,
     };
+  }
+
+  if (entry.data.t === 'import-ref') {
+    // TODO...
+    throw new Error('Shouldn\'t be possible');
   }
 
   return {
@@ -994,19 +1002,9 @@ function analyzeInContext(
             );
 
             context.notes.push(...entryCtx.notes);
-            ({ modules } = Scope.getRoot(entryCtx.scope));
 
-            modules = { ...modules,
-              [resolved]: {
-                program: entry.program,
-                cache: entryCtx.value,
-              },
-            };
-
-            context.scope = Scope.updateMapRoot(
-              context.scope,
-              r => ({ file, modules })
-            );
+            // cache updates use object identity... for now
+            entry.cache = entryCtx.value;
 
             return entryCtx.value;
           })();
