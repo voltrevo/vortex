@@ -1,4 +1,4 @@
-import { Analyzer, Module_ } from './analyze';
+import { Analyzer, Module_ } from './Analyzer';
 import Note from './Note';
 import Package from './Package';
 import SecondsDiff from './SecondsDiff';

@@ -1,39 +1,10 @@
-import checkNull from './checkNull';
-import Note from './Note';
-import Package from './Package';
-import Scope from './Scope';
-import Syntax from './parser/Syntax';
+import checkNull from '../checkNull';
+import Note from '../Note';
+import Package from '../Package';
+import Scope from '../Scope';
+import Syntax from '../parser/Syntax';
 
-// TODO: Types start with capitals
-// (primitive types can be lowercase?)
-
-export type VString = { cat: 'concrete', t: 'string', v: string };
-
-export function VString(v: string): VString {
-  return { cat: 'concrete', t: 'string', v };
-}
-
-export type VNumber = { cat: 'concrete', t: 'number', v: number };
-
-export function VNumber(v: number): VNumber {
-  return { cat: 'concrete', t: 'number', v };
-}
-
-export type VBool = { cat: 'concrete', t: 'bool', v: boolean };
-
-export function VBool(v: boolean): VBool {
-  return { cat: 'concrete', t: 'bool', v };
-}
-
-export type VNull = { cat: 'concrete', t: 'null', v: null };
-
-export function VNull(): VNull {
-  return { cat: 'concrete', t: 'null', v: null };
-}
-
-export function VBlank(): Value {
-  return VUnknown();
-}
+import Outcome from './Outcome';
 
 export type FuncRef = {
   cat: 'ref';
@@ -53,9 +24,6 @@ export type RefValue = (
   never
 );
 
-export type Outcome = Value | Exception;
-export function MaybeOutcome(): Outcome | null { return null; }
-
 export type Module_ = (
   {
     loaded: true,
@@ -66,154 +34,54 @@ export type Module_ = (
   {
     loaded: false,
     program: null;
-    outcome: VUnknown;
+    outcome: Outcome.Unknown;
   } |
   never
 );
 
-export type VFunc = {
-  cat: 'concrete';
-  t: 'func';
-  v: {
-    exp: Syntax.FunctionExpression;
-    az: Analyzer;
-  };
-};
-
-export function VFunc(v: {
-  exp: Syntax.FunctionExpression;
-  az: Analyzer;
-}): VFunc {
-  return { cat: 'concrete', t: 'func', v };
-}
-
-export type VConcreteArray = {
-  cat: 'concrete',
-  t: 'array', v: ConcreteValue[],
-};
-
-export function VConcreteArray(v: ConcreteValue[]): VConcreteArray {
-  return { cat: 'concrete', t: 'array', v };
-}
-
-type VValidArray = { cat: 'valid', t: 'array', v: Value[] };
-
-export type VArray = (
-  VConcreteArray |
-  VValidArray |
-  never
-);
-
-export function VArray(v: Value[]): VValidArray {
-  return { cat: 'valid', t: 'array', v };
-}
-
-export type VConcreteObject = {
-  cat: 'concrete',
-  t: 'object',
-  v: { [key: string]: ConcreteValue },
-};
-
-export function VConcreteObject(
-  v: { [key: string]: ConcreteValue }
-): VConcreteObject {
-  return { cat: 'concrete', t: 'object', v };
-}
-
-export type VObject = (
-  VConcreteObject |
-  {
-    cat: 'valid',
-    t: 'object',
-    v: { [key: string]: Value },
-  } |
-  never
-);
-
-export function VObject(v: { [key: string]: Value }): VObject {
-  return { cat: 'valid', t: 'object', v };
-}
-
-export type VUnknown = { cat: 'valid', t: 'unknown', v: null };
-
-function VUnknown(): VUnknown {
-  return { cat: 'valid', t: 'unknown', v: null };
-}
-
-export type Exception = {
-  cat: 'invalid';
-  t: 'exception';
-  v: {
-    origin: Syntax.Element;
-    tags: Note.Tag[];
-    message: string;
-  };
-}
-
-function Exception(
-  origin: Syntax.Element,
-  tags: Note.Tag[],
-  message: string
-): Exception {
-  return { cat: 'invalid', t: 'exception', v: { origin, tags, message } };
-}
-
-export type ConcreteValue = (
-  VString |
-  VNumber |
-  VBool |
-  VNull |
-  VFunc |
-  VConcreteArray |
-  VConcreteObject |
-  never
-);
-
-export type Value = (
-  ConcreteValue |
-  VArray |
-  VObject |
-  VUnknown |
-  never
-);
-
-function SameType(left: ConcreteValue, right: ConcreteValue): VBool {
+function SameType(
+  left: Outcome.Concrete,
+  right: Outcome.Concrete
+): Outcome.Bool {
   switch (left.t) {
     case 'func': {
       if (right.t !== 'func') {
-        return VBool(false);
+        return Outcome.Bool(false);
       }
 
       // TODO: Types of arguments?
-      return VBool(left.v.exp.v.args.length === right.v.exp.v.args.length);
+      return Outcome.Bool(
+        left.v.exp.v.args.length ===
+        right.v.exp.v.args.length
+      );
     }
 
     case 'array': {
       if (right.t !== 'array' || right.v.length !== left.v.length) {
-        return VBool(false);
+        return Outcome.Bool(false);
       }
 
       for (let i = 0; i < left.v.length; i++) {
         const subSameType = SameType(left.v[i], right.v[i]);
 
         if (!subSameType) {
-          return VBool(false);
+          return Outcome.Bool(false);
         }
       }
 
-      return VBool(true);
+      return Outcome.Bool(true);
     }
 
     case 'object': {
       if (right.t !== 'object') {
-        return VBool(false);
+        return Outcome.Bool(false);
       }
 
       const leftKeys = Object.keys(left.v).sort();
       const rightKeys = Object.keys(right.v).sort();
 
       if (leftKeys.length !== rightKeys.length) {
-        return VBool(false);
+        return Outcome.Bool(false);
       }
 
       for (let i = 0; i < leftKeys.length; i++) {
@@ -223,31 +91,31 @@ function SameType(left: ConcreteValue, right: ConcreteValue): VBool {
         )
 
         if (!subSameType) {
-          return VBool(false);
+          return Outcome.Bool(false);
         }
 
-        return VBool(true);
+        return Outcome.Bool(true);
       }
 
-      return VBool(true);
+      return Outcome.Bool(true);
     }
 
     case 'string':
     case 'number':
     case 'bool':
     case 'null': {
-      return VBool(left.t === right.t);
+      return Outcome.Bool(left.t === right.t);
     }
   }
 }
 
 function TypedEqual(
   exp: Syntax.Expression,
-  left: ConcreteValue,
-  right: ConcreteValue,
-): VBool | Exception {
+  left: Outcome.Concrete,
+  right: Outcome.Concrete,
+): Outcome.Bool | Outcome.Exception {
   if (!SameType(left, right)) {
-    return Exception(exp,
+    return Outcome.Exception(exp,
       ['type-error', 'comparison'],
       `Type error: ${left} ${exp.t} ${right}`,
     );
@@ -258,7 +126,7 @@ function TypedEqual(
     case 'number':
     case 'bool':
     case 'null': {
-      return VBool(left.v === right.v);
+      return Outcome.Bool(left.v === right.v);
     }
 
     case 'func': {
@@ -285,11 +153,11 @@ function TypedEqual(
         }
 
         if (!subEq.v) {
-          return VBool(false);
+          return Outcome.Bool(false);
         }
       }
 
-      return VBool(true);
+      return Outcome.Bool(true);
     }
 
     case 'object': {
@@ -309,28 +177,28 @@ function TypedEqual(
         }
 
         if (!subEq.v) {
-          return VBool(false);
+          return Outcome.Bool(false);
         }
       }
 
-      return VBool(true);
+      return Outcome.Bool(true);
     }
   }
 }
 
 function TypedLessThan(
   exp: Syntax.Expression,
-  left: ConcreteValue,
-  right: ConcreteValue,
-): VBool | Exception {
+  left: Outcome.Concrete,
+  right: Outcome.Concrete,
+): Outcome.Bool | Outcome.Exception {
   const sameType = SameType(left, right);
 
   if (sameType.v === false) {
-    return Exception(exp,
+    return Outcome.Exception(exp,
       ['type-error', 'comparison'],
       // TODO: Surfacing this is confusing because eg '>' gets swapped to '<'
       // and this inverts left and right (compared to user's code)
-      `Type error: ${Value.String(left)} < ${Value.String(right)}`,
+      `Type error: ${Outcome.JsString(left)} < ${Outcome.JsString(right)}`,
     );
   }
 
@@ -341,12 +209,12 @@ function TypedLessThan(
     case 'null': {
       // Need to use any here because typescript thinks null comparison is bad
       // but we're ok with it and it does the right thing.
-      return VBool((left.v as any) < (right.v as any));
+      return Outcome.Bool((left.v as any) < (right.v as any));
     }
 
     case 'func': {
       // Not defining a way to compare functions right now.
-      return Exception(exp,
+      return Outcome.Exception(exp,
         ['type-error', 'function-comparison'],
         `Type error: ${left} ${exp.t} ${right}`,
       );
@@ -365,7 +233,7 @@ function TypedLessThan(
         }
 
         if (subLT.v) {
-          return VBool(true);
+          return Outcome.Bool(true);
         }
 
         const subGT = TypedLessThan(exp, right.v[i], left.v[i]);
@@ -375,11 +243,11 @@ function TypedLessThan(
         }
 
         if (subGT.v) {
-          return VBool(false);
+          return Outcome.Bool(false);
         }
       }
 
-      return VBool(false);
+      return Outcome.Bool(false);
     }
 
     case 'object': {
@@ -400,7 +268,7 @@ function TypedLessThan(
         }
 
         if (subLT.v) {
-          return VBool(true);
+          return Outcome.Bool(true);
         }
 
         const subGT = TypedLessThan(exp, right.v[key], left.v[key]);
@@ -410,11 +278,11 @@ function TypedLessThan(
         }
 
         if (subGT.v) {
-          return VBool(false);
+          return Outcome.Bool(false);
         }
       }
 
-      return VBool(false);
+      return Outcome.Bool(false);
     }
   }
 }
@@ -432,9 +300,9 @@ type ComparisonOp = '==' | '!=' | '<' | '>' | '<=' | '>=';
 function TypedComparison(
   exp: Syntax.Expression,
   op: ComparisonOp,
-  left: ConcreteValue,
-  right: ConcreteValue,
-): VBool | Exception {
+  left: Outcome.Concrete,
+  right: Outcome.Concrete,
+): Outcome.Bool | Outcome.Exception {
   switch (op) {
     case '==': return TypedEqual(exp, left, right);
     case '!=': return InvertIfBool(TypedEqual(exp, left, right));
@@ -445,53 +313,17 @@ function TypedComparison(
   }
 }
 
-namespace Value {
-  export function String(v: Outcome): string {
-    switch (v.t) {
-      case 'string': return JSON.stringify(v.v);
-      case 'number': return v.v.toString();
-      case 'bool': return v.v.toString();
-      case 'null': return 'null';
-
-      // TODO: include argument names
-      case 'func': return (
-        `<func ${v.v.exp.v.name ? v.v.exp.v.name.v : '(anonymous)'}>`
-      );
-
-      case 'array': {
-        switch (v.cat) {
-          // These are the same but need to be separated out due to a curious
-          // typescript edge case
-          case 'concrete': return `[${v.v.map(Value.String).join(', ')}]`;
-          case 'valid': return `[${v.v.map(Value.String).join(', ')}]`;
-        }
-      }
-
-      case 'object': return `{${
-        Object.keys(v.v).sort().map(key => (
-          // TODO: In future keys can be non-identifiers and will need to be
-          // quoted
-          `${key}: ${Value.String(v.v[key])}`
-        )).join(', ')
-      }}`;
-
-      case 'unknown': return '<unknown>';
-      case 'exception': return `<exception: ${v.v.message}>`;
-    }
-  }
-}
-
-function stringMul(s: VString, n: VNumber): VString {
+function stringMul(s: Outcome.String, n: Outcome.Number): Outcome.String {
   // TODO: Check n is an appropriate number (wait for integer implementation?)
-  return VString(s.v.repeat(n.v));
+  return Outcome.String(s.v.repeat(n.v));
 }
 
-function arrayMul(a: VArray, n: VNumber): VArray {
+function arrayMul(a: Outcome.Array, n: Outcome.Number): Outcome.Array {
   // TODO: Check n is an appropriate number (wait for integer implementation?)
 
   switch (a.cat) {
     case 'concrete': {
-      const res = VConcreteArray([]);
+      const res = Outcome.ConcreteArray([]);
 
       for (let i = 0; i < n.v; i++) {
         res.v.push(...a.v);
@@ -501,7 +333,7 @@ function arrayMul(a: VArray, n: VNumber): VArray {
     }
 
     case 'valid': {
-      const res = VArray([]);
+      const res = Outcome.Array([]);
 
       for (let i = 0; i < n.v; i++) {
         res.v.push(...a.v);
@@ -514,11 +346,11 @@ function arrayMul(a: VArray, n: VNumber): VArray {
 
 function objMul(
   exp: Syntax.Expression,
-  obj: VObject,
-  n: VNumber
-): VObject | Exception {
+  obj: Outcome.Object,
+  n: Outcome.Number
+): Outcome.Object | Outcome.Exception {
   if (n.v === 0) {
-    return VConcreteObject({});
+    return Outcome.ConcreteObject({});
   }
 
   if (n.v === 1) {
@@ -529,7 +361,7 @@ function objMul(
     return obj;
   }
 
-  return Exception(exp,
+  return Outcome.Exception(exp,
     ['object-multiplication'],
     `Attempt to multiply non-empty object by ${n.v} (can only multiply ` +
     'non-empty objects by 0 or 1)',
@@ -538,14 +370,14 @@ function objMul(
 
 function objectLookup(
   exp: Syntax.Expression,
-  obj: Value,
-  index: Value,
+  obj: Outcome.Value,
+  index: Outcome.Value,
 ): Outcome {
   if (
     (obj.t !== 'object' && obj.t !== 'unknown') ||
     (index.t !== 'string' && index.t !== 'unknown')
   ) {
-    return Exception(exp,
+    return Outcome.Exception(exp,
       ['type-error', 'object-subscript'],
       `Type error: ${obj.t}[${index.t}]`,
     );
@@ -553,13 +385,13 @@ function objectLookup(
 
   if (obj.t === 'unknown' || index.t === 'unknown') {
     // TODO: maybeException?
-    return VUnknown();
+    return Outcome.Unknown();
   }
 
   const maybeValue = obj.v[index.v];
 
   if (maybeValue === undefined) {
-    return Exception(exp,
+    return Outcome.Exception(exp,
       ['key-not-found'],
       `Object key not found: ${index.v}`,
     );
@@ -588,7 +420,7 @@ export function Analyzer(pack: Package, file: string): Analyzer {
       modules[dep] = {
         loaded: false,
         program: null,
-        outcome: VUnknown(),
+        outcome: Outcome.Unknown(),
       };
 
       continue;
@@ -613,7 +445,7 @@ export function Analyzer(pack: Package, file: string): Analyzer {
 
 export type ValueEntry = {
   origin: Syntax.Element,
-  data: Value,
+  data: Outcome.Value,
 };
 
 export namespace Analyzer {
@@ -621,7 +453,7 @@ export namespace Analyzer {
     root: {};
     entry: {
       origin: Syntax.Element;
-      data: Value | RefValue;
+      data: Outcome.Value | RefValue;
     };
   };
 
@@ -654,12 +486,12 @@ export namespace Analyzer {
       return [entryCopy, az];
     }
 
-    let mo = MaybeOutcome();
+    let mo = Outcome.Maybe();
 
     checkNull((() => {
       switch (entry.data.t) {
         case 'func-ref': {
-          mo = VFunc({ exp: entry.data.v, az });
+          mo = Outcome.Func({ exp: entry.data.v, az });
           return null;
         }
 
@@ -852,7 +684,7 @@ function analyzeBlock(
     });
   }
 
-  let mout = MaybeOutcome();
+  let mout = Outcome.Maybe();
 
   for (const statement of statements) {
     [mout, az] = analyzeStatement(az, statement);
@@ -905,7 +737,7 @@ function analyzeStatement(
 
       if (out.v === false) {
         // TODO: Format code for other exceptions like this
-        const ex = Exception(statement.v,
+        const ex = Outcome.Exception(statement.v,
           ['assert-false'],
           `Asserted ${ExpressionString(az, statement.v)}`,
         );
@@ -928,7 +760,7 @@ function analyzeStatement(
       // TODO: unknown -> maybeException?
 
       if (condOut.t !== 'bool') {
-        const ex = Exception(cond,
+        const ex = Outcome.Exception(cond,
           ['non-bool-condition', 'if-condition'],
           `Type error: Non-bool condition: ${condOut.t}`,
         );
@@ -954,13 +786,13 @@ function analyzeStatement(
       const { control, block } = statement.v;
 
       // TODO: Impure function - captures and contributes az mutations
-      function cond(): VBool | Exception {
+      function cond(): Outcome.Bool | Outcome.Exception {
         if (
           control !== null &&
           control.t !== 'condition' &&
           control.t !== 'setup; condition; next'
         ) {
-          const ex = Exception(
+          const ex = Outcome.Exception(
             statement,
             ['not-implemented', 'for-control'],
             // TODO: Need to capture more structure in compiler notes
@@ -971,7 +803,7 @@ function analyzeStatement(
         }
 
         if (control === null) {
-          return VBool(true);
+          return Outcome.Bool(true);
         }
 
         const condExp = (() => {
@@ -985,7 +817,7 @@ function analyzeStatement(
         [condOut, az] = analyzeSubExpression(az, condExp);
 
         if (condOut.t !== 'bool') {
-          const ex = Exception(
+          const ex = Outcome.Exception(
             condExp,
             ['non-bool-condition', 'for-condition'],
             `Type error: Non-bool condition: ${condOut.t}`,
@@ -1001,7 +833,7 @@ function analyzeStatement(
 
       if (control && control.t === 'setup; condition; next') {
         const [setup] = control.v;
-        let setupEx: Exception | null;
+        let setupEx: Outcome.Exception | null;
         [setupEx, az] = analyzeTopExpression(az, setup);
 
         if (setupEx !== null) {
@@ -1010,7 +842,7 @@ function analyzeStatement(
       }
 
       let iterations = 0;
-      let mout = MaybeOutcome();
+      let mout = Outcome.Maybe();
 
       while (true) {
         const condOut = cond(); // mutates az
@@ -1057,7 +889,7 @@ function analyzeStatement(
           ));
 
           // Maybe exception?
-          mout = VUnknown();
+          mout = Outcome.Unknown();
           break;
         }
       }
@@ -1084,7 +916,7 @@ function analyzeStatement(
 
     case 'break':
     case 'continue': {
-      const ex = Exception(
+      const ex = Outcome.Exception(
         statement,
         // TODO: Need to capture more structure in compiler notes
         ['not-implemented'],
@@ -1103,7 +935,7 @@ function retrieveImport(
   const resolved = Package.resolveImport(az.file, import_);
 
   if (typeof resolved !== 'string') {
-    const ex = Exception(
+    const ex = Outcome.Exception(
       import_,
       ['not-found'], // TODO: extra tag
       'Import not found: ' + resolved,
@@ -1119,7 +951,7 @@ function retrieveImport(
       throw new Error('Shouldn\'t be possible');
     }
 
-    const ex = Exception(
+    const ex = Outcome.Exception(
       import_,
       ['not-implemented'],
       'Not implemented: external packages',
@@ -1159,8 +991,8 @@ function retrieveImport(
 function analyzeTopExpression(
   az: Analyzer,
   exp: Syntax.Expression,
-): [Exception | null, Analyzer] {
-  let mex: Exception | null = null;
+): [Outcome.Exception | null, Analyzer] {
+  let mex: Outcome.Exception | null = null;
 
   checkNull((() => {
     switch (exp.t) {
@@ -1244,7 +1076,7 @@ function analyzeTopExpression(
         }
 
         if (out.t !== 'number') {
-          mex = Exception(
+          mex = Outcome.Exception(
             subExp,
             ['type-error', 'inc-dec'],
             `Type error: ${out.t}${exp.t}`,
@@ -1254,7 +1086,7 @@ function analyzeTopExpression(
         }
 
         if (subExp.t !== 'IDENTIFIER') {
-          mex = Exception(
+          mex = Outcome.Exception(
             exp,
             ['not-implemented', 'non-identifier-assignment-target'],
             `Not implemented: non-identifier lvalues`,
@@ -1274,7 +1106,7 @@ function analyzeTopExpression(
       }
 
       case 'func': {
-        const func = VFunc({ exp, az });
+        const func = Outcome.Func({ exp, az });
 
         if (!exp.topExp) {
           // TODO: Enforce this by typing?
@@ -1292,7 +1124,7 @@ function analyzeTopExpression(
       }
 
       case 'class': {
-        mex = Exception(
+        mex = Outcome.Exception(
           exp,
           ['not-implemented'],
           `Not implemented: ${exp.t} expression`,
@@ -1359,9 +1191,9 @@ function analyzeCreateOrAssign(
   exp: Syntax.Expression,
   leftExp: Syntax.Expression,
   op: '=' | ':=',
-  right: Value,
-): [Exception | null, Analyzer] {
-  let mex: Exception | null = null;
+  right: Outcome.Value,
+): [Outcome.Exception | null, Analyzer] {
+  let mex: Outcome.Exception | null = null;
 
   if (leftExp.t === 'array' || leftExp.t === 'object') {
     // TODO: Fail earlier / in a more informative way when attempting a
@@ -1369,7 +1201,7 @@ function analyzeCreateOrAssign(
 
     // TODO: Unknown should also work
     if (right.t !== leftExp.t) {
-      mex = Exception(exp,
+      mex = Outcome.Exception(exp,
         ['type-error', 'destructuring-mismatch'],
         // TODO: a vs an
         `Assignment target is an ${leftExp.t} but the value is a ` +
@@ -1380,7 +1212,7 @@ function analyzeCreateOrAssign(
     }
 
     if (right.cat !== 'concrete') {
-      mex = Exception(exp,
+      mex = Outcome.Exception(exp,
         ['type-error', 'destructuring-mismatch'],
         // TODO: This is wrong / implement proper unknown handling here
         'Assignment target is an array but the value is unknown',
@@ -1398,7 +1230,7 @@ function analyzeCreateOrAssign(
     if (leftExp.v.length !== numRightValues) {
       // TODO: Implement _ as special ignore identifier
       // TODO: Customize message for object destructuring?
-      mex = Exception(
+      mex = Outcome.Exception(
         exp,
         ['type-error', 'destructuring-mismatch', 'length-mismatch'],
         [
@@ -1424,7 +1256,7 @@ function analyzeCreateOrAssign(
       })();
 
       if (key !== null && !(key in right.v)) {
-        mex = Exception(
+        mex = Outcome.Exception(
           exp,
           ['type-error', 'destructuring-mismatch', 'key-not-found'],
           `Key ${key} from object destructuring expression not found ` +
@@ -1491,7 +1323,7 @@ function analyzeCreateOrAssign(
         acc.t !== 'string' &&
         acc.t !== 'number'
       ) {
-        mex = Exception(accessor,
+        mex = Outcome.Exception(accessor,
           ['type-error', 'subscript'],
           `Type error: ${acc.t} subscript`,
         );
@@ -1505,7 +1337,7 @@ function analyzeCreateOrAssign(
       continue;
     }
 
-    mex = Exception(leftBaseExp,
+    mex = Outcome.Exception(leftBaseExp,
       ['invalid-assignment-target', 'destructuring'],
       // TODO: Don't analyze if failed validation and throw internal
       // error here instead
@@ -1540,9 +1372,9 @@ function analyzeCreateOrAssign(
   }
 
   function modifyChain(
-    oldValue: Value,
+    oldValue: Outcome.Value,
     chain: (string | number)[],
-    newValue: Value,
+    newValue: Outcome.Value,
   ): Outcome {
     const [index, ...newChain] = chain;
 
@@ -1557,7 +1389,7 @@ function analyzeCreateOrAssign(
       const oldSubValue = oldValue.v[index];
 
       if (oldSubValue === undefined && op !== ':=') {
-        return Exception(leftExp,
+        return Outcome.Exception(leftExp,
           ['key-not-found'],
           // TODO: Better message, location
           'Key not found',
@@ -1565,7 +1397,7 @@ function analyzeCreateOrAssign(
       }
 
       if (oldSubValue !== undefined && op === ':=') {
-        return Exception(leftExp,
+        return Outcome.Exception(leftExp,
           ['duplicate', 'duplicate-key'],
           `Trying to add key ${index} that already exists`,
         );
@@ -1585,13 +1417,13 @@ function analyzeCreateOrAssign(
         oldValue.cat === 'concrete' &&
         newValueAtIndex.cat === 'concrete'
       ) {
-        return VConcreteObject({
+        return Outcome.ConcreteObject({
           ...oldValue.v,
           [index]: newValueAtIndex
         });
       }
 
-      return VObject({
+      return Outcome.Object({
         ...oldValue.v,
         [index]: newValueAtIndex,
       });
@@ -1604,7 +1436,7 @@ function analyzeCreateOrAssign(
       ) {
         // TODO: More accurate expression reference (just providing
         // entire lhs instead of specifically the bad subscript/.)
-        return Exception(leftExp,
+        return Outcome.Exception(leftExp,
           ['out-of-bounds', 'index-bad'],
           `Invalid index: ${index}`,
         );
@@ -1613,7 +1445,7 @@ function analyzeCreateOrAssign(
       if (index >= oldValue.v.length) {
         // TODO: More accurate expression reference (just providing
         // entire lhs instead of specifically the bad subscript/.)
-        return Exception(
+        return Outcome.Exception(
           leftExp,
           ['out-of-bounds', 'index-too-large'],
           [
@@ -1626,7 +1458,7 @@ function analyzeCreateOrAssign(
       }
 
       if (newChain.length === 0 && op === ':=') {
-        return Exception(
+        return Outcome.Exception(
           leftExp,
           ['duplicate', 'duplicate-index'],
           `Attempt to add duplicate index ${index} to array (the ` +
@@ -1649,14 +1481,14 @@ function analyzeCreateOrAssign(
         oldValue.cat === 'concrete' &&
         newValueAtIndex.cat === 'concrete'
       ) {
-        return VConcreteArray([
+        return Outcome.ConcreteArray([
           ...oldValue.v.slice(0, index),
           newValueAtIndex,
           ...oldValue.v.slice(index + 1),
         ]);
       }
 
-      return VArray([
+      return Outcome.Array([
         ...oldValue.v.slice(0, index),
         newValueAtIndex,
         ...oldValue.v.slice(index + 1),
@@ -1665,7 +1497,7 @@ function analyzeCreateOrAssign(
 
     // TODO: More accurate expression reference (just providing entire
     // lhs instead of specifically the bad subscript/.)
-    return Exception(leftExp,
+    return Outcome.Exception(leftExp,
       ['type-error', 'index-bad'],
       `Type error: attempt to index ${oldValue.t} with a ` +
       typeof index,
@@ -1697,12 +1529,12 @@ function analyzeSubExpression(
   exp: Syntax.Expression
 ): [Outcome, Analyzer] {
   switch (exp.t) {
-    case 'NUMBER': { return [VNumber(Number(exp.v)), az]; }
-    case 'BOOL': { return [VBool(exp.v), az]; }
-    case 'NULL': { return [VNull(), az]; }
+    case 'NUMBER': { return [Outcome.Number(Number(exp.v)), az]; }
+    case 'BOOL': { return [Outcome.Bool(exp.v), az]; }
+    case 'NULL': { return [Outcome.Null(), az]; }
 
     case 'STRING': {
-      return [VString(exp.v.substring(1, exp.v.length - 1)), az];
+      return [Outcome.String(exp.v.substring(1, exp.v.length - 1)), az];
     }
 
     case 'IDENTIFIER': {
@@ -1710,7 +1542,7 @@ function analyzeSubExpression(
       [entry, az] = Analyzer.get(az, exp.v);
 
       if (entry === null) {
-        const ex = Exception(
+        const ex = Outcome.Exception(
           exp,
           ['not-found'],
           `Variable does not exist: ${exp.v}`
@@ -1728,19 +1560,19 @@ function analyzeSubExpression(
         exp,
         (left, right) => {
           if (left.t === 'number' && right.t === 'number') {
-            return VNumber(left.v + right.v);
+            return Outcome.Number(left.v + right.v);
           }
 
           if (left.t === 'string' && right.t === 'string') {
-            return VString(left.v + right.v);
+            return Outcome.String(left.v + right.v);
           }
 
           if (left.t === 'array' && right.t === 'array') {
             if (left.cat === 'concrete' && right.cat === 'concrete') {
-              return VConcreteArray([...left.v, ...right.v]);
+              return Outcome.ConcreteArray([...left.v, ...right.v]);
             }
 
-            return VArray([...left.v, ...right.v]);
+            return Outcome.Array([...left.v, ...right.v]);
           }
 
           if (left.t === 'object' && right.t === 'object') {
@@ -1752,7 +1584,7 @@ function analyzeSubExpression(
 
             for (const key of Object.keys(right.v)) {
               if (leftKeys[key]) {
-                return Exception(exp,
+                return Outcome.Exception(exp,
                   [
                     'duplicate',
                     'duplicate-key',
@@ -1765,13 +1597,13 @@ function analyzeSubExpression(
             }
 
             if (left.cat === 'concrete' && right.cat === 'concrete') {
-              return VConcreteObject({ ...left.v, ...right.v });
+              return Outcome.ConcreteObject({ ...left.v, ...right.v });
             }
 
-            return VObject({ ...left.v, ...right.v });
+            return Outcome.Object({ ...left.v, ...right.v });
           }
 
-          const forbiddenTypes: Value['t'][] = [
+          const forbiddenTypes: Outcome.Value['t'][] = [
             'bool',
             'null',
             'func', // TODO: define function addition when appropriate
@@ -1785,7 +1617,7 @@ function analyzeSubExpression(
           }
 
           if (left.t === 'unknown' || right.t === 'unknown') {
-            return VUnknown();
+            return Outcome.Unknown();
           }
 
           return null;
@@ -1799,7 +1631,7 @@ function analyzeSubExpression(
         exp,
         (left, right) => {
           if (left.t === 'number' && right.t === 'number') {
-            return VNumber(left.v * right.v);
+            return Outcome.Number(left.v * right.v);
           }
 
           const str = (
@@ -1842,7 +1674,7 @@ function analyzeSubExpression(
             return objMul(exp, obj, num);
           }
 
-          const forbiddenTypes: Value['t'][] = [
+          const forbiddenTypes: Outcome.Value['t'][] = [
             'bool',
             'null',
             'func', // TODO: define function multiplication when appropriate
@@ -1856,7 +1688,7 @@ function analyzeSubExpression(
           }
 
           if (left.t === 'unknown' || right.t === 'unknown') {
-            return VUnknown();
+            return Outcome.Unknown();
           }
 
           return null;
@@ -1893,14 +1725,14 @@ function analyzeSubExpression(
         exp,
         (left, right) => {
           if (left.t === 'number' && right.t === 'number') {
-            return VNumber(op(left.v, right.v));
+            return Outcome.Number(op(left.v, right.v));
           }
 
           if (
             (left.t === 'unknown' || right.t === 'unknown') &&
             (left.t === 'number' || right.t === 'number')
           ) {
-            return VUnknown();
+            return Outcome.Unknown();
           }
 
           return null;
@@ -1922,14 +1754,14 @@ function analyzeSubExpression(
         exp,
         (left, right) => {
           if (left.t === 'bool' && right.t === 'bool') {
-            return VBool(op(left.v, right.v));
+            return Outcome.Bool(op(left.v, right.v));
           }
 
           if (
             (left.t === 'unknown' || right.t === 'unknown') &&
             (left.t === 'bool' || right.t === 'bool')
           ) {
-            return VUnknown();
+            return Outcome.Unknown();
           }
 
           return null;
@@ -1950,14 +1782,14 @@ function analyzeSubExpression(
         exp,
         (left, right) => {
           if (left.t === 'unknown' || right.t === 'unknown') {
-            return VUnknown();
+            return Outcome.Unknown();
           }
 
           if (left.cat === 'valid' || right.cat === 'valid') {
             // (This case is for objects & arrays that have unknowns)
             // TODO: Should be possible to sometimes (often?) determine
             // ordering without concrete array/object.
-            return VUnknown();
+            return Outcome.Unknown();
           }
 
           return TypedComparison(exp, op, left, right)
@@ -1975,7 +1807,7 @@ function analyzeSubExpression(
       }
 
       if (right.t !== 'number') {
-        const ex = Exception(
+        const ex = Outcome.Exception(
           exp,
           ['type-error', 'unary-plus-minus'],
           `Type error: ${exp.t.slice(6)}${right.t}`,
@@ -1984,12 +1816,12 @@ function analyzeSubExpression(
         return [ex, az];
       }
 
-      const out = VNumber(right.v * (exp.t === 'unary -' ? -1 : 1));
+      const out = Outcome.Number(right.v * (exp.t === 'unary -' ? -1 : 1));
       return [out, az];
     }
 
     case 'func': {
-      return [VFunc({ exp, az }), az];
+      return [Outcome.Func({ exp, az }), az];
     }
 
     case 'functionCall': {
@@ -2012,7 +1844,7 @@ function analyzeSubExpression(
           case 'null':
           case 'array':
           case 'object': {
-            return Exception(funcExp,
+            return Outcome.Exception(funcExp,
               ['type-error', 'call-non-function'],
               `Type error: attempt to call a ${func.t} as a function`
             );
@@ -2024,7 +1856,7 @@ function analyzeSubExpression(
         return [func, az];
       }
 
-      const args: Value[] = [];
+      const args: Outcome.Value[] = [];
 
       for (const argExp of argExps) {
         let arg: Outcome;
@@ -2037,24 +1869,24 @@ function analyzeSubExpression(
         args.push(arg);
       }
 
-      let out = MaybeOutcome();
+      let out = Outcome.Maybe();
 
       checkNull((() => {
         switch (func.t) {
           case 'unknown': {
             // TODO: maybeException?
-            out = VUnknown();
+            out = Outcome.Unknown();
             return null;
           }
 
           case 'func': {
             if (func.v.exp.v.args.length !== args.length) {
-              const ex = Exception(
+              const ex = Outcome.Exception(
                 exp,
                 ['type-error', 'arguments-length-mismatch'],
                 [
                   'Arguments length mismatch: ',
-                  Value.String(func),
+                  Outcome.JsString(func),
                   ' requires ',
                   func.v.exp.v.args.length,
                   ' arguments but ',
@@ -2121,7 +1953,7 @@ function analyzeSubExpression(
     }
 
     case 'array': {
-      const res = VArray([]);
+      const res = Outcome.Array([]);
       let arrConcrete = true;
 
       for (const elExp of exp.v) {
@@ -2167,7 +1999,7 @@ function analyzeSubExpression(
 
       if (container.t === 'array') {
         if (index.t !== 'number') {
-          const ex = Exception(exp,
+          const ex = Outcome.Exception(exp,
             ['type-error', 'subscript'],
             `Type error: ${container.t}[${index.t}]`,
           );
@@ -2176,7 +2008,7 @@ function analyzeSubExpression(
         }
 
         if (index.v < 0 || index.v !== Math.floor(index.v)) {
-          const ex = Exception(indexExp,
+          const ex = Outcome.Exception(indexExp,
             ['subscript', 'out-of-bounds', 'index-bad'],
             `Invalid array index: ${index.v}`,
           );
@@ -2185,7 +2017,7 @@ function analyzeSubExpression(
         }
 
         if (index.v >= container.v.length) {
-          const ex = Exception(
+          const ex = Outcome.Exception(
             exp,
             ['out-of-bounds', 'index-too-large'],
             [
@@ -2208,7 +2040,7 @@ function analyzeSubExpression(
         return [out, az];
       }
 
-      const ex = Exception(exp,
+      const ex = Outcome.Exception(exp,
         ['type-error', 'subscript', 'object'],
         `Type error: ${container.t}[${index.t}]`,
       );
@@ -2217,7 +2049,7 @@ function analyzeSubExpression(
     }
 
     case 'object': {
-      const res = VObject({});
+      const res = Outcome.Object({});
       let objConcrete = true;
 
       for (const [identifierKey, subExp] of exp.v) {
@@ -2252,14 +2084,14 @@ function analyzeSubExpression(
         return [obj, az];
       }
 
-      const out = objectLookup(exp, obj, VString(keyExp.v));
+      const out = objectLookup(exp, obj, Outcome.String(keyExp.v));
       return [out, az];
     }
 
     case 'switch': {
       const [testExp, cases] = exp.v;
 
-      let testValue: ConcreteValue | null = null;
+      let testValue: Outcome.Concrete | null = null;
 
       if (testExp !== null) {
         let testOut: Outcome;
@@ -2272,7 +2104,7 @@ function analyzeSubExpression(
         if (testOut.cat !== 'concrete') {
           // TODO: Bailing with unknown here because comparison can't yet
           // handle non-concrete values
-          return [VUnknown(), az];
+          return [Outcome.Unknown(), az];
         }
 
         testValue = testOut;
@@ -2292,7 +2124,7 @@ function analyzeSubExpression(
           if (label.cat !== 'concrete') {
             // TODO: Bailing with unknown here because comparison can't yet
             // handle non-concrete values
-            return [VUnknown(), az];
+            return [Outcome.Unknown(), az];
           }
 
           if (!SameType(testValue, label)) {
@@ -2321,7 +2153,7 @@ function analyzeSubExpression(
             throw new Error('Shouldn\'t be possible');
           }
 
-          const ex = Exception(
+          const ex = Outcome.Exception(
             labelExp,
             ['type-error', 'non-bool-switch-case'],
             `Switch case was type {${label.t}} instead of {bool}`,
@@ -2338,7 +2170,7 @@ function analyzeSubExpression(
       // TODO: Often the analyzer should be producing error notes and
       // continuing with an unknown instead of an exception. This is
       // definitely one of those cases.
-      const ex = Exception(
+      const ex = Outcome.Exception(
         exp,
         ['incomplete-switch'],
         'Switch did not handle every possibility',
@@ -2353,7 +2185,7 @@ function analyzeSubExpression(
 
     case 'methodCall':
     case 'class': {
-      const ex = Exception(
+      const ex = Outcome.Exception(
         exp,
         ['not-implemented'],
         `Not implemented: ${exp.t} expression`,
@@ -2391,7 +2223,7 @@ function analyzeVanillaOperator<T extends {
 }>(
   az: Analyzer,
   exp: T,
-  combine: (a: Value, b: Value) => Outcome | null,
+  combine: (a: Outcome.Value, b: Outcome.Value) => Outcome | null,
 ): [Outcome, Analyzer] {
   let left: Outcome;
   [left, az] = analyzeSubExpression(az, exp.v[0]);
@@ -2412,7 +2244,7 @@ function analyzeVanillaOperator<T extends {
   if (value === null) {
     // TODO: Combine should return something more informative than null to
     // indicate that a type error should result.
-    value = Exception(
+    value = Outcome.Exception(
       exp,
       ['type-error', 'operator'],
       `Type error: ${left.t} ${exp.t} ${right.t}`,
@@ -2447,7 +2279,7 @@ function ExpressionString(
     case '--':
     case '++': {
       const [value] = analyzeSubExpression(analyzer, exp);
-      return Value.String(value);
+      return Outcome.JsString(value);
     }
 
     default: {
@@ -2462,3 +2294,5 @@ function ExpressionString(
     }
   }
 }
+
+export default Analyzer;
