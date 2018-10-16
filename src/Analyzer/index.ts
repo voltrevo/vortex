@@ -39,367 +39,6 @@ export type Module_ = (
   never
 );
 
-function SameType(
-  left: Outcome.Concrete,
-  right: Outcome.Concrete
-): Outcome.Bool {
-  switch (left.t) {
-    case 'func': {
-      if (right.t !== 'func') {
-        return Outcome.Bool(false);
-      }
-
-      // TODO: Types of arguments?
-      return Outcome.Bool(
-        left.v.exp.v.args.length ===
-        right.v.exp.v.args.length
-      );
-    }
-
-    case 'array': {
-      if (right.t !== 'array' || right.v.length !== left.v.length) {
-        return Outcome.Bool(false);
-      }
-
-      for (let i = 0; i < left.v.length; i++) {
-        const subSameType = SameType(left.v[i], right.v[i]);
-
-        if (!subSameType) {
-          return Outcome.Bool(false);
-        }
-      }
-
-      return Outcome.Bool(true);
-    }
-
-    case 'object': {
-      if (right.t !== 'object') {
-        return Outcome.Bool(false);
-      }
-
-      const leftKeys = Object.keys(left.v).sort();
-      const rightKeys = Object.keys(right.v).sort();
-
-      if (leftKeys.length !== rightKeys.length) {
-        return Outcome.Bool(false);
-      }
-
-      for (let i = 0; i < leftKeys.length; i++) {
-        const subSameType = SameType(
-          left.v[leftKeys[i]],
-          right.v[rightKeys[i]],
-        )
-
-        if (!subSameType) {
-          return Outcome.Bool(false);
-        }
-
-        return Outcome.Bool(true);
-      }
-
-      return Outcome.Bool(true);
-    }
-
-    case 'string':
-    case 'number':
-    case 'bool':
-    case 'null': {
-      return Outcome.Bool(left.t === right.t);
-    }
-  }
-}
-
-function TypedEqual(
-  exp: Syntax.Expression,
-  left: Outcome.Concrete,
-  right: Outcome.Concrete,
-): Outcome.Bool | Outcome.Exception {
-  if (!SameType(left, right)) {
-    return Outcome.Exception(exp,
-      ['type-error', 'comparison'],
-      `Type error: ${left} ${exp.t} ${right}`,
-    );
-  }
-
-  switch (left.t) {
-    case 'string':
-    case 'number':
-    case 'bool':
-    case 'null': {
-      return Outcome.Bool(left.v === right.v);
-    }
-
-    case 'func': {
-      // Not defining a way to compare functions right now. In general, it's
-      // impossible to tell whether functions behave the same way, so there
-      // will have to be null sometimes.
-      // In general, perhaps the syntax trees of the optimised functions can
-      // be compared, true if the same, but still null rather than false if
-      // different.
-      throw new Error('Shouldn\'t be possible, but may be later');
-      // return null;
-    }
-
-    case 'array': {
-      if (right.t !== 'array') {
-        throw new Error('Shouldn\'t be possible');
-      }
-
-      for (let i = 0; i < left.v.length; i++) {
-        const subEq = TypedEqual(exp, left.v[i], right.v[i]);
-
-        if (subEq.t === 'exception') {
-          return subEq;
-        }
-
-        if (!subEq.v) {
-          return Outcome.Bool(false);
-        }
-      }
-
-      return Outcome.Bool(true);
-    }
-
-    case 'object': {
-      if (right.t !== 'object') {
-        throw new Error('Shouldn\'t be possible');
-      }
-
-      // Already checked types are equal so we know that the left keys are also
-      // the right keys.
-      const keys = Object.keys(left.v).sort();
-
-      for (const key of keys) {
-        const subEq = TypedEqual(exp, left.v[key], right.v[key]);
-
-        if (subEq.t === 'exception') {
-          return subEq;
-        }
-
-        if (!subEq.v) {
-          return Outcome.Bool(false);
-        }
-      }
-
-      return Outcome.Bool(true);
-    }
-  }
-}
-
-function TypedLessThan(
-  exp: Syntax.Expression,
-  left: Outcome.Concrete,
-  right: Outcome.Concrete,
-): Outcome.Bool | Outcome.Exception {
-  const sameType = SameType(left, right);
-
-  if (sameType.v === false) {
-    return Outcome.Exception(exp,
-      ['type-error', 'comparison'],
-      // TODO: Surfacing this is confusing because eg '>' gets swapped to '<'
-      // and this inverts left and right (compared to user's code)
-      `Type error: ${Outcome.JsString(left)} < ${Outcome.JsString(right)}`,
-    );
-  }
-
-  switch (left.t) {
-    case 'string':
-    case 'number':
-    case 'bool':
-    case 'null': {
-      // Need to use any here because typescript thinks null comparison is bad
-      // but we're ok with it and it does the right thing.
-      return Outcome.Bool((left.v as any) < (right.v as any));
-    }
-
-    case 'func': {
-      // Not defining a way to compare functions right now.
-      return Outcome.Exception(exp,
-        ['type-error', 'function-comparison'],
-        `Type error: ${left} ${exp.t} ${right}`,
-      );
-    }
-
-    case 'array': {
-      if (right.t !== 'array') {
-        throw new Error('Shouldn\'t be possible');
-      }
-
-      for (let i = 0; i < left.v.length; i++) {
-        const subLT = TypedLessThan(exp, left.v[i], right.v[i]);
-
-        if (subLT.t === 'exception') {
-          return subLT;
-        }
-
-        if (subLT.v) {
-          return Outcome.Bool(true);
-        }
-
-        const subGT = TypedLessThan(exp, right.v[i], left.v[i]);
-
-        if (subGT.t === 'exception') {
-          return subGT;
-        }
-
-        if (subGT.v) {
-          return Outcome.Bool(false);
-        }
-      }
-
-      return Outcome.Bool(false);
-    }
-
-    case 'object': {
-      if (right.t !== 'object') {
-        throw new Error('Shouldn\'t be possible');
-      }
-
-      // Already checked types are equal so we know that the left keys are also
-      // the right keys.
-      const keys = Object.keys(left.v).sort();
-
-      // TODO: Deduplicate with arrays
-      for (const key of keys) {
-        const subLT = TypedLessThan(exp, left.v[key], right.v[key]);
-
-        if (subLT.t === 'exception') {
-          return subLT;
-        }
-
-        if (subLT.v) {
-          return Outcome.Bool(true);
-        }
-
-        const subGT = TypedLessThan(exp, right.v[key], left.v[key]);
-
-        if (subGT.t === 'exception') {
-          return subGT;
-        }
-
-        if (subGT.v) {
-          return Outcome.Bool(false);
-        }
-      }
-
-      return Outcome.Bool(false);
-    }
-  }
-}
-
-function InvertIfBool<V extends Outcome>(x: V): V {
-  if (x.t !== 'bool') {
-    return x;
-  }
-
-  return { t: 'bool', v: !x.v } as V; // as V because typescript incompleteness
-}
-
-type ComparisonOp = '==' | '!=' | '<' | '>' | '<=' | '>=';
-
-function TypedComparison(
-  exp: Syntax.Expression,
-  op: ComparisonOp,
-  left: Outcome.Concrete,
-  right: Outcome.Concrete,
-): Outcome.Bool | Outcome.Exception {
-  switch (op) {
-    case '==': return TypedEqual(exp, left, right);
-    case '!=': return InvertIfBool(TypedEqual(exp, left, right));
-    case '<': return TypedLessThan(exp, left, right);
-    case '>': return TypedLessThan(exp, right, left);
-    case '<=': return InvertIfBool(TypedLessThan(exp, right, left));
-    case '>=': return InvertIfBool(TypedLessThan(exp, left, right));
-  }
-}
-
-function stringMul(s: Outcome.String, n: Outcome.Number): Outcome.String {
-  // TODO: Check n is an appropriate number (wait for integer implementation?)
-  return Outcome.String(s.v.repeat(n.v));
-}
-
-function arrayMul(a: Outcome.Array, n: Outcome.Number): Outcome.Array {
-  // TODO: Check n is an appropriate number (wait for integer implementation?)
-
-  switch (a.cat) {
-    case 'concrete': {
-      const res = Outcome.ConcreteArray([]);
-
-      for (let i = 0; i < n.v; i++) {
-        res.v.push(...a.v);
-      }
-
-      return res;
-    }
-
-    case 'valid': {
-      const res = Outcome.Array([]);
-
-      for (let i = 0; i < n.v; i++) {
-        res.v.push(...a.v);
-      }
-
-      return res;
-    }
-  }
-}
-
-function objMul(
-  exp: Syntax.Expression,
-  obj: Outcome.Object,
-  n: Outcome.Number
-): Outcome.Object | Outcome.Exception {
-  if (n.v === 0) {
-    return Outcome.ConcreteObject({});
-  }
-
-  if (n.v === 1) {
-    return obj;
-  }
-
-  if (Object.keys(obj.v).length === 0) {
-    return obj;
-  }
-
-  return Outcome.Exception(exp,
-    ['object-multiplication'],
-    `Attempt to multiply non-empty object by ${n.v} (can only multiply ` +
-    'non-empty objects by 0 or 1)',
-  );
-}
-
-function objectLookup(
-  exp: Syntax.Expression,
-  obj: Outcome.Value,
-  index: Outcome.Value,
-): Outcome {
-  if (
-    (obj.t !== 'object' && obj.t !== 'unknown') ||
-    (index.t !== 'string' && index.t !== 'unknown')
-  ) {
-    return Outcome.Exception(exp,
-      ['type-error', 'object-subscript'],
-      `Type error: ${obj.t}[${index.t}]`,
-    );
-  }
-
-  if (obj.t === 'unknown' || index.t === 'unknown') {
-    // TODO: maybeException?
-    return Outcome.Unknown();
-  }
-
-  const maybeValue = obj.v[index.v];
-
-  if (maybeValue === undefined) {
-    return Outcome.Exception(exp,
-      ['key-not-found'],
-      `Object key not found: ${index.v}`,
-    );
-  }
-
-  return maybeValue;
-}
-
 export type Analyzer = {
   pack: Package;
   file: string;
@@ -1663,15 +1302,15 @@ function analyzeSubExpression(
           // TODO: Possibly configure limit for this behaviour during
           // analysis?
           if (str && num) {
-            return stringMul(str, num);
+            return Outcome.String.multiply(str, num);
           }
 
           if (arr && num) {
-            return arrayMul(arr, num);
+            return Outcome.Array.multiply(arr, num);
           }
 
           if (obj && num) {
-            return objMul(exp, obj, num);
+            return Outcome.Object.multiply(exp, obj, num);
           }
 
           const forbiddenTypes: Outcome.Value['t'][] = [
@@ -1792,7 +1431,7 @@ function analyzeSubExpression(
             return Outcome.Unknown();
           }
 
-          return TypedComparison(exp, op, left, right)
+          return Outcome.TypedComparison(exp, op, left, right)
         },
       );
     }
@@ -2036,7 +1675,7 @@ function analyzeSubExpression(
       }
 
       if (container.t === 'object') {
-        const out = objectLookup(exp, container, index);
+        const out = Outcome.Object.subscript(exp, container, index);
         return [out, az];
       }
 
@@ -2084,7 +1723,7 @@ function analyzeSubExpression(
         return [obj, az];
       }
 
-      const out = objectLookup(exp, obj, Outcome.String(keyExp.v));
+      const out = Outcome.Object.subscript(exp, obj, Outcome.String(keyExp.v));
       return [out, az];
     }
 
@@ -2127,11 +1766,11 @@ function analyzeSubExpression(
             return [Outcome.Unknown(), az];
           }
 
-          if (!SameType(testValue, label)) {
+          if (!Outcome.SameType(testValue, label)) {
             continue;
           }
 
-          combinedLabelValue = TypedEqual(
+          combinedLabelValue = Outcome.TypedEqual(
             labelExp,
             testValue,
             label

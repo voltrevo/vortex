@@ -15,6 +15,17 @@ namespace Outcome {
     return { cat: 'concrete', t: 'string', v };
   }
 
+  export namespace String {
+    export function multiply(
+      s: String,
+      n: Number
+    ): String {
+      // TODO: Check n is an appropriate number (wait for integer
+      // implementation?)
+      return String(s.v.repeat(n.v));
+    }
+  }
+
   export type Number = { cat: 'concrete', t: 'number', v: number };
 
   export function Number(v: number): Number {
@@ -70,6 +81,35 @@ namespace Outcome {
     return { cat: 'valid', t: 'array', v };
   }
 
+  export namespace Array {
+    export function multiply(a: Array, n: Number): Array {
+      // TODO: Check n is an appropriate number (wait for integer
+      // implementation?)
+
+      switch (a.cat) {
+        case 'concrete': {
+          const res = ConcreteArray([]);
+
+          for (let i = 0; i < n.v; i++) {
+            res.v.push(...a.v);
+          }
+
+          return res;
+        }
+
+        case 'valid': {
+          const res = Array([]);
+
+          for (let i = 0; i < n.v; i++) {
+            res.v.push(...a.v);
+          }
+
+          return res;
+        }
+      }
+    }
+  }
+
   export type ConcreteObject = {
     cat: 'concrete',
     t: 'object',
@@ -94,6 +134,64 @@ namespace Outcome {
 
   export function Object(v: { [key: string]: Value }): Object {
     return { cat: 'valid', t: 'object', v };
+  }
+
+  export namespace Object {
+    export function multiply(
+      exp: Syntax.Expression,
+      obj: Object,
+      n: Number
+    ): Object | Exception {
+      if (n.v === 0) {
+        return ConcreteObject({});
+      }
+
+      if (n.v === 1) {
+        return obj;
+      }
+
+      if (JsObject.keys(obj.v).length === 0) {
+        return obj;
+      }
+
+      return Exception(exp,
+        ['object-multiplication'],
+        `Attempt to multiply non-empty object by ${n.v} (can only multiply ` +
+        'non-empty objects by 0 or 1)',
+      );
+    }
+
+    export function subscript(
+      exp: Syntax.Expression,
+      obj: Value,
+      index: Value,
+    ): Outcome {
+      if (
+        (obj.t !== 'object' && obj.t !== 'unknown') ||
+        (index.t !== 'string' && index.t !== 'unknown')
+      ) {
+        return Exception(exp,
+          ['type-error', 'object-subscript'],
+          `Type error: ${obj.t}[${index.t}]`,
+        );
+      }
+
+      if (obj.t === 'unknown' || index.t === 'unknown') {
+        // TODO: maybeException?
+        return Unknown();
+      }
+
+      const maybeValue = obj.v[index.v];
+
+      if (maybeValue === undefined) {
+        return Exception(exp,
+          ['key-not-found'],
+          `Object key not found: ${index.v}`,
+        );
+      }
+
+      return maybeValue;
+    }
   }
 
   export type Unknown = { cat: 'valid', t: 'unknown', v: null };
@@ -174,6 +272,281 @@ namespace Outcome {
   }
 
   export function Maybe(): Outcome | null { return null; }
+
+  export function SameType(
+    left: Concrete,
+    right: Concrete
+  ): Bool {
+    switch (left.t) {
+      case 'func': {
+        if (right.t !== 'func') {
+          return Bool(false);
+        }
+
+        // TODO: Types of arguments?
+        return Bool(
+          left.v.exp.v.args.length ===
+          right.v.exp.v.args.length
+        );
+      }
+
+      case 'array': {
+        if (right.t !== 'array' || right.v.length !== left.v.length) {
+          return Bool(false);
+        }
+
+        for (let i = 0; i < left.v.length; i++) {
+          const subSameType = SameType(left.v[i], right.v[i]);
+
+          if (!subSameType) {
+            return Bool(false);
+          }
+        }
+
+        return Bool(true);
+      }
+
+      case 'object': {
+        if (right.t !== 'object') {
+          return Bool(false);
+        }
+
+        const leftKeys = JsObject.keys(left.v).sort();
+        const rightKeys = JsObject.keys(right.v).sort();
+
+        if (leftKeys.length !== rightKeys.length) {
+          return Bool(false);
+        }
+
+        for (let i = 0; i < leftKeys.length; i++) {
+          const subSameType = SameType(
+            left.v[leftKeys[i]],
+            right.v[rightKeys[i]],
+          )
+
+          if (!subSameType) {
+            return Bool(false);
+          }
+
+          return Bool(true);
+        }
+
+        return Bool(true);
+      }
+
+      case 'string':
+      case 'number':
+      case 'bool':
+      case 'null': {
+        return Bool(left.t === right.t);
+      }
+    }
+  }
+
+  export function TypedEqual(
+    exp: Syntax.Expression,
+    left: Concrete,
+    right: Concrete,
+  ): Bool | Exception {
+    if (!SameType(left, right)) {
+      return Exception(exp,
+        ['type-error', 'comparison'],
+        `Type error: ${left} ${exp.t} ${right}`,
+      );
+    }
+
+    switch (left.t) {
+      case 'string':
+      case 'number':
+      case 'bool':
+      case 'null': {
+        return Bool(left.v === right.v);
+      }
+
+      case 'func': {
+        // Not defining a way to compare functions right now. In general, it's
+        // impossible to tell whether functions behave the same way, so there
+        // will have to be null sometimes.
+        // In general, perhaps the syntax trees of the optimised functions can
+        // be compared, true if the same, but still null rather than false if
+        // different.
+        throw new Error('Shouldn\'t be possible, but may be later');
+        // return null;
+      }
+
+      case 'array': {
+        if (right.t !== 'array') {
+          throw new Error('Shouldn\'t be possible');
+        }
+
+        for (let i = 0; i < left.v.length; i++) {
+          const subEq = TypedEqual(exp, left.v[i], right.v[i]);
+
+          if (subEq.t === 'exception') {
+            return subEq;
+          }
+
+          if (!subEq.v) {
+            return Bool(false);
+          }
+        }
+
+        return Bool(true);
+      }
+
+      case 'object': {
+        if (right.t !== 'object') {
+          throw new Error('Shouldn\'t be possible');
+        }
+
+        // Already checked types are equal so we know that the left keys are also
+        // the right keys.
+        const keys = JsObject.keys(left.v).sort();
+
+        for (const key of keys) {
+          const subEq = TypedEqual(exp, left.v[key], right.v[key]);
+
+          if (subEq.t === 'exception') {
+            return subEq;
+          }
+
+          if (!subEq.v) {
+            return Bool(false);
+          }
+        }
+
+        return Bool(true);
+      }
+    }
+  }
+
+  export function TypedLessThan(
+    exp: Syntax.Expression,
+    left: Concrete,
+    right: Concrete,
+  ): Bool | Exception {
+    const sameType = SameType(left, right);
+
+    if (sameType.v === false) {
+      return Exception(exp,
+        ['type-error', 'comparison'],
+        // TODO: Surfacing this is confusing because eg '>' gets swapped to '<'
+        // and this inverts left and right (compared to user's code)
+        `Type error: ${JsString(left)} < ${JsString(right)}`,
+      );
+    }
+
+    switch (left.t) {
+      case 'string':
+      case 'number':
+      case 'bool':
+      case 'null': {
+        // Need to use any here because typescript thinks null comparison is bad
+        // but we're ok with it and it does the right thing.
+        return Bool((left.v as any) < (right.v as any));
+      }
+
+      case 'func': {
+        // Not defining a way to compare functions right now.
+        return Exception(exp,
+          ['type-error', 'function-comparison'],
+          `Type error: ${left} ${exp.t} ${right}`,
+        );
+      }
+
+      case 'array': {
+        if (right.t !== 'array') {
+          throw new Error('Shouldn\'t be possible');
+        }
+
+        for (let i = 0; i < left.v.length; i++) {
+          const subLT = TypedLessThan(exp, left.v[i], right.v[i]);
+
+          if (subLT.t === 'exception') {
+            return subLT;
+          }
+
+          if (subLT.v) {
+            return Bool(true);
+          }
+
+          const subGT = TypedLessThan(exp, right.v[i], left.v[i]);
+
+          if (subGT.t === 'exception') {
+            return subGT;
+          }
+
+          if (subGT.v) {
+            return Bool(false);
+          }
+        }
+
+        return Bool(false);
+      }
+
+      case 'object': {
+        if (right.t !== 'object') {
+          throw new Error('Shouldn\'t be possible');
+        }
+
+        // Already checked types are equal so we know that the left keys are also
+        // the right keys.
+        const keys = JsObject.keys(left.v).sort();
+
+        // TODO: Deduplicate with arrays
+        for (const key of keys) {
+          const subLT = TypedLessThan(exp, left.v[key], right.v[key]);
+
+          if (subLT.t === 'exception') {
+            return subLT;
+          }
+
+          if (subLT.v) {
+            return Bool(true);
+          }
+
+          const subGT = TypedLessThan(exp, right.v[key], left.v[key]);
+
+          if (subGT.t === 'exception') {
+            return subGT;
+          }
+
+          if (subGT.v) {
+            return Bool(false);
+          }
+        }
+
+        return Bool(false);
+      }
+    }
+  }
+
+  function InvertIfBool<Out extends Outcome>(out: Out): Out {
+    if (out.t !== 'bool') {
+      return out;
+    }
+
+    // as Out because typescript incompleteness
+    return { t: 'bool', v: !out.v } as Out;
+  }
+
+  type ComparisonOp = '==' | '!=' | '<' | '>' | '<=' | '>=';
+
+  export function TypedComparison(
+    exp: Syntax.Expression,
+    op: ComparisonOp,
+    left: Concrete,
+    right: Concrete,
+  ): Bool | Exception {
+    switch (op) {
+      case '==': return TypedEqual(exp, left, right);
+      case '!=': return InvertIfBool(TypedEqual(exp, left, right));
+      case '<': return TypedLessThan(exp, left, right);
+      case '>': return TypedLessThan(exp, right, left);
+      case '<=': return InvertIfBool(TypedLessThan(exp, right, left));
+      case '>=': return InvertIfBool(TypedLessThan(exp, left, right));
+    }
+  }
 }
 
 export default Outcome;
