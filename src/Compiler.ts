@@ -1,4 +1,4 @@
-import { Analyzer, Module_ } from './Analyzer';
+import Analyzer from './Analyzer';
 import Note from './Note';
 import Package from './Package';
 import SecondsDiff from './SecondsDiff';
@@ -36,7 +36,7 @@ namespace Compiler {
 
       if (!validationNotes.some(n => n.level === 'error')) {
         let az = Analyzer(pack, f);
-        let mod: Module_;
+        let mod: Analyzer.Module_;
         [mod, az] = Analyzer.run(az);
 
         if (mod.loaded === false) {

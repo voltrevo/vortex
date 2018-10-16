@@ -24,27 +24,12 @@ export type RefValue = (
   never
 );
 
-export type Module_ = (
-  {
-    loaded: true,
-    program: Syntax.Program;
-    outcome: null | Outcome;
-    notes: Note[],
-  } |
-  {
-    loaded: false,
-    program: null;
-    outcome: Outcome.Unknown;
-  } |
-  never
-);
-
 export type Analyzer = {
   pack: Package;
   file: string;
   importPath: string[];
   modules: {
-    [f: string]: Module_ | undefined;
+    [f: string]: Analyzer.Module_ | undefined;
   };
   scope: Analyzer.ScopeMapT;
 };
@@ -88,6 +73,21 @@ export type ValueEntry = {
 };
 
 export namespace Analyzer {
+  export type Module_ = (
+    {
+      loaded: true,
+      program: Syntax.Program;
+      outcome: null | Outcome;
+      notes: Note[],
+    } |
+    {
+      loaded: false,
+      program: null;
+      outcome: Outcome.Unknown;
+    } |
+    never
+  );
+
   export type ST = {
     root: {};
     entry: {
