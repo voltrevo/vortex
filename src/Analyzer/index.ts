@@ -683,13 +683,18 @@ function retrieveImport(
       return f;
     });
 
+    let loopStr = loop.join(' -> ');
+
+    if (commonPrefix !== '') {
+      loopStr = `${commonPrefix}(${loopStr})`;
+    }
+
     // TODO: Catch this in validation instead?
     az = Analyzer.addNote(az, Note(
       import_,
       'error',
       ['import-loop', 'infinite-loop'],
-      'Import loop detected: ' +
-      `${commonPrefix}/(${loop.join(' -> ')})`
+      'Import loop detected: ' + loopStr
     ));
 
     return [Outcome.Unknown(), az];
