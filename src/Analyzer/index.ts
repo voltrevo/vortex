@@ -6,35 +6,16 @@ import Syntax from '../parser/Syntax';
 
 import Outcome from './Outcome';
 
-type FuncRef = {
-  cat: 'ref';
-  t: 'func-ref';
-  v: Syntax.FunctionExpression;
-};
-
-type ImportRef = {
-  cat: 'ref';
-  t: 'import-ref';
-  v: Syntax.Import;
-};
-
-type RefValue = (
-  FuncRef |
-  ImportRef |
-  never
-);
-
 type Analyzer = {
   pack: Package;
-  file: string;
-  importPath: string[];
+  importStack: string[];
   modules: {
     [f: string]: Analyzer.Module_ | undefined;
   };
   scope: Analyzer.ScopeMapT;
 };
 
-function Analyzer(pack: Package, file: string): Analyzer {
+function Analyzer(pack: Package): Analyzer {
   const modules: Analyzer['modules'] = {};
 
   for (const dep of Object.keys(pack.modules)) {
@@ -60,17 +41,11 @@ function Analyzer(pack: Package, file: string): Analyzer {
 
   return {
     pack,
-    file,
-    importPath: [],
+    importStack: [],
     modules,
     scope: Analyzer.ScopeMapT(),
   };
 }
-
-type ValueEntry = {
-  origin: Syntax.Element,
-  data: Outcome.Value,
-};
 
 namespace Analyzer {
   export type Module_ = (
@@ -88,12 +63,37 @@ namespace Analyzer {
     never
   );
 
+  type FuncRef = {
+    cat: 'ref';
+    t: 'func-ref';
+    v: Syntax.FunctionExpression;
+  };
+
+  type ImportRef = {
+    cat: 'ref';
+    t: 'import-ref';
+    v: Syntax.Import;
+  };
+
+  type RefValue = (
+    FuncRef |
+    ImportRef |
+    never
+  );
+
+  export type ScopeEntry = {
+    origin: Syntax.Element;
+    data: Outcome.Value | RefValue;
+  };
+
+  export type ScopeValueEntry = {
+    origin: Syntax.Element;
+    data: Outcome.Value;
+  };
+
   export type ST = {
     root: {};
-    entry: {
-      origin: Syntax.Element;
-      data: Outcome.Value | RefValue;
-    };
+    entry: ScopeEntry;
   };
 
   export type ScopeT = Scope<ST>;
@@ -107,7 +107,7 @@ namespace Analyzer {
   export function get(
     az: Analyzer,
     name: string,
-  ): [ValueEntry | null, Analyzer] {
+  ): [ScopeValueEntry | null, Analyzer] {
     const entry = Scope.get(az.scope, name);
 
     if (entry === null) {
@@ -206,11 +206,31 @@ namespace Analyzer {
     };
   }
 
+  export function pushFile(az: Analyzer, file: string): Analyzer {
+    return { ...az, importStack: [file, ...az.importStack] };
+  }
+
+  export function popFile(az: Analyzer): [string, Analyzer] {
+    const [file, ...importStack] = az.importStack;
+    return [file, { ...az, importStack }];
+  }
+
+  export function File(az: Analyzer): string {
+    const file = az.importStack[0];
+
+    if (file === undefined) {
+      throw new Error('Shouldn\'t be possible');
+    }
+
+    return file;
+  }
+
   export function addNote(
-    analyzer: Analyzer,
+    az: Analyzer,
     note: Note,
   ): Analyzer {
-    let module_ = analyzer.modules[analyzer.file];
+    const file = File(az);
+    let module_ = az.modules[file];
 
     if (module_ === undefined || !module_.loaded) {
       throw new Error('Shouldn\'t be possible');
@@ -224,15 +244,16 @@ namespace Analyzer {
       ],
     };
 
-    return { ...analyzer,
-      modules: { ...analyzer.modules,
-        [analyzer.file]: module_,
+    return { ...az,
+      modules: { ...az.modules,
+        [file]: module_,
       },
     };
   }
 
   export function setModule(
     az: Analyzer,
+    file: string,
     outcome: Outcome,
   ): [Module_, Analyzer] {
     if (outcome.t === 'exception') {
@@ -244,9 +265,13 @@ namespace Analyzer {
       ));
     }
 
-    const existing = az.modules[az.file];
+    const existing = az.modules[file];
 
-    if (existing === undefined || existing.loaded === false) {
+    if (
+      existing === undefined ||
+      existing.loaded === false ||
+      existing.outcome !== null
+    ) {
       throw new Error('Shouldn\'t be possible');
     }
 
@@ -254,25 +279,29 @@ namespace Analyzer {
 
     az = { ...az,
       modules: { ...az.modules,
-        [az.file]: mod,
+        [file]: mod,
       },
     };
 
     return [mod, az];
   }
 
-  export function run(az: Analyzer): [Module_, Analyzer] {
-    const moduleEntry = az.pack.modules[az.file];
+  export function runFile(az: Analyzer, file: string): [Module_, Analyzer] {
+    const moduleEntry = az.pack.modules[file];
 
     if (moduleEntry === undefined || moduleEntry.t === 'ParserNotes') {
       throw new Error('Shouldn\'t be possible');
     }
 
+    az = pushFile(az, file);
+
     let out: Outcome;
     [out, az] = analyzeBody(az, moduleEntry.program);
 
     let mod: Module_;
-    [mod, az] = setModule(az, out);
+    [mod, az] = setModule(az, file, out);
+
+    [, az] = popFile(az);
 
     return [mod, az];
   }
@@ -571,7 +600,7 @@ function retrieveImport(
   az: Analyzer,
   import_: Syntax.Import
 ): [Outcome, Analyzer] {
-  const resolved = Package.resolveImport(az.file, import_);
+  const resolved = Package.resolveImport(Analyzer.File(az), import_);
 
   if (typeof resolved !== 'string') {
     const ex = Outcome.Exception(
@@ -616,9 +645,8 @@ function retrieveImport(
     return [entry.outcome, az];
   }
 
-  // TODO: This manouvre is weird. Need to use scope concept again I think.
-  const [entryMod, entryAz] = Analyzer.run({ ...az, file: resolved });
-  az = { ...entryAz, file: az.file };
+  let entryMod: Analyzer.Module_;
+  [entryMod, az] = Analyzer.runFile(az, resolved);
 
   if (entryMod.outcome === null) {
     throw new Error('Shouldn\'t be possible');
@@ -1003,7 +1031,7 @@ function analyzeCreateOrAssign(
     return [null, az];
   }
 
-  let existing: ValueEntry | null;
+  let existing: Analyzer.ScopeValueEntry | null;
   [existing, az] = Analyzer.get(az, leftBaseExp.v);
 
   if (existing === null) {
@@ -1177,7 +1205,7 @@ function analyzeSubExpression(
     }
 
     case 'IDENTIFIER': {
-      let entry: ValueEntry | null;
+      let entry: Analyzer.ScopeValueEntry | null;
       [entry, az] = Analyzer.get(az, exp.v);
 
       if (entry === null) {

@@ -35,9 +35,9 @@ namespace Compiler {
       );
 
       if (!validationNotes.some(n => n.level === 'error')) {
-        let az = Analyzer(pack, f);
+        let az = Analyzer(pack);
         let mod: Analyzer.Module_;
-        [mod, az] = Analyzer.run(az);
+        [mod, az] = Analyzer.runFile(az, f);
 
         if (mod.loaded === false) {
           throw new Error('Shouldn\'t be possible');
