@@ -642,18 +642,54 @@ function retrieveImport(
   const resolvedIndex = az.fileStack.indexOf(resolved);
 
   if (resolvedIndex !== -1) {
+    let loop = [
+      ...az.fileStack.slice(resolvedIndex + 1).reverse(),
+      resolved,
+      ...az.fileStack.slice(0, resolvedIndex).reverse(),
+      resolved,
+    ];
+
+    function Dirname(f: string) {
+      const parts = f.split('/');
+      parts.pop();
+      return parts.join('/') + '/';
+    }
+
+    function commonSubstr(a: string, b: string) {
+      let res = '';
+
+      for (let i = 0; i < a.length && i < b.length; i++) {
+        if (a[i] !== b[i]) {
+          break;
+        }
+
+        res += a[i];
+      }
+
+      return res;
+    }
+
+    const commonPrefix = loop.map(Dirname).reduce(commonSubstr);
+
+    loop = loop.map(f => {
+      let special = (f === resolved);
+
+      f = f.slice(commonPrefix.length);
+
+      if (special) {
+        f = `[${f}]`;
+      }
+
+      return f;
+    });
+
     // TODO: Catch this in validation instead?
     az = Analyzer.addNote(az, Note(
       import_,
       'error',
       ['import-loop', 'infinite-loop'],
       'Import loop detected: ' +
-      [
-        ...az.fileStack.slice(resolvedIndex + 1).reverse(),
-        `(${resolved})`,
-        ...az.fileStack.slice(0, resolvedIndex).reverse(),
-        `(${resolved})`,
-      ].join(' -> '),
+      `${commonPrefix}/(${loop.join(' -> ')})`
     ));
 
     return [Outcome.Unknown(), az];
