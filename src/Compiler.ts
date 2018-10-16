@@ -1,4 +1,4 @@
-import Analyzer from './Analyzer';
+import { default as Analyzer, Outcome } from './Analyzer';
 import Note from './Note';
 import Package from './Package';
 import SecondsDiff from './SecondsDiff';
@@ -39,11 +39,19 @@ namespace Compiler {
         let mod: Analyzer.Module_;
         [mod, az] = Analyzer.runFile(az, f);
 
-        if (mod.loaded === false) {
+        if (mod.loaded === false || mod.outcome === null) {
           throw new Error('Shouldn\'t be possible');
         }
 
         notes.push(...mod.notes.map(n => ({ ...n, file: f })));
+
+        notes.push(Note.FileNote(
+          f,
+          {},
+          'info',
+          ['compiler', 'file-outcome'],
+          Outcome.JsString(mod.outcome),
+        ));
       }
     }
 

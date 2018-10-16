@@ -122,6 +122,8 @@ namespace Note {
     'assignment' |
     'statistics' |
     'compile-time' |
+    'compiler' |
+    'file-outcome' |
     'break-prevents-return' |
     'invalid-assignment-target' |
     'mutation-target' |
@@ -203,6 +205,8 @@ namespace Note {
     'assignment',
     'statistics',
     'compile-time',
+    'compiler',
+    'file-outcome',
     'break-prevents-return',
     'invalid-assignment-target',
     'mutation-target',

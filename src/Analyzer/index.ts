@@ -4,6 +4,7 @@ import Package from '../Package';
 import Scope from '../Scope';
 import Syntax from '../parser/Syntax';
 
+export { default as Outcome } from './Outcome';
 import Outcome from './Outcome';
 
 type Analyzer = {
