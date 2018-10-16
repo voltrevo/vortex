@@ -1,4 +1,4 @@
-import analyze from './analyze';
+import { Analyzer, Module_ } from './analyze';
 import Note from './Note';
 import Package from './Package';
 import SecondsDiff from './SecondsDiff';
@@ -31,12 +31,19 @@ namespace Compiler {
       const validationNotes = validate(m.program);
 
       notes.push(
-        ...validate(m.program).map(n => ({ ...n, file: f }))
+        ...validationNotes.map(n => ({ ...n, file: f }))
       );
 
       if (!validationNotes.some(n => n.level === 'error')) {
-        const { notes: analysisNotes } = analyze(pack, f);
-        notes.push(...analysisNotes.map(n => ({ ...n, file: f })));
+        let az = Analyzer(pack, f);
+        let mod: Module_;
+        [mod, az] = Analyzer.run(az);
+
+        if (mod.loaded === false) {
+          throw new Error('Shouldn\'t be possible');
+        }
+
+        notes.push(...mod.notes.map(n => ({ ...n, file: f })));
       }
     }
 

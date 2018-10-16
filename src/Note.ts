@@ -1,4 +1,4 @@
-import assert from './assert';
+// import assert from './assert';
 import Syntax from './parser/Syntax';
 
 type Note = {
@@ -16,16 +16,18 @@ function Note(
   message: string,
   subnotes?: Note[],
 ): Note {
+  /* TODO: restore this
   const categories = [
     'syntax',
     'validation',
-    'analysis',
+    'analyzer',
     'statistics',
     'package',
   ];
 
   const hasCategory = tags.some(t => categories.indexOf(t) !== -1);
   assert(hasCategory);
+  */
 
   for (const tag of tags) {
     if (!Note.isTag(tag)) {
@@ -75,7 +77,7 @@ namespace Note {
     'error' |
     'warn' |
     'info' |
-    'analysis' |
+    'analyzer' |
     'validation' |
     'package' |
     'invalid-import-source' |
@@ -154,7 +156,7 @@ namespace Note {
     'error',
     'warn',
     'info',
-    'analysis',
+    'analyzer',
     'validation',
     'package',
     'invalid-import-source',

@@ -1,5 +1,5 @@
 TODO: When an exception is generated, add a subnote for each level of the stack
-TODO: Make module notes part of the module result cache (especially so they don't go missing)
+TODO: Surface notes from imported modules
 TODO: Detect infinite import loops
 TODO: Fix asserts passing due to unknowns during test (generally want asserts to be graceful with unknowns in the actual language) (test requires all imports to resolve?)
 TODO: Tail recursion
@@ -11,6 +11,8 @@ TODO: Element-wise arithmetic
 TODO: log.info, log.warn etc
 TODO: analyzer.info, analyzer.error etc
 TODO: debugger.breakpoint;
+TODO: assert.static, also are type annotations equivalent to embedded assert.static?
+TODO: enable {x: i32 = 3;} for creation, which generalizes nicely to allow some names to be created by destructuring and not others: {[x: i32, y] = [1, 2]}
 TODO: Count operations in analyzer
 TODO: implement: if (foo := maybeFoo(); foo != null) { return foo; }
 TODO: Do something about confusing info labels for compile time in vim (can't ale render infos differently than warnings?)
