@@ -6,25 +6,25 @@ import Syntax from '../parser/Syntax';
 
 import Outcome from './Outcome';
 
-export type FuncRef = {
+type FuncRef = {
   cat: 'ref';
   t: 'func-ref';
   v: Syntax.FunctionExpression;
 };
 
-export type ImportRef = {
+type ImportRef = {
   cat: 'ref';
   t: 'import-ref';
   v: Syntax.Import;
 };
 
-export type RefValue = (
+type RefValue = (
   FuncRef |
   ImportRef |
   never
 );
 
-export type Analyzer = {
+type Analyzer = {
   pack: Package;
   file: string;
   importPath: string[];
@@ -34,7 +34,7 @@ export type Analyzer = {
   scope: Analyzer.ScopeMapT;
 };
 
-export function Analyzer(pack: Package, file: string): Analyzer {
+function Analyzer(pack: Package, file: string): Analyzer {
   const modules: Analyzer['modules'] = {};
 
   for (const dep of Object.keys(pack.modules)) {
@@ -67,12 +67,12 @@ export function Analyzer(pack: Package, file: string): Analyzer {
   };
 }
 
-export type ValueEntry = {
+type ValueEntry = {
   origin: Syntax.Element,
   data: Outcome.Value,
 };
 
-export namespace Analyzer {
+namespace Analyzer {
   export type Module_ = (
     {
       loaded: true,
