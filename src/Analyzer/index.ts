@@ -8,7 +8,7 @@ import Outcome from './Outcome';
 
 type Analyzer = {
   pack: Package;
-  importStack: string[];
+  fileStack: string[];
   modules: {
     [f: string]: Analyzer.Module_ | undefined;
   };
@@ -41,7 +41,7 @@ function Analyzer(pack: Package): Analyzer {
 
   return {
     pack,
-    importStack: [],
+    fileStack: [],
     modules,
     scope: Analyzer.ScopeMapT(),
   };
@@ -207,16 +207,16 @@ namespace Analyzer {
   }
 
   export function pushFile(az: Analyzer, file: string): Analyzer {
-    return { ...az, importStack: [file, ...az.importStack] };
+    return { ...az, fileStack: [file, ...az.fileStack] };
   }
 
   export function popFile(az: Analyzer): [string, Analyzer] {
-    const [file, ...importStack] = az.importStack;
-    return [file, { ...az, importStack }];
+    const [file, ...fileStack] = az.fileStack;
+    return [file, { ...az, fileStack }];
   }
 
   export function File(az: Analyzer): string {
-    const file = az.importStack[0];
+    const file = az.fileStack[0];
 
     if (file === undefined) {
       throw new Error('Shouldn\'t be possible');
