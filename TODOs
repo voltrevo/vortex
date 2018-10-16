@@ -1,5 +1,4 @@
 TODO: Finish refactoring Analyzer
-TODO: Detect infinite import loops
 TODO: Argument destructuring
 TODO: When an exception is generated, add a subnote for each level of the stack
 TODO: Surface notes from imported modules

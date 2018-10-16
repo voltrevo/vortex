@@ -81,6 +81,8 @@ namespace Note {
     'validation' |
     'package' |
     'invalid-import-source' |
+    'import-loop' |
+    'infinite-loop' |
     'no-effect' |
     'top-expression' |
     'control-flow' |
@@ -160,6 +162,8 @@ namespace Note {
     'validation',
     'package',
     'invalid-import-source',
+    'import-loop',
+    'infinite-loop',
     'no-effect',
     'top-expression',
     'control-flow',

@@ -140,13 +140,6 @@ namespace Analyzer {
             entry.data.v,
           );
 
-          if (mo.cat === 'invalid') {
-            throw new Error(
-              'Unable to handle invalid value from import. This possibility ' +
-              'should be prevented before here but currently it can happen.'
-            );
-          }
-
           return null;
         }
       }
@@ -643,6 +636,26 @@ function retrieveImport(
   // @below
   if (entry.outcome !== null) {
     return [entry.outcome, az];
+  }
+
+  const resolvedIndex = az.fileStack.indexOf(resolved);
+
+  if (resolvedIndex !== -1) {
+    // TODO: Catch this in validation instead?
+    az = Analyzer.addNote(az, Note(
+      import_,
+      'error',
+      ['import-loop', 'infinite-loop'],
+      'Import loop detected: ' +
+      [
+        ...az.fileStack.slice(resolvedIndex + 1).reverse(),
+        `(${resolved})`,
+        ...az.fileStack.slice(0, resolvedIndex).reverse(),
+        `(${resolved})`,
+      ].join(' -> '),
+    ));
+
+    return [Outcome.Unknown(), az];
   }
 
   let entryMod: Analyzer.Module_;
