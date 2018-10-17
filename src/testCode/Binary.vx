@@ -1,0 +1,16 @@
+func Binary(n) {
+  res := [];
+
+  for (n > 0) {
+    digit := n % 2;
+    res = [digit] + res;
+    n -= digit;
+    n /= 2;
+  }
+
+  return res;
+};
+
+assert Binary(11) == [1, 0, 1, 1];
+
+return Binary;
