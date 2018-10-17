@@ -209,21 +209,11 @@ namespace Analyzer {
     return [file, { ...az, fileStack }];
   }
 
-  export function File(az: Analyzer): string {
-    const file = az.fileStack[0];
-
-    if (file === undefined) {
-      throw new Error('Shouldn\'t be possible');
-    }
-
-    return file;
-  }
-
   export function addNote(
     az: Analyzer,
     note: Note,
   ): Analyzer {
-    const file = File(az);
+    const file = note.pos[0];
     let module_ = az.modules[file];
 
     if (module_ === undefined || !module_.loaded) {
@@ -603,7 +593,7 @@ function retrieveImport(
   az: Analyzer,
   import_: Syntax.Import
 ): [Outcome, Analyzer] {
-  const resolved = Package.resolveImport(Analyzer.File(az), import_);
+  const resolved = Package.resolveImport(import_.p[0], import_);
 
   if (typeof resolved !== 'string') {
     const ex = Outcome.Exception(
