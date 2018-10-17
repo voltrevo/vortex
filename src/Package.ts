@@ -136,7 +136,7 @@ namespace Package {
       return {
         t: 'ParserNotes',
         notes: [{
-          file,
+          pos: [file, null],
           level: 'error',
           tags: ['error', 'package', 'not-found'],
           message: 'File not found: ' + file,
@@ -152,18 +152,17 @@ namespace Package {
     } catch (e) {
       if (e.hash) {
         notes.push({
-          file,
           level: 'error',
           tags: ['error', 'syntax'],
           message: e.message.split('\n')[3],
-          pos: [
+          pos: [file, [
             [e.hash.loc.first_line, e.hash.loc.first_column],
             [e.hash.loc.last_line, e.hash.loc.last_column],
-          ],
+          ]],
         });
       } else {
         notes.push({
-          file,
+          pos: [file, null],
           level: 'error',
           tags: ['error', 'syntax', 'internal'],
           message: e.message,
@@ -176,9 +175,9 @@ namespace Package {
       };
     }
 
-    const imports = traverse<Syntax.Element, Syntax.Import>(
+    const elements = traverse<Syntax.Element, Syntax.Element>(
       program,
-      el => el.t === 'import' ? [el] : [],
+      el => [el],
       Syntax.Children,
     );
 
@@ -187,28 +186,33 @@ namespace Package {
       remote: {},
     };
 
-    for (const import_ of imports) {
-      const resolved = resolveImport(file, import_);
+    for (const element of elements) {
+      // TODO: Mutating here. Is this ok?
+      element.p[0] = file;
 
-      if (typeof resolved !== 'string') {
-        notes.push(resolved);
-        continue;
+      if (element.t === 'import') {
+        const resolved = resolveImport(file, element);
+
+        if (typeof resolved !== 'string') {
+          notes.push(resolved);
+          continue;
+        }
+
+        const sourceEntry = resolved.split('/')[0];
+
+        let packageDeps = (
+          sourceEntry === '@' ?
+          dependencies.local :
+          dependencies.remote[sourceEntry]
+        );
+
+        if (packageDeps === undefined) {
+          packageDeps = [];
+          dependencies.remote[sourceEntry] = packageDeps;
+        }
+
+        packageDeps.push(resolved);
       }
-
-      const sourceEntry = resolved.split('/')[0];
-
-      let packageDeps = (
-        sourceEntry === '@' ?
-        dependencies.local :
-        dependencies.remote[sourceEntry]
-      );
-
-      if (packageDeps === undefined) {
-        packageDeps = [];
-        dependencies.remote[sourceEntry] = packageDeps;
-      }
-
-      packageDeps.push(resolved);
     }
 
     return {
@@ -246,8 +250,7 @@ namespace Package {
     while (sourceEntry === '..') {
       if (dirPath.length === 0) {
         return Note(
-          file,
-          import_,
+          import_.p,
           'error',
           ['package', 'invalid-import-source'],
           'Import source is above the package root',

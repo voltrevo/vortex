@@ -85,7 +85,8 @@ namespace Syntax {
     never
   );
 
-  export type Pos = [[number, number], [number, number]];
+  export type CPos = [number, number];
+  export type Pos = [string, [CPos, CPos]];
 
   export type Identifier = { t: 'IDENTIFIER', v: string, p: Pos };
   export type ArrayExpression = { t: 'array', v: Expression[], p: Pos };
@@ -272,7 +273,13 @@ namespace Syntax {
       case 'array': { return el.v; }
 
       case 'object': {
-        return el.v.map(([, expression]) => expression);
+        const children: Syntax.Element[] = [];
+
+        for (const [identifier, expression] of el.v) {
+          children.push(identifier, expression);
+        }
+
+        return children;
       }
 
       case 'e': { return [el.v]; }
@@ -315,7 +322,7 @@ namespace Syntax {
         // providing it as a raw string. The parser should be changed not to
         // do that - passing through the identifier syntax element would be
         // simpler. There are other examples of this, e.g. function names.
-        const [, fromString] = el.v;
+        const [identifier, fromString] = el.v;
 
         if (typeof fromString === 'string') {
           // This is not reachable, but Typescript doesn't know that
@@ -324,7 +331,10 @@ namespace Syntax {
           throw new Error('Should not be possible');
         }
 
-        return fromString ? [fromString] : [];
+        return [
+          identifier,
+          ...(fromString ? [fromString] : []),
+        ];
       }
 
       case 'switch': {
@@ -344,14 +354,18 @@ namespace Syntax {
       }
 
       case 'func': {
-        // TODO: Identifiers
-        const { args, body } = el.v;
-        return body.t === 'block' ? [...args, body] : [...args, body.v];
+        const { name, args, body } = el.v;
+
+        return [
+          ...(name ? [name] : []),
+          ...args,
+          body.t === 'block' ? body : body.v,
+        ];
       }
 
       case 'class': {
         // TODO
-        return [];
+        return [el.v.name];
       }
 
       case 'subscript': { return el.v; }

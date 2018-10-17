@@ -3,6 +3,7 @@ import { spawnSync } from 'child_process';
 
 import colorize from './colorize';
 import Compiler from './Compiler';
+import formatLocation from './formatLocation';
 import Note from './Note';
 import prettyErrorContext from './prettyErrorContext';
 
@@ -93,15 +94,19 @@ const allNotes: Note[] = Compiler.compile(files, readFile);
 const moreFiles = [...files];
 
 for (const note of allNotes) {
-  if (moreFiles.indexOf(note.file) === -1) {
-    moreFiles.push(note.file);
+  if (typeof note.pos === 'string') {
+    continue;
+  }
+
+  if (moreFiles.indexOf(note.pos[0]) === -1) {
+    moreFiles.push(note.pos[0]);
   }
 }
 
 for (const file of moreFiles) {
   const fileText = readFile(file);
 
-  const notes = Note.flatten(allNotes.filter(n => n.file === file));
+  const notes = Note.flatten(allNotes.filter(n => n.pos[0] === file));
 
   if (fileText !== null) {
     const lines = fileText.split('\n');
@@ -110,7 +115,10 @@ for (const file of moreFiles) {
       lineNo++;
 
       const tags = Tags(line, file, lineNo);
-      const lineNotes = notes.filter(n => n.pos && n.pos[0][0] === lineNo);
+
+      const lineNotes = notes.filter(({ pos: [, range] }) => (
+        range && range[0][0] === lineNo
+      ));
 
       for (const level of ['error', 'warn', 'info']) {
         const levelTags = tags.filter(t => t === level);
@@ -226,7 +234,11 @@ for (const tagInfo of unseenTagList.slice(0, unseenTagLimit)) {
   log.error(
     '>>> error: unseen tag: ' +
     tagInfo.tag +
-    (tagInfo.matchingNote ? ` (produced in ${tagInfo.matchingNote.file})` : '')
+    (
+      tagInfo.matchingNote ?
+      ` (produced at ${formatLocation(tagInfo.matchingNote.pos)})` :
+      ''
+    )
   );
 
   ok = false;

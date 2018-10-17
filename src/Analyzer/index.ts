@@ -252,8 +252,7 @@ namespace Analyzer {
   ): [Module_, Analyzer] {
     if (outcome.t === 'exception') {
       az = addNote(az, Note(
-        file,
-        outcome.v.origin,
+        outcome.v.origin.p,
         'error',
         ['exception', ...outcome.v.tags],
         'Threw exception: ' + outcome.v.message,
@@ -397,8 +396,7 @@ function analyzeStatement(
 
       if (out.t !== 'bool') {
         az = Analyzer.addNote(az, Note(
-          Analyzer.File(az),
-          statement.v,
+          statement.v.p,
           'error',
           ['type-error', 'assert-non-bool'],
           `Type error: assert ${out.t}`,
@@ -555,8 +553,7 @@ function analyzeStatement(
           // TODO: Count total operations and limit execution based on that
           // instead.
           az = Analyzer.addNote(az, Note(
-            Analyzer.File(az),
-            statement,
+            statement.p,
             'warn',
             ['iteration-limit'],
             'Hit iteration limit of 2048',
@@ -703,8 +700,7 @@ function retrieveImport(
 
     // TODO: Catch this in validation instead?
     az = Analyzer.addNote(az, Note(
-      Analyzer.File(az),
-      import_,
+      import_.p,
       'error',
       ['import-loop', 'infinite-loop'],
       'Import loop detected: ' + loopStr

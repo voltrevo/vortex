@@ -51,8 +51,7 @@ export function validate(file: string, program: Syntax.Program): Note[] {
       for (const statement of el.v) {
         if (returned) {
           subNotes.push(Note(
-            file,
-            statement,
+            statement.p,
             'warn',
             ['validation', 'control-flow', 'unreachable'],
             'Statement is unreachable'
@@ -300,6 +299,10 @@ function validateFunctionScope(
             }
           }
 
+          if (el.t === 'object') {
+            return el.v.map(([, exp]) => exp);
+          }
+
           return Syntax.Children(el);
         }
       }
@@ -327,15 +330,13 @@ function validateFunctionScope(
 
       if (preExisting) {
         notes.push(Note(
-          file,
-          item.v,
+          item.v.p,
           'error',
           ['validation', 'scope', 'duplicate'],
           'Can\'t create variable that already exists',
           [
             Note(
-              file,
-              preExisting.origin,
+              preExisting.origin.p,
               'info',
               ['validation', 'scope', 'is-duplicated'],
               (
@@ -372,16 +373,14 @@ function validateFunctionScope(
             variable.data.mutations.length === 0
           ) {
             notes.push(Note(
-              file,
-              variable.origin,
+              variable.origin.p,
               'warn',
               ['validation', 'no-effect', 'scope', 'unused'],
               `Variable ${varName} is not used`,
             ));
           } else {
             notes.push(Note(
-              file,
-              variable.origin,
+              variable.origin.p,
               'warn',
               [
                 'validation',
@@ -426,15 +425,13 @@ function validateFunctionScope(
           }
 
           notes.push(Note(
-            file,
-            headMutation,
+            headMutation.p,
             'error',
             tags,
             getErrorMsg(headMutation),
             [
               Note(
-                file,
-                variable.origin,
+                variable.origin.p,
                 'info',
                 tags,
                 `{${varName}} is captured at ${captureLoc} and mutated ` +
@@ -445,8 +442,7 @@ function validateFunctionScope(
                 .captures
                 .filter(cap => mutations.indexOf(cap) === -1)
                 .map(cap => Note(
-                  file,
-                  cap,
+                  cap.p,
                   'info',
                   tags,
                   (
@@ -456,8 +452,7 @@ function validateFunctionScope(
                 ))
               ),
               ...tailMutations.map(mut => Note(
-                file,
-                mut,
+                mut.p,
                 'error',
                 tags,
                 getErrorMsg(mut),
@@ -499,8 +494,7 @@ function validateFunctionScope(
                   }
 
                   notes.push(Note(
-                    file,
-                    use.origin,
+                    use.origin.p,
                     'error',
                     tags,
                     (
@@ -510,8 +504,7 @@ function validateFunctionScope(
                     ),
                     [
                       Note(
-                        file,
-                        clItem.identifier,
+                        clItem.identifier.p,
                         'info',
                         tags,
                         (
@@ -521,8 +514,7 @@ function validateFunctionScope(
                         ),
                       ),
                       Note(
-                        file,
-                        clItem.origin,
+                        clItem.origin.p,
                         'info',
                         tags,
                         (
@@ -570,8 +562,7 @@ function validateFunctionScope(
 
         // TODO: Look for typos
         notes.push(Note(
-          file,
-          item,
+          item.p,
           'error',
           tags,
           `Variable ${item.v} does not exist`
@@ -608,8 +599,7 @@ function validateFunctionScope(
             case 'IDENTIFIER-mutationTarget': {
               if (scopeEntry.data.mutations === null) {
                 notes.push(Note(
-                  file,
-                  item,
+                  item.p,
                   'error',
                   ['validation', 'mutation'],
                   // TODO: include reason it's not allowed
@@ -696,8 +686,7 @@ function validateBody(file: string, body: Syntax.Block): Note[] {
 
   if (!lastStatement) {
     return [Note(
-      file,
-      body,
+      body.p,
       'error',
       ['validation', 'control-flow', 'return-failure', 'empty-body'],
       'Empty body',
@@ -805,8 +794,7 @@ function validateExpression(file: string, exp: Syntax.Expression): Note[] {
 
   if (exp.topExp && !isValidTopExpression(exp)) {
     notes.push(Note(
-      file,
-      exp,
+      exp.p,
       'warn',
       ['validation', 'no-effect', 'top-expression'],
       'Statement has no effect', // TODO: better wording
@@ -829,8 +817,7 @@ function validateExpression(file: string, exp: Syntax.Expression): Note[] {
       case ':=': {
         for (const invalid of InvalidAssignmentTargets(exp.v[0])) {
           notes.push(Note(
-            file,
-            invalid,
+            invalid.p,
             'error',
             ['validation', 'invalid-assignment-target'],
             [
@@ -846,8 +833,7 @@ function validateExpression(file: string, exp: Syntax.Expression): Note[] {
           const action = exp.t === ':=' ? 'Creating' : 'Assigning to';
 
           notes.push(Note(
-            file,
-            exp,
+            exp.p,
             'error',
             ['validation', 'scope', 'subexpression-mutation'],
             `${action} a variable in a subexpression is not allowed`,
@@ -863,8 +849,7 @@ function validateExpression(file: string, exp: Syntax.Expression): Note[] {
         for (const [identifier] of exp.v) {
           if (keys[identifier.v]) {
             notes.push(Note(
-              file,
-              identifier,
+              identifier.p,
               'error',
               ['validation', 'object', 'duplicate', 'duplicate-key'],
               `Duplicate key '${identifier.v}' in object literal`,
@@ -936,8 +921,7 @@ function validateStatementWillReturn(
 
     if (!hasReturn(block)) {
       issues.push(Note(
-        file,
-        statement,
+        statement.p,
         'error',
         [
           'validation',
@@ -957,8 +941,7 @@ function validateStatementWillReturn(
       const breaks = findBreaks(block);
 
       issues.push(...breaks.map(brk => Note(
-        file,
-        brk,
+        brk.p,
         'error',
         [
           'validation',
@@ -974,8 +957,7 @@ function validateStatementWillReturn(
       )));
     } else {
       issues.push(Note(
-        file,
-        statement,
+        statement.p,
         'error',
         [
           'validation',
@@ -996,8 +978,7 @@ function validateStatementWillReturn(
   }
 
   return [Note(
-    file,
-    statement,
+    statement.p,
     'error',
     ['validation', 'control-flow', 'return-failure'],
     'Last statement of body does not return',

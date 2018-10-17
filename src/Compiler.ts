@@ -63,8 +63,7 @@ namespace Compiler {
 
       if (files.indexOf(f) !== -1) {
         notes.push(Note(
-          f,
-          {},
+          [f, null],
           'info',
           ['compiler', 'file-outcome'],
           `Outcome: ${Outcome.JsString(mod.outcome)}`,
@@ -75,8 +74,7 @@ namespace Compiler {
     const after = process.hrtime();
 
     notes.push(Note(
-      '(compiler)',
-      {},
+      ['(compiler)', null],
       'info',
       ['statistics', 'compile-time'],
       (

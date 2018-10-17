@@ -12,7 +12,7 @@ export default function prettyErrorContext(
   text: string,
 ): string[] {
   // TODO: Why does typescript require this?
-  const pos = note.pos;
+  const [, pos] = note.pos;
 
   if (!pos) {
     return [];

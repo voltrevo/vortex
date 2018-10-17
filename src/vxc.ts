@@ -199,15 +199,17 @@ const inputs: ({ type: 'file', name: string } | string)[] = [];
         }
 
         case 'vim-ale': {
-          if (note.file !== '@/(stdin)' || !note.pos) {
+          const [file, range] = note.pos;
+
+          if (file !== '@/(stdin)' || range === null) {
             break;
           }
 
           console.error(JSON.stringify({
-            lnum: note.pos[0][0],
-            end_lnum: note.pos[1][0],
-            col: note.pos[0][1],
-            end_col: note.pos[1][1],
+            lnum: range[0][0],
+            end_lnum: range[1][0],
+            col: range[0][1],
+            end_col: range[1][1],
             text: `${note.message} ${note.tags.map(t => '#' + t).join(' ')}`,
             type: note.level[0].toUpperCase(),
           }));
@@ -226,11 +228,11 @@ const inputs: ({ type: 'file', name: string } | string)[] = [];
 });
 
 function prettyLocation(note: Note) {
-  if (!note.pos) {
-    return `${note.file}:`;
+  if (typeof note.pos === 'string') {
+    return note.pos + ':';
   }
 
-  return `${note.file}:${formatLocation(note.pos)}:`;
+  return formatLocation(note.pos) + ':';
 }
 
 function compactPrint(note: Note) {

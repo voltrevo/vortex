@@ -1,14 +1,19 @@
-import Syntax from './parser/Syntax';
+import Note from './Note';
 
-export default function formatLocation(pos: Syntax.Pos) {
-  const [start, end] = pos;
+export default function formatLocation(pos: Note.Pos) {
+  const [file, range] = pos;
 
-  if (start[0] === end[0]) {
-    return `${start[0]}:${start[1]}-${end[1]}`;
+  if (range === null) {
+    return file;
+  }
+
+  if (range[0][0] === range[1][0]) {
+    return `${file}:${range[0][0]}:${range[0][1]}-${range[1][1]}`;
   }
 
   return (
-    `L${start[0]}C${start[1]}-` +
-    `L${end[0]}C${end[1]}`
+    `${file}:` +
+    `L${range[0][0]}C${range[0][1]}-` +
+    `L${range[1][0]}C${range[1][1]}`
   );
 }
