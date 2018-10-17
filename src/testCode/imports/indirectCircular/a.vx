@@ -1,0 +1,4 @@
+import b;
+import callMe;
+
+return callMe(func() => b);
