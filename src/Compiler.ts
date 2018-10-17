@@ -34,39 +34,34 @@ namespace Compiler {
         ...validationNotes.map(n => ({ ...n, file: f }))
       );
 
-      if (!validationNotes.some(n => n.level === 'error')) {
-        let az = Analyzer(pack);
-        let mod: Analyzer.Module_;
-        [mod, az] = Analyzer.runFile(az, f);
-
-        if (mod.loaded === false || mod.outcome === null) {
-          throw new Error('Shouldn\'t be possible');
-        }
-
-        notes.push(...mod.notes.map(n => ({ ...n, file: f })));
-
-        for (const subF of Object.keys(az.modules)) {
-          const subMod = az.modules[subF];
-
-          if (subMod === undefined) {
-            throw new Error('Shouldn\'t be possible');
-          }
-
-          if (subMod.loaded === false) {
-            continue;
-          }
-
-          notes.push(...subMod.notes.map(n => ({ ...n, file: subF })));
-        }
-
-        notes.push(Note.FileNote(
-          f,
-          {},
-          'info',
-          ['compiler', 'file-outcome'],
-          Outcome.JsString(mod.outcome),
-        ));
+      if (validationNotes.some(n => n.level === 'error')) {
+        pack = { ...pack,
+          modules: { ...pack.modules,
+            // TODO: Make a better solution here, saying there were parser
+            // notes is not correct
+            [f]: { t: 'ParserNotes', notes: [] },
+          },
+        };
       }
+    }
+
+    let az = Analyzer(pack);
+
+    for (const f of Object.keys(pack.modules)) {
+      const m = pack.modules[f];
+
+      if (m === undefined || m.t !== 'Module') {
+        continue;
+      }
+
+      let mod: Analyzer.Module_;
+      [mod, az] = Analyzer.runFile(az, f);
+
+      if (mod.loaded === false || mod.outcome === null) {
+        throw new Error('Shouldn\'t be possible');
+      }
+
+      notes.push(...mod.notes.map(n => ({ ...n, file: f })));
     }
 
     const after = process.hrtime();

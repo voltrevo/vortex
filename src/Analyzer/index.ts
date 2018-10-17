@@ -287,12 +287,20 @@ namespace Analyzer {
       throw new Error('Shouldn\'t be possible');
     }
 
+    let mod = az.modules[file];
+
+    if (mod === undefined) {
+      throw new Error('Shouldn\'t be possible');
+    }
+
+    if (mod.outcome !== null) {
+      return [mod, az];
+    }
+
     az = pushFile(az, file);
 
     let out: Outcome;
     [out, az] = analyzeBody(az, moduleEntry.program);
-
-    let mod: Module_;
     [mod, az] = setModule(az, file, out);
 
     [, az] = popFile(az);
