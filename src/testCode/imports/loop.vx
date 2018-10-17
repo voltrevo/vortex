@@ -1,2 +1,2 @@
-import loop;
+import loop; // #error #import-loop
 return loop;

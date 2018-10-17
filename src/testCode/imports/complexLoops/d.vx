@@ -1,1 +1,1 @@
-return (import a);
+return (import a); // #error #infinite-loop
