@@ -45,6 +45,20 @@ namespace Compiler {
 
         notes.push(...mod.notes.map(n => ({ ...n, file: f })));
 
+        for (const subF of Object.keys(az.modules)) {
+          const subMod = az.modules[subF];
+
+          if (subMod === undefined) {
+            throw new Error('Shouldn\'t be possible');
+          }
+
+          if (subMod.loaded === false) {
+            continue;
+          }
+
+          notes.push(...subMod.notes.map(n => ({ ...n, file: subF })));
+        }
+
         notes.push(Note.FileNote(
           f,
           {},
