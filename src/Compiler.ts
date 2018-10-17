@@ -62,6 +62,16 @@ namespace Compiler {
       }
 
       notes.push(...mod.notes.map(n => ({ ...n, file: f })));
+
+      if (files.indexOf(f) !== -1) {
+        notes.push(Note.FileNote(
+          f,
+          {},
+          'info',
+          ['compiler', 'file-outcome'],
+          `Outcome: ${Outcome.JsString(mod.outcome)}`,
+        ));
+      }
     }
 
     const after = process.hrtime();
