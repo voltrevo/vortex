@@ -37,7 +37,7 @@ export default function colorize(line: string) {
     return line;
   }
 
-  const location = grab(line, /^[\w.()\/]+(:[LC0-9-]+)?(:[LC0-9-]+)?:/);
+  const location = grab(line, /^[@\w.()\/]+(:[LC0-9-]+)?(:[LC0-9-]+)?:/);
   const file = grab(location, /^[^:]+/);
   const lineNo = grab(dropPrefix(file, location), /[LC0-9-]+/);
 
