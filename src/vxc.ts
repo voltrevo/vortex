@@ -8,8 +8,6 @@ import getStdin from './getStdin';
 import Note from './Note';
 import prettyErrorContext from './prettyErrorContext';
 
-type FileNote = Note.FileNote;
-
 const args = minimist(process.argv.slice(2));
 
 type Err = {
@@ -186,20 +184,17 @@ const inputs: ({ type: 'file', name: string } | string)[] = [];
       switch (format.value) {
         case 'pretty': {
           // TODO: Make this better
-          prettyPrint({ file, ...note }, text || '');
-
+          prettyPrint(note, text || '');
           break;
         }
 
         case 'compact': {
-          compactPrint({ file, ...note });
-
+          compactPrint(note);
           break;
         }
 
         case 'native': {
-          // TODO: compile should generate file property
-          console.error(JSON.stringify({ file, ...note }));
+          console.error(JSON.stringify(note));
           break;
         }
 
@@ -230,7 +225,7 @@ const inputs: ({ type: 'file', name: string } | string)[] = [];
   setTimeout(() => { throw e; });
 });
 
-function prettyLocation(note: FileNote) {
+function prettyLocation(note: Note) {
   if (!note.pos) {
     return `${note.file}:`;
   }
@@ -238,14 +233,14 @@ function prettyLocation(note: FileNote) {
   return `${note.file}:${formatLocation(note.pos)}:`;
 }
 
-function compactPrint(note: FileNote) {
+function compactPrint(note: Note) {
   console.error(colorize(
     `${prettyLocation(note)} ${note.level}: ${note.message} ` +
     note.tags.map(t => '#' + t).join(' ')
   ));
 }
 
-function prettyPrint(note: FileNote, text: string) {
+function prettyPrint(note: Note, text: string) {
   if (!note.pos) {
     compactPrint(note);
     console.error();

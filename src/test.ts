@@ -88,7 +88,7 @@ const readFile = (file: string): string | null => {
   return text;
 };
 
-const allNotes: Note.FileNote[] = Compiler.compile(files, readFile);
+const allNotes: Note[] = Compiler.compile(files, readFile);
 
 const moreFiles = [...files];
 
@@ -145,7 +145,7 @@ for (const file of moreFiles) {
           log.error(`${file}:${lineNo}: ${wording}:`);
 
           for (const note of levelNotes) {
-            const prettyLines = prettyErrorContext({ file, ...note }, fileText);
+            const prettyLines = prettyErrorContext(note, fileText);
 
             for (const prettyLine of prettyLines) {
               console.error(prettyLine);

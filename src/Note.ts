@@ -2,6 +2,7 @@
 import Syntax from './parser/Syntax';
 
 type Note = {
+  file: string,
   pos?: Syntax.Pos,
   level: 'error' | 'warn' | 'info';
   tags: Note.Tag[],
@@ -10,6 +11,7 @@ type Note = {
 };
 
 function Note(
+  file: string,
   el: { p?: Syntax.Pos },
   level: 'error' | 'warn' | 'info',
   tags: Note.Tag[],
@@ -36,6 +38,7 @@ function Note(
   }
 
   return {
+    file,
     ...(el.p ? { pos: el.p } : {}),
     level,
     tags: [level, ...tags],
@@ -45,20 +48,6 @@ function Note(
 }
 
 namespace Note {
-  export type FileNote = Note & { file: string };
-
-  export function FileNote(
-    file: string,
-    el: { p?: Syntax.Pos },
-    level: 'error' | 'warn' | 'info',
-    tags: Note.Tag[],
-    message: string,
-    subnotes?: Note[],
-  ): FileNote {
-    const note = Note(el, level, tags, message, subnotes);
-    return { ...note, file };
-  }
-
   export function flatten(notes: Note[]): Note[] {
     const newNotes: Note[] = [];
 

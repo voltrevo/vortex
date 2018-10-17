@@ -8,7 +8,7 @@ namespace Compiler {
   export function compile(
     files: string[],
     readFile: (f: string) => string | null,
-  ): Note.FileNote[] {
+  ): Note[] {
     const before = process.hrtime();
 
     let pack = Package();
@@ -19,7 +19,7 @@ namespace Compiler {
 
     pack = Package.setLocalDependencies(pack, readFile);
 
-    const notes: Note.FileNote[] = [...pack.notes];
+    const notes: Note[] = [...pack.notes];
 
     for (const f of Object.keys(pack.modules)) {
       const m = pack.modules[f];
@@ -28,11 +28,9 @@ namespace Compiler {
         continue;
       }
 
-      const validationNotes = validate(m.program);
+      const validationNotes = validate(f, m.program);
 
-      notes.push(
-        ...validationNotes.map(n => ({ ...n, file: f }))
-      );
+      notes.push(...validationNotes);
 
       if (validationNotes.some(n => n.level === 'error')) {
         pack = { ...pack,
@@ -61,10 +59,10 @@ namespace Compiler {
         throw new Error('Shouldn\'t be possible');
       }
 
-      notes.push(...mod.notes.map(n => ({ ...n, file: f })));
+      notes.push(...mod.notes);
 
       if (files.indexOf(f) !== -1) {
-        notes.push(Note.FileNote(
+        notes.push(Note(
           f,
           {},
           'info',
@@ -76,7 +74,7 @@ namespace Compiler {
 
     const after = process.hrtime();
 
-    notes.push(Note.FileNote(
+    notes.push(Note(
       '(compiler)',
       {},
       'info',
@@ -91,7 +89,7 @@ namespace Compiler {
     return notes;
   }
 
-  export function compileText(text: string): Note.FileNote[] {
+  export function compileText(text: string): Note[] {
     return compile(
       ['(anonymous)'],
       f => f === '(anonymous)' ? text : null,

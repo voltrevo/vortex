@@ -1,7 +1,6 @@
 import chalk from 'chalk';
 
 import Note from './Note';
-type FileNote = Note.FileNote;
 
 const iStart = 0;
 const iEnd = 1;
@@ -9,7 +8,7 @@ const iLine = 0;
 const iCol = 1;
 
 export default function prettyErrorContext(
-  note: FileNote,
+  note: Note,
   text: string,
 ): string[] {
   // TODO: Why does typescript require this?

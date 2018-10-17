@@ -8,10 +8,10 @@ import traverse from './traverse';
 
 export type Importer = (importExp: Syntax.Import) => Note[];
 
-export function validate(program: Syntax.Program): Note[] {
+export function validate(file: string, program: Syntax.Program): Note[] {
   const notes: Note[] = [];
 
-  notes.push(...validateBody(program));
+  notes.push(...validateBody(file, program));
 
   notes.push(...traverse<Syntax.Element, Note>(program, el => {
     const subNotes: Note[] = [];
@@ -21,14 +21,14 @@ export function validate(program: Syntax.Program): Note[] {
     const exp = Syntax.expressionFromElement(el);
 
     if (exp) {
-      subNotes.push(...validateExpression(exp));
+      subNotes.push(...validateExpression(file, exp));
     }
 
     if (el.t === 'func') {
       const { body } = el.v;
 
       if (body.t === 'block') {
-        subNotes.push(...validateBody(body));
+        subNotes.push(...validateBody(file, body));
       }
     } else if (el.t === 'for') {
       // TODO: Disallow shallow return unless continue might occur
@@ -42,7 +42,7 @@ export function validate(program: Syntax.Program): Note[] {
         if (body.t === 'block') {
           // TODO: Allow methods to implicitly return this? Enforce return
           // consistency at least.
-          subNotes.push(...validateMethodBody(body));
+          subNotes.push(...validateMethodBody(file, body));
         }
       }
     } else if (el.t === 'block') {
@@ -51,6 +51,7 @@ export function validate(program: Syntax.Program): Note[] {
       for (const statement of el.v) {
         if (returned) {
           subNotes.push(Note(
+            file,
             statement,
             'warn',
             ['validation', 'control-flow', 'unreachable'],
@@ -67,7 +68,7 @@ export function validate(program: Syntax.Program): Note[] {
     return subNotes;
   }, Syntax.Children));
 
-  notes.push(...validateScope(program));
+  notes.push(...validateScope(file, program));
 
   return notes;
 }
@@ -131,7 +132,7 @@ type VInfo = {
   };
 };
 
-function validateScope(block: Syntax.Block) {
+function validateScope(file: string, block: Syntax.Block) {
   const synthFunction: Syntax.FunctionExpression = {
     t: 'func',
     v: {
@@ -142,7 +143,11 @@ function validateScope(block: Syntax.Block) {
     p: block.p,
   };
 
-  const funcValidation = validateFunctionScope({ root: {} }, synthFunction);
+  const funcValidation = validateFunctionScope(
+    file,
+    { root: {} },
+    synthFunction,
+  );
 
   if (funcValidation.closure.length > 0 || !('root' in funcValidation.scope)) {
     throw new Error('Should not be possible');
@@ -152,6 +157,7 @@ function validateScope(block: Syntax.Block) {
 }
 
 function validateFunctionScope(
+  file: string,
   outerScope: Scope<ST>,
   func: Syntax.FunctionExpression,
 ): {
@@ -321,12 +327,14 @@ function validateFunctionScope(
 
       if (preExisting) {
         notes.push(Note(
+          file,
           item.v,
           'error',
           ['validation', 'scope', 'duplicate'],
           'Can\'t create variable that already exists',
           [
             Note(
+              file,
               preExisting.origin,
               'info',
               ['validation', 'scope', 'is-duplicated'],
@@ -364,6 +372,7 @@ function validateFunctionScope(
             variable.data.mutations.length === 0
           ) {
             notes.push(Note(
+              file,
               variable.origin,
               'warn',
               ['validation', 'no-effect', 'scope', 'unused'],
@@ -371,6 +380,7 @@ function validateFunctionScope(
             ));
           } else {
             notes.push(Note(
+              file,
               variable.origin,
               'warn',
               [
@@ -416,12 +426,14 @@ function validateFunctionScope(
           }
 
           notes.push(Note(
+            file,
             headMutation,
             'error',
             tags,
             getErrorMsg(headMutation),
             [
               Note(
+                file,
                 variable.origin,
                 'info',
                 tags,
@@ -433,6 +445,7 @@ function validateFunctionScope(
                 .captures
                 .filter(cap => mutations.indexOf(cap) === -1)
                 .map(cap => Note(
+                  file,
                   cap,
                   'info',
                   tags,
@@ -443,6 +456,7 @@ function validateFunctionScope(
                 ))
               ),
               ...tailMutations.map(mut => Note(
+                file,
                 mut,
                 'error',
                 tags,
@@ -485,6 +499,7 @@ function validateFunctionScope(
                   }
 
                   notes.push(Note(
+                    file,
                     use.origin,
                     'error',
                     tags,
@@ -495,6 +510,7 @@ function validateFunctionScope(
                     ),
                     [
                       Note(
+                        file,
                         clItem.identifier,
                         'info',
                         tags,
@@ -505,6 +521,7 @@ function validateFunctionScope(
                         ),
                       ),
                       Note(
+                        file,
                         clItem.origin,
                         'info',
                         tags,
@@ -553,6 +570,7 @@ function validateFunctionScope(
 
         // TODO: Look for typos
         notes.push(Note(
+          file,
           item,
           'error',
           tags,
@@ -590,6 +608,7 @@ function validateFunctionScope(
             case 'IDENTIFIER-mutationTarget': {
               if (scopeEntry.data.mutations === null) {
                 notes.push(Note(
+                  file,
                   item,
                   'error',
                   ['validation', 'mutation'],
@@ -619,7 +638,7 @@ function validateFunctionScope(
         scope = Scope.set(scope, ident.v, mods);
       }
     } else if (item.t === 'func') {
-      const funcValidation = validateFunctionScope(scope, item);
+      const funcValidation = validateFunctionScope(file, scope, item);
 
       notes.push(...funcValidation.notes);
       scope = funcValidation.scope;
@@ -670,13 +689,14 @@ function validateFunctionScope(
   return { notes, closure, scope };
 }
 
-function validateBody(body: Syntax.Block): Note[] {
+function validateBody(file: string, body: Syntax.Block): Note[] {
   const lastStatement: Syntax.Statement | undefined = (
     body.v[body.v.length - 1]
   );
 
   if (!lastStatement) {
     return [Note(
+      file,
       body,
       'error',
       ['validation', 'control-flow', 'return-failure', 'empty-body'],
@@ -684,10 +704,10 @@ function validateBody(body: Syntax.Block): Note[] {
     )];
   }
 
-  return validateStatementWillReturn(lastStatement);
+  return validateStatementWillReturn(file, lastStatement);
 }
 
-function validateMethodBody(body: Syntax.Block): Note[] {
+function validateMethodBody(file: string, body: Syntax.Block): Note[] {
   if (!hasReturn(body)) {
     // Methods are allowed to not have return statements. In this case they
     // implicitly `return this;`. However, if there are any return statements,
@@ -695,7 +715,7 @@ function validateMethodBody(body: Syntax.Block): Note[] {
     return [];
   }
 
-  return validateBody(body);
+  return validateBody(file, body);
 }
 
 function isValidTopExpression(e: Syntax.Expression) {
@@ -780,11 +800,12 @@ function InvalidAssignmentTargets(
   return invalids;
 }
 
-function validateExpression(exp: Syntax.Expression): Note[] {
+function validateExpression(file: string, exp: Syntax.Expression): Note[] {
   const notes: Note[] = [];
 
   if (exp.topExp && !isValidTopExpression(exp)) {
     notes.push(Note(
+      file,
       exp,
       'warn',
       ['validation', 'no-effect', 'top-expression'],
@@ -808,6 +829,7 @@ function validateExpression(exp: Syntax.Expression): Note[] {
       case ':=': {
         for (const invalid of InvalidAssignmentTargets(exp.v[0])) {
           notes.push(Note(
+            file,
             invalid,
             'error',
             ['validation', 'invalid-assignment-target'],
@@ -824,6 +846,7 @@ function validateExpression(exp: Syntax.Expression): Note[] {
           const action = exp.t === ':=' ? 'Creating' : 'Assigning to';
 
           notes.push(Note(
+            file,
             exp,
             'error',
             ['validation', 'scope', 'subexpression-mutation'],
@@ -840,6 +863,7 @@ function validateExpression(exp: Syntax.Expression): Note[] {
         for (const [identifier] of exp.v) {
           if (keys[identifier.v]) {
             notes.push(Note(
+              file,
               identifier,
               'error',
               ['validation', 'object', 'duplicate', 'duplicate-key'],
@@ -897,7 +921,10 @@ function validateExpression(exp: Syntax.Expression): Note[] {
   return notes;
 }
 
-function validateStatementWillReturn(statement: Syntax.Statement): Note[] {
+function validateStatementWillReturn(
+  file: string,
+  statement: Syntax.Statement,
+): Note[] {
   if (statement.t === 'return') {
     return [];
   }
@@ -909,6 +936,7 @@ function validateStatementWillReturn(statement: Syntax.Statement): Note[] {
 
     if (!hasReturn(block)) {
       issues.push(Note(
+        file,
         statement,
         'error',
         [
@@ -929,6 +957,7 @@ function validateStatementWillReturn(statement: Syntax.Statement): Note[] {
       const breaks = findBreaks(block);
 
       issues.push(...breaks.map(brk => Note(
+        file,
         brk,
         'error',
         [
@@ -945,6 +974,7 @@ function validateStatementWillReturn(statement: Syntax.Statement): Note[] {
       )));
     } else {
       issues.push(Note(
+        file,
         statement,
         'error',
         [
@@ -966,6 +996,7 @@ function validateStatementWillReturn(statement: Syntax.Statement): Note[] {
   }
 
   return [Note(
+    file,
     statement,
     'error',
     ['validation', 'control-flow', 'return-failure'],

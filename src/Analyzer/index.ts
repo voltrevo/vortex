@@ -252,6 +252,7 @@ namespace Analyzer {
   ): [Module_, Analyzer] {
     if (outcome.t === 'exception') {
       az = addNote(az, Note(
+        file,
         outcome.v.origin,
         'error',
         ['exception', ...outcome.v.tags],
@@ -396,6 +397,7 @@ function analyzeStatement(
 
       if (out.t !== 'bool') {
         az = Analyzer.addNote(az, Note(
+          Analyzer.File(az),
           statement.v,
           'error',
           ['type-error', 'assert-non-bool'],
@@ -552,7 +554,9 @@ function analyzeStatement(
         if (iterations >= 2048) {
           // TODO: Count total operations and limit execution based on that
           // instead.
-          az = Analyzer.addNote(az, Note(statement,
+          az = Analyzer.addNote(az, Note(
+            Analyzer.File(az),
+            statement,
             'warn',
             ['iteration-limit'],
             'Hit iteration limit of 2048',
@@ -699,6 +703,7 @@ function retrieveImport(
 
     // TODO: Catch this in validation instead?
     az = Analyzer.addNote(az, Note(
+      Analyzer.File(az),
       import_,
       'error',
       ['import-loop', 'infinite-loop'],
@@ -1629,7 +1634,11 @@ function analyzeSubExpression(
               return null;
             }
 
-            let funcAz = { ...func.v.az, modules: az.modules };
+            let funcAz = { ...func.v.az,
+              modules: az.modules,
+              // TODO: Not doing this should break in an interesting way
+              // fileStack: az.fileStack,
+            };
 
             if (func.v.exp.v.name !== null) {
               funcAz = Analyzer.add(

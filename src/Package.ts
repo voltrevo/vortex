@@ -11,7 +11,7 @@ type Package = {
     );
   };
   dependencies: Package.Dependencies;
-  notes: Note.FileNote[];
+  notes: Note[];
 };
 
 function Package(): Package {
@@ -30,7 +30,7 @@ namespace Package {
     t: 'Module';
     program: Syntax.Program;
     dependencies: Dependencies;
-    notes: Note.FileNote[];
+    notes: Note[];
   };
 
   export type Dependencies = {
@@ -42,7 +42,7 @@ namespace Package {
 
   export type ParserNotes = {
     t: 'ParserNotes';
-    notes: Note.FileNote[];
+    notes: Note[];
   };
 
   export function set(
@@ -144,7 +144,7 @@ namespace Package {
       };
     }
 
-    const notes: Note.FileNote[] = [];
+    const notes: Note[] = [];
     let program: Syntax.Program | null = null;
 
     try {
@@ -222,7 +222,7 @@ namespace Package {
   export function resolveImport(
     file: string,
     import_: Syntax.Import,
-  ): string | Note.FileNote {
+  ): string | Note {
     let { v: [name, source] } = import_;
     const nameStr = name.v + '.vx';
 
@@ -245,7 +245,7 @@ namespace Package {
 
     while (sourceEntry === '..') {
       if (dirPath.length === 0) {
-        return Note.FileNote(
+        return Note(
           file,
           import_,
           'error',
