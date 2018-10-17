@@ -1,1 +1,1 @@
-return (import c);
+return (import c) + (import d);
