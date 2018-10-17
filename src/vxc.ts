@@ -204,17 +204,15 @@ const inputs: ({ type: 'file', name: string } | string)[] = [];
         }
 
         case 'vim-ale': {
-          if (note.file !== '@/(stdin)') {
+          if (note.file !== '@/(stdin)' || !note.pos) {
             break;
           }
 
-          const pos = note.pos || [[1, 1], [1, 1]];
-
           console.error(JSON.stringify({
-            lnum: pos[0][0],
-            end_lnum: pos[1][0],
-            col: pos[0][1],
-            end_col: pos[1][1],
+            lnum: note.pos[0][0],
+            end_lnum: note.pos[1][0],
+            col: note.pos[0][1],
+            end_col: note.pos[1][1],
             text: `${note.message} ${note.tags.map(t => '#' + t).join(' ')}`,
             type: note.level[0].toUpperCase(),
           }));
