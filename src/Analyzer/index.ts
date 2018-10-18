@@ -1938,16 +1938,7 @@ namespace Analyzer {
       func = (() => {
         switch (func.t) {
           case 'func': {
-            return (() => {
-              switch (func.v.t) {
-                case 'plain': return func;
-                case 'method': return Outcome.Exception(
-                  funcExp,
-                  ['not-implemented'],
-                  'Not implemented: ' + Outcome.JsString(func),
-                );
-              }
-            })();
+            return func;
           }
 
           case 'unknown':
@@ -2039,17 +2030,38 @@ namespace Analyzer {
       func: Outcome.Func,
       argEntries: ScopeValueEntry[],
     ): TailCall | Outcome.Exception {
-      if (func.v.t === 'method') {
+      // This is here because typescript forgets the narrowed type of func
+      // inside the lambdas below.
+      const funcv = func.v;
+
+      if (funcv.t === 'method') {
+        return (az: Analyzer) => {
+          switch (funcv.v.t) {
+            case 'array': {
+              return (() => {
+                switch (funcv.v.name) {
+                  case 'length': {
+                    const out = Outcome.Array.methods[funcv.v.name](
+                      funcv.v.base,
+                      // TODO: Should be getting this from argEntries but the
+                      // special case of zero arguments works fine like this
+                      [],
+                    );
+
+                    return [out, az] as [Outcome.Number, Analyzer];
+                  }
+                }
+              })();
+            }
+          }
+        };
+
         return Outcome.Exception(
           funcExp,
           ['not-implemented'],
           'Not implemented ' + Outcome.JsString(func),
         );
       }
-
-      // This is here because typescript forgets the narrowed type of func
-      // inside the lambda below.
-      const funcv = func.v;
 
       return (az: Analyzer) => {
         let funcAz = { ...funcv.v.az,

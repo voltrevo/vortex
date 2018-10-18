@@ -149,8 +149,14 @@ namespace Outcome {
       never
     );
 
+    export type MethodArgs = {
+      length: [];
+    };
+
     export const methods = {
-      length: (base: Array, args: []) => base.v.length,
+      length: (base: Array, args: MethodArgs['length']) => (
+        Number(base.v.length)
+      ),
     };
   }
 
