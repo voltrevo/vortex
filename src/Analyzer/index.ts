@@ -131,7 +131,7 @@ namespace Analyzer {
     checkNull((() => {
       switch (entry.data.t) {
         case 'func-ref': {
-          mo = Outcome.Func({ exp: entry.data.v, az });
+          mo = Outcome.FuncPlain({ exp: entry.data.v, az });
           return null;
         }
 
@@ -880,7 +880,7 @@ namespace Analyzer {
           }
 
           case 'func': {
-            const func = Outcome.Func({ exp, az });
+            const func = Outcome.FuncPlain({ exp, az });
 
             if (!exp.topExp) {
               // TODO: Enforce this by typing?
@@ -1595,7 +1595,7 @@ namespace Analyzer {
         }
 
         case 'func': {
-          return [Outcome.Func({ exp, az }), az];
+          return [Outcome.FuncPlain({ exp, az }), az];
         }
 
         case 'functionCall': {
@@ -1895,7 +1895,19 @@ namespace Analyzer {
 
       func = (() => {
         switch (func.t) {
-          case 'func':
+          case 'func': {
+            return (() => {
+              switch (func.v.t) {
+                case 'plain': return func;
+                case 'method': return Outcome.Exception(
+                  funcExp,
+                  ['not-implemented'],
+                  'Not implemented: ' + Outcome.JsString(func),
+                );
+              }
+            })();
+          }
+
           case 'unknown':
           case 'exception': {
             return func;
@@ -1946,7 +1958,8 @@ namespace Analyzer {
           }
 
           case 'func': {
-            if (func.v.exp.v.args.length !== args.length) {
+            const funcArgLength = Outcome.Func.ArgLength(func);
+            if (funcArgLength !== args.length) {
               const ex = Outcome.Exception(
                 exp,
                 ['type-error', 'arguments-length-mismatch'],
@@ -1954,7 +1967,7 @@ namespace Analyzer {
                   'Arguments length mismatch: ',
                   Outcome.JsString(func),
                   ' requires ',
-                  func.v.exp.v.args.length,
+                  funcArgLength,
                   ' arguments but ',
                   args.length,
                   ' were provided'
@@ -1965,7 +1978,7 @@ namespace Analyzer {
               return null;
             }
 
-            out = TailCall(func, args);
+            out = TailCall(funcExp, func, args);
 
             return null;
           }
@@ -1980,22 +1993,35 @@ namespace Analyzer {
     }
 
     export function TailCall(
+      funcExp: Syntax.Expression,
       func: Outcome.Func,
       argEntries: ScopeValueEntry[],
-    ): TailCall {
+    ): TailCall | Outcome.Exception {
+      if (func.v.t === 'method') {
+        return Outcome.Exception(
+          funcExp,
+          ['not-implemented'],
+          'Not implemented ' + Outcome.JsString(func),
+        );
+      }
+
+      // This is here because typescript forgets the narrowed type of func
+      // inside the lambda below.
+      const funcv = func.v;
+
       return (az: Analyzer) => {
-        let funcAz = { ...func.v.az,
+        let funcAz = { ...funcv.v.az,
           modules: az.modules,
           // TODO: Not doing this should break in an interesting way
           // fileStack: az.fileStack,
         };
 
-        if (func.v.exp.v.name !== null) {
+        if (funcv.v.exp.v.name !== null) {
           funcAz = Analyzer.add(
             funcAz,
-            func.v.exp.v.name.v,
+            funcv.v.exp.v.name.v,
             {
-              origin: func.v.exp,
+              origin: funcv.v.exp,
               data: func,
             },
           );
@@ -2004,7 +2030,7 @@ namespace Analyzer {
         for (let i = 0; i < argEntries.length; i++) {
           // TODO: Argument destructuring
           const argEntry = argEntries[i];
-          const [argIdentifier] = func.v.exp.v.args[i].v;
+          const [argIdentifier] = funcv.v.exp.v.args[i].v;
 
           funcAz = Analyzer.add(
             funcAz,
@@ -2013,7 +2039,7 @@ namespace Analyzer {
           );
         }
 
-        const body = func.v.exp.v.body;
+        const body = funcv.v.exp.v.body;
 
         // TODO: Do some processing with the notes so that they have
         // subnotes for stack levels.

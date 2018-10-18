@@ -47,17 +47,53 @@ namespace Outcome {
   export type Func = {
     cat: 'concrete';
     t: 'func';
-    v: {
-      exp: Syntax.FunctionExpression;
-      az: Analyzer;
-    };
+    v: (
+      {
+        t: 'plain';
+        v: {
+          exp: Syntax.FunctionExpression;
+          az: Analyzer;
+        };
+      } |
+      {
+        t: 'method';
+        v: Array.Method;
+      } |
+      never
+    );
   };
 
-  export function Func(v: {
-    exp: Syntax.FunctionExpression;
-    az: Analyzer;
-  }): Func {
+  export type FuncPlain = Func & { v: { t: 'plain' } };
+
+  export function Func(v: Func['v']): Func {
     return { cat: 'concrete', t: 'func', v };
+  }
+
+  export function FuncPlain(v: {
+    exp: Syntax.FunctionExpression,
+    az: Analyzer
+  }) {
+    return Func({ t: 'plain', v });
+  }
+
+  export namespace Func {
+    export function ArgLength(f: Func): number {
+      switch (f.v.t) {
+        case 'plain': {
+          return f.v.v.exp.v.args.length;
+        }
+
+        case 'method': {
+          return (() => {
+            switch (f.v.v.t) {
+              case 'array': {
+                return Array.methods[f.v.v.name].length;
+              }
+            }
+          })();
+        }
+      }
+    }
   }
 
   export type ConcreteArray = {
@@ -108,6 +144,19 @@ namespace Outcome {
         }
       }
     }
+
+    export type Method = (
+      {
+        t: 'array';
+        base: Array;
+        name: 'length';
+      } |
+      never
+    );
+
+    export const methods = {
+      length: (a: Array) => Number(a.v.length),
+    };
   }
 
   export type ConcreteObject = {
@@ -244,10 +293,28 @@ namespace Outcome {
       case 'bool': return v.v.toString();
       case 'null': return 'null';
 
-      // TODO: include argument names
-      case 'func': return (
-        `<func ${v.v.exp.v.name ? v.v.exp.v.name.v : '(anonymous)'}>`
-      );
+      case 'func': {
+        const funcv = v.v;
+
+        return (() => {
+          switch (funcv.t) {
+            case 'plain': {
+              // TODO: include argument names
+              return (
+                `<func ${
+                  funcv.v.exp.v.name ?
+                  funcv.v.exp.v.name.v :
+                  '(anonymous)'
+                }>`
+              );
+            }
+
+            case 'method': {
+              return `<method ${funcv.v.t}:${funcv.v.name}>`;
+            }
+          }
+        })();
+      }
 
       case 'array': {
         switch (v.cat) {
@@ -285,8 +352,8 @@ namespace Outcome {
 
         // TODO: Types of arguments?
         return Bool(
-          left.v.exp.v.args.length ===
-          right.v.exp.v.args.length
+          left.v.t === right.v.t &&
+          Func.ArgLength(left) === Func.ArgLength(right)
         );
       }
 
