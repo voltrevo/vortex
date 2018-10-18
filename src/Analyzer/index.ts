@@ -950,8 +950,8 @@ namespace Analyzer {
           case 'methodLookup':
           case '.': {
             throw new Error(
-              'Non-top expression at top level should have been caught during ' +
-              'validation.'
+              'Non-top expression at top level should have been caught ' +
+              'during validation.'
             );
           }
         }

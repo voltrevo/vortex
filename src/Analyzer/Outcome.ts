@@ -147,15 +147,19 @@ namespace Outcome {
 
     export type Method = (
       {
-        t: 'array';
+        t: 'array'; // TODO: This may be unnecessary due to base.t
         base: Array;
         name: 'length';
+        args: [];
       } |
       never
     );
 
     export const methods = {
-      length: (a: Array) => Number(a.v.length),
+      length: (
+        a: Array,
+        []: (Method & { t: 'array' })['args'],
+      ) => Number(a.v.length),
     };
   }
 
