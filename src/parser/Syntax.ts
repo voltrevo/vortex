@@ -126,6 +126,12 @@ namespace Syntax {
     p: Pos,
   };
 
+  export type FunctionCall = {
+    t: 'functionCall',
+    v: [Expression, Expression[]],
+    p: Pos
+  };
+
   export type Expression = { topExp?: true } & (
     Identifier |
     NUMBER |
@@ -135,7 +141,7 @@ namespace Syntax {
     { t: NonSpecialBinaryOperator, v: [Expression, Expression], p: Pos } |
     { t: UnaryOperator, v: Expression, p: Pos } |
     { t: '.', v: [Expression, Identifier], p: Pos } |
-    { t: 'functionCall', v: [Expression, Expression[]], p: Pos } |
+    FunctionCall |
     { t: 'methodCall', v: [Expression, Identifier, Expression[]], p: Pos } |
     { t: 'subscript', v: [Expression, Expression], p: Pos } |
     FunctionExpression |

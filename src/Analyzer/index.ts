@@ -1592,135 +1592,7 @@ namespace Analyzer {
         }
 
         case 'functionCall': {
-          const [funcExp, argExps] = exp.v;
-
-          let func: Outcome;
-          [func, az] = subExpression(az, funcExp);
-
-          func = (() => {
-            switch (func.t) {
-              case 'func':
-              case 'unknown':
-              case 'exception': {
-                return func;
-              }
-
-              case 'string':
-              case 'number':
-              case 'bool':
-              case 'null':
-              case 'array':
-              case 'object': {
-                return Outcome.Exception(funcExp,
-                  ['type-error', 'call-non-function'],
-                  `Type error: attempt to call a ${func.t} as a function`
-                );
-              }
-            }
-          })();
-
-          if (func.t === 'exception') {
-            return [func, az];
-          }
-
-          const args: Outcome.Value[] = [];
-
-          for (const argExp of argExps) {
-            let arg: Outcome;
-            [arg, az] = subExpression(az, argExp);
-
-            if (arg.t === 'exception') {
-              return [arg, az];
-            }
-
-            args.push(arg);
-          }
-
-          let out = Outcome.Maybe();
-
-          checkNull((() => {
-            switch (func.t) {
-              case 'unknown': {
-                // TODO: maybeException?
-                out = Outcome.Unknown();
-                return null;
-              }
-
-              case 'func': {
-                if (func.v.exp.v.args.length !== args.length) {
-                  const ex = Outcome.Exception(
-                    exp,
-                    ['type-error', 'arguments-length-mismatch'],
-                    [
-                      'Arguments length mismatch: ',
-                      Outcome.JsString(func),
-                      ' requires ',
-                      func.v.exp.v.args.length,
-                      ' arguments but ',
-                      args.length,
-                      ' were provided'
-                    ].join(''),
-                  );
-
-                  out = ex;
-                  return null;
-                }
-
-                let funcAz = { ...func.v.az,
-                  modules: az.modules,
-                  // TODO: Not doing this should break in an interesting way
-                  // fileStack: az.fileStack,
-                };
-
-                if (func.v.exp.v.name !== null) {
-                  funcAz = Analyzer.add(
-                    funcAz,
-                    func.v.exp.v.name.v,
-                    {
-                      origin: func.v.exp,
-                      data: func,
-                    },
-                  );
-                }
-
-                for (let i = 0; i < args.length; i++) {
-                  // TODO: Argument destructuring
-                  const arg = args[i];
-                  const [argIdentifier] = func.v.exp.v.args[i].v;
-
-                  funcAz = Analyzer.add(
-                    funcAz,
-                    argIdentifier.v,
-                    {
-                      origin: argExps[i],
-                      data: arg,
-                    },
-                  );
-                }
-
-                const body = func.v.exp.v.body;
-
-                if (body.t === 'expBody') {
-                  [out, funcAz] = subExpression(funcAz, body.v);
-                  az = { ...az, modules: funcAz.modules };
-                } else {
-                  [out, funcAz] = analyze.body(funcAz, body);
-                  az = { ...az, modules: funcAz.modules };
-                }
-
-                // TODO: Do some processing with the notes here so that they have
-                // subnotes for stack levels.
-
-                return null;
-              }
-            }
-          })());
-
-          if (out === null) {
-            throw new Error('Shouldn\'t be possible');
-          }
-
-          return [out, az];
+          return functionCall(az, exp);
         }
 
         case 'array': {
@@ -1985,6 +1857,141 @@ namespace Analyzer {
           );
         }
       }
+    }
+
+    export function functionCall(
+      az: Analyzer,
+      exp: Syntax.FunctionCall,
+    ): [Outcome, Analyzer] {
+      const [funcExp, argExps] = exp.v;
+
+      let func: Outcome;
+      [func, az] = subExpression(az, funcExp);
+
+      func = (() => {
+        switch (func.t) {
+          case 'func':
+          case 'unknown':
+          case 'exception': {
+            return func;
+          }
+
+          case 'string':
+          case 'number':
+          case 'bool':
+          case 'null':
+          case 'array':
+          case 'object': {
+            return Outcome.Exception(funcExp,
+              ['type-error', 'call-non-function'],
+              `Type error: attempt to call a ${func.t} as a function`
+            );
+          }
+        }
+      })();
+
+      if (func.t === 'exception') {
+        return [func, az];
+      }
+
+      const args: Outcome.Value[] = [];
+
+      for (const argExp of argExps) {
+        let arg: Outcome;
+        [arg, az] = subExpression(az, argExp);
+
+        if (arg.t === 'exception') {
+          return [arg, az];
+        }
+
+        args.push(arg);
+      }
+
+      let out = Outcome.Maybe();
+
+      checkNull((() => {
+        switch (func.t) {
+          case 'unknown': {
+            // TODO: maybeException?
+            out = Outcome.Unknown();
+            return null;
+          }
+
+          case 'func': {
+            if (func.v.exp.v.args.length !== args.length) {
+              const ex = Outcome.Exception(
+                exp,
+                ['type-error', 'arguments-length-mismatch'],
+                [
+                  'Arguments length mismatch: ',
+                  Outcome.JsString(func),
+                  ' requires ',
+                  func.v.exp.v.args.length,
+                  ' arguments but ',
+                  args.length,
+                  ' were provided'
+                ].join(''),
+              );
+
+              out = ex;
+              return null;
+            }
+
+            let funcAz = { ...func.v.az,
+              modules: az.modules,
+              // TODO: Not doing this should break in an interesting way
+              // fileStack: az.fileStack,
+            };
+
+            if (func.v.exp.v.name !== null) {
+              funcAz = Analyzer.add(
+                funcAz,
+                func.v.exp.v.name.v,
+                {
+                  origin: func.v.exp,
+                  data: func,
+                },
+              );
+            }
+
+            for (let i = 0; i < args.length; i++) {
+              // TODO: Argument destructuring
+              const arg = args[i];
+              const [argIdentifier] = func.v.exp.v.args[i].v;
+
+              funcAz = Analyzer.add(
+                funcAz,
+                argIdentifier.v,
+                {
+                  origin: argExps[i],
+                  data: arg,
+                },
+              );
+            }
+
+            const body = func.v.exp.v.body;
+
+            if (body.t === 'expBody') {
+              [out, funcAz] = subExpression(funcAz, body.v);
+              az = { ...az, modules: funcAz.modules };
+            } else {
+              [out, funcAz] = analyze.body(funcAz, body);
+              az = { ...az, modules: funcAz.modules };
+            }
+
+            // TODO: Do some processing with the notes here so that they have
+            // subnotes for stack levels.
+
+            return null;
+          }
+        }
+      })());
+
+      if (out === null) {
+        throw new Error('Shouldn\'t be possible');
+      }
+
+      return [out, az];
     }
 
     export function vanillaOperator<T extends {

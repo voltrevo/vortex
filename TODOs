@@ -1,10 +1,10 @@
+TODO: Tail recursion
 TODO: Handle importing invalid files
 TODO: Naming consistency module vs file
 TODO: Argument destructuring
 TODO: When an exception is generated, add a subnote for each level of the stack
 TODO: Validator should call into Analyzer without waiting for complete context
 TODO: Fix asserts passing due to unknowns during test (generally want asserts to be graceful with unknowns in the actual language) (test requires all imports to resolve?)
-TODO: Tail recursion
 TODO: Make parser aware of imports, establish location indexing/linking so that caching the result of programs with equivalent syntax trees is possible
 TODO: Add tests for every possible note
 TODO: Cross-type comparison operators e.g. :<:
