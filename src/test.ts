@@ -1,11 +1,10 @@
 import { readFileSync } from 'fs';
 import { spawnSync } from 'child_process';
 
-import colorize from './colorize';
 import Compiler from './Compiler';
 import formatLocation from './formatLocation';
 import Note from './Note';
-import prettyErrorContext from './prettyErrorContext';
+import pretty from './pretty';
 
 const start = Date.now();
 
@@ -62,12 +61,12 @@ function Tags(line: string, file: string, lineNo: number): Note.Tag[] {
 const log = {
   error(str: string) {
     for (const line of str.split('\n')) {
-      console.error(colorize(line));
+      console.error(pretty.colorize(line));
     }
   },
   info(str: string) {
     for (const line of str.split('\n')) {
-      console.info(colorize(line));
+      console.info(pretty.colorize(line));
     }
   }
 };
@@ -153,7 +152,7 @@ for (const file of moreFiles) {
           log.error(`${file}:${lineNo}: ${wording}:`);
 
           for (const note of levelNotes) {
-            const prettyLines = prettyErrorContext(note, fileText);
+            const prettyLines = pretty.ErrorContext(note, fileText);
 
             for (const prettyLine of prettyLines) {
               console.error(prettyLine);

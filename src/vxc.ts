@@ -1,12 +1,10 @@
 import * as fs from 'fs';
 import * as minimist from 'minimist';
 
-import colorize from './colorize';
 import Compiler from './Compiler';
-import formatLocation from './formatLocation';
 import getStdin from './getStdin';
 import Note from './Note';
-import prettyErrorContext from './prettyErrorContext';
+import pretty from './pretty';
 
 const args = minimist(process.argv.slice(2));
 
@@ -184,12 +182,12 @@ const inputs: ({ type: 'file', name: string } | string)[] = [];
       switch (format.value) {
         case 'pretty': {
           // TODO: Make this better
-          prettyPrint(note, text || '');
+          pretty.print(note, text || '');
           break;
         }
 
         case 'compact': {
-          compactPrint(note);
+          pretty.printCompact(note);
           break;
         }
 
@@ -226,34 +224,3 @@ const inputs: ({ type: 'file', name: string } | string)[] = [];
 })().catch(e => {
   setTimeout(() => { throw e; });
 });
-
-function prettyLocation(note: Note) {
-  if (typeof note.pos === 'string') {
-    return note.pos + ':';
-  }
-
-  return formatLocation(note.pos) + ':';
-}
-
-function compactPrint(note: Note) {
-  console.error(colorize(
-    `${prettyLocation(note)} ${note.level}: ${note.message} ` +
-    note.tags.map(t => '#' + t).join(' ')
-  ));
-}
-
-function prettyPrint(note: Note, text: string) {
-  if (!note.pos) {
-    compactPrint(note);
-    console.error();
-    return;
-  }
-
-  console.error(colorize(
-    `${prettyLocation(note)} ${note.level}:`
-  ));
-
-  for (const line of prettyErrorContext(note, text)) {
-    console.error(line);
-  }
-}
