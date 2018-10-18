@@ -1,5 +1,5 @@
-func sort(arr, len, before) {
-  if (len == 0) {
+func sort(arr, before) {
+  if (arr:length() == 0) {
     return arr;
   }
 
@@ -60,20 +60,18 @@ func sort(arr, len, before) {
     }
   };
 
-  return sortRange(arr, 0, len)[0];
+  return sortRange(arr, 0, arr:length())[0];
 };
 
 nums := [3, 1, 1, 2, 4, -7];
 
 assert [-7, 1, 1, 2, 3, 4] == sort(
   nums,
-  6,
   func(a, b) => a < b,
 );
 
 assert [4, 3, 2, 1, 1, -7] == sort(
   nums,
-  6,
   func(a, b) => a > b,
 );
 

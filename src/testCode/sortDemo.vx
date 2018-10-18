@@ -3,8 +3,8 @@ import sort from './core';
 less := func(a, b) => a < b;
 more := func(a, b) => a > b;
 
-assert [1, 2, 3] == sort([3, 1, 2], 3, less);
-assert [3, 2, 1] == sort([3, 1, 2], 3, more);
+assert [1, 2, 3] == sort([3, 1, 2], less);
+assert [3, 2, 1] == sort([3, 1, 2], more);
 
 players := [
   { name: 'Federer', sport: 'tennis' },
@@ -16,7 +16,6 @@ players := [
 
 assert sort(
   players,
-  5,
   less,
 ) == [
   { name: 'Beckham', sport: 'soccer' },
@@ -28,7 +27,6 @@ assert sort(
 
 assert sort(
   players,
-  5,
   func(a, b) => [a.sport, a.name] < [b.sport, b.name],
 ) == [
   { name: 'Beckham', sport: 'soccer' },
