@@ -261,6 +261,11 @@ function validateFunctionScope(
           return [{ t: 'CreateVariable', v: identifier }];
         }
 
+        case 'methodLookup': {
+          const [base] = el.v;
+          return [base];
+        }
+
         default: {
           let mutationTarget: Syntax.Element | null = null;
 
@@ -895,7 +900,7 @@ function validateExpression(file: string, exp: Syntax.Expression): Note[] {
       case 'array':
       case 'subscript':
       case '.':
-      case 'methodCall':
+      case 'methodLookup':
       case 'class':
       case 'import':
       case 'switch':

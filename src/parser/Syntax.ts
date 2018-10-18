@@ -142,7 +142,7 @@ namespace Syntax {
     { t: UnaryOperator, v: Expression, p: Pos } |
     { t: '.', v: [Expression, Identifier], p: Pos } |
     FunctionCall |
-    { t: 'methodCall', v: [Expression, Identifier, Expression[]], p: Pos } |
+    { t: 'methodLookup', v: [Expression, Identifier], p: Pos } |
     { t: 'subscript', v: [Expression, Expression], p: Pos } |
     FunctionExpression |
     ArrayExpression |
@@ -383,10 +383,7 @@ namespace Syntax {
         return [fn, ...args];
       }
 
-      case 'methodCall': {
-        const [instance, , args] = el.v;
-        return [instance, ...args];
-      }
+      case 'methodLookup': { return el.v; }
 
       case '.': {
         const [expression] = el.v;

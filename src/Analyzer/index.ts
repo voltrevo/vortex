@@ -435,7 +435,7 @@ namespace Analyzer {
       case 'NULL':
       case '.':
       case 'functionCall':
-      case 'methodCall':
+      case 'methodLookup':
       case 'subscript':
       case 'func':
       case 'array':
@@ -947,7 +947,7 @@ namespace Analyzer {
           case 'class':
           case 'subscript':
           case 'functionCall':
-          case 'methodCall':
+          case 'methodLookup':
           case '.': {
             throw new Error(
               'Non-top expression at top level should have been caught during ' +
@@ -1840,7 +1840,7 @@ namespace Analyzer {
           return retrieveImport(az, exp);
         }
 
-        case 'methodCall':
+        case 'methodLookup':
         case 'class': {
           const ex = Outcome.Exception(
             exp,

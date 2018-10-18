@@ -305,8 +305,8 @@ e
         {$$ = $2;}
     | e '(' eList ')'
         {$$ = { t: 'functionCall', v: [$1, $3], p: L(@$) }}
-    | e ':' identifier '(' eList ')'
-        {$$ = { t: 'methodCall', v: [$1, $3, $5], p: L(@$) }}
+    | e ':' identifier
+        {$$ = { t: 'methodLookup', v: [$1, $3], p: L(@$) }}
     | e '[' e ']'
         {$$ = { t: 'subscript', v: [$1, $3], p: L(@$) }}
     | number
