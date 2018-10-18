@@ -1840,7 +1840,49 @@ namespace Analyzer {
           return retrieveImport(az, exp);
         }
 
-        case 'methodLookup':
+        case 'methodLookup': {
+          const [baseExp, methodIdentifier] = exp.v;
+
+          let base: Outcome;
+          [base, az] = subExpression(az, baseExp);
+
+          if (base.t === 'exception' || base.t === 'unknown') {
+            return [base, az];
+          }
+
+          if (base.t !== 'array') {
+            const ex = Outcome.Exception(
+              exp,
+              ['not-implemented'],
+              `Not implemented: ${base.t} methods`,
+            );
+
+            return [ex, az];
+          }
+
+          if (methodIdentifier.v !== 'length') {
+            const ex = Outcome.Exception(
+              exp,
+              ['not-implemented'],
+              `Not implemented: non-length array methods`,
+            );
+
+            return [ex, az];
+          }
+
+          const func = Outcome.Func({
+            t: 'method',
+            v: {
+              t: 'array',
+              base,
+              name: methodIdentifier.v,
+              argLength: 0,
+            }
+          });
+
+          return [func, az];
+        }
+
         case 'class': {
           const ex = Outcome.Exception(
             exp,

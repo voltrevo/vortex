@@ -84,13 +84,7 @@ namespace Outcome {
         }
 
         case 'method': {
-          return (() => {
-            switch (f.v.v.t) {
-              case 'array': {
-                return Array.methods[f.v.v.name].length;
-              }
-            }
-          })();
+          return f.v.v.argLength;
         }
       }
     }
@@ -150,16 +144,13 @@ namespace Outcome {
         t: 'array'; // TODO: This may be unnecessary due to base.t
         base: Array;
         name: 'length';
-        args: [];
+        argLength: 0;
       } |
       never
     );
 
     export const methods = {
-      length: (
-        a: Array,
-        []: (Method & { t: 'array' })['args'],
-      ) => Number(a.v.length),
+      length: (base: Array, args: []) => base.v.length,
     };
   }
 
