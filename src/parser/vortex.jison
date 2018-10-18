@@ -109,7 +109,7 @@ program
 
 setGlobals
     :
-        {global.L = ({first_line, last_line, first_column, last_column}) => ['<file>', [[first_line, first_column], [last_line, last_column]]];}
+        {global.L = ({first_line, last_line, first_column, last_column}) => ['<file>', [[first_line, first_column + 1], [last_line, last_column]]];}
     ;
 
 unsetGlobals

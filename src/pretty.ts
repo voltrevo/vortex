@@ -191,22 +191,22 @@ namespace pretty {
 
       if (lineNo === pos[iStart][iLine] && lineNo === pos[iEnd][iLine]) {
         line = (
-          line.slice(0, pos[iStart][iCol]) +
+          line.slice(0, pos[iStart][iCol] - 1) +
           addLevelColor(line.slice(
-            pos[iStart][iCol],
-            pos[iEnd][iCol] + 1,
+            pos[iStart][iCol] - 1,
+            pos[iEnd][iCol],
           )) +
-          line.slice(pos[iEnd][iCol] + 1)
+          line.slice(pos[iEnd][iCol])
         );
       } else if (lineNo === pos[iStart][iLine]) {
         line = (
-          line.slice(0, pos[iStart][iCol]) +
-          addLevelColor(line.slice(pos[iStart][iCol]))
+          line.slice(0, pos[iStart][iCol] - 1) +
+          addLevelColor(line.slice(pos[iStart][iCol] - 1))
         );
       } else if (lineNo === pos[iEnd][iLine]) {
         line = (
-          addLevelColor(line.slice(0, pos[iEnd][iCol] + 1)) +
-          line.slice(pos[iEnd][iCol] + 1)
+          addLevelColor(line.slice(0, pos[iEnd][iCol])) +
+          line.slice(pos[iEnd][iCol])
         );
       } else if (pos[iStart][iLine] < lineNo && lineNo < pos[iEnd][iLine]) {
         line = addLevelColor(line);

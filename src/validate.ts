@@ -796,8 +796,8 @@ function validateExpression(file: string, exp: Syntax.Expression): Note[] {
     notes.push(Note(
       exp.p,
       'warn',
-      ['validation', 'no-effect', 'top-expression'],
-      'Statement has no effect', // TODO: better wording
+      ['validation', 'no-effect', 'top-expression', 'unused'],
+      'Unused expression', // TODO: better wording
     ));
   }
 

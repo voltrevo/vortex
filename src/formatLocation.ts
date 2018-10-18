@@ -8,6 +8,10 @@ export default function formatLocation(pos: Note.Pos) {
   }
 
   if (range[0][0] === range[1][0]) {
+    if (range[0][1] === range[1][1]) {
+      return `${file}:${range[0][0]}:${range[0][1]}`;
+    }
+
     return `${file}:${range[0][0]}:${range[0][1]}-${range[1][1]}`;
   }
 
