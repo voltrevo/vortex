@@ -25,6 +25,7 @@
 'false'               return 'FALSE'
 'null'                return 'NULL'
 'assert'              return 'ASSERT'
+'breakpoint'          return 'BREAKPOINT'
 [a-zA-Z]\w*           return 'IDENTIFIER'
 ";"                   return ';'
 [0-9]+("."[0-9]+)?\b  return 'NUMBER'
@@ -150,6 +151,8 @@ statement
         {$$ = { ...$1, topExp: true }}
     | ASSERT e ';'
         {$$ = { t: 'assert', v: $2, p: L(@$), topExp: true }}
+    | BREAKPOINT ';'
+        {$$ = { t: 'breakpoint', v: null, p: L(@$) }}
     ;
 
 if

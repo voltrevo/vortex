@@ -161,6 +161,7 @@ namespace Syntax {
     IfStatement |
     ForStatement |
     Import |
+    { t: 'breakpoint', v: null, p: Pos } |
     never
   );
 
@@ -212,6 +213,7 @@ namespace Syntax {
     // TODO: Need an extra layer with .t so there aren't an unmanageable number
     // of cases.
     switch (el.t) {
+      case 'breakpoint':
       case 'NUMBER':
       case 'BOOL':
       case 'NULL':
@@ -394,6 +396,7 @@ namespace Syntax {
       case 'return':
       case 'assert':
       case 'break':
+      case 'breakpoint':
       case 'continue':
       case 'if':
       case 'for':

@@ -13,7 +13,7 @@
         },
         {
           "name": "keyword.control.vortex",
-          "match": "\\b(assert|import|from|if|else|for|of|return|break|continue|switch)\\b"
+          "match": "\\b(assert|import|from|if|else|for|of|return|break|breakpoint|continue|switch)\\b"
         },
         {
           "name": "string.quoted.single.vortex",

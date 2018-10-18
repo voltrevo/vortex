@@ -531,6 +531,11 @@ namespace Analyzer {
           return subExpression(az, statement.v);
         }
 
+        case 'breakpoint': {
+          debugger;
+          return [null, az];
+        }
+
         case 'assert': {
           let out: Outcome;
           [out, az] = subExpression(az, statement.v);

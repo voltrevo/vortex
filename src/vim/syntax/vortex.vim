@@ -19,7 +19,7 @@ hi def link     vxDeclType          Keyword
 hi def link     vxDeclaration       Keyword
 
 " Keywords within functions
-syn keyword     vxStatement         return break continue assert
+syn keyword     vxStatement         return break continue assert breakpoint
 syn keyword     vxConditional       if else switch
 syn keyword     vxRepeat            for
 
