@@ -289,8 +289,13 @@ namespace Analyzer {
 
     az = pushFile(az, file);
 
-    let out: Outcome;
+    let out: Outcome | analyze.TailCall;
     [out, az] = analyze.body(az, moduleEntry.program);
+
+    while (typeof out === 'function') {
+      [out, az] = out(az);
+    }
+
     [mod, az] = setModule(az, file, out);
 
     [, az] = popFile(az);
@@ -460,11 +465,13 @@ namespace Analyzer {
   }
 
   export namespace analyze {
+    export type TailCall = (az: Analyzer) => [TailCall | Outcome, Analyzer];
+
     export function body(
       az: Analyzer,
       program: Syntax.Program,
-    ): [Outcome, Analyzer] {
-      let mout: Outcome | null;
+    ): [TailCall | Outcome, Analyzer] {
+      let mout: Outcome | TailCall | null;
       [mout, az] = block(az, program);
 
       if (mout === null) {
@@ -477,7 +484,7 @@ namespace Analyzer {
     export function block(
       az: Analyzer,
       program: Syntax.Program,
-    ): [Outcome | null, Analyzer] {
+    ): [TailCall | Outcome | null, Analyzer] {
       const hoists: Syntax.FunctionExpression[] = [];
       const statements: Syntax.Statement[] = [];
 
@@ -505,7 +512,7 @@ namespace Analyzer {
         });
       }
 
-      let mout = Outcome.Maybe();
+      let mout: TailCall | Outcome | null = null;
 
       for (const statement of statements) {
         [mout, az] = analyze.statement(az, statement);
@@ -521,14 +528,14 @@ namespace Analyzer {
     export function statement(
       az: Analyzer,
       statement: Syntax.Statement,
-    ): [Outcome | null, Analyzer] {
+    ): [Outcome | TailCall | null, Analyzer] {
       switch (statement.t) {
         case 'e': {
           return topExpression(az, statement.v);
         }
 
         case 'return': {
-          return subExpression(az, statement.v);
+          return tailableSubExpression(az, statement.v);
         }
 
         case 'breakpoint': {
@@ -596,7 +603,7 @@ namespace Analyzer {
 
           if (condOut.v === true) {
             az = Analyzer.push(az);
-            let blockOut: Outcome | null;
+            let blockOut: Outcome | TailCall | null;
             [blockOut, az] = analyze.block(az, block);
             az = Analyzer.pop(az);
 
@@ -668,7 +675,7 @@ namespace Analyzer {
           }
 
           let iterations = 0;
-          let mout = Outcome.Maybe();
+          let mout: TailCall | Outcome | null = null;
 
           while (true) {
             const condOut = cond(); // mutates az
@@ -1592,7 +1599,14 @@ namespace Analyzer {
         }
 
         case 'functionCall': {
-          return functionCall(az, exp);
+          let tout: Outcome | TailCall;
+          [tout, az] = functionCall(az, exp);
+
+          while (typeof tout === 'function') {
+            [tout, az] = tout(az);
+          }
+
+          return [tout, az];
         }
 
         case 'array': {
@@ -1859,10 +1873,21 @@ namespace Analyzer {
       }
     }
 
+    export function tailableSubExpression(
+      az: Analyzer,
+      exp: Syntax.Expression
+    ): [TailCall | Outcome, Analyzer] {
+      if (exp.t === 'functionCall') {
+        return functionCall(az, exp);
+      }
+
+      return subExpression(az, exp);
+    }
+
     export function functionCall(
       az: Analyzer,
       exp: Syntax.FunctionCall,
-    ): [Outcome, Analyzer] {
+    ): [Outcome | TailCall, Analyzer] {
       const [funcExp, argExps] = exp.v;
 
       let func: Outcome;
@@ -1894,7 +1919,7 @@ namespace Analyzer {
         return [func, az];
       }
 
-      const args: Outcome.Value[] = [];
+      const args: ScopeValueEntry[] = [];
 
       for (const argExp of argExps) {
         let arg: Outcome;
@@ -1904,10 +1929,13 @@ namespace Analyzer {
           return [arg, az];
         }
 
-        args.push(arg);
+        args.push({
+          origin: argExp,
+          data: arg,
+        });
       }
 
-      let out = Outcome.Maybe();
+      let out: TailCall | Outcome | null = null;
 
       checkNull((() => {
         switch (func.t) {
@@ -1937,50 +1965,7 @@ namespace Analyzer {
               return null;
             }
 
-            let funcAz = { ...func.v.az,
-              modules: az.modules,
-              // TODO: Not doing this should break in an interesting way
-              // fileStack: az.fileStack,
-            };
-
-            if (func.v.exp.v.name !== null) {
-              funcAz = Analyzer.add(
-                funcAz,
-                func.v.exp.v.name.v,
-                {
-                  origin: func.v.exp,
-                  data: func,
-                },
-              );
-            }
-
-            for (let i = 0; i < args.length; i++) {
-              // TODO: Argument destructuring
-              const arg = args[i];
-              const [argIdentifier] = func.v.exp.v.args[i].v;
-
-              funcAz = Analyzer.add(
-                funcAz,
-                argIdentifier.v,
-                {
-                  origin: argExps[i],
-                  data: arg,
-                },
-              );
-            }
-
-            const body = func.v.exp.v.body;
-
-            if (body.t === 'expBody') {
-              [out, funcAz] = subExpression(funcAz, body.v);
-              az = { ...az, modules: funcAz.modules };
-            } else {
-              [out, funcAz] = analyze.body(funcAz, body);
-              az = { ...az, modules: funcAz.modules };
-            }
-
-            // TODO: Do some processing with the notes here so that they have
-            // subnotes for stack levels.
+            out = TailCall(func, args);
 
             return null;
           }
@@ -1992,6 +1977,59 @@ namespace Analyzer {
       }
 
       return [out, az];
+    }
+
+    export function TailCall(
+      func: Outcome.Func,
+      argEntries: ScopeValueEntry[],
+    ): TailCall {
+      return (az: Analyzer) => {
+        let funcAz = { ...func.v.az,
+          modules: az.modules,
+          // TODO: Not doing this should break in an interesting way
+          // fileStack: az.fileStack,
+        };
+
+        if (func.v.exp.v.name !== null) {
+          funcAz = Analyzer.add(
+            funcAz,
+            func.v.exp.v.name.v,
+            {
+              origin: func.v.exp,
+              data: func,
+            },
+          );
+        }
+
+        for (let i = 0; i < argEntries.length; i++) {
+          // TODO: Argument destructuring
+          const argEntry = argEntries[i];
+          const [argIdentifier] = func.v.exp.v.args[i].v;
+
+          funcAz = Analyzer.add(
+            funcAz,
+            argIdentifier.v,
+            argEntry,
+          );
+        }
+
+        const body = func.v.exp.v.body;
+
+        // TODO: Do some processing with the notes so that they have
+        // subnotes for stack levels.
+
+        if (body.t === 'expBody') {
+          let nextOut: TailCall | Outcome;
+          [nextOut, funcAz] = tailableSubExpression(funcAz, body.v);
+          az = { ...az, modules: funcAz.modules };
+          return [nextOut, az];
+        }
+
+        let nextOut: TailCall | Outcome;
+        [nextOut, funcAz] = analyze.body(funcAz, body);
+        az = { ...az, modules: funcAz.modules };
+        return [nextOut, az];
+      };
     }
 
     export function vanillaOperator<T extends {

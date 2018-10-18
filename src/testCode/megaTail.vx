@@ -1,0 +1,21 @@
+func tailSum(n) {
+  func impl(sum, i) {
+    if (i > 0) {
+      return impl(sum + i, i - 1);
+    }
+
+    return sum + i;
+  };
+
+  return impl(0, n);
+};
+
+assert tailSum(1) == 1;
+assert tailSum(2) == 3;
+assert tailSum(3) == 6;
+assert tailSum(4) == 10;
+
+// TODO: Run this regularly
+// assert tailSum(123456) == 7620753696;
+
+return 'done';
