@@ -1,5 +1,5 @@
 func sort(arr, before) {
-  if (arr:length() == 0) {
+  if (arr:Length() == 0) {
     return arr;
   }
 
@@ -60,7 +60,7 @@ func sort(arr, before) {
     }
   };
 
-  return sortRange(arr, 0, arr:length())[0];
+  return sortRange(arr, 0, arr:Length())[0];
 };
 
 nums := [3, 1, 1, 2, 4, -7];

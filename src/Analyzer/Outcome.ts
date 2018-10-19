@@ -143,28 +143,28 @@ namespace Outcome {
       {
         t: 'array'; // TODO: This may be unnecessary due to base.t
         base: Array;
-        name: 'length';
+        name: 'Length';
         argLength: 0;
       } |
       {
         t: 'array'; // TODO: This may be unnecessary due to base.t
         base: Array;
-        name: 'entries';
+        name: 'Entries';
         argLength: 0;
       } |
       never
     );
 
     export type MethodArgs = {
-      length: [];
-      entries: [];
+      Length: [];
+      Entries: [];
     };
 
     export const methods = {
-      length: (base: Array, args: MethodArgs['length']) => (
+      Length: (base: Array, args: MethodArgs['Length']) => (
         Number(base.v.length)
       ),
-      entries: (base: Array, args: MethodArgs['entries']): Array => (
+      Entries: (base: Array, args: MethodArgs['Entries']): Array => (
         // TODO: Unclear why {as any} was necessary below
         Array((base as any).v.map(
           (v: Value, i: number) => Array([Number(i), v])

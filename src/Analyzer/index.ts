@@ -146,8 +146,13 @@ namespace Analyzer {
       }
     })());
 
-    if (mo === null || mo.t === 'exception') {
+    if (mo === null) {
       throw new Error('Shouldn\'t be possible');
+    }
+
+    if (mo.t === 'exception') {
+      // TODO: This happens due to imports, and should be prevented elsewhere
+      mo = Outcome.Unknown();
     }
 
     const out = {
@@ -1861,13 +1866,13 @@ namespace Analyzer {
           }
 
           if (
-            methodIdentifier.v !== 'length' &&
-            methodIdentifier.v !== 'entries'
+            methodIdentifier.v !== 'Length' &&
+            methodIdentifier.v !== 'Entries'
           ) {
             const ex = Outcome.Exception(
               exp,
               ['not-implemented'],
-              `Not implemented: non-length/entries array methods`,
+              `Not implemented: non-length/Entries array methods`,
             );
 
             return [ex, az];
@@ -1877,7 +1882,7 @@ namespace Analyzer {
             // TODO: Typescript requires the unnecessary switch below. Find a
             // better workaround than this.
             switch (methodIdentifier.v) {
-              case 'length': return Outcome.Func({
+              case 'Length': return Outcome.Func({
                 t: 'method',
                 v: {
                   t: 'array',
@@ -1887,7 +1892,7 @@ namespace Analyzer {
                 }
               });
 
-              case 'entries': return Outcome.Func({
+              case 'Entries': return Outcome.Func({
                 t: 'method',
                 v: {
                   t: 'array',
@@ -2059,7 +2064,7 @@ namespace Analyzer {
             case 'array': {
               return (() => {
                 switch (funcv.v.name) {
-                  case 'length': {
+                  case 'Length': {
                     const out = Outcome.Array.methods[funcv.v.name](
                       funcv.v.base,
                       // TODO: Should be getting this from argEntries but the
@@ -2070,7 +2075,7 @@ namespace Analyzer {
                     return [out, az] as [Outcome.Number, Analyzer];
                   }
 
-                  case 'entries': {
+                  case 'Entries': {
                     const out = Outcome.Array.methods[funcv.v.name](
                       funcv.v.base,
                       // TODO: Should be getting this from argEntries but the
