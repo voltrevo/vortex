@@ -1860,25 +1860,44 @@ namespace Analyzer {
             return [ex, az];
           }
 
-          if (methodIdentifier.v !== 'length') {
+          if (
+            methodIdentifier.v !== 'length' &&
+            methodIdentifier.v !== 'entries'
+          ) {
             const ex = Outcome.Exception(
               exp,
               ['not-implemented'],
-              `Not implemented: non-length array methods`,
+              `Not implemented: non-length/entries array methods`,
             );
 
             return [ex, az];
           }
 
-          const func = Outcome.Func({
-            t: 'method',
-            v: {
-              t: 'array',
-              base,
-              name: methodIdentifier.v,
-              argLength: 0,
+          const func = (() => {
+            // TODO: Typescript requires the unnecessary switch below. Find a
+            // better workaround than this.
+            switch (methodIdentifier.v) {
+              case 'length': return Outcome.Func({
+                t: 'method',
+                v: {
+                  t: 'array',
+                  base,
+                  name: methodIdentifier.v,
+                  argLength: 0,
+                }
+              });
+
+              case 'entries': return Outcome.Func({
+                t: 'method',
+                v: {
+                  t: 'array',
+                  base,
+                  name: methodIdentifier.v,
+                  argLength: 0,
+                }
+              });
             }
-          });
+          })();
 
           return [func, az];
         }
@@ -2049,6 +2068,17 @@ namespace Analyzer {
                     );
 
                     return [out, az] as [Outcome.Number, Analyzer];
+                  }
+
+                  case 'entries': {
+                    const out = Outcome.Array.methods[funcv.v.name](
+                      funcv.v.base,
+                      // TODO: Should be getting this from argEntries but the
+                      // special case of zero arguments works fine like this
+                      [],
+                    );
+
+                    return [out, az] as [Outcome.Array, Analyzer];
                   }
                 }
               })();
