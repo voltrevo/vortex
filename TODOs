@@ -1,3 +1,4 @@
+TODO: Object -> Map (keys can be any functionless vortex value)
 TODO: Handle importing invalid files
 TODO: Naming consistency module vs file
 TODO: Argument destructuring
