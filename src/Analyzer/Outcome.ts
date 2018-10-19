@@ -57,7 +57,7 @@ namespace Outcome {
       } |
       {
         t: 'method';
-        v: Array.Method;
+        v: Array.Method | Object.Method;
       } |
       never
     );
@@ -152,13 +152,29 @@ namespace Outcome {
         name: 'Entries';
         argLength: 0;
       } |
+      {
+        t: 'array'; // TODO: This may be unnecessary due to base.t
+        base: Array;
+        name: 'Keys';
+        argLength: 0;
+      } |
+      {
+        t: 'array'; // TODO: This may be unnecessary due to base.t
+        base: Array;
+        name: 'Values';
+        argLength: 0;
+      } |
       never
     );
 
     export type MethodArgs = {
       Length: [];
       Entries: [];
+      Keys: [];
+      Values: [];
     };
+
+    // TODO: First, Last, Head, Tail, map, reduce
 
     export const methods = {
       Length: (base: Array, args: MethodArgs['Length']) => (
@@ -169,6 +185,16 @@ namespace Outcome {
         Array((base as any).v.map(
           (v: Value, i: number) => Array([Number(i), v])
         ))
+      ),
+      Keys: (base: Array, args: MethodArgs['Keys']): Array => (
+        // TODO: Unclear why {as any} was necessary below
+        Array((base as any).v.map(
+          (v: Value, i: number) => Number(i)
+        ))
+      ),
+      Values: (base: Array, args: MethodArgs['Values']): Array => (
+        // TODO: Unclear why {as any} was necessary below
+        base
       ),
     };
   }
@@ -255,6 +281,54 @@ namespace Outcome {
 
       return maybeValue;
     }
+
+    export type Method = (
+      {
+        t: 'object'; // TODO: This may be unnecessary due to base.t
+        base: Object;
+        name: 'Entries';
+        argLength: 0;
+      } |
+      {
+        t: 'object'; // TODO: This may be unnecessary due to base.t
+        base: Object;
+        name: 'Keys';
+        argLength: 0;
+      } |
+      {
+        t: 'object'; // TODO: This may be unnecessary due to base.t
+        base: Object;
+        name: 'Values';
+        argLength: 0;
+      } |
+      never
+    );
+
+    export type MethodArgs = {
+      Entries: [];
+      Keys: [];
+      Values: [];
+    };
+
+    // TODO: First, Last, Head, Tail, map, reduce, sort
+
+    export const methods = {
+      Entries: (base: Object, args: MethodArgs['Entries']): Array => (
+        Array(JsObject.keys(base.v).sort().map(
+          (k: string, i: number) => Array([String(k), base.v[k]])
+        ))
+      ),
+      Keys: (base: Object, args: MethodArgs['Keys']): Array => (
+        Array(JsObject.keys(base.v).sort().map(
+          (k: string, i: number) => String(k)
+        ))
+      ),
+      Values: (base: Object, args: MethodArgs['Values']): Array => (
+        Array(JsObject.keys(base.v).sort().map(
+          (k: string, i: number) => base.v[k]
+        ))
+      ),
+    };
   }
 
   export type Unknown = { cat: 'valid', t: 'unknown', v: null };

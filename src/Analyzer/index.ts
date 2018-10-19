@@ -1855,7 +1855,7 @@ namespace Analyzer {
             return [base, az];
           }
 
-          if (base.t !== 'array') {
+          if (base.t !== 'array' && base.t !== 'object') {
             const ex = Outcome.Exception(
               exp,
               ['not-implemented'],
@@ -1866,21 +1866,67 @@ namespace Analyzer {
           }
 
           if (
-            methodIdentifier.v !== 'Length' &&
-            methodIdentifier.v !== 'Entries'
+            !(base.t === 'array' && methodIdentifier.v === 'Length') &&
+            methodIdentifier.v !== 'Entries' &&
+            methodIdentifier.v !== 'Keys' &&
+            methodIdentifier.v !== 'Values'
           ) {
             const ex = Outcome.Exception(
               exp,
-              ['not-implemented'],
-              `Not implemented: non-length/Entries array methods`,
+              ['not-found'], // TODO extra tag(s)
+              `Method not found: ${base.t}:${methodIdentifier.v}`,
             );
 
             return [ex, az];
           }
 
+          if (base.t === 'object') {
+            if (methodIdentifier.v === 'Length') {
+              throw new Error('Shouldn\'t be possible');
+            }
+
+            const func = (() => {
+              // TODO: Typescript requires the unnecessary switch below. Find
+              // a better workaround than this.
+              switch (methodIdentifier.v) {
+                case 'Entries': return Outcome.Func({
+                  t: 'method',
+                  v: {
+                    t: 'object',
+                    base,
+                    name: methodIdentifier.v,
+                    argLength: 0,
+                  }
+                });
+
+                case 'Keys': return Outcome.Func({
+                  t: 'method',
+                  v: {
+                    t: 'object',
+                    base,
+                    name: methodIdentifier.v,
+                    argLength: 0,
+                  }
+                });
+
+                case 'Values': return Outcome.Func({
+                  t: 'method',
+                  v: {
+                    t: 'object',
+                    base,
+                    name: methodIdentifier.v,
+                    argLength: 0,
+                  }
+                });
+              }
+            })();
+
+            return [func, az];
+          }
+
           const func = (() => {
-            // TODO: Typescript requires the unnecessary switch below. Find a
-            // better workaround than this.
+            // TODO: Typescript requires the unnecessary switch below. Find
+            // a better workaround than this.
             switch (methodIdentifier.v) {
               case 'Length': return Outcome.Func({
                 t: 'method',
@@ -1893,6 +1939,26 @@ namespace Analyzer {
               });
 
               case 'Entries': return Outcome.Func({
+                t: 'method',
+                v: {
+                  t: 'array',
+                  base,
+                  name: methodIdentifier.v,
+                  argLength: 0,
+                }
+              });
+
+              case 'Keys': return Outcome.Func({
+                t: 'method',
+                v: {
+                  t: 'array',
+                  base,
+                  name: methodIdentifier.v,
+                  argLength: 0,
+                }
+              });
+
+              case 'Values': return Outcome.Func({
                 t: 'method',
                 v: {
                   t: 'array',
@@ -2077,6 +2143,67 @@ namespace Analyzer {
 
                   case 'Entries': {
                     const out = Outcome.Array.methods[funcv.v.name](
+                      funcv.v.base,
+                      // TODO: Should be getting this from argEntries but the
+                      // special case of zero arguments works fine like this
+                      [],
+                    );
+
+                    return [out, az] as [Outcome.Array, Analyzer];
+                  }
+
+                  case 'Keys': {
+                    const out = Outcome.Array.methods[funcv.v.name](
+                      funcv.v.base,
+                      // TODO: Should be getting this from argEntries but the
+                      // special case of zero arguments works fine like this
+                      [],
+                    );
+
+                    return [out, az] as [Outcome.Array, Analyzer];
+                  }
+
+                  case 'Values': {
+                    const out = Outcome.Array.methods[funcv.v.name](
+                      funcv.v.base,
+                      // TODO: Should be getting this from argEntries but the
+                      // special case of zero arguments works fine like this
+                      [],
+                    );
+
+                    return [out, az] as [Outcome.Array, Analyzer];
+                  }
+                }
+              })();
+            }
+
+            case 'object': {
+              return (() => {
+                switch (funcv.v.name) {
+                  case 'Entries': {
+                    const out = Outcome.Object.methods[funcv.v.name](
+                      funcv.v.base,
+                      // TODO: Should be getting this from argEntries but the
+                      // special case of zero arguments works fine like this
+                      [],
+                    );
+
+                    return [out, az] as [Outcome.Array, Analyzer];
+                  }
+
+                  case 'Keys': {
+                    const out = Outcome.Object.methods[funcv.v.name](
+                      funcv.v.base,
+                      // TODO: Should be getting this from argEntries but the
+                      // special case of zero arguments works fine like this
+                      [],
+                    );
+
+                    return [out, az] as [Outcome.Array, Analyzer];
+                  }
+
+                  case 'Values': {
+                    const out = Outcome.Object.methods[funcv.v.name](
                       funcv.v.base,
                       // TODO: Should be getting this from argEntries but the
                       // special case of zero arguments works fine like this
