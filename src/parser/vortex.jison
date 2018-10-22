@@ -428,6 +428,8 @@ propListNonEmpty
 prop
     : identifier ':' e
         {$$ = [$1, $3]}
+    | string ':' e
+        {$$ = [$1, $3]}
     | identifier
         {$$ = [$1, $1]}
     ;

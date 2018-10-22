@@ -1718,7 +1718,7 @@ namespace Analyzer {
           const res = Outcome.Object({});
           let objConcrete = true;
 
-          for (const [identifierKey, subExp] of exp.v) {
+          for (const [keyExp, subExp] of exp.v) {
             let sub: Outcome;
             [sub, az] = subExpression(az, subExp);
 
@@ -1730,7 +1730,13 @@ namespace Analyzer {
               objConcrete = false;
             }
 
-            res.v[identifierKey.v] = sub;
+            if (keyExp.t === 'IDENTIFIER') {
+              res.v[keyExp.v] = sub;
+            } else {
+              res.v[Outcome.String.unescape(
+                keyExp.v.slice(1, keyExp.v.length - 1)
+              )] = sub;
+            }
           }
 
           if (objConcrete) {

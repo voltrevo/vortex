@@ -1,0 +1,7 @@
+x := {};
+x[''] := 0;
+assert x == {'': 0};
+x += {'foo': 'bar'};
+assert x == {'': 0, 'foo': 'bar'};
+assert {'':0}:String() == '{\'\':0}';
+return 'done';

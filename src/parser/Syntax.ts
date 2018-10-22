@@ -146,7 +146,7 @@ namespace Syntax {
     { t: 'subscript', v: [Expression, Expression], p: Pos } |
     FunctionExpression |
     ArrayExpression |
-    { t: 'Object', v: [Identifier, Expression][], p: Pos } |
+    { t: 'Object', v: [Identifier | STRING, Expression][], p: Pos } |
     ClassExpression |
     { t: 'switch', v: [Expression | null, [Expression, Expression][]], p: Pos } |
     Import |
