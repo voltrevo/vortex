@@ -33,7 +33,7 @@ namespace Outcome {
     }
 
     export function unescape(s: string) {
-      return s.replace(/\\./, m => m[1]);
+      return s.replace(/\\./g, m => m[1]);
     }
 
     export type MethodMap = {
@@ -598,29 +598,30 @@ namespace Outcome {
   };
 
   export type MethodTypeMap = {
+    null: Null.Method;
+    bool: Bool.Method;
+    number: Number.Method;
+    string: String.Method;
     array: Array.Method;
     object: Object.Method;
-    number: Number.Method;
-    bool: Bool.Method;
-    null: Null.Method;
-    string: String.Method;
   };
 
   export const methodImpls = {
+    null: Null.methodImpls,
+    bool: Bool.methodImpls,
+    number: Number.methodImpls,
+    string: String.methodImpls,
     array: Array.methodImpls,
     object: Object.methodImpls,
-    number: Number.methodImpls,
-    bool: Bool.methodImpls,
-    string: String.methodImpls,
   };
 
   export const methodArgLengths = {
+    null: Null.methodArgLengths,
+    bool: Bool.methodArgLengths,
+    number: Number.methodArgLengths,
+    string: String.methodArgLengths,
     array: Array.methodArgLengths,
     object: Object.methodArgLengths,
-    number: Number.methodArgLengths,
-    bool: Bool.methodArgLengths,
-    null: Null.methodArgLengths,
-    string: String.methodArgLengths,
   };
 
   export type FuncMethod = Func & { v: { t: 'method' } };
