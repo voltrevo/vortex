@@ -26,6 +26,41 @@ namespace Outcome {
     }
   }
 
+  export namespace String {
+    export type MethodMap = {
+      String: {
+        base: String;
+        name: 'String';
+        argLength: 0;
+      };
+    };
+
+    export type Method = MethodMap[keyof MethodMap];
+
+    export type MethodCallMap = {
+      String: {
+        args: [];
+        result: String;
+      };
+    };
+
+    export const methodImpls: {
+      [name in keyof MethodMap]: MethodImpl<
+        MethodMap[name],
+        MethodCallMap[name]
+      >;
+    } = {
+      // TODO: Escaping
+      String: (base, args) => String('\'' + base.v + '\''),
+    };
+
+    export const methodArgLengths: {
+      [name in keyof MethodMap]: MethodMap[name]['argLength'];
+    } = {
+      String: 0,
+    };
+  }
+
   export type Number = { cat: 'concrete', t: 'number', v: number };
 
   export function Number(v: number): Number {
@@ -72,10 +107,78 @@ namespace Outcome {
     return { cat: 'concrete', t: 'bool', v };
   }
 
+  export namespace Bool {
+    export type MethodMap = {
+      String: {
+        base: Bool;
+        name: 'String';
+        argLength: 0;
+      };
+    };
+
+    export type Method = MethodMap[keyof MethodMap];
+
+    export type MethodCallMap = {
+      String: {
+        args: [];
+        result: String;
+      };
+    };
+
+    export const methodImpls: {
+      [name in keyof MethodMap]: MethodImpl<
+        MethodMap[name],
+        MethodCallMap[name]
+      >;
+    } = {
+      String: (base, args) => String(base.v.toString()),
+    };
+
+    export const methodArgLengths: {
+      [name in keyof MethodMap]: MethodMap[name]['argLength'];
+    } = {
+      String: 0,
+    };
+  }
+
   export type Null = { cat: 'concrete', t: 'null', v: null };
 
   export function Null(): Null {
     return { cat: 'concrete', t: 'null', v: null };
+  }
+
+  export namespace Null {
+    export type MethodMap = {
+      String: {
+        base: Null;
+        name: 'String';
+        argLength: 0;
+      };
+    };
+
+    export type Method = MethodMap[keyof MethodMap];
+
+    export type MethodCallMap = {
+      String: {
+        args: [];
+        result: String;
+      };
+    };
+
+    export const methodImpls: {
+      [name in keyof MethodMap]: MethodImpl<
+        MethodMap[name],
+        MethodCallMap[name]
+      >;
+    } = {
+      String: (base, args) => String('null'),
+    };
+
+    export const methodArgLengths: {
+      [name in keyof MethodMap]: MethodMap[name]['argLength'];
+    } = {
+      String: 0,
+    };
   }
 
   export type ConcreteArray = {
@@ -159,6 +262,12 @@ namespace Outcome {
         name: 'Values';
         argLength: 0;
       };
+
+      String: {
+        base: Array;
+        name: 'String';
+        argLength: 0;
+      };
     };
 
     export type Method = MethodMap[keyof MethodMap];
@@ -183,6 +292,11 @@ namespace Outcome {
         args: [];
         result: Array;
       };
+
+      String: {
+        args: [];
+        result: String;
+      };
     };
 
     // TODO: First, Last, Head, Tail, map, reduce
@@ -203,6 +317,7 @@ namespace Outcome {
         (base as any).v.map((v: Value, i: number) => Number(i))
       )),
       Values: (base, args) => base,
+      String: (base, args) => String(JsString(base)),
     };
 
     export const methodArgLengths: {
@@ -212,6 +327,7 @@ namespace Outcome {
       Entries: 0,
       Keys: 0,
       Values: 0,
+      String: 0,
     };
   }
 
@@ -326,6 +442,12 @@ namespace Outcome {
         name: 'Values';
         argLength: 0;
       };
+
+      String: {
+        base: Object;
+        name: 'String';
+        argLength: 0;
+      };
     };
 
     export type Method = MethodMap[keyof MethodMap];
@@ -344,6 +466,11 @@ namespace Outcome {
       Values: {
         args: [];
         result: Array;
+      };
+
+      String: {
+        args: [];
+        result: String;
       };
     };
 
@@ -370,6 +497,7 @@ namespace Outcome {
           (k: string, i: number) => base.v[k]
         )
       ),
+      String: (base, args) => String(JsString(base)),
     };
 
     export const methodArgLengths: {
@@ -378,6 +506,7 @@ namespace Outcome {
       Entries: 0,
       Keys: 0,
       Values: 0,
+      String: 0,
     };
   }
 
@@ -463,22 +592,26 @@ namespace Outcome {
     array: Array.Method;
     object: Object.Method;
     number: Number.Method;
+    bool: Bool.Method;
+    null: Null.Method;
+    string: String.Method;
   };
 
   export const methodImpls = {
     array: Array.methodImpls,
     object: Object.methodImpls,
     number: Number.methodImpls,
-    bool: {},
-    string: {},
+    bool: Bool.methodImpls,
+    string: String.methodImpls,
   };
 
   export const methodArgLengths = {
     array: Array.methodArgLengths,
     object: Object.methodArgLengths,
     number: Number.methodArgLengths,
-    bool: {},
-    string: {},
+    bool: Bool.methodArgLengths,
+    null: Null.methodArgLengths,
+    string: String.methodArgLengths,
   };
 
   export type FuncMethod = Func & { v: { t: 'method' } };
@@ -537,7 +670,7 @@ namespace Outcome {
 
   export function JsString(v: Outcome): string {
     switch (v.t) {
-      case 'string': return JSON.stringify(v.v);
+      case 'string': return '\'' + v.v + '\''; // TODO: Escaping
       case 'number': return v.v.toString();
       case 'bool': return v.v.toString();
       case 'null': return 'null';
