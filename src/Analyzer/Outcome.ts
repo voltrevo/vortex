@@ -569,8 +569,8 @@ namespace Outcome {
         switch (v.cat) {
           // These are the same but need to be separated out due to a curious
           // typescript edge case
-          case 'concrete': return `[${v.v.map(JsString).join(', ')}]`;
-          case 'valid': return `[${v.v.map(JsString).join(', ')}]`;
+          case 'concrete': return `[${v.v.map(JsString).join(',')}]`;
+          case 'valid': return `[${v.v.map(JsString).join(',')}]`;
         }
       }
 
@@ -578,8 +578,8 @@ namespace Outcome {
         JsObject.keys(v.v).sort().map(key => (
           // TODO: In future keys can be non-identifiers and will need to be
           // quoted
-          `${key}: ${JsString(v.v[key])}`
-        )).join(', ')
+          `${key}:${JsString(v.v[key])}`
+        )).join(',')
       }}`;
 
       case 'unknown': return '<unknown>';
