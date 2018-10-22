@@ -816,85 +816,88 @@ namespace Outcome {
   export function SameType(
     left: Concrete,
     right: Concrete
-  ): Bool {
+  ): boolean {
     switch (left.t) {
       case 'Func': {
         if (right.t !== 'Func') {
-          return Bool(false);
+          return false;
         }
 
         // TODO: Types of arguments?
-        return Bool(
+        return (
           left.v.t === right.v.t &&
           Func.ArgLength(left) === Func.ArgLength(right)
         );
       }
 
       case 'Array': {
-        if (right.t !== 'Array' || right.v.length !== left.v.length) {
-          return Bool(false);
+        if (right.t !== 'Array') {
+          return false;
         }
 
-        for (let i = 0; i < left.v.length; i++) {
+        const len = left.v.length;
+
+        if (right.v.length !== len) {
+          return false;
+        }
+
+        for (let i = 0; i < len; i++) {
           const subSameType = SameType(left.v[i], right.v[i]);
 
           if (!subSameType) {
-            return Bool(false);
+            return false;
           }
         }
 
-        return Bool(true);
+        return true;
       }
 
       case 'Object': {
         if (right.t !== 'Object') {
-          return Bool(false);
+          return false;
         }
 
-        const leftKeys = JsObject.keys(left.v).sort();
-        const rightKeys = JsObject.keys(right.v).sort();
+        let leftKeys = JsObject.keys(left.v);
+        let rightKeys = JsObject.keys(right.v);
 
-        if (leftKeys.length !== rightKeys.length) {
-          return Bool(false);
+        const len = leftKeys.length;
+
+        if (rightKeys.length !== len) {
+          return false;
         }
 
-        for (let i = 0; i < leftKeys.length; i++) {
+        leftKeys = leftKeys.sort();
+        rightKeys = rightKeys.sort();
+
+        for (let i = 0; i < len; i++) {
           const subSameType = SameType(
             left.v[leftKeys[i]],
             right.v[rightKeys[i]],
           )
 
           if (!subSameType) {
-            return Bool(false);
+            return false;
           }
 
-          return Bool(true);
+          return true;
         }
 
-        return Bool(true);
+        return true;
       }
 
       case 'String':
       case 'Number':
       case 'Bool':
       case 'Null': {
-        return Bool(left.t === right.t);
+        return left.t === right.t;
       }
     }
   }
 
-  export function TypedEqual(
-    exp: Syntax.Expression,
+  function UncheckedTypedEqual(
     left: Concrete,
     right: Concrete,
-  ): Bool | Exception {
-    if (!SameType(left, right)) {
-      return Exception(exp,
-        ['type-error', 'comparison'],
-        `Type error: ${left} ${exp.t} ${right}`,
-      );
-    }
-
+  ): Bool {
     switch (left.t) {
       case 'String':
       case 'Number':
@@ -910,6 +913,7 @@ namespace Outcome {
         // In general, perhaps the syntax trees of the optimised functions can
         // be compared, true if the same, but still null rather than false if
         // different.
+        // (Revisiting this, comparing functions should probably usually throw.
         throw new Error('Shouldn\'t be possible, but may be later');
         // return null;
       }
@@ -920,11 +924,7 @@ namespace Outcome {
         }
 
         for (let i = 0; i < left.v.length; i++) {
-          const subEq = TypedEqual(exp, left.v[i], right.v[i]);
-
-          if (subEq.t === 'exception') {
-            return subEq;
-          }
+          const subEq = UncheckedTypedEqual(left.v[i], right.v[i]);
 
           if (!subEq.v) {
             return Bool(false);
@@ -944,11 +944,7 @@ namespace Outcome {
         const keys = JsObject.keys(left.v).sort();
 
         for (const key of keys) {
-          const subEq = TypedEqual(exp, left.v[key], right.v[key]);
-
-          if (subEq.t === 'exception') {
-            return subEq;
-          }
+          const subEq = UncheckedTypedEqual(left.v[key], right.v[key]);
 
           if (!subEq.v) {
             return Bool(false);
@@ -960,22 +956,26 @@ namespace Outcome {
     }
   }
 
-  export function TypedLessThan(
+  export function TypedEqual(
     exp: Syntax.Expression,
     left: Concrete,
     right: Concrete,
   ): Bool | Exception {
-    const sameType = SameType(left, right);
-
-    if (sameType.v === false) {
+    if (!SameType(left, right)) {
       return Exception(exp,
         ['type-error', 'comparison'],
-        // TODO: Surfacing this is confusing because eg '>' gets swapped to '<'
-        // and this inverts left and right (compared to user's code)
-        `Type error: ${JsString(left)} < ${JsString(right)}`,
+        // TODO: Show deep type information
+        `Type error: ${left.t} ${exp.t} ${right.t}`,
       );
     }
 
+    return UncheckedTypedEqual(left, right);
+  }
+
+  function UncheckedTypedLessThan(
+    left: Concrete,
+    right: Concrete,
+  ): Bool {
     switch (left.t) {
       case 'String':
       case 'Number':
@@ -988,10 +988,7 @@ namespace Outcome {
 
       case 'Func': {
         // Not defining a way to compare functions right now.
-        return Exception(exp,
-          ['type-error', 'function-comparison'],
-          `Type error: ${left} ${exp.t} ${right}`,
-        );
+        throw new Error('Shouldn\'t be possible');
       }
 
       case 'Array': {
@@ -1000,21 +997,13 @@ namespace Outcome {
         }
 
         for (let i = 0; i < left.v.length; i++) {
-          const subLT = TypedLessThan(exp, left.v[i], right.v[i]);
-
-          if (subLT.t === 'exception') {
-            return subLT;
-          }
+          const subLT = UncheckedTypedLessThan(left.v[i], right.v[i]);
 
           if (subLT.v) {
             return Bool(true);
           }
 
-          const subGT = TypedLessThan(exp, right.v[i], left.v[i]);
-
-          if (subGT.t === 'exception') {
-            return subGT;
-          }
+          const subGT = UncheckedTypedLessThan(right.v[i], left.v[i]);
 
           if (subGT.v) {
             return Bool(false);
@@ -1035,21 +1024,13 @@ namespace Outcome {
 
         // TODO: Deduplicate with arrays
         for (const key of keys) {
-          const subLT = TypedLessThan(exp, left.v[key], right.v[key]);
-
-          if (subLT.t === 'exception') {
-            return subLT;
-          }
+          const subLT = UncheckedTypedLessThan(left.v[key], right.v[key]);
 
           if (subLT.v) {
             return Bool(true);
           }
 
-          const subGT = TypedLessThan(exp, right.v[key], left.v[key]);
-
-          if (subGT.t === 'exception') {
-            return subGT;
-          }
+          const subGT = UncheckedTypedLessThan(right.v[key], left.v[key]);
 
           if (subGT.v) {
             return Bool(false);
@@ -1059,6 +1040,25 @@ namespace Outcome {
         return Bool(false);
       }
     }
+  }
+
+  export function TypedLessThan(
+    exp: Syntax.Expression,
+    left: Concrete,
+    right: Concrete,
+  ): Bool | Exception {
+    const sameType = SameType(left, right);
+
+    if (sameType === false) {
+      return Exception(exp,
+        ['type-error', 'comparison'],
+        // TODO: Surfacing this is confusing because eg '>' gets swapped to '<'
+        // and this inverts left and right (compared to user's code)
+        `Type error: ${JsString(left)} < ${JsString(right)}`,
+      );
+    }
+
+    return UncheckedTypedLessThan(left, right);
   }
 
   function InvertIfBool<Out extends Outcome>(out: Out): Out {
