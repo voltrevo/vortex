@@ -215,6 +215,19 @@ function validateFunctionScope(
             }
           }
 
+          if (el.t === 'for' && el.v.control && el.v.control.t === 'range') {
+            const firstChild = children.shift();
+
+            if (!firstChild || firstChild.t !== 'IDENTIFIER') {
+              throw new Error('Shouldn\'t be possible');
+            }
+
+            children.unshift({
+              t: 'CreateVariable',
+              v: firstChild,
+            });
+          }
+
           return [push, ...hoists, ...children, pop];
         }
 

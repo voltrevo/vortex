@@ -310,10 +310,8 @@ namespace Syntax {
             }
 
             case 'range': {
-              // TODO: Identifier should be considered a child too. Probably
-              // fix this when implementing non-identifier lvalues.
-              const [, rangeExp] = control.v;
-              return [rangeExp];
+              const [identifier, rangeExp] = control.v;
+              return [identifier, rangeExp];
             }
 
             case 'setup; condition; next': {

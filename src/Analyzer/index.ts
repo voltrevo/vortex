@@ -625,22 +625,7 @@ namespace Analyzer {
 
           // TODO: Impure function - captures and contributes az mutations
           function cond(): Outcome.Bool | Outcome.Exception {
-            if (
-              control !== null &&
-              control.t !== 'condition' &&
-              control.t !== 'setup; condition; next'
-            ) {
-              const ex = Outcome.Exception(
-                statement,
-                ['not-implemented', 'for-control'],
-                // TODO: Need to capture more structure in compiler notes
-                `Not implemented: for loop with (${control.t}) control clause`,
-              );
-
-              return ex;
-            }
-
-            if (control === null) {
+            if (control === null || control.t === 'range') {
               return Outcome.Bool(true);
             }
 
@@ -669,18 +654,44 @@ namespace Analyzer {
 
           az = Analyzer.push(az);
 
-          if (control && control.t === 'setup; condition; next') {
-            const [setup] = control.v;
-            let setupEx: Outcome.Exception | null;
-            [setupEx, az] = topExpression(az, setup);
-
-            if (setupEx !== null) {
-              return [setupEx, az];
-            }
-          }
-
           let iterations = 0;
           let mout: TailCall | Outcome | null = null;
+
+          let rangeData: null | {
+            identifier: Syntax.Identifier,
+            items: Outcome.Array,
+          } = null;
+
+          if (control) {
+            if (control.t === 'setup; condition; next') {
+              const [setup] = control.v;
+              let setupEx: Outcome.Exception | null;
+              [setupEx, az] = topExpression(az, setup);
+
+              if (setupEx !== null) {
+                return [setupEx, az];
+              }
+            } else if (control.t === 'range') {
+              const [identifier, containerExp] = control.v;
+
+              let container: Outcome | null;
+              [container, az] = subExpression(az, containerExp);
+
+              if (container.t !== 'Array') {
+                // TODO: handle Unknown
+
+                const ex = Outcome.Exception(
+                  containerExp,
+                  ['type-error', 'for-control'],
+                  `Type error: for (_ of ${container.t}) {}`,
+                );
+
+                return [ex, az];
+              }
+
+              rangeData = { identifier, items: container };
+            }
+          }
 
           while (true) {
             const condOut = cond(); // mutates az
@@ -695,6 +706,17 @@ namespace Analyzer {
 
             if (condOut.v === false) {
               break;
+            }
+
+            if (rangeData !== null) {
+              if (iterations >= rangeData.items.v.length) {
+                break;
+              }
+
+              az = Analyzer.add(az, rangeData.identifier.v, {
+                origin: rangeData.identifier,
+                data: rangeData.items.v[iterations],
+              });
             }
 
             az = Analyzer.push(az);
