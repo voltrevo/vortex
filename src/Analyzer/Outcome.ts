@@ -685,6 +685,14 @@ namespace Outcome {
     }
   }
 
+  export function ObjectKeyString(key: string) {
+    if (/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(key)) {
+      return key;
+    }
+
+    return '\'' + String.escape(key) + '\'';
+  }
+
   export function JsString(v: Outcome): string {
     switch (v.t) {
       case 'String': return '\'' + String.escape(v.v) + '\'';
@@ -728,7 +736,7 @@ namespace Outcome {
         JsObject.keys(v.v).sort().map(key => (
           // TODO: In future keys can be non-identifiers and will need to be
           // quoted
-          `${key}:${JsString(v.v[key])}`
+          `${ObjectKeyString(key)}:${JsString(v.v[key])}`
         )).join(',')
       }}`;
 
@@ -788,12 +796,15 @@ namespace Outcome {
 
         if (isAtomic) {
           return '{' + JsObject.keys(v.v).sort().map(key => (
-            `${key}: ${JsString(v.v[key])}`
+            `${ObjectKeyString(key)}: ${JsString(v.v[key])}`
           )).join(', ') + '}';
         }
 
         return `{\n  ${JsObject.keys(v.v).sort()
-          .map(key => `${key}: ${LongString(v.v[key]).replace(/\n/g, '\n  ')}`)
+          .map(key => (
+            ObjectKeyString(key) + ': ' +
+            LongString(v.v[key]).replace(/\n/g, '\n  ')
+          ))
           .join(',\n  ')
         },\n}`;
       }
