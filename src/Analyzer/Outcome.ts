@@ -27,6 +27,15 @@ namespace Outcome {
   }
 
   export namespace String {
+    // TODO: Not sure these are quite right
+    export function escape(s: string) {
+      return s.replace(/'|\\/g, m => '\\' + m);
+    }
+
+    export function unescape(s: string) {
+      return s.replace(/\\./, m => m[1]);
+    }
+
     export type MethodMap = {
       String: {
         base: String;
@@ -51,7 +60,7 @@ namespace Outcome {
       >;
     } = {
       // TODO: Escaping
-      String: (base, args) => String('\'' + base.v + '\''),
+      String: (base, args) => String('\'' + escape(base.v) + '\''),
     };
 
     export const methodArgLengths: {
@@ -670,7 +679,7 @@ namespace Outcome {
 
   export function JsString(v: Outcome): string {
     switch (v.t) {
-      case 'string': return '\'' + v.v + '\''; // TODO: Escaping
+      case 'string': return '\'' + String.escape(v.v) + '\'';
       case 'number': return v.v.toString();
       case 'bool': return v.v.toString();
       case 'null': return 'null';
