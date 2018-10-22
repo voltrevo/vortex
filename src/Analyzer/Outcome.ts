@@ -730,6 +730,69 @@ namespace Outcome {
     }
   }
 
+  export function LongString(v: Outcome): string {
+    switch (v.t) {
+      case 'string':
+      case 'number':
+      case 'bool':
+      case 'null':
+      case 'func':
+      case 'unknown':
+      case 'exception':
+        return JsString(v);
+
+      case 'array': {
+        // TODO: Unclear why {as any} was necessary below (related to
+        // unnecessary switch further down?)
+        const isAtomic = (v.v as any).every(
+          (el: Value) => el.t !== 'array' && el.t !== 'object'
+        );
+
+        if (isAtomic) {
+          switch (v.cat) {
+            // These are the same but need to be separated out due to a curious
+            // typescript edge case
+            case 'concrete': return `[${v.v.map(JsString).join(', ')}]`;
+            case 'valid': return `[${v.v.map(JsString).join(', ')}]`;
+          }
+        }
+
+        switch (v.cat) {
+          // These are the same but need to be separated out due to a curious
+          // typescript edge case
+          case 'concrete': return `[\n  ${v.v
+            .map(el => LongString(el).replace(/\n/g, '\n  '))
+            .join(',\n  ')
+          },\n]`;
+
+          case 'valid': return `[\n  ${v.v
+            .map(el => LongString(el).replace(/\n/g, '\n  '))
+            .join(',\n  ')
+          },\n]`;
+        }
+      }
+
+      case 'object': {
+        // TODO: Unclear why {as any} was necessary below (related to
+        // unnecessary switch further down?)
+        const isAtomic = JsObject.keys(v.v).every(
+          key => v.v[key].t !== 'array' && v.v[key].t !== 'object'
+        );
+
+        if (isAtomic) {
+          return '{' + JsObject.keys(v.v).sort().map(key => (
+            `${key}: ${JsString(v.v[key])}`
+          )).join(', ') + '}';
+        }
+
+        return `{\n  ${JsObject.keys(v.v).sort()
+          .map(key => `${key}: ${LongString(v.v[key]).replace(/\n/g, '\n  ')}`)
+          .join(',\n  ')
+        },\n}`;
+      }
+    }
+  }
+
   export function Maybe(): Outcome | null { return null; }
 
   export function SameType(

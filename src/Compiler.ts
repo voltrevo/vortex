@@ -66,7 +66,7 @@ namespace Compiler {
           [f, null],
           'info',
           ['compiler', 'file-outcome'],
-          `Outcome: ${Outcome.JsString(mod.outcome)}`,
+          `Outcome: ${Outcome.LongString(mod.outcome)}`,
         ));
       }
     }
