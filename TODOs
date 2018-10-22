@@ -1,5 +1,3 @@
-TODO: LongString
-TODO: Add test for every builtin method
 TODO: Object -> Map (keys can be any functionless vortex value)
 TODO: Handle importing invalid files
 TODO: Naming consistency module vs file
