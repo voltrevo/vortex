@@ -658,7 +658,7 @@ namespace Analyzer {
           let mout: TailCall | Outcome | null = null;
 
           let rangeData: null | {
-            identifier: Syntax.Identifier,
+            targetExp: Syntax.Expression,
             items: Outcome.Array,
           } = null;
 
@@ -672,7 +672,7 @@ namespace Analyzer {
                 return [setupEx, az];
               }
             } else if (control.t === 'range') {
-              const [identifier, containerExp] = control.v;
+              const [targetExp, containerExp] = control.v;
 
               let container: Outcome | null;
               [container, az] = subExpression(az, containerExp);
@@ -689,7 +689,7 @@ namespace Analyzer {
                 return [ex, az];
               }
 
-              rangeData = { identifier, items: container };
+              rangeData = { targetExp, items: container };
             }
           }
 
@@ -713,10 +713,17 @@ namespace Analyzer {
                 break;
               }
 
-              az = Analyzer.add(az, rangeData.identifier.v, {
-                origin: rangeData.identifier,
-                data: rangeData.items.v[iterations],
-              });
+              [mout, az] = createOrAssign(
+                az,
+                rangeData.targetExp,
+                rangeData.targetExp,
+                ':=',
+                rangeData.items.v[iterations],
+              );
+
+              if (mout !== null) {
+                break;
+              }
             }
 
             az = Analyzer.push(az);

@@ -1,0 +1,23 @@
+players := [
+  { name: 'Federer', sport: 'tennis' },
+  { name: 'Djokovic', sport: 'tennis' },
+  { name: 'Ronaldo', sport: 'soccer' },
+  { name: 'Messi', sport: 'soccer' },
+  { name: 'Beckham', sport: 'soccer' },
+];
+
+msgs := [];
+
+for ([i, p] of players:Entries()) {
+  msgs += [['Player ' + (i + 1):String() + ' plays ' + p.sport]];
+}
+
+assert msgs == [
+  ['Player 1 plays tennis'],
+  ['Player 2 plays tennis'],
+  ['Player 3 plays soccer'],
+  ['Player 4 plays soccer'],
+  ['Player 5 plays soccer'],
+];
+
+return 'done';
