@@ -44,52 +44,6 @@ namespace Outcome {
     return { cat: 'concrete', t: 'null', v: null };
   }
 
-  export type Func = {
-    cat: 'concrete';
-    t: 'func';
-    v: (
-      {
-        t: 'plain';
-        v: {
-          exp: Syntax.FunctionExpression;
-          az: Analyzer;
-        };
-      } |
-      {
-        t: 'method';
-        v: Array.Method | Object.Method;
-      } |
-      never
-    );
-  };
-
-  export type FuncPlain = Func & { v: { t: 'plain' } };
-
-  export function Func(v: Func['v']): Func {
-    return { cat: 'concrete', t: 'func', v };
-  }
-
-  export function FuncPlain(v: {
-    exp: Syntax.FunctionExpression,
-    az: Analyzer
-  }) {
-    return Func({ t: 'plain', v });
-  }
-
-  export namespace Func {
-    export function ArgLength(f: Func): number {
-      switch (f.v.t) {
-        case 'plain': {
-          return f.v.v.exp.v.args.length;
-        }
-
-        case 'method': {
-          return f.v.v.argLength;
-        }
-      }
-    }
-  }
-
   export type ConcreteArray = {
     cat: 'concrete',
     t: 'array', v: Concrete[],
@@ -139,63 +93,87 @@ namespace Outcome {
       }
     }
 
-    export type Method = (
-      {
+    export type MethodMap = {
+      Length: {
         t: 'array'; // TODO: This may be unnecessary due to base.t
-        base: Array;
         name: 'Length';
-        argLength: 0;
-      } |
-      {
-        t: 'array'; // TODO: This may be unnecessary due to base.t
         base: Array;
-        name: 'Entries';
         argLength: 0;
-      } |
-      {
-        t: 'array'; // TODO: This may be unnecessary due to base.t
-        base: Array;
-        name: 'Keys';
-        argLength: 0;
-      } |
-      {
-        t: 'array'; // TODO: This may be unnecessary due to base.t
-        base: Array;
-        name: 'Values';
-        argLength: 0;
-      } |
-      never
-    );
+      };
 
-    export type MethodArgs = {
-      Length: [];
-      Entries: [];
-      Keys: [];
-      Values: [];
+      Entries: {
+        t: 'array'; // TODO: This may be unnecessary due to base.t
+        name: 'Entries';
+        base: Array;
+        argLength: 0;
+      };
+
+      Keys: {
+        t: 'array'; // TODO: This may be unnecessary due to base.t
+        name: 'Keys';
+        base: Array;
+        argLength: 0;
+      };
+
+      Values: {
+        t: 'array'; // TODO: This may be unnecessary due to base.t
+        name: 'Values';
+        base: Array;
+        argLength: 0;
+      };
+    };
+
+    export type Method = MethodMap[keyof MethodMap];
+
+    export type MethodCallMap = {
+      Length: {
+        args: [];
+        result: Number;
+      };
+
+      Entries: {
+        args: [];
+        result: Array;
+      };
+
+      Keys: {
+        args: [];
+        result: Array;
+      };
+
+      Values: {
+        args: [];
+        result: Array;
+      };
     };
 
     // TODO: First, Last, Head, Tail, map, reduce
 
-    export const methods = {
-      Length: (base: Array, args: MethodArgs['Length']) => (
-        Number(base.v.length)
-      ),
-      Entries: (base: Array, args: MethodArgs['Entries']): Array => (
+    export const methodImpls: {
+      [name in keyof MethodMap]: MethodImpl<
+        MethodMap[name],
+        MethodCallMap[name]
+      >;
+    } = {
+      Length: (base, args) => Number(base.v.length),
+      Entries: (base, args) => (Array(
         // TODO: Unclear why {as any} was necessary below
-        Array((base as any).v.map(
-          (v: Value, i: number) => Array([Number(i), v])
-        ))
-      ),
-      Keys: (base: Array, args: MethodArgs['Keys']): Array => (
+        (base as any).v.map((v: Value, i: number) => Array([Number(i), v]))
+      )),
+      Keys: (base, args) => (Array(
         // TODO: Unclear why {as any} was necessary below
-        Array((base as any).v.map(
-          (v: Value, i: number) => Number(i)
-        ))
-      ),
-      Values: (base: Array, args: MethodArgs['Values']): Array => (
-        // TODO: Unclear why {as any} was necessary below
-        base
-      ),
+        (base as any).v.map((v: Value, i: number) => Number(i))
+      )),
+      Values: (base, args) => base,
+    };
+
+    export const methodArgLengths: {
+      [name in keyof MethodMap]: MethodMap[name]['argLength'];
+    } = {
+      Length: 0,
+      Entries: 0,
+      Keys: 0,
+      Values: 0,
     };
   }
 
@@ -282,52 +260,85 @@ namespace Outcome {
       return maybeValue;
     }
 
-    export type Method = (
-      {
+    export type MethodMap = {
+      Entries: {
         t: 'object'; // TODO: This may be unnecessary due to base.t
-        base: Object;
         name: 'Entries';
-        argLength: 0;
-      } |
-      {
-        t: 'object'; // TODO: This may be unnecessary due to base.t
         base: Object;
-        name: 'Keys';
+        args: [];
         argLength: 0;
-      } |
-      {
-        t: 'object'; // TODO: This may be unnecessary due to base.t
-        base: Object;
-        name: 'Values';
-        argLength: 0;
-      } |
-      never
-    );
+        result: Array;
+      };
 
-    export type MethodArgs = {
-      Entries: [];
-      Keys: [];
-      Values: [];
+      Keys: {
+        t: 'object'; // TODO: This may be unnecessary due to base.t
+        name: 'Keys';
+        base: Object;
+        args: [];
+        argLength: 0;
+        result: Array;
+      };
+
+      Values: {
+        t: 'object'; // TODO: This may be unnecessary due to base.t
+        name: 'Values';
+        base: Object;
+        args: [];
+        argLength: 0;
+        result: Array;
+      };
     };
 
-    // TODO: First, Last, Head, Tail, map, reduce, sort
+    export type Method = MethodMap[keyof MethodMap];
 
-    export const methods = {
-      Entries: (base: Object, args: MethodArgs['Entries']): Array => (
-        Array(JsObject.keys(base.v).sort().map(
+    export type MethodCallMap = {
+      Entries: {
+        args: [];
+        result: Array;
+      };
+
+      Keys: {
+        args: [];
+        result: Array;
+      };
+
+      Values: {
+        args: [];
+        result: Array;
+      };
+    };
+
+    // TODO: First, Last, Head, Tail, map, reduce
+
+    export const methodImpls: {
+      [name in keyof MethodMap]: MethodImpl<
+        MethodMap[name],
+        MethodCallMap[name]
+      >;
+    } = {
+      Entries: (base, args) => (Array(
+        JsObject.keys(base.v).sort().map(
           (k: string, i: number) => Array([String(k), base.v[k]])
-        ))
-      ),
-      Keys: (base: Object, args: MethodArgs['Keys']): Array => (
-        Array(JsObject.keys(base.v).sort().map(
+        )
+      )),
+      Keys: (base, args) => (Array(
+        JsObject.keys(base.v).sort().map(
           (k: string, i: number) => String(k)
-        ))
-      ),
-      Values: (base: Object, args: MethodArgs['Values']): Array => (
-        Array(JsObject.keys(base.v).sort().map(
+        )
+      )),
+      Values: (base, args) => Array(
+        JsObject.keys(base.v).sort().map(
           (k: string, i: number) => base.v[k]
-        ))
+        )
       ),
+    };
+
+    export const methodArgLengths: {
+      [name in keyof MethodMap]: MethodMap[name]['argLength'];
+    } = {
+      Entries: 0,
+      Keys: 0,
+      Values: 0,
     };
   }
 
@@ -373,6 +384,111 @@ namespace Outcome {
     Unknown |
     never
   );
+
+  type MethodBase = {
+    t: {};
+    name: {};
+    base: {};
+    argLength: {};
+  };
+
+  type MethodCallBase = {
+    args: {};
+    result: {};
+  };
+
+  type MethodImpl<M extends MethodBase, MC extends MethodCallBase> = (
+    base: M['base'],
+    args: MC['args'],
+  ) => MC['result'];
+
+  export type Func = {
+    cat: 'concrete';
+    t: 'func';
+    v: (
+      {
+        t: 'plain';
+        v: {
+          exp: Syntax.FunctionExpression;
+          az: Analyzer;
+        };
+      } |
+      {
+        t: 'method';
+        v: MethodTypeMap[keyof MethodTypeMap];
+      } |
+      never
+    );
+  };
+
+  export type MethodTypeMap = {
+    array: Array.Method;
+    object: Object.Method;
+  };
+
+  export const methodImpls = {
+    array: Array.methodImpls,
+    object: Object.methodImpls,
+  };
+
+  export const methodArgLengths = {
+    array: Array.methodArgLengths,
+    object: Object.methodArgLengths,
+  };
+
+  export type FuncMethod = Func & { v: { t: 'method' } };
+
+  export function lookupMethod(base: Value, name: string): FuncMethod | null {
+    if (
+      !(base.t in methodImpls) ||
+      !(name in methodImpls[base.t])
+    ) {
+      return null;
+    }
+
+    return {
+      cat: 'concrete',
+      t: 'func',
+      v: {
+        t: 'method',
+        v: {
+          t: base.t,
+          base,
+          name,
+          argLength: methodArgLengths[base.t][name],
+        } as any,
+        // Not sure if there's a way to avoid {any} above. Trying to push
+        // typescript's type system very far already here.
+      },
+    };
+  }
+
+  export type FuncPlain = Func & { v: { t: 'plain' } };
+
+  export function Func(v: Func['v']): Func {
+    return { cat: 'concrete', t: 'func', v };
+  }
+
+  export function FuncPlain(v: {
+    exp: Syntax.FunctionExpression,
+    az: Analyzer
+  }): FuncPlain {
+    return { cat: 'concrete', t: 'func', v: { t: 'plain', v } };
+  }
+
+  export namespace Func {
+    export function ArgLength(f: Func): number {
+      switch (f.v.t) {
+        case 'plain': {
+          return f.v.v.exp.v.args.length;
+        }
+
+        case 'method': {
+          return f.v.v.argLength;
+        }
+      }
+    }
+  }
 
   export function JsString(v: Outcome): string {
     switch (v.t) {
