@@ -1313,7 +1313,11 @@ namespace Analyzer {
         case 'NULL': { return [Outcome.Null(), az]; }
 
         case 'STRING': {
-          return [Outcome.String(exp.v.substring(1, exp.v.length - 1)), az];
+          const str = Outcome.String(Outcome.String.unescape(
+            exp.v.substring(1, exp.v.length - 1)
+          ));
+
+          return [str, az];
         }
 
         case 'IDENTIFIER': {
@@ -1615,7 +1619,7 @@ namespace Analyzer {
         }
 
         case 'array': {
-          const res = Outcome.Array([]);
+          const res = Outcome.ValidArray([]);
           let arrConcrete = true;
 
           for (const elExp of exp.v) {
