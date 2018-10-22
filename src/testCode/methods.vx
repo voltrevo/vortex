@@ -10,6 +10,8 @@ assert '\\foo':String() == '\'\\\\foo\'';
 assert arr:String() == '[\'a\',2,\'c\']';
 assert obj:String() == '{x:\'a\',y:2,z:\'c\'}';
 
+assert 'foo':Length() == 3;
+
 assert arr:Length() == 3;
 assert arr:Keys() == [0, 1, 2];
 assert arr:Values() == ['a', 2, 'c'];

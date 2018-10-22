@@ -15,7 +15,7 @@ namespace Outcome {
   export namespace String {
     export function multiply(
       s: String,
-      n: Number
+      n: Number,
     ): String {
       // TODO: Check n is an appropriate number (wait for integer
       // implementation?)
@@ -34,6 +34,11 @@ namespace Outcome {
     }
 
     export type MethodMap = {
+      Length: {
+        base: String;
+        name: 'Length';
+        argLength: 0;
+      };
       String: {
         base: String;
         name: 'String';
@@ -48,6 +53,10 @@ namespace Outcome {
         args: [];
         result: String;
       };
+      Length: {
+        args: [];
+        result: Number;
+      };
     };
 
     export const methodImpls: {
@@ -56,13 +65,14 @@ namespace Outcome {
         MethodCallMap[name]
       >;
     } = {
-      // TODO: Escaping
+      Length: (base, args) => Number(base.v.length),
       String: (base, args) => String('\'' + escape(base.v) + '\''),
     };
 
     export const methodArgLengths: {
       [name in keyof MethodMap]: MethodMap[name]['argLength'];
     } = {
+      Length: 0,
       String: 0,
     };
   }
