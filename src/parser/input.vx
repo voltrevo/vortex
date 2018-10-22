@@ -78,7 +78,7 @@ func loops() { // #warn #unused
 
   for (1) {} // TODO: type-error
   for (i := 1; 1; i = i + 1) {}
-  for (i of values) {} // #error #error #error #return-failure #no-inner-return #not-found #for-return #control-clause-prevents-return #scope
+  for (i of values) {} // #error #error #error #return-failure #no-inner-return #not-found #for-return #control-clause-prevents-return #scope #warn #unused
 };
 
 class Point { // #warn #unused

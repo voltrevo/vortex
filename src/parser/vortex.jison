@@ -163,7 +163,7 @@ for
         {$$ = { t: 'for', v: { control: null, block: $2 }, p: L(@$) }}
     | FOR '(' e ')' block
         {$$ = { t: 'for', v: { control: { t: 'condition', v: $3 }, block: $5 }, p: L(@$) }}
-    | FOR '(' identifier OF e ')' block
+    | FOR '(' e OF e ')' block
         {$$ = { t: 'for', v: { control: { t: 'range', v: [$3, $5] }, block: $7 }, p: L(@$) }}
     | FOR '(' topExp ';' e ';' topExp ')' block
         {$$ = { t: 'for', v: { control: { t: 'setup; condition; next', v: [$3, $5, $7] }, block: $9 }, p: L(@$) }}

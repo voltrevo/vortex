@@ -10,4 +10,22 @@ func() { // #warn #no-effect
   return a;
 };
 
+func() { // #warn #no-effect
+  i := 0;
+  i = i + 1; // TODO: doesn't count as using i
+
+  return 3;
+};
+
+func() { // #warn #no-effect
+  i := 0;
+  j := 0;
+
+  // TODO: This circumvents unused checking but it shouldn't
+  i = j;
+  j = i;
+
+  return 3;
+};
+
 return 1;

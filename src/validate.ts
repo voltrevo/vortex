@@ -201,8 +201,7 @@ function validateFunctionScope(
           return [{ t: 'CreateVariable', v: el.v.name }];
         }
 
-        case 'block':
-        case 'for': {
+        case 'block': {
           const children: ScopeItem[] = Syntax.Children(el);
           const hoists: CreateFunction[] = [];
 
@@ -215,20 +214,35 @@ function validateFunctionScope(
             }
           }
 
-          if (el.t === 'for' && el.v.control && el.v.control.t === 'range') {
-            const firstChild = children.shift();
+          return [push, ...hoists, ...children, pop];
+        }
 
-            if (!firstChild || firstChild.t !== 'IDENTIFIER') {
-              throw new Error('Shouldn\'t be possible');
-            }
+        case 'for': {
+          if (el.v.control && el.v.control.t === 'range') {
+            const [target, container] = el.v.control.v;
 
-            children.unshift({
-              t: 'CreateVariable',
-              v: firstChild,
-            });
+            const [file, [start, ]] = target.p;
+            const [, [, end]] = container.p;
+
+            const synthExp: Syntax.Expression = {
+              // TODO: This is a bit of a hack. Syntactically, the := is not
+              // there so there is risk of surfacing a confusing error and
+              // container is not exactly the rhs either.
+              t: ':=',
+              v: [target, container],
+              topExp: true,
+              p: [file, [start, end]] as Syntax.Pos,
+            };
+
+            return [
+              push,
+              synthExp,
+              el.v.block,
+              pop,
+            ];
           }
 
-          return [push, ...hoists, ...children, pop];
+          return [push, ...Syntax.Children(el), pop];
         }
 
         case ':=': {

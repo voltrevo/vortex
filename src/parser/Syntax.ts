@@ -192,7 +192,7 @@ namespace Syntax {
 
   export type ForControlClause = (
     { t: 'condition', v: Expression } |
-    { t: 'range', v: [Identifier, Expression] } |
+    { t: 'range', v: [Expression, Expression] } |
     { t: 'setup; condition; next', v: [Expression, Expression, Expression] } |
     never
   );
@@ -309,12 +309,9 @@ namespace Syntax {
               return [control.v];
             }
 
-            case 'range': {
-              const [identifier, rangeExp] = control.v;
-              return [identifier, rangeExp];
-            }
-
+            case 'range':
             case 'setup; condition; next': {
+              // TODO: Is copying necessary here?
               return [...control.v];
             }
           }
