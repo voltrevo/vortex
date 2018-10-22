@@ -5,15 +5,8 @@ export default function traverse<E, T>(
 ): T[] {
   const results: T[] = [];
 
-  try {
-    for (const child of Children(element)) {
-      results.push(...traverse(child, visit, Children));
-    }
-  } catch (e) {
-    (global as any).res = Children(element);
-    debugger;
-    (global as any).res = Children(element);
-    throw e;
+  for (const child of Children(element)) {
+    results.push(...traverse(child, visit, Children));
   }
 
   results.push(...visit(element));

@@ -7,6 +7,7 @@ namespace Syntax {
 
   export type AssignmentOperator = (
     '+=' |
+    '++=' |
     '-=' |
     '*=' |
     '/=' |
@@ -27,6 +28,7 @@ namespace Syntax {
     // mutation
     const operators = [
       '+=',
+      '++=',
       '-=',
       '*=',
       '/=',
@@ -57,6 +59,7 @@ namespace Syntax {
     '%' |
     '-' |
     '+' |
+    '++' |
     '<' |
     '>' |
     '&' |
@@ -78,8 +81,8 @@ namespace Syntax {
   );
 
   export type UnaryOperator = (
-    '--' |
-    '++' |
+    'unary --' |
+    'unary ++' |
     'unary -' |
     'unary +' |
     never
@@ -231,6 +234,7 @@ namespace Syntax {
       case ':=':
       case '=':
       case '+=':
+      case '++=':
       case '-=':
       case '*=':
       case '/=':
@@ -240,7 +244,8 @@ namespace Syntax {
       case '&=':
       case '^=':
       case '|=':
-      case '--':
+      case 'unary --':
+      case 'unary ++':
       case '++':
       case '+':
       case '*':

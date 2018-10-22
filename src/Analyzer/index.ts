@@ -450,8 +450,8 @@ namespace Analyzer {
       case 'import':
       case 'unary -':
       case 'unary +':
-      case '--':
-      case '++': {
+      case 'unary --':
+      case 'unary ++': {
         const [value] = analyze.subExpression(analyzer, exp);
         return Outcome.JsString(value);
       }
@@ -808,6 +808,7 @@ namespace Analyzer {
           case ':=':
           case '=':
           case '+=':
+          case '++=':
           case '-=':
           case '*=':
           case '/=':
@@ -829,6 +830,7 @@ namespace Analyzer {
                   case ':=': return null;
                   case '=': return null;
                   case '+=': return '+';
+                  case '++=': return '++';
                   case '-=': return '-';
                   case '*=': return '*';
                   case '/=': return '/';
@@ -871,8 +873,8 @@ namespace Analyzer {
             return null;
           }
 
-          case '--':
-          case '++': {
+          case 'unary --':
+          case 'unary ++': {
             const subExp = exp.v;
 
             let out: Outcome;
@@ -905,7 +907,7 @@ namespace Analyzer {
 
             const newValue = {
               t: 'Number' as 'Number',
-              v: out.v + (exp.t === '++' ? 1 : -1)
+              v: out.v + (exp.t === 'unary ++' ? 1 : -1)
             };
 
             az = Analyzer.set(az, subExp.v, newValue);
@@ -946,9 +948,8 @@ namespace Analyzer {
           case 'NULL':
           case 'STRING':
           case 'IDENTIFIER':
-          case '--':
-          case '++':
           case '+':
+          case '++':
           case '*':
           case '-':
           case '<<':
@@ -1375,6 +1376,25 @@ namespace Analyzer {
                 return Outcome.Number(left.v + right.v);
               }
 
+              if (
+                (left.t === 'Unknown' || left.t === 'Number') &&
+                (right.t === 'Unknown' || right.t === 'Number')
+              ) {
+                return Outcome.Unknown();
+              }
+
+              // TODO: Also add arrays, objects element-wise
+
+              return null;
+            },
+          );
+        }
+
+        case '++': {
+          return vanillaOperator(
+            az,
+            exp,
+            (left, right) => {
               if (left.t === 'String' && right.t === 'String') {
                 return Outcome.String(left.v + right.v);
               }
@@ -1416,9 +1436,10 @@ namespace Analyzer {
               }
 
               const forbiddenTypes: Outcome.Value['t'][] = [
+                'Number',
                 'Bool',
                 'Null',
-                'Func', // TODO: define function addition when appropriate
+                'Func', // TODO: define function concatenation when appropriate
               ];
 
               if (
@@ -1922,6 +1943,7 @@ namespace Analyzer {
         case ':=':
         case '=':
         case '+=':
+        case '++=':
         case '-=':
         case '*=':
         case '/=':
@@ -1931,8 +1953,8 @@ namespace Analyzer {
         case '&=':
         case '^=':
         case '|=':
-        case '++':
-        case '--': {
+        case 'unary ++':
+        case 'unary --': {
           throw new Error(
             'Mutation operator in subexpression should have been caught ' +
             'during validation.'

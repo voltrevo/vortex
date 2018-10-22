@@ -31,12 +31,12 @@ func sort(arr, before) {
       leftBefore := before(leftItem, rightItem);
 
       if (leftBefore == true) {
-        result += [leftItem];
+        result ++= [leftItem];
         leftPos++;
 
         if (leftPos == leftEnd) {
           for (rightPos < rightEnd) {
-            result += [rightArr[rightPos]];
+            result ++= [rightArr[rightPos]];
             rightPos++;
           }
 
@@ -45,12 +45,12 @@ func sort(arr, before) {
       }
 
       if (leftBefore == false) {
-        result += [rightItem];
+        result ++= [rightItem];
         rightPos++;
 
         if (rightPos == rightEnd) {
           for (leftPos < leftEnd) {
-            result += [leftArr[leftPos]];
+            result ++= [leftArr[leftPos]];
             leftPos++;
           }
 

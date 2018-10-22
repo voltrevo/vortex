@@ -1,5 +1,5 @@
 sayHello := func(name) {
-  return 'Hi ' + name;
+  return 'Hi ' ++ name;
 };
 
 msg := sayHello('computer');

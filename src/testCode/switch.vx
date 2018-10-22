@@ -5,7 +5,7 @@ func commentary(n) {
     (n > 10) => 'more than 10';
   };
 
-  result += switch (n) {
+  result ++= switch (n) {
     3 => ', prime';
     10 => '';
     20 => '';

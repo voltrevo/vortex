@@ -102,6 +102,12 @@ foo = switch (37) {
   37 => 42;
 };
 
+func concat() { // #warn #unused
+  s := 'foo' ++ 'bar';
+  s ++= 'baz';
+  return s;
+};
+
 return func factorial(n: i32) => switch { // #error #duplicate
   (n < 0) => Error('Invalid input');
   (n == 0) => 1;

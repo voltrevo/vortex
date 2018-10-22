@@ -300,7 +300,7 @@ function validateFunctionScope(
             // TODO: any usage below... needed because typescript can't
             // figure this situation out I think
             mutationTarget = (el as any).v[0];
-          } else if (el.t === '++' || el.t === '--') {
+          } else if (el.t === 'unary ++' || el.t === 'unary --') {
             mutationTarget = el.v;
           }
 
@@ -745,8 +745,8 @@ function isValidTopExpression(e: Syntax.Expression) {
   }
 
   const incDecOperators = [
-    '++',
-    '--',
+    'unary ++',
+    'unary --',
   ];
 
   if (incDecOperators.indexOf(e.t) !== -1) {
@@ -837,6 +837,7 @@ function validateExpression(file: string, exp: Syntax.Expression): Note[] {
     switch (exp.t) {
       case '=':
       case '+=':
+      case '++=':
       case '-=':
       case '*=':
       case '/=':
@@ -899,7 +900,8 @@ function validateExpression(file: string, exp: Syntax.Expression): Note[] {
       case 'NULL':
       case 'STRING':
       case 'IDENTIFIER':
-      case '--':
+      case 'unary --':
+      case 'unary ++':
       case '++':
       case '+':
       case '*':

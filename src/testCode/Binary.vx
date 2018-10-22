@@ -3,7 +3,7 @@ func Binary(n) {
 
   for (n > 0) {
     digit := n % 2;
-    res = [digit] + res;
+    res = [digit] ++ res;
     n -= digit;
     n /= 2;
   }
