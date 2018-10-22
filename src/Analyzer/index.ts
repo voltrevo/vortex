@@ -559,7 +559,7 @@ namespace Analyzer {
           if (out.t === 'unknown') {
             // TODO!: maybeException handling, treat as unknown as error
             // sometimes
-            return [out, az];
+            return [null, az];
           }
 
           if (out.t !== 'bool') {

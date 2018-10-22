@@ -61,7 +61,15 @@ namespace Outcome {
     never
   );
 
-  export function Array(v: Value[]): ValidArray {
+  export function Array(v: Value[]): Array {
+    if (v.every(el => el.cat === 'concrete')) {
+      return ConcreteArray(v as Concrete[]);
+    }
+
+    return ValidArray(v);
+  }
+
+  export function ValidArray(v: Value[]): ValidArray {
     return { cat: 'valid', t: 'array', v };
   }
 
@@ -82,7 +90,7 @@ namespace Outcome {
         }
 
         case 'valid': {
-          const res = Array([]);
+          const res = ValidArray([]);
 
           for (let i = 0; i < n.v; i++) {
             res.v.push(...a.v);
@@ -95,30 +103,26 @@ namespace Outcome {
 
     export type MethodMap = {
       Length: {
-        t: 'array'; // TODO: This may be unnecessary due to base.t
-        name: 'Length';
         base: Array;
+        name: 'Length';
         argLength: 0;
       };
 
       Entries: {
-        t: 'array'; // TODO: This may be unnecessary due to base.t
-        name: 'Entries';
         base: Array;
+        name: 'Entries';
         argLength: 0;
       };
 
       Keys: {
-        t: 'array'; // TODO: This may be unnecessary due to base.t
-        name: 'Keys';
         base: Array;
+        name: 'Keys';
         argLength: 0;
       };
 
       Values: {
-        t: 'array'; // TODO: This may be unnecessary due to base.t
-        name: 'Values';
         base: Array;
+        name: 'Values';
         argLength: 0;
       };
     };
@@ -189,18 +193,28 @@ namespace Outcome {
     return { cat: 'concrete', t: 'object', v };
   }
 
+  export type ValidObject = {
+    cat: 'valid',
+    t: 'object',
+    v: { [key: string]: Value },
+  };
+
+  export function ValidObject(v: { [key: string]: Value }): ValidObject {
+    return { cat: 'valid', t: 'object', v };
+  }
+
   export type Object = (
     ConcreteObject |
-    {
-      cat: 'valid',
-      t: 'object',
-      v: { [key: string]: Value },
-    } |
+    ValidObject |
     never
   );
 
   export function Object(v: { [key: string]: Value }): Object {
-    return { cat: 'valid', t: 'object', v };
+    if (JsObject.keys(v).every(k => v[k].cat === 'concrete')) {
+      return ConcreteObject(v as { [key: string]: Concrete });
+    }
+
+    return ValidObject(v);
   }
 
   export namespace Object {
@@ -262,30 +276,21 @@ namespace Outcome {
 
     export type MethodMap = {
       Entries: {
-        t: 'object'; // TODO: This may be unnecessary due to base.t
         name: 'Entries';
         base: Object;
-        args: [];
         argLength: 0;
-        result: Array;
       };
 
       Keys: {
-        t: 'object'; // TODO: This may be unnecessary due to base.t
-        name: 'Keys';
         base: Object;
-        args: [];
+        name: 'Keys';
         argLength: 0;
-        result: Array;
       };
 
       Values: {
-        t: 'object'; // TODO: This may be unnecessary due to base.t
-        name: 'Values';
         base: Object;
-        args: [];
+        name: 'Values';
         argLength: 0;
-        result: Array;
       };
     };
 
@@ -386,7 +391,6 @@ namespace Outcome {
   );
 
   type MethodBase = {
-    t: {};
     name: {};
     base: {};
     argLength: {};
@@ -514,7 +518,7 @@ namespace Outcome {
             }
 
             case 'method': {
-              return `<method ${funcv.v.t}:${funcv.v.name}>`;
+              return `<method ${funcv.v.base.t}:${funcv.v.name}>`;
             }
           }
         })();
