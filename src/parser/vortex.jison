@@ -82,7 +82,6 @@
 
 %right FUNC
 %right ':=' '=' '+=' '-=' '*=' '/=' '%=' '<<=' '>>=' '&=' '|=' '^='
-%left ':'
 %left '||'
 %left '&&'
 %left '|'
@@ -95,7 +94,7 @@
 %left '*' '/' '%'
 %right '**'
 %left '!' '~' POSTFIX UMINUS UPLUS '++' '--'
-%left '(' ')' '[' ']' '.'
+%left '(' ')' '[' ']' '.' ':'
 
 %start program
 

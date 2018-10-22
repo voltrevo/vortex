@@ -10,7 +10,6 @@ assert obj:Keys() == ['x', 'y', 'z'];
 assert obj:Values() == ['a', 2, 'c'];
 assert obj:Entries() == [['x', 'a'], ['y', 2], ['z', 'c']];
 
-assert '37' == (37:String)();
-// TODO: assert '37' == 37:String();
+assert '37' == 37:String();
 
 return 'done';
