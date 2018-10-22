@@ -1,2 +1,2 @@
 foo := 'bar';
-return foo:length(); // #error #not-implemented
+return foo:length(); // #error #not-found

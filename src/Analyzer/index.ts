@@ -1855,16 +1855,6 @@ namespace Analyzer {
             return [base, az];
           }
 
-          if (base.t !== 'array' && base.t !== 'object') {
-            const ex = Outcome.Exception(
-              exp,
-              ['not-implemented'],
-              `Not implemented: ${base.t} methods`,
-            );
-
-            return [ex, az];
-          }
-
           const func = Outcome.lookupMethod(base, methodIdentifier.v);
 
           if (func === null) {
@@ -2033,7 +2023,7 @@ namespace Analyzer {
 
       if (funcv.t === 'method') {
         return (az: Analyzer) => {
-          const impl = Outcome.methodImpls[funcv.v.t][funcv.v.name];
+          const impl = Outcome.methodImpls[funcv.v.base.t][funcv.v.name];
 
           const out = impl(
             funcv.v.base,

@@ -32,6 +32,40 @@ namespace Outcome {
     return { cat: 'concrete', t: 'number', v };
   }
 
+  export namespace Number {
+    export type MethodMap = {
+      String: {
+        base: Number;
+        name: 'String';
+        argLength: 0;
+      };
+    };
+
+    export type Method = MethodMap[keyof MethodMap];
+
+    export type MethodCallMap = {
+      String: {
+        args: [];
+        result: String;
+      };
+    };
+
+    export const methodImpls: {
+      [name in keyof MethodMap]: MethodImpl<
+        MethodMap[name],
+        MethodCallMap[name]
+      >;
+    } = {
+      String: (base, args) => String(base.v.toString()),
+    };
+
+    export const methodArgLengths: {
+      [name in keyof MethodMap]: MethodMap[name]['argLength'];
+    } = {
+      String: 0,
+    };
+  }
+
   export type Bool = { cat: 'concrete', t: 'bool', v: boolean };
 
   export function Bool(v: boolean): Bool {
@@ -428,16 +462,23 @@ namespace Outcome {
   export type MethodTypeMap = {
     array: Array.Method;
     object: Object.Method;
+    number: Number.Method;
   };
 
   export const methodImpls = {
     array: Array.methodImpls,
     object: Object.methodImpls,
+    number: Number.methodImpls,
+    bool: {},
+    string: {},
   };
 
   export const methodArgLengths = {
     array: Array.methodArgLengths,
     object: Object.methodArgLengths,
+    number: Number.methodArgLengths,
+    bool: {},
+    string: {},
   };
 
   export type FuncMethod = Func & { v: { t: 'method' } };
