@@ -24,7 +24,7 @@ export function validate(file: string, program: Syntax.Program): Note[] {
       subNotes.push(...validateExpression(file, exp));
     }
 
-    if (el.t === 'func') {
+    if (el.t === 'Func') {
       const { body } = el.v;
 
       if (body.t === 'block') {
@@ -133,7 +133,7 @@ type VInfo = {
 
 function validateScope(file: string, block: Syntax.Block) {
   const synthFunction: Syntax.FunctionExpression = {
-    t: 'func',
+    t: 'Func',
     v: {
       name: null,
       args: [],
@@ -189,7 +189,7 @@ function validateFunctionScope(
     el => [el],
     el => {
       switch (el.t) {
-        case 'func':
+        case 'Func':
         case 'Push':
         case 'Pop':
         case 'CreateVariable':
@@ -207,7 +207,7 @@ function validateFunctionScope(
           const hoists: CreateFunction[] = [];
 
           for (const child of children) {
-            if (child.t === 'e' && child.v.t === 'func' && child.v.v.name) {
+            if (child.t === 'e' && child.v.t === 'Func' && child.v.v.name) {
               hoists.push({
                 t: 'CreateVariable',
                 v: child.v,
@@ -225,13 +225,13 @@ function validateFunctionScope(
             traverse<Syntax.Expression, Syntax.Expression>(
               left,
               el => (
-                el.t === 'array' ? [] :
-                el.t === 'object' ? [] :
+                el.t === 'Array' ? [] :
+                el.t === 'Object' ? [] :
                 [el]
               ),
               el => (
-                el.t === 'array' ? el.v :
-                el.t === 'object' ? el.v.map(([k, v]) => v) :
+                el.t === 'Array' ? el.v :
+                el.t === 'Object' ? el.v.map(([k, v]) => v) :
                 []
               ),
             )
@@ -304,7 +304,7 @@ function validateFunctionScope(
             }
           }
 
-          if (el.t === 'object') {
+          if (el.t === 'Object') {
             return el.v.map(([, exp]) => exp);
           }
 
@@ -359,7 +359,7 @@ function validateFunctionScope(
             mutations: item.v.t === 'IDENTIFIER' ? [] : null,
             captures: [],
             hoistInfo: (
-              item.v.t === 'func' && item.v.topExp ?
+              item.v.t === 'Func' && item.v.topExp ?
               { uses: [], closure: null } :
               null
             ),
@@ -632,7 +632,7 @@ function validateFunctionScope(
 
         scope = Scope.set(scope, ident.v, mods);
       }
-    } else if (item.t === 'func') {
+    } else if (item.t === 'Func') {
       const funcValidation = validateFunctionScope(file, scope, item);
 
       notes.push(...funcValidation.notes);
@@ -726,7 +726,7 @@ function isValidTopExpression(e: Syntax.Expression) {
     return true;
   }
 
-  if (e.t === 'func' || e.t === 'class') {
+  if (e.t === 'Func' || e.t === 'class') {
     // TODO: Better message, #unused
     return e.v.name !== null;
   }
@@ -748,7 +748,7 @@ function InvalidAssignmentTargets(
       return;
     }
 
-    if (exp.t === 'array') {
+    if (exp.t === 'Array') {
       if (exp.v.length === 0) {
         invalids.push(exp);
         return;
@@ -761,7 +761,7 @@ function InvalidAssignmentTargets(
       return;
     }
 
-    if (exp.t === 'object') {
+    if (exp.t === 'Object') {
       if (exp.v.length === 0) {
         invalids.push(exp);
         return;
@@ -848,7 +848,7 @@ function validateExpression(file: string, exp: Syntax.Expression): Note[] {
         return null;
       }
 
-      case 'object': {
+      case 'Object': {
         const keys: { [key: string]: true | undefined } = {};
 
         for (const [identifier] of exp.v) {
@@ -895,9 +895,9 @@ function validateExpression(file: string, exp: Syntax.Expression): Note[] {
       case '>=':
       case 'unary -':
       case 'unary +':
-      case 'func':
+      case 'Func':
       case 'functionCall':
-      case 'array':
+      case 'Array':
       case 'subscript':
       case '.':
       case 'methodLookup':

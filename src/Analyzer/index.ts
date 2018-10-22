@@ -442,9 +442,9 @@ namespace Analyzer {
       case 'functionCall':
       case 'methodLookup':
       case 'subscript':
-      case 'func':
-      case 'array':
-      case 'object':
+      case 'Func':
+      case 'Array':
+      case 'Object':
       case 'class':
       case 'switch':
       case 'import':
@@ -494,7 +494,7 @@ namespace Analyzer {
       const statements: Syntax.Statement[] = [];
 
       for (const statement of program.v) {
-        if (statement.t === 'e' && statement.v.t === 'func') {
+        if (statement.t === 'e' && statement.v.t === 'Func') {
           hoists.push(statement.v);
         } else {
           statements.push(statement);
@@ -556,13 +556,13 @@ namespace Analyzer {
             return [out, az];
           }
 
-          if (out.t === 'unknown') {
+          if (out.t === 'Unknown') {
             // TODO!: maybeException handling, treat as unknown as error
             // sometimes
             return [null, az];
           }
 
-          if (out.t !== 'bool') {
+          if (out.t !== 'Bool') {
             az = Analyzer.addNote(az, Note(
               statement.v.p,
               'error',
@@ -597,7 +597,7 @@ namespace Analyzer {
 
           // TODO: unknown -> maybeException?
 
-          if (condOut.t !== 'bool') {
+          if (condOut.t !== 'Bool') {
             const ex = Outcome.Exception(cond,
               ['non-bool-condition', 'if-condition'],
               `Type error: Non-bool condition: ${condOut.t}`,
@@ -654,7 +654,7 @@ namespace Analyzer {
             let condOut: Outcome;
             [condOut, az] = subExpression(az, condExp);
 
-            if (condOut.t !== 'bool') {
+            if (condOut.t !== 'Bool') {
               const ex = Outcome.Exception(
                 condExp,
                 ['non-bool-condition', 'for-condition'],
@@ -854,7 +854,7 @@ namespace Analyzer {
               return null;
             }
 
-            if (out.t !== 'number') {
+            if (out.t !== 'Number') {
               mex = Outcome.Exception(
                 subExp,
                 ['type-error', 'inc-dec'],
@@ -875,7 +875,7 @@ namespace Analyzer {
             }
 
             const newValue = {
-              t: 'number' as 'number',
+              t: 'Number' as 'Number',
               v: out.v + (exp.t === '++' ? 1 : -1)
             };
 
@@ -884,7 +884,7 @@ namespace Analyzer {
             return null;
           }
 
-          case 'func': {
+          case 'Func': {
             const func = Outcome.FuncPlain({ exp, az });
 
             if (!exp.topExp) {
@@ -940,15 +940,15 @@ namespace Analyzer {
           case '>=':
           case 'unary -':
           case 'unary +':
-          case 'array':
-          case 'object':
+          case 'Array':
+          case 'Object':
 
           // Well, this is a top expression but it's processed as a statement, does
           // it really belong here? Something is up TODO.
           case 'import':
 
           case 'switch':
-          case 'func':
+          case 'Func':
           case 'class':
           case 'subscript':
           case 'functionCall':
@@ -974,7 +974,7 @@ namespace Analyzer {
     ): [Outcome.Exception | null, Analyzer] {
       let mex: Outcome.Exception | null = null;
 
-      if (leftExp.t === 'array' || leftExp.t === 'object') {
+      if (leftExp.t === 'Array' || leftExp.t === 'Object') {
         // TODO: Fail earlier / in a more informative way when attempting a
         // destructuring and compound assignment simultaneously?
 
@@ -1001,7 +1001,7 @@ namespace Analyzer {
         }
 
         const numRightValues = (
-          right.t === 'array' ?
+          right.t === 'Array' ?
           right.v.length :
           Object.keys(right.v).length
         );
@@ -1026,7 +1026,7 @@ namespace Analyzer {
 
         for (let i = 0; i < leftExp.v.length; i++) {
           const { key, target } = (() => {
-            if (leftExp.t === 'object') {
+            if (leftExp.t === 'Object') {
               const [{ v: key }, target] = leftExp.v[i];
               return { key, target };
             }
@@ -1099,8 +1099,8 @@ namespace Analyzer {
           }
 
           if (
-            acc.t !== 'string' &&
-            acc.t !== 'number'
+            acc.t !== 'String' &&
+            acc.t !== 'Number'
           ) {
             mex = Outcome.Exception(accessor,
               ['type-error', 'subscript'],
@@ -1161,7 +1161,7 @@ namespace Analyzer {
           return newValue;
         }
 
-        if (oldValue.t === 'object' && typeof index === 'string') {
+        if (oldValue.t === 'Object' && typeof index === 'string') {
           // TODO: Improve typing so that typescript knows this can be
           // undefined instead of using its permissive (incorrect) analysis
           // of index typing.
@@ -1208,7 +1208,7 @@ namespace Analyzer {
           });
         }
 
-        if (oldValue.t === 'array' && typeof index === 'number') {
+        if (oldValue.t === 'Array' && typeof index === 'number') {
           if (
             index !== Math.floor(index) ||
             index < 0
@@ -1342,15 +1342,15 @@ namespace Analyzer {
             az,
             exp,
             (left, right) => {
-              if (left.t === 'number' && right.t === 'number') {
+              if (left.t === 'Number' && right.t === 'Number') {
                 return Outcome.Number(left.v + right.v);
               }
 
-              if (left.t === 'string' && right.t === 'string') {
+              if (left.t === 'String' && right.t === 'String') {
                 return Outcome.String(left.v + right.v);
               }
 
-              if (left.t === 'array' && right.t === 'array') {
+              if (left.t === 'Array' && right.t === 'Array') {
                 if (left.cat === 'concrete' && right.cat === 'concrete') {
                   return Outcome.ConcreteArray([...left.v, ...right.v]);
                 }
@@ -1358,7 +1358,7 @@ namespace Analyzer {
                 return Outcome.Array([...left.v, ...right.v]);
               }
 
-              if (left.t === 'object' && right.t === 'object') {
+              if (left.t === 'Object' && right.t === 'Object') {
                 const leftKeys: { [key: string]: true | undefined } = {};
 
                 for (const key of Object.keys(left.v)) {
@@ -1387,9 +1387,9 @@ namespace Analyzer {
               }
 
               const forbiddenTypes: Outcome.Value['t'][] = [
-                'bool',
-                'null',
-                'func', // TODO: define function addition when appropriate
+                'Bool',
+                'Null',
+                'Func', // TODO: define function addition when appropriate
               ];
 
               if (
@@ -1399,7 +1399,7 @@ namespace Analyzer {
                 return null;
               }
 
-              if (left.t === 'unknown' || right.t === 'unknown') {
+              if (left.t === 'Unknown' || right.t === 'Unknown') {
                 return Outcome.Unknown();
               }
 
@@ -1413,31 +1413,31 @@ namespace Analyzer {
             az,
             exp,
             (left, right) => {
-              if (left.t === 'number' && right.t === 'number') {
+              if (left.t === 'Number' && right.t === 'Number') {
                 return Outcome.Number(left.v * right.v);
               }
 
               const str = (
-                left.t === 'string' ? left :
-                right.t === 'string' ? right :
+                left.t === 'String' ? left :
+                right.t === 'String' ? right :
                 null
               );
 
               const arr = (
-                left.t === 'array' ? left :
-                right.t === 'array' ? right :
+                left.t === 'Array' ? left :
+                right.t === 'Array' ? right :
                 null
               );
 
               const num = (
-                left.t === 'number' ? left :
-                right.t === 'number' ? right :
+                left.t === 'Number' ? left :
+                right.t === 'Number' ? right :
                 null
               );
 
               const obj = (
-                left.t === 'object' ? left :
-                right.t === 'object' ? right :
+                left.t === 'Object' ? left :
+                right.t === 'Object' ? right :
                 null
               );
 
@@ -1458,9 +1458,9 @@ namespace Analyzer {
               }
 
               const forbiddenTypes: Outcome.Value['t'][] = [
-                'bool',
-                'null',
-                'func', // TODO: define function multiplication when appropriate
+                'Bool',
+                'Null',
+                'Func', // TODO: define function multiplication when appropriate
               ];
 
               if (
@@ -1470,7 +1470,7 @@ namespace Analyzer {
                 return null;
               }
 
-              if (left.t === 'unknown' || right.t === 'unknown') {
+              if (left.t === 'Unknown' || right.t === 'Unknown') {
                 return Outcome.Unknown();
               }
 
@@ -1507,13 +1507,13 @@ namespace Analyzer {
             az,
             exp,
             (left, right) => {
-              if (left.t === 'number' && right.t === 'number') {
+              if (left.t === 'Number' && right.t === 'Number') {
                 return Outcome.Number(op(left.v, right.v));
               }
 
               if (
-                (left.t === 'unknown' || right.t === 'unknown') &&
-                (left.t === 'number' || right.t === 'number')
+                (left.t === 'Unknown' || right.t === 'Unknown') &&
+                (left.t === 'Number' || right.t === 'Number')
               ) {
                 return Outcome.Unknown();
               }
@@ -1536,13 +1536,13 @@ namespace Analyzer {
             az,
             exp,
             (left, right) => {
-              if (left.t === 'bool' && right.t === 'bool') {
+              if (left.t === 'Bool' && right.t === 'Bool') {
                 return Outcome.Bool(op(left.v, right.v));
               }
 
               if (
-                (left.t === 'unknown' || right.t === 'unknown') &&
-                (left.t === 'bool' || right.t === 'bool')
+                (left.t === 'Unknown' || right.t === 'Unknown') &&
+                (left.t === 'Bool' || right.t === 'Bool')
               ) {
                 return Outcome.Unknown();
               }
@@ -1564,7 +1564,7 @@ namespace Analyzer {
             az,
             exp,
             (left, right) => {
-              if (left.t === 'unknown' || right.t === 'unknown') {
+              if (left.t === 'Unknown' || right.t === 'Unknown') {
                 return Outcome.Unknown();
               }
 
@@ -1585,11 +1585,11 @@ namespace Analyzer {
           let right: Outcome;
           [right, az] = subExpression(az, exp.v);
 
-          if (right.t === 'exception' || right.t === 'unknown') {
+          if (right.t === 'exception' || right.t === 'Unknown') {
             return [right, az];
           }
 
-          if (right.t !== 'number') {
+          if (right.t !== 'Number') {
             const ex = Outcome.Exception(
               exp,
               ['type-error', 'unary-plus-minus'],
@@ -1603,7 +1603,7 @@ namespace Analyzer {
           return [out, az];
         }
 
-        case 'func': {
+        case 'Func': {
           return [Outcome.FuncPlain({ exp, az }), az];
         }
 
@@ -1618,7 +1618,7 @@ namespace Analyzer {
           return [tout, az];
         }
 
-        case 'array': {
+        case 'Array': {
           const res = Outcome.ValidArray([]);
           let arrConcrete = true;
 
@@ -1663,8 +1663,8 @@ namespace Analyzer {
             return [index, az];
           }
 
-          if (container.t === 'array') {
-            if (index.t !== 'number') {
+          if (container.t === 'Array') {
+            if (index.t !== 'Number') {
               const ex = Outcome.Exception(exp,
                 ['type-error', 'subscript'],
                 `Type error: ${container.t}[${index.t}]`,
@@ -1701,7 +1701,7 @@ namespace Analyzer {
             return [out, az];
           }
 
-          if (container.t === 'object') {
+          if (container.t === 'Object') {
             const out = Outcome.Object.subscript(exp, container, index);
             return [out, az];
           }
@@ -1714,7 +1714,7 @@ namespace Analyzer {
           return [ex, az];
         }
 
-        case 'object': {
+        case 'Object': {
           const res = Outcome.Object({});
           let objConcrete = true;
 
@@ -1780,7 +1780,7 @@ namespace Analyzer {
             let label: Outcome;
             [label, az] = subExpression(az, labelExp);
 
-            if (label.t === 'exception' || label.t === 'unknown') {
+            if (label.t === 'exception' || label.t === 'Unknown') {
               return [label, az];
             }
 
@@ -1811,7 +1811,7 @@ namespace Analyzer {
               }
             }
 
-            if (combinedLabelValue.t !== 'bool') {
+            if (combinedLabelValue.t !== 'Bool') {
               if (testValue !== null) {
                 // If the test value is present, it shouldn't be possible to get
                 // a non-bool here. This check is here because the diagnostic
@@ -1855,7 +1855,7 @@ namespace Analyzer {
           let base: Outcome;
           [base, az] = subExpression(az, baseExp);
 
-          if (base.t === 'exception' || base.t === 'unknown') {
+          if (base.t === 'exception' || base.t === 'Unknown') {
             return [base, az];
           }
 
@@ -1928,21 +1928,21 @@ namespace Analyzer {
 
       func = (() => {
         switch (func.t) {
-          case 'func': {
+          case 'Func': {
             return func;
           }
 
-          case 'unknown':
+          case 'Unknown':
           case 'exception': {
             return func;
           }
 
-          case 'string':
-          case 'number':
-          case 'bool':
-          case 'null':
-          case 'array':
-          case 'object': {
+          case 'Null':
+          case 'Bool':
+          case 'Number':
+          case 'String':
+          case 'Array':
+          case 'Object': {
             return Outcome.Exception(funcExp,
               ['type-error', 'call-non-function'],
               `Type error: attempt to call a ${func.t} as a function`
@@ -1975,13 +1975,13 @@ namespace Analyzer {
 
       checkNull((() => {
         switch (func.t) {
-          case 'unknown': {
+          case 'Unknown': {
             // TODO: maybeException?
             out = Outcome.Unknown();
             return null;
           }
 
-          case 'func': {
+          case 'Func': {
             const funcArgLength = Outcome.Func.ArgLength(func);
             if (funcArgLength !== args.length) {
               const ex = Outcome.Exception(

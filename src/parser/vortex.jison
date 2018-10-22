@@ -183,9 +183,9 @@ import
 
 func
     : FUNC funcName '(' args ')' block
-        {$$ = { t: 'func', v: { name: $2, args: $4, body: $6 }, p: L(@$) }}
+        {$$ = { t: 'Func', v: { name: $2, args: $4, body: $6 }, p: L(@$) }}
     | FUNC funcName '(' args ')' '=>' e %prec FUNC
-        {$$ = { t: 'func', v: { name: $2, args: $4, body: { t: 'expBody', v: $7, p: L(@7) } }, p: L(@$) }}
+        {$$ = { t: 'Func', v: { name: $2, args: $4, body: { t: 'expBody', v: $7, p: L(@7) } }, p: L(@$) }}
     ;
 
 funcName
@@ -380,7 +380,7 @@ atomicExp
 
 array
     : '[' eList ']'
-        {$$ = { t: 'array', v: $2, p: L(@$) }}
+        {$$ = { t: 'Array', v: $2, p: L(@$) }}
     ;
 
 eList
@@ -406,9 +406,9 @@ eListB
 
 object
     : '{' propList '}'
-        {$$ = { t: 'object', v: $2, p: L(@$) }}
+        {$$ = { t: 'Object', v: $2, p: L(@$) }}
     | '{' propListNonEmpty ',' '}'
-        {$$ = { t: 'object', v: $2, p: L(@$) }}
+        {$$ = { t: 'Object', v: $2, p: L(@$) }}
     ;
 
 propList

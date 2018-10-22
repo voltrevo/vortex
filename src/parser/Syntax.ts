@@ -89,14 +89,14 @@ namespace Syntax {
   export type Pos = [string, [CPos, CPos]];
 
   export type Identifier = { t: 'IDENTIFIER', v: string, p: Pos };
-  export type ArrayExpression = { t: 'array', v: Expression[], p: Pos };
+  export type ArrayExpression = { t: 'Array', v: Expression[], p: Pos };
   export type NUMBER = { t: 'NUMBER', v: string, p: Pos };
   export type BOOL = { t: 'BOOL', v: boolean, p: Pos };
   export type NULL = { t: 'NULL', v: null, p: Pos };
   export type STRING = { t: 'STRING', v: string, p: Pos };
 
   export type FunctionExpression = {
-    t: 'func';
+    t: 'Func';
     topExp?: true;
     v: {
       name: Identifier | null,
@@ -146,7 +146,7 @@ namespace Syntax {
     { t: 'subscript', v: [Expression, Expression], p: Pos } |
     FunctionExpression |
     ArrayExpression |
-    { t: 'object', v: [Identifier, Expression][], p: Pos } |
+    { t: 'Object', v: [Identifier, Expression][], p: Pos } |
     ClassExpression |
     { t: 'switch', v: [Expression | null, [Expression, Expression][]], p: Pos } |
     Import |
@@ -278,9 +278,9 @@ namespace Syntax {
 
       case 'arg': { return []; }
       case 'block': { return el.v; }
-      case 'array': { return el.v; }
+      case 'Array': { return el.v; }
 
-      case 'object': {
+      case 'Object': {
         const children: Syntax.Element[] = [];
 
         for (const [identifier, expression] of el.v) {
@@ -361,7 +361,7 @@ namespace Syntax {
         return res;
       }
 
-      case 'func': {
+      case 'Func': {
         const { name, args, body } = el.v;
 
         return [

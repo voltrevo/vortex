@@ -2,17 +2,14 @@ import Analyzer from '.';
 import Note from '../Note';
 import Syntax from '../parser/Syntax';
 
-// TODO: Types start with capitals
-// (primitive types can be lowercase?)
-
 type Outcome = Outcome.Value | Outcome.Exception;
 const JsObject = Object;
 
 namespace Outcome {
-  export type String = { cat: 'concrete', t: 'string', v: string };
+  export type String = { cat: 'concrete', t: 'String', v: string };
 
   export function String(v: string): String {
-    return { cat: 'concrete', t: 'string', v };
+    return { cat: 'concrete', t: 'String', v };
   }
 
   export namespace String {
@@ -70,10 +67,10 @@ namespace Outcome {
     };
   }
 
-  export type Number = { cat: 'concrete', t: 'number', v: number };
+  export type Number = { cat: 'concrete', t: 'Number', v: number };
 
   export function Number(v: number): Number {
-    return { cat: 'concrete', t: 'number', v };
+    return { cat: 'concrete', t: 'Number', v };
   }
 
   export namespace Number {
@@ -110,10 +107,10 @@ namespace Outcome {
     };
   }
 
-  export type Bool = { cat: 'concrete', t: 'bool', v: boolean };
+  export type Bool = { cat: 'concrete', t: 'Bool', v: boolean };
 
   export function Bool(v: boolean): Bool {
-    return { cat: 'concrete', t: 'bool', v };
+    return { cat: 'concrete', t: 'Bool', v };
   }
 
   export namespace Bool {
@@ -150,10 +147,10 @@ namespace Outcome {
     };
   }
 
-  export type Null = { cat: 'concrete', t: 'null', v: null };
+  export type Null = { cat: 'concrete', t: 'Null', v: null };
 
   export function Null(): Null {
-    return { cat: 'concrete', t: 'null', v: null };
+    return { cat: 'concrete', t: 'Null', v: null };
   }
 
   export namespace Null {
@@ -192,14 +189,14 @@ namespace Outcome {
 
   export type ConcreteArray = {
     cat: 'concrete',
-    t: 'array', v: Concrete[],
+    t: 'Array', v: Concrete[],
   };
 
   export function ConcreteArray(v: Concrete[]): ConcreteArray {
-    return { cat: 'concrete', t: 'array', v };
+    return { cat: 'concrete', t: 'Array', v };
   }
 
-  type ValidArray = { cat: 'valid', t: 'array', v: Value[] };
+  type ValidArray = { cat: 'valid', t: 'Array', v: Value[] };
 
   export type Array = (
     ConcreteArray |
@@ -216,7 +213,7 @@ namespace Outcome {
   }
 
   export function ValidArray(v: Value[]): ValidArray {
-    return { cat: 'valid', t: 'array', v };
+    return { cat: 'valid', t: 'Array', v };
   }
 
   export namespace Array {
@@ -342,24 +339,24 @@ namespace Outcome {
 
   export type ConcreteObject = {
     cat: 'concrete',
-    t: 'object',
+    t: 'Object',
     v: { [key: string]: Concrete },
   };
 
   export function ConcreteObject(
     v: { [key: string]: Concrete }
   ): ConcreteObject {
-    return { cat: 'concrete', t: 'object', v };
+    return { cat: 'concrete', t: 'Object', v };
   }
 
   export type ValidObject = {
     cat: 'valid',
-    t: 'object',
+    t: 'Object',
     v: { [key: string]: Value },
   };
 
   export function ValidObject(v: { [key: string]: Value }): ValidObject {
-    return { cat: 'valid', t: 'object', v };
+    return { cat: 'valid', t: 'Object', v };
   }
 
   export type Object = (
@@ -407,8 +404,8 @@ namespace Outcome {
       index: Value,
     ): Outcome {
       if (
-        (obj.t !== 'object' && obj.t !== 'unknown') ||
-        (index.t !== 'string' && index.t !== 'unknown')
+        (obj.t !== 'Object' && obj.t !== 'Unknown') ||
+        (index.t !== 'String' && index.t !== 'Unknown')
       ) {
         return Exception(exp,
           ['type-error', 'object-subscript'],
@@ -416,7 +413,7 @@ namespace Outcome {
         );
       }
 
-      if (obj.t === 'unknown' || index.t === 'unknown') {
+      if (obj.t === 'Unknown' || index.t === 'Unknown') {
         // TODO: maybeException?
         return Unknown();
       }
@@ -519,10 +516,10 @@ namespace Outcome {
     };
   }
 
-  export type Unknown = { cat: 'valid', t: 'unknown', v: null };
+  export type Unknown = { cat: 'valid', t: 'Unknown', v: null };
 
   export function Unknown(): Unknown {
-    return { cat: 'valid', t: 'unknown', v: null };
+    return { cat: 'valid', t: 'Unknown', v: null };
   }
 
   export type Exception = {
@@ -580,7 +577,7 @@ namespace Outcome {
 
   export type Func = {
     cat: 'concrete';
-    t: 'func';
+    t: 'Func';
     v: (
       {
         t: 'plain';
@@ -598,30 +595,30 @@ namespace Outcome {
   };
 
   export type MethodTypeMap = {
-    null: Null.Method;
-    bool: Bool.Method;
-    number: Number.Method;
-    string: String.Method;
-    array: Array.Method;
-    object: Object.Method;
+    Null: Null.Method;
+    Bool: Bool.Method;
+    Number: Number.Method;
+    String: String.Method;
+    Array: Array.Method;
+    Object: Object.Method;
   };
 
   export const methodImpls = {
-    null: Null.methodImpls,
-    bool: Bool.methodImpls,
-    number: Number.methodImpls,
-    string: String.methodImpls,
-    array: Array.methodImpls,
-    object: Object.methodImpls,
+    Null: Null.methodImpls,
+    Bool: Bool.methodImpls,
+    Number: Number.methodImpls,
+    String: String.methodImpls,
+    Array: Array.methodImpls,
+    Object: Object.methodImpls,
   };
 
   export const methodArgLengths = {
-    null: Null.methodArgLengths,
-    bool: Bool.methodArgLengths,
-    number: Number.methodArgLengths,
-    string: String.methodArgLengths,
-    array: Array.methodArgLengths,
-    object: Object.methodArgLengths,
+    Null: Null.methodArgLengths,
+    Bool: Bool.methodArgLengths,
+    Number: Number.methodArgLengths,
+    String: String.methodArgLengths,
+    Array: Array.methodArgLengths,
+    Object: Object.methodArgLengths,
   };
 
   export type FuncMethod = Func & { v: { t: 'method' } };
@@ -636,7 +633,7 @@ namespace Outcome {
 
     return {
       cat: 'concrete',
-      t: 'func',
+      t: 'Func',
       v: {
         t: 'method',
         v: {
@@ -654,14 +651,14 @@ namespace Outcome {
   export type FuncPlain = Func & { v: { t: 'plain' } };
 
   export function Func(v: Func['v']): Func {
-    return { cat: 'concrete', t: 'func', v };
+    return { cat: 'concrete', t: 'Func', v };
   }
 
   export function FuncPlain(v: {
     exp: Syntax.FunctionExpression,
     az: Analyzer
   }): FuncPlain {
-    return { cat: 'concrete', t: 'func', v: { t: 'plain', v } };
+    return { cat: 'concrete', t: 'Func', v: { t: 'plain', v } };
   }
 
   export namespace Func {
@@ -680,12 +677,12 @@ namespace Outcome {
 
   export function JsString(v: Outcome): string {
     switch (v.t) {
-      case 'string': return '\'' + String.escape(v.v) + '\'';
-      case 'number': return v.v.toString();
-      case 'bool': return v.v.toString();
-      case 'null': return 'null';
+      case 'String': return '\'' + String.escape(v.v) + '\'';
+      case 'Number': return v.v.toString();
+      case 'Bool': return v.v.toString();
+      case 'Null': return 'null';
 
-      case 'func': {
+      case 'Func': {
         const funcv = v.v;
 
         return (() => {
@@ -708,7 +705,7 @@ namespace Outcome {
         })();
       }
 
-      case 'array': {
+      case 'Array': {
         switch (v.cat) {
           // These are the same but need to be separated out due to a curious
           // typescript edge case
@@ -717,7 +714,7 @@ namespace Outcome {
         }
       }
 
-      case 'object': return `{${
+      case 'Object': return `{${
         JsObject.keys(v.v).sort().map(key => (
           // TODO: In future keys can be non-identifiers and will need to be
           // quoted
@@ -725,27 +722,27 @@ namespace Outcome {
         )).join(',')
       }}`;
 
-      case 'unknown': return '<unknown>';
+      case 'Unknown': return '<unknown>';
       case 'exception': return `<exception: ${v.v.message}>`;
     }
   }
 
   export function LongString(v: Outcome): string {
     switch (v.t) {
-      case 'string':
-      case 'number':
-      case 'bool':
-      case 'null':
-      case 'func':
-      case 'unknown':
+      case 'String':
+      case 'Number':
+      case 'Bool':
+      case 'Null':
+      case 'Func':
+      case 'Unknown':
       case 'exception':
         return JsString(v);
 
-      case 'array': {
+      case 'Array': {
         // TODO: Unclear why {as any} was necessary below (related to
         // unnecessary switch further down?)
         const isAtomic = (v.v as any).every(
-          (el: Value) => el.t !== 'array' && el.t !== 'object'
+          (el: Value) => el.t !== 'Array' && el.t !== 'Object'
         );
 
         if (isAtomic) {
@@ -772,11 +769,11 @@ namespace Outcome {
         }
       }
 
-      case 'object': {
+      case 'Object': {
         // TODO: Unclear why {as any} was necessary below (related to
         // unnecessary switch further down?)
         const isAtomic = JsObject.keys(v.v).every(
-          key => v.v[key].t !== 'array' && v.v[key].t !== 'object'
+          key => v.v[key].t !== 'Array' && v.v[key].t !== 'Object'
         );
 
         if (isAtomic) {
@@ -800,8 +797,8 @@ namespace Outcome {
     right: Concrete
   ): Bool {
     switch (left.t) {
-      case 'func': {
-        if (right.t !== 'func') {
+      case 'Func': {
+        if (right.t !== 'Func') {
           return Bool(false);
         }
 
@@ -812,8 +809,8 @@ namespace Outcome {
         );
       }
 
-      case 'array': {
-        if (right.t !== 'array' || right.v.length !== left.v.length) {
+      case 'Array': {
+        if (right.t !== 'Array' || right.v.length !== left.v.length) {
           return Bool(false);
         }
 
@@ -828,8 +825,8 @@ namespace Outcome {
         return Bool(true);
       }
 
-      case 'object': {
-        if (right.t !== 'object') {
+      case 'Object': {
+        if (right.t !== 'Object') {
           return Bool(false);
         }
 
@@ -856,10 +853,10 @@ namespace Outcome {
         return Bool(true);
       }
 
-      case 'string':
-      case 'number':
-      case 'bool':
-      case 'null': {
+      case 'String':
+      case 'Number':
+      case 'Bool':
+      case 'Null': {
         return Bool(left.t === right.t);
       }
     }
@@ -878,14 +875,14 @@ namespace Outcome {
     }
 
     switch (left.t) {
-      case 'string':
-      case 'number':
-      case 'bool':
-      case 'null': {
+      case 'String':
+      case 'Number':
+      case 'Bool':
+      case 'Null': {
         return Bool(left.v === right.v);
       }
 
-      case 'func': {
+      case 'Func': {
         // Not defining a way to compare functions right now. In general, it's
         // impossible to tell whether functions behave the same way, so there
         // will have to be null sometimes.
@@ -896,8 +893,8 @@ namespace Outcome {
         // return null;
       }
 
-      case 'array': {
-        if (right.t !== 'array') {
+      case 'Array': {
+        if (right.t !== 'Array') {
           throw new Error('Shouldn\'t be possible');
         }
 
@@ -916,8 +913,8 @@ namespace Outcome {
         return Bool(true);
       }
 
-      case 'object': {
-        if (right.t !== 'object') {
+      case 'Object': {
+        if (right.t !== 'Object') {
           throw new Error('Shouldn\'t be possible');
         }
 
@@ -959,16 +956,16 @@ namespace Outcome {
     }
 
     switch (left.t) {
-      case 'string':
-      case 'number':
-      case 'bool':
-      case 'null': {
+      case 'String':
+      case 'Number':
+      case 'Bool':
+      case 'Null': {
         // Need to use any here because typescript thinks null comparison is bad
         // but we're ok with it and it does the right thing.
         return Bool((left.v as any) < (right.v as any));
       }
 
-      case 'func': {
+      case 'Func': {
         // Not defining a way to compare functions right now.
         return Exception(exp,
           ['type-error', 'function-comparison'],
@@ -976,8 +973,8 @@ namespace Outcome {
         );
       }
 
-      case 'array': {
-        if (right.t !== 'array') {
+      case 'Array': {
+        if (right.t !== 'Array') {
           throw new Error('Shouldn\'t be possible');
         }
 
@@ -1006,8 +1003,8 @@ namespace Outcome {
         return Bool(false);
       }
 
-      case 'object': {
-        if (right.t !== 'object') {
+      case 'Object': {
+        if (right.t !== 'Object') {
           throw new Error('Shouldn\'t be possible');
         }
 
@@ -1044,12 +1041,12 @@ namespace Outcome {
   }
 
   function InvertIfBool<Out extends Outcome>(out: Out): Out {
-    if (out.t !== 'bool') {
+    if (out.t !== 'Bool') {
       return out;
     }
 
     // as Out because typescript incompleteness
-    return { t: 'bool', v: !out.v } as Out;
+    return { t: 'Bool', v: !out.v } as Out;
   }
 
   type ComparisonOp = '==' | '!=' | '<' | '>' | '<=' | '>=';
