@@ -156,8 +156,8 @@ namespace Package {
           tags: ['error', 'syntax'],
           message: e.message.split('\n')[3],
           pos: [file, [
-            [e.hash.loc.first_line, e.hash.loc.first_column],
-            [e.hash.loc.last_line, e.hash.loc.last_column],
+            [e.hash.loc.first_line, e.hash.loc.first_column + 2],
+            [e.hash.loc.last_line, e.hash.loc.last_column + 1],
           ]],
         });
       } else {
