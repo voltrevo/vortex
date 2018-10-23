@@ -179,6 +179,9 @@ namespace Syntax {
     ForStatement |
     Import |
     { t: 'breakpoint', v: null, p: Pos } |
+    { t: 'log.info', v: Expression, p: Pos } |
+    { t: 'log.warn', v: Expression, p: Pos } |
+    { t: 'log.error', v: Expression, p: Pos } |
     never
   );
 
@@ -277,6 +280,9 @@ namespace Syntax {
       case '>=':
       case 'unary -':
       case 'unary +':
+      case 'log.info':
+      case 'log.warn':
+      case 'log.error':
       case 'assert': {
         const value: (
           [Expression, Expression] |
@@ -407,6 +413,9 @@ namespace Syntax {
       case 'e':
       case 'return':
       case 'assert':
+      case 'log.info':
+      case 'log.warn':
+      case 'log.error':
       case 'break':
       case 'breakpoint':
       case 'continue':

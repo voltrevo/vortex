@@ -587,6 +587,30 @@ namespace Analyzer {
           return [null, az];
         }
 
+        case 'log.info':
+        case 'log.warn':
+        case 'log.error': {
+          let out: Outcome;
+          [out, az] = subExpression(az, statement.v);
+
+          const level = (() => {
+            switch (statement.t) {
+              case 'log.info': return 'info' as 'info';
+              case 'log.warn': return 'warn' as 'warn';
+              case 'log.error': return 'error' as 'error';
+            }
+          })();
+
+          az = Analyzer.addNote(az, Note(
+            statement.v.p,
+            level,
+            ['custom'],
+            Outcome.LongString(out),
+          ));
+
+          return [null, az];
+        }
+
         case 'if': {
           const [cond, block] = statement.v;
           let condOut: Outcome;

@@ -66,6 +66,7 @@ namespace Note {
     'warn' |
     'info' |
     'analyzer' |
+    'custom' |
     'validation' |
     'package' |
     'invalid-import-source' |
@@ -149,6 +150,7 @@ namespace Note {
     'warn',
     'info',
     'analyzer',
+    'custom',
     'validation',
     'package',
     'invalid-import-source',

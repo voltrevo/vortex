@@ -15,8 +15,6 @@ TODO: Add tests for every possible note
 TODO: Cross-type comparison operators e.g. :<:
 TODO: Spaceship operator <=>
 TODO: Element-wise arithmetic
-TODO: log.info, log.warn etc
-TODO: analyzer.info, analyzer.error etc
 TODO: assert.static, also are type annotations equivalent to embedded assert.static?
 TODO: enable {x: i32 = 3;} for creation, which generalizes nicely to allow some names to be created by destructuring and not others: {[x: i32, y] = [1, 2]}
 TODO: Count operations in analyzer

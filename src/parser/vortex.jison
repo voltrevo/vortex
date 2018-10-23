@@ -26,6 +26,9 @@
 'null'                return 'NULL'
 'assert'              return 'ASSERT'
 'breakpoint'          return 'BREAKPOINT'
+'log.info'            return 'LOGINFO'
+'log.warn'            return 'LOGWARN'
+'log.error'           return 'LOGERROR'
 [a-zA-Z]\w*           return 'IDENTIFIER'
 ";"                   return ';'
 [0-9]+("."[0-9]+)?\b  return 'NUMBER'
@@ -136,9 +139,7 @@ topExp
 statement
     : topExp ';'
         {$$ = { t: 'e', v: $1, p: L(@$) }}
-    | RETURN opValue ';'
-        {$$ = { t: 'return', v: $2, p: L(@$) }}
-    | RETURN e ';'
+    | RETURN eop ';'
         {$$ = { t: 'return', v: $2, p: L(@$) }}
     | BREAK ';'
         {$$ = { t: 'break', p: L(@$) }}
@@ -154,6 +155,17 @@ statement
         {$$ = { t: 'assert', v: $2, p: L(@$), topExp: true }}
     | BREAKPOINT ';'
         {$$ = { t: 'breakpoint', v: null, p: L(@$) }}
+    | LOG eop ';'
+        {$$ = { t: $1, v: $2, p: L(@$) }}
+    ;
+
+LOG
+    : LOGINFO
+        {$$ = 'log.info'}
+    | LOGWARN
+        {$$ = 'log.warn'}
+    | LOGERROR
+        {$$ = 'log.error'}
     ;
 
 if
@@ -306,10 +318,8 @@ e
         {$$ = { t: 'unary +', v: $2, p: L(@$) }}
     | e '.' identifier
         {$$ = { t: '.', v: [$1, $3], p: L(@$) }}
-    | '(' e ')'
+    | '(' eop ')'
         {$$ = $2;}
-    | '(' opValue ')'
-        {$$ = $2}
     | e '(' eList ')'
         {$$ = { t: 'functionCall', v: [$1, $3], p: L(@$) }}
     | e ':' identifier
@@ -387,6 +397,13 @@ opValue
         {$$ = { t: 'op', v: '|', p: L(@$) }}
     ;
 
+eop
+    : e
+        {$$ = $1}
+    | opValue
+        {$$ = $1}
+    ;
+
 identifier
     : IDENTIFIER
         {$$ = { t: 'IDENTIFIER', v: $1, p: L(@$) }}
@@ -449,13 +466,9 @@ eList
     ;
 
 eListA
-    : opValue
+    : eop
         {$$ = [$1]}
-    | e
-        {$$ = [$1]}
-    | eListB opValue
-        {$$ = [...$1, $2]}
-    | eListB e
+    | eListB eop
         {$$ = [...$1, $2]}
     ;
 
@@ -486,13 +499,9 @@ propListNonEmpty
     ;
 
 prop
-    : identifier ':' opValue
+    : identifier ':' eop
         {$$ = [$1, $3]}
-    | string ':' opValue
-        {$$ = [$1, $3]}
-    | identifier ':' e
-        {$$ = [$1, $3]}
-    | string ':' e
+    | string ':' eop
         {$$ = [$1, $3]}
     | identifier
         {$$ = [$1, $1]}
@@ -569,8 +578,6 @@ switchCases
     ;
 
 switchCase
-    : atomicExp '=>' opValue ';'
-        {$$ = [$1, $3]}
-    | atomicExp '=>' e ';'
+    : atomicExp '=>' eop ';'
         {$$ = [$1, $3]}
     ;
