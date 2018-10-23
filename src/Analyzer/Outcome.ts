@@ -215,6 +215,40 @@ namespace Outcome {
   }
 
   export namespace Array {
+    export function MatrixDimensions(arr: Array): [number, number] | string {
+      if (arr.v.length === 0) {
+        return 'empty Array';
+      }
+
+      let rowLen = 0;
+
+      if (arr.v.length > 0) {
+        const firstRow = arr.v[0];
+
+        if (firstRow.t !== 'Array') {
+          return 'Array with non-array elements';
+        }
+
+        rowLen = firstRow.v.length;
+      }
+
+      for (const row of arr.v.slice(1)) {
+        if (row.t !== 'Array') {
+          return 'Array with non-array elements';
+        }
+
+        if (row.v.length !== rowLen) {
+          return 'Array with inconsistent row length';
+        }
+      }
+
+      return (
+        arr.v.length === 0 ?
+        [0, 0] :
+        [arr.v.length, (arr.v[0] as Array).v.length]
+      );
+    }
+
     export type MethodMap = {
       Length: {
         base: Array;

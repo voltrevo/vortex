@@ -1995,52 +1995,26 @@ namespace Analyzer {
           }
 
           if (base.t === 'Array' && funcv.v.name === 'Transpose') {
-            let rowLen = 0;
+            const dims = Outcome.Array.MatrixDimensions(base);
 
-            if (base.v.length > 0) {
-              const firstRow = base.v[0];
+            if (typeof dims === 'string') {
+              const ex = Outcome.Exception(
+                funcExp,
+                ['type-error'],
+                `Type error: (${dims}):Transpose()`,
+              );
 
-              if (firstRow.t !== 'Array') {
-                const ex = Outcome.Exception(
-                  funcExp,
-                  ['type-error'],
-                  'Type error: (array with non-array elements):Transpose()',
-                );
-
-                return [ex, az];
-              }
-
-              rowLen = firstRow.v.length;
+              return [ex, az];
             }
 
-            for (const row of base.v.slice(1)) {
-              if (row.t !== 'Array') {
-                const ex = Outcome.Exception(
-                  funcExp,
-                  ['type-error'],
-                  'Type error: (array with non-array elements):Transpose()',
-                );
-
-                return [ex, az];
-              }
-
-              if (row.v.length !== rowLen) {
-                const ex = Outcome.Exception(
-                  funcExp,
-                  ['type-error'],
-                  'Type error: (array with inconsistent row length):Transpose()',
-                );
-
-                return [ex, az];
-              }
-            }
+            const [rows, cols] = dims;
 
             const values: Outcome.Array[] = [];
 
-            for (let i = 0; i < rowLen; i++) {
+            for (let i = 0; i < cols; i++) {
               const newRow: Outcome.Value[] = [];
 
-              for (let j = 0; j < base.v.length; j++) {
+              for (let j = 0; j < rows; j++) {
                 newRow.push((base.v[j] as Outcome.Array).v[i]);
               }
 
