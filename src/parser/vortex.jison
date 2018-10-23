@@ -29,7 +29,7 @@
 [a-zA-Z]\w*           return 'IDENTIFIER'
 ";"                   return ';'
 [0-9]+("."[0-9]+)?\b  return 'NUMBER'
-['](\\.|[^'])*[']           return 'STRING'
+['](\\.|[^'])*[']     return 'STRING'
 '=>'                  return '=>'
 "**"                  return '**'
 ":="                  return ':='
@@ -95,7 +95,6 @@
 %left '*' '/' '%'
 %right '**'
 %left '!' '~' POSTFIX UMINUS UPLUS
-%left OPVALUE
 %left '(' ')' '[' ']' '.' ':'
 
 %start program
@@ -137,6 +136,8 @@ topExp
 statement
     : topExp ';'
         {$$ = { t: 'e', v: $1, p: L(@$) }}
+    | RETURN opValue ';'
+        {$$ = { t: 'return', v: $2, p: L(@$) }}
     | RETURN e ';'
         {$$ = { t: 'return', v: $2, p: L(@$) }}
     | BREAK ';'
@@ -307,7 +308,7 @@ e
         {$$ = { t: '.', v: [$1, $3], p: L(@$) }}
     | '(' e ')'
         {$$ = $2;}
-    | '(' opValue ')' %prec OPVALUE
+    | '(' opValue ')'
         {$$ = $2}
     | e '(' eList ')'
         {$$ = { t: 'functionCall', v: [$1, $3], p: L(@$) }}
@@ -448,8 +449,12 @@ eList
     ;
 
 eListA
-    : e
+    : opValue
         {$$ = [$1]}
+    | e
+        {$$ = [$1]}
+    | eListB opValue
+        {$$ = [...$1, $2]}
     | eListB e
         {$$ = [...$1, $2]}
     ;
@@ -481,7 +486,11 @@ propListNonEmpty
     ;
 
 prop
-    : identifier ':' e
+    : identifier ':' opValue
+        {$$ = [$1, $3]}
+    | string ':' opValue
+        {$$ = [$1, $3]}
+    | identifier ':' e
         {$$ = [$1, $3]}
     | string ':' e
         {$$ = [$1, $3]}
@@ -560,6 +569,8 @@ switchCases
     ;
 
 switchCase
-    : atomicExp '=>' e ';'
+    : atomicExp '=>' opValue ';'
+        {$$ = [$1, $3]}
+    | atomicExp '=>' e ';'
         {$$ = [$1, $3]}
     ;
