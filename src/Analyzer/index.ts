@@ -456,6 +456,10 @@ namespace Analyzer {
         return Outcome.JsString(value);
       }
 
+      case 'op': {
+        return '(' + exp.v + ')';
+      }
+
       default: {
         const [left, right] = exp.v;
         return [
@@ -970,6 +974,7 @@ namespace Analyzer {
 
           case 'switch':
           case 'Func':
+          case 'op':
           case 'class':
           case 'subscript':
           case 'functionCall':
@@ -1355,354 +1360,48 @@ namespace Analyzer {
           return [entry.data, az];
         }
 
-        case '+': {
-          function addAtoms(
-            left: Outcome.ValueAtom,
-            right: Outcome.ValueAtom
-          ): Outcome.ValueAtom | null {
-            if (left.t === 'Number' && right.t === 'Number') {
-              return Outcome.Number(left.v + right.v);
-            }
-
-            if (
-              (left.t === 'Unknown' || left.t === 'Number') &&
-              (right.t === 'Unknown' || right.t === 'Number')
-            ) {
-              return Outcome.Unknown();
-            }
-
-            // TODO: Also add arrays, objects element-wise
-
-            return null;
-          }
-
-          function addValues(
-            left: Outcome.Value,
-            right: Outcome.Value,
-          ): Outcome.Value | null {
-            if (
-              left.t === 'Array' ||
-              left.t === 'Object' ||
-              right.t === 'Array' ||
-              right.t === 'Object'
-            ) {
-              if (left.t === 'Array') {
-                if (right.t !== 'Array') {
-                  return null;
-                }
-
-                const len = left.v.length;
-
-                if (right.v.length !== len) {
-                  return null;
-                }
-
-                const values: Outcome.Value[] = [];
-
-                for (let i = 0; i < len; i++) {
-                  const sum = addValues(left.v[i], right.v[i]);
-
-                  if (sum === null) {
-                    return null;
-                  }
-
-                  values.push(sum);
-                }
-
-                return Outcome.Array(values);
-              }
-
-              if (left.t === 'Object') {
-                if (right.t !== 'Object') {
-                  return null;
-                }
-
-                let leftKeys = Object.keys(left.v);
-                let rightKeys = Object.keys(right.v);
-
-                const len = leftKeys.length;
-
-                if (leftKeys.length !== rightKeys.length) {
-                  return null;
-                }
-
-                leftKeys = leftKeys.sort();
-                rightKeys = rightKeys.sort();
-
-                const values: { [key: string]: Outcome.Value } = {};
-
-                for (let i = 0; i < len; i++) {
-                  const key = leftKeys[i];
-
-                  if (rightKeys[i] !== key) {
-                    return null;
-                  }
-
-                  const sum = addValues(left.v[key], right.v[key]);
-
-                  if (sum === null) {
-                    return null;
-                  }
-
-                  values[key] = sum;
-                }
-
-                return Outcome.Object(values);
-              }
-
-              throw new Error('Shouldn\'t be possible');
-            }
-
-            return addAtoms(left, right);
-          }
-
-          return vanillaOperator(
-            az,
-            exp,
-            addValues,
-          );
+        case 'op': {
+          const func = Outcome.FuncOp(exp.v);
+          return [func, az];
         }
 
-        case '++': {
-          return vanillaOperator(
-            az,
-            exp,
-            (left, right) => {
-              if (left.t === 'String' && right.t === 'String') {
-                return Outcome.String(left.v + right.v);
-              }
-
-              if (left.t === 'Array' && right.t === 'Array') {
-                if (left.cat === 'concrete' && right.cat === 'concrete') {
-                  return Outcome.ConcreteArray([...left.v, ...right.v]);
-                }
-
-                return Outcome.Array([...left.v, ...right.v]);
-              }
-
-              if (left.t === 'Object' && right.t === 'Object') {
-                const leftKeys: { [key: string]: true | undefined } = {};
-
-                for (const key of Object.keys(left.v)) {
-                  leftKeys[key] = true;
-                }
-
-                for (const key of Object.keys(right.v)) {
-                  if (leftKeys[key]) {
-                    return Outcome.Exception(exp,
-                      [
-                        'duplicate',
-                        'duplicate-key',
-                        'object-addition',
-                      ],
-                      'Type error: objects cannot be added due to duplicate ' +
-                      'key ' + key,
-                    );
-                  }
-                }
-
-                if (left.cat === 'concrete' && right.cat === 'concrete') {
-                  return Outcome.ConcreteObject({ ...left.v, ...right.v });
-                }
-
-                return Outcome.Object({ ...left.v, ...right.v });
-              }
-
-              const forbiddenTypes: Outcome.Value['t'][] = [
-                'Number',
-                'Bool',
-                'Null',
-                'Func', // TODO: define function concatenation when appropriate
-              ];
-
-              if (
-                forbiddenTypes.indexOf(left.t) !== -1 ||
-                forbiddenTypes.indexOf(right.t) !== -1
-              ) {
-                return null;
-              }
-
-              if (left.t === 'Unknown' || right.t === 'Unknown') {
-                return Outcome.Unknown();
-              }
-
-              return null;
-            },
-          );
-        }
-
-        case '*': {
-          function multiplyValues(
-            left: Outcome.Value,
-            right: Outcome.Value,
-          ): Outcome.Value | null {
-            if (left.t === 'Number' && right.t === 'Number') {
-              return Outcome.Number(left.v * right.v);
-            }
-
-            const maybeNum = (
-              left.t === 'Number' || left.t === 'Unknown' ? left :
-              right.t === 'Number' || right.t === 'Unknown' ? right :
-              null
-            );
-
-            if (maybeNum === null) {
-              return null;
-            }
-
-            const arr = (
-              left.t === 'Array' ? left :
-              right.t === 'Array' ? right :
-              null
-            );
-
-            if (arr !== null) {
-              const values: Outcome.Value[] = [];
-
-              for (const v of arr.v) {
-                const mul = multiplyValues(maybeNum, v);
-
-                if (mul === null) {
-                  return null;
-                }
-
-                values.push(mul);
-              }
-
-              return Outcome.Array(values);
-            }
-
-            const obj = (
-              left.t === 'Object' ? left :
-              right.t === 'Object' ? right :
-              null
-            );
-
-            if (obj !== null) {
-              const values: { [key: string]: Outcome.Value } = {};
-
-              for (const key of Object.keys(obj.v)) {
-                const mul = multiplyValues(maybeNum, obj.v[key]);
-
-                if (mul === null) {
-                  return null;
-                }
-
-                values[key] = mul;
-              }
-
-              return Outcome.Object(values);
-            }
-
-            return null;
-          }
-
-          return vanillaOperator(
-            az,
-            exp,
-            multiplyValues,
-          );
-        }
-
-        // Number only operators (for now)
-        case '-':
+        case '**':
         case '<<':
         case '>>':
-        case '&':
-        case '^':
-        case '|':
-        case '/':
-        case '%':
-        case '**': {
-          const op: (a: number, b: number) => number = (() => {
-            switch (exp.t) {
-              case '-': return (a: number, b: number) => a - b;
-              case '<<': return (a: number, b: number) => a << b;
-              case '>>': return (a: number, b: number) => a >> b;
-              case '&': return (a: number, b: number) => a & b;
-              case '^': return (a: number, b: number) => a ^ b;
-              case '|': return (a: number, b: number) => a | b;
-              case '/': return (a: number, b: number) => a / b;
-              case '%': return (a: number, b: number) => a % b;
-              case '**': return (a: number, b: number) => a ** b;
-            }
-          })();
-
-          return vanillaOperator(
-            az,
-            exp,
-            (left, right) => {
-              if (left.t === 'Number' && right.t === 'Number') {
-                return Outcome.Number(op(left.v, right.v));
-              }
-
-              if (
-                (left.t === 'Unknown' || right.t === 'Unknown') &&
-                (left.t === 'Number' || right.t === 'Number')
-              ) {
-                return Outcome.Unknown();
-              }
-
-              return null;
-            },
-          );
-        }
-
-        case '&&':
-        case '||': {
-          const op: (a: boolean, b: boolean) => boolean = (() => {
-            switch (exp.t) {
-              case '&&': return (a: boolean, b: boolean) => a && b;
-              case '||': return (a: boolean, b: boolean) => a || b;
-            }
-          })();
-
-          return vanillaOperator(
-            az,
-            exp,
-            (left, right) => {
-              if (left.t === 'Bool' && right.t === 'Bool') {
-                return Outcome.Bool(op(left.v, right.v));
-              }
-
-              if (
-                (left.t === 'Unknown' || right.t === 'Unknown') &&
-                (left.t === 'Bool' || right.t === 'Bool')
-              ) {
-                return Outcome.Unknown();
-              }
-
-              return null;
-            },
-          );
-        }
-
+        case '<=':
+        case '>=':
         case '==':
         case '!=':
+        case '&&':
+        case '||':
+        case '*':
+        case '/':
+        case '%':
+        case '-':
+        case '+':
+        case '++':
         case '<':
         case '>':
-        case '<=':
-        case '>=': {
-          const op = exp.t;
+        case '&':
+        case '^':
+        case '|': {
+          let left: Outcome;
+          [left, az] = subExpression(az, exp.v[0]);
 
-          return vanillaOperator(
-            az,
-            exp,
-            (left, right) => {
-              if (left.t === 'Unknown' || right.t === 'Unknown') {
-                return Outcome.Unknown();
-              }
+          if (left.t === 'exception') {
+            return [left, az];
+          }
 
-              if (left.cat === 'valid' || right.cat === 'valid') {
-                // (This case is for objects & arrays that have unknowns)
-                // TODO: Should be possible to sometimes (often?) determine
-                // ordering without concrete array/object.
-                return Outcome.Unknown();
-              }
+          let right: Outcome;
+          [right, az] = subExpression(az, exp.v[1]);
 
-              return Outcome.TypedComparison(exp, op, left, right)
-            },
-          );
+          if (right.t === 'exception') {
+            return [right, az];
+          }
+
+          let value = Outcome.EvalVanillaOperator(exp, exp.t, [left, right]);
+
+          return [value, az];
         }
 
         case 'unary -':
@@ -2282,6 +1981,18 @@ namespace Analyzer {
 
           return [out, az];
         };
+      }
+
+      if (funcv.t === 'op') {
+        const [left, right] = args;
+
+        const out = Outcome.EvalVanillaOperator(
+          funcExp,
+          funcv.v,
+          [left, right]
+        );
+
+        return (az: Analyzer) => [out, az];
       }
 
       return (az: Analyzer) => {

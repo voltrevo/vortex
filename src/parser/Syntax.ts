@@ -65,6 +65,7 @@ namespace Syntax {
     '&' |
     '^' |
     '|' |
+    // TODO: !, ~
     never
   );
 
@@ -109,6 +110,12 @@ namespace Syntax {
     p: Pos;
   };
 
+  export type OpValueExpression = {
+    t: 'op',
+    v: VanillaOperator,
+    p: Pos;
+  };
+
   export type ClassExpression = {
     t: 'class',
     v: {
@@ -148,6 +155,7 @@ namespace Syntax {
     { t: 'methodLookup', v: [Expression, Identifier], p: Pos } |
     { t: 'subscript', v: [Expression, Expression], p: Pos } |
     FunctionExpression |
+    OpValueExpression |
     ArrayExpression |
     { t: 'Object', v: [Identifier | STRING, Expression][], p: Pos } |
     ClassExpression |
@@ -222,6 +230,7 @@ namespace Syntax {
     // TODO: Need an extra layer with .t so there aren't an unmanageable number
     // of cases.
     switch (el.t) {
+      case 'op':
       case 'breakpoint':
       case 'NUMBER':
       case 'BOOL':

@@ -925,6 +925,7 @@ function validateExpression(file: string, exp: Syntax.Expression): Note[] {
       case 'unary -':
       case 'unary +':
       case 'Func':
+      case 'op':
       case 'functionCall':
       case 'Array':
       case 'subscript':

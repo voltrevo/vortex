@@ -649,6 +649,10 @@ namespace Outcome {
         t: 'method';
         v: MethodTypeMap[keyof MethodTypeMap];
       } |
+      {
+        t: 'op';
+        v: Syntax.VanillaOperator;
+      } |
       never
     );
   };
@@ -681,6 +685,11 @@ namespace Outcome {
   };
 
   export type FuncMethod = Func & { v: { t: 'method' } };
+  export type FuncOp = Func & { v: { t: 'op' } };
+
+  export function FuncOp(v: Syntax.VanillaOperator) {
+    return Func({ t: 'op', v });
+  }
 
   export function lookupMethod(base: Value, name: string): FuncMethod | null {
     if (
@@ -730,6 +739,10 @@ namespace Outcome {
         case 'method': {
           return f.v.v.argLength;
         }
+
+        case 'op': {
+          return 2;
+        }
       }
     }
   }
@@ -767,6 +780,10 @@ namespace Outcome {
 
             case 'method': {
               return `<method ${funcv.v.base.t}:${funcv.v.name}>`;
+            }
+
+            case 'op': {
+              return `<operator ${funcv.v}>`;
             }
           }
         })();
@@ -1135,6 +1152,345 @@ namespace Outcome {
       case '<=': return InvertIfBool(TypedLessThan(exp, right, left));
       case '>=': return InvertIfBool(TypedLessThan(exp, left, right));
     }
+  }
+
+  export function EvalVanillaOperator(
+    // TODO: exp Shouldn't be necessary (should add positions as stack unwinds)
+    exp: Syntax.Expression,
+
+    op: Syntax.VanillaOperator,
+    [left, right]: [Outcome.Value, Outcome.Value],
+  ): Outcome {
+    let value: Outcome | null = (() => {
+      switch (op) {
+        case '+': {
+          function addAtoms(
+            // TODO: Fix shadowing
+            left: ValueAtom,
+            right: ValueAtom
+          ): ValueAtom | null {
+            if (left.t === 'Number' && right.t === 'Number') {
+              return Number(left.v + right.v);
+            }
+
+            if (
+              (left.t === 'Unknown' || left.t === 'Number') &&
+              (right.t === 'Unknown' || right.t === 'Number')
+            ) {
+              return Unknown();
+            }
+
+            return null;
+          }
+
+          function addValues(
+            // TODO: Fix shadowing
+            left: Value,
+            right: Value,
+          ): Value | null {
+            if (
+              left.t === 'Array' ||
+              left.t === 'Object' ||
+              right.t === 'Array' ||
+              right.t === 'Object'
+            ) {
+              if (left.t === 'Array') {
+                if (right.t !== 'Array') {
+                  return null;
+                }
+
+                const len = left.v.length;
+
+                if (right.v.length !== len) {
+                  return null;
+                }
+
+                const values: Value[] = [];
+
+                for (let i = 0; i < len; i++) {
+                  const sum = addValues(left.v[i], right.v[i]);
+
+                  if (sum === null) {
+                    return null;
+                  }
+
+                  values.push(sum);
+                }
+
+                return Array(values);
+              }
+
+              if (left.t === 'Object') {
+                if (right.t !== 'Object') {
+                  return null;
+                }
+
+                let leftKeys = JsObject.keys(left.v);
+                let rightKeys = JsObject.keys(right.v);
+
+                const len = leftKeys.length;
+
+                if (leftKeys.length !== rightKeys.length) {
+                  return null;
+                }
+
+                leftKeys = leftKeys.sort();
+                rightKeys = rightKeys.sort();
+
+                const values: { [key: string]: Value } = {};
+
+                for (let i = 0; i < len; i++) {
+                  const key = leftKeys[i];
+
+                  if (rightKeys[i] !== key) {
+                    return null;
+                  }
+
+                  const sum = addValues(left.v[key], right.v[key]);
+
+                  if (sum === null) {
+                    return null;
+                  }
+
+                  values[key] = sum;
+                }
+
+                return Object(values);
+              }
+
+              throw new Error('Shouldn\'t be possible');
+            }
+
+            return addAtoms(left, right);
+          }
+
+          return addValues(left, right);
+        }
+
+        case '++': {
+          if (left.t === 'String' && right.t === 'String') {
+            return String(left.v + right.v);
+          }
+
+          if (left.t === 'Array' && right.t === 'Array') {
+            if (left.cat === 'concrete' && right.cat === 'concrete') {
+              return ConcreteArray([...left.v, ...right.v]);
+            }
+
+            return Array([...left.v, ...right.v]);
+          }
+
+          if (left.t === 'Object' && right.t === 'Object') {
+            const leftKeys: { [key: string]: true | undefined } = {};
+
+            for (const key of JsObject.keys(left.v)) {
+              leftKeys[key] = true;
+            }
+
+            for (const key of JsObject.keys(right.v)) {
+              if (leftKeys[key]) {
+                return Exception(exp,
+                  [
+                    'duplicate',
+                    'duplicate-key',
+                    'object-addition',
+                  ],
+                  'Type error: objects cannot be added due to duplicate ' +
+                  'key ' + key,
+                );
+              }
+            }
+
+            if (left.cat === 'concrete' && right.cat === 'concrete') {
+              return ConcreteObject(JsObject.assign({}, left.v, right.v));
+            }
+
+            return Object(JsObject.assign({}, left.v, right.v));
+          }
+
+          const forbiddenTypes: Value['t'][] = [
+            'Number',
+            'Bool',
+            'Null',
+            'Func', // TODO: define function concatenation when appropriate
+          ];
+
+          if (
+            forbiddenTypes.indexOf(left.t) !== -1 ||
+            forbiddenTypes.indexOf(right.t) !== -1
+          ) {
+            return null;
+          }
+
+          if (left.t === 'Unknown' || right.t === 'Unknown') {
+            return Unknown();
+          }
+
+          return null;
+        }
+
+        case '*': {
+          function multiplyValues(
+            // TODO: Fix shadowing
+            left: Value,
+            right: Value,
+          ): Value | null {
+            if (left.t === 'Number' && right.t === 'Number') {
+              return Number(left.v * right.v);
+            }
+
+            const maybeNum = (
+              left.t === 'Number' || left.t === 'Unknown' ? left :
+              right.t === 'Number' || right.t === 'Unknown' ? right :
+              null
+            );
+
+            if (maybeNum === null) {
+              return null;
+            }
+
+            const arr = (
+              left.t === 'Array' ? left :
+              right.t === 'Array' ? right :
+              null
+            );
+
+            if (arr !== null) {
+              const values: Value[] = [];
+
+              for (const v of arr.v) {
+                const mul = multiplyValues(maybeNum, v);
+
+                if (mul === null) {
+                  return null;
+                }
+
+                values.push(mul);
+              }
+
+              return Array(values);
+            }
+
+            const obj = (
+              left.t === 'Object' ? left :
+              right.t === 'Object' ? right :
+              null
+            );
+
+            if (obj !== null) {
+              const values: { [key: string]: Value } = {};
+
+              for (const key of JsObject.keys(obj.v)) {
+                const mul = multiplyValues(maybeNum, obj.v[key]);
+
+                if (mul === null) {
+                  return null;
+                }
+
+                values[key] = mul;
+              }
+
+              return Object(values);
+            }
+
+            return null;
+          }
+
+          return multiplyValues(left, right);
+        }
+
+        // Number only operators (for now)
+        case '-':
+        case '<<':
+        case '>>':
+        case '&':
+        case '^':
+        case '|':
+        case '/':
+        case '%':
+        case '**': {
+          const impl: (a: number, b: number) => number = (() => {
+            switch (op) {
+              case '-': return (a: number, b: number) => a - b;
+              case '<<': return (a: number, b: number) => a << b;
+              case '>>': return (a: number, b: number) => a >> b;
+              case '&': return (a: number, b: number) => a & b;
+              case '^': return (a: number, b: number) => a ^ b;
+              case '|': return (a: number, b: number) => a | b;
+              case '/': return (a: number, b: number) => a / b;
+              case '%': return (a: number, b: number) => a % b;
+              case '**': return (a: number, b: number) => a ** b;
+            }
+          })();
+
+          if (left.t === 'Number' && right.t === 'Number') {
+            return Number(impl(left.v, right.v));
+          }
+
+          if (
+            (left.t === 'Unknown' || right.t === 'Unknown') &&
+            (left.t === 'Number' || right.t === 'Number')
+          ) {
+            return Unknown();
+          }
+
+          return null;
+        }
+
+        case '&&':
+        case '||': {
+          const impl: (a: boolean, b: boolean) => boolean = (() => {
+            switch (op) {
+              case '&&': return (a: boolean, b: boolean) => a && b;
+              case '||': return (a: boolean, b: boolean) => a || b;
+            }
+          })();
+
+          if (left.t === 'Bool' && right.t === 'Bool') {
+            return Bool(impl(left.v, right.v));
+          }
+
+          if (
+            (left.t === 'Unknown' || right.t === 'Unknown') &&
+            (left.t === 'Bool' || right.t === 'Bool')
+          ) {
+            return Unknown();
+          }
+
+          return null;
+        }
+
+        case '==':
+        case '!=':
+        case '<':
+        case '>':
+        case '<=':
+        case '>=': {
+          if (left.t === 'Unknown' || right.t === 'Unknown') {
+            return Unknown();
+          }
+
+          if (left.cat === 'valid' || right.cat === 'valid') {
+            // (This case is for objects & arrays that have unknowns)
+            // TODO: Should be possible to sometimes (often?) determine
+            // ordering without concrete array/object.
+            return Unknown();
+          }
+
+          return TypedComparison(exp, op, left, right)
+        }
+      }
+    })();
+
+    if (value === null) {
+      value = Exception(
+        exp,
+        ['type-error', 'operator'],
+        `Type error: ${left.t} ${exp.t} ${right.t}`,
+      );
+    }
+
+    return value;
   }
 }
 

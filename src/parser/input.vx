@@ -108,6 +108,8 @@ func concat() { // #warn #unused
   return s;
 };
 
+eight := (+)(2, 6); // #warn #unused
+
 return func factorial(n: i32) => switch { // #error #duplicate
   (n < 0) => Error('Invalid input');
   (n == 0) => 1;
