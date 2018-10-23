@@ -1368,25 +1368,110 @@ namespace Analyzer {
         }
 
         case '+': {
+          function addAtoms(
+            left: Outcome.ValueAtom,
+            right: Outcome.ValueAtom
+          ): Outcome.ValueAtom | null {
+            if (left.t === 'Number' && right.t === 'Number') {
+              return Outcome.Number(left.v + right.v);
+            }
+
+            if (
+              (left.t === 'Unknown' || left.t === 'Number') &&
+              (right.t === 'Unknown' || right.t === 'Number')
+            ) {
+              return Outcome.Unknown();
+            }
+
+            // TODO: Also add arrays, objects element-wise
+
+            return null;
+          }
+
+          function addValues(
+            left: Outcome.Value,
+            right: Outcome.Value,
+          ): Outcome.Value | null {
+            if (
+              left.t === 'Array' ||
+              left.t === 'Object' ||
+              right.t === 'Array' ||
+              right.t === 'Object'
+            ) {
+              if (left.t === 'Array') {
+                if (right.t !== 'Array') {
+                  return null;
+                }
+
+                const len = left.v.length;
+
+                if (right.v.length !== len) {
+                  return null;
+                }
+
+                const values: Outcome.Value[] = [];
+
+                for (let i = 0; i < len; i++) {
+                  const sum = addValues(left.v[i], right.v[i]);
+
+                  if (sum === null) {
+                    return null;
+                  }
+
+                  values.push(sum);
+                }
+
+                return Outcome.Array(values);
+              }
+
+              if (left.t === 'Object') {
+                if (right.t !== 'Object') {
+                  return null;
+                }
+
+                let leftKeys = Object.keys(left.v);
+                let rightKeys = Object.keys(right.v);
+
+                const len = leftKeys.length;
+
+                if (leftKeys.length !== rightKeys.length) {
+                  return null;
+                }
+
+                leftKeys = leftKeys.sort();
+                rightKeys = rightKeys.sort();
+
+                const values: { [key: string]: Outcome.Value } = {};
+
+                for (let i = 0; i < len; i++) {
+                  const key = leftKeys[i];
+
+                  if (rightKeys[i] !== key) {
+                    return null;
+                  }
+
+                  const sum = addValues(left.v[key], right.v[key]);
+
+                  if (sum === null) {
+                    return null;
+                  }
+
+                  values[key] = sum;
+                }
+
+                return Outcome.Object(values);
+              }
+
+              throw new Error('Shouldn\'t be possible');
+            }
+
+            return addAtoms(left, right);
+          }
+
           return vanillaOperator(
             az,
             exp,
-            (left, right) => {
-              if (left.t === 'Number' && right.t === 'Number') {
-                return Outcome.Number(left.v + right.v);
-              }
-
-              if (
-                (left.t === 'Unknown' || left.t === 'Number') &&
-                (right.t === 'Unknown' || right.t === 'Number')
-              ) {
-                return Outcome.Unknown();
-              }
-
-              // TODO: Also add arrays, objects element-wise
-
-              return null;
-            },
+            addValues,
           );
         }
 

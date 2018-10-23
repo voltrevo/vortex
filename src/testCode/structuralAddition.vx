@@ -1,0 +1,17 @@
+assert 'foo' ++ 'bar' == 'foobar';
+assert [1] ++ [2] == [1, 2];
+
+assert [1, 2] + [2, 1] == [3, 3];
+assert [[[[[1]]]]] + [[[[[1]]]]] == [[[[[2]]]]];
+
+assert [{apples: 1}] + [{apples: 1}] == [{apples: 2}];
+assert {apples: 1} ++ {oranges: 1} == {apples: 1, oranges: 1};
+
+assert (
+  [{apples: 2, oranges: 3}] +
+  [{apples: 5, oranges: 1}]
+                            ==
+  [{apples: 7, oranges: 4}]
+);
+
+return 'done';

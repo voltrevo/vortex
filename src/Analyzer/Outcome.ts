@@ -561,10 +561,25 @@ namespace Outcome {
     never
   );
 
+  export type ConcreteAtom = (
+    String |
+    Number |
+    Bool |
+    Null |
+    Func | // TODO: Are functions atoms?
+    never
+  );
+
   export type Value = (
     Concrete |
     Array |
     Object |
+    Unknown |
+    never
+  );
+
+  export type ValueAtom = (
+    ConcreteAtom |
     Unknown |
     never
   );
