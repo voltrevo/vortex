@@ -2002,6 +2002,22 @@ namespace Analyzer {
             return [base, az];
           }
 
+          if (
+            base.t === 'Array' &&
+            base.v.length === 0 &&
+            Outcome.Array.nonEmptyMethods.indexOf(methodIdentifier.v) !== -1
+          ) {
+            // TODO: Is method not found appropriate? Should it be some other
+            // exception?
+            const ex = Outcome.Exception(
+              exp,
+              ['not-found'], // TODO extra tag(s)
+              `Method not found: []:${methodIdentifier.v}`,
+            );
+
+            return [ex, az];
+          }
+
           const func = Outcome.lookupMethod(base, methodIdentifier.v);
 
           if (func === null) {
@@ -2169,12 +2185,16 @@ namespace Analyzer {
       // inside the lambdas below.
       const funcv = func.v;
 
+      // TODO: For non-recursive functions it's probably simpler not to create
+      // a tail call.
+
       if (funcv.t === 'method') {
         return (az: Analyzer) => {
-          const impl = Outcome.methodImpls[funcv.v.base.t][funcv.v.name];
+          const base = funcv.v.base;
+          const impl = Outcome.methodImpls[base.t][funcv.v.name];
 
           const out = impl(
-            funcv.v.base,
+            base,
             // TODO: Should be getting this from argEntries but the
             // special case of zero arguments works fine like this
             [],

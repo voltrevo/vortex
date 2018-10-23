@@ -13,7 +13,6 @@ namespace Outcome {
   }
 
   export namespace String {
-    // TODO: Not sure these are quite right
     export function escape(s: string) {
       return s.replace(/'|\\/g, m => '\\' + m);
     }
@@ -246,7 +245,24 @@ namespace Outcome {
         name: 'String';
         argLength: 0;
       };
+
+      First: {
+        base: Array;
+        name: 'First';
+        argLength: 0;
+      }
+
+      Last: {
+        base: Array;
+        name: 'First';
+        argLength: 0;
+      }
     };
+
+    export const nonEmptyMethods: string[] = [
+      'First',
+      'Last',
+    ];
 
     export type Method = MethodMap[keyof MethodMap];
 
@@ -275,9 +291,19 @@ namespace Outcome {
         args: [];
         result: String;
       };
+
+      First: {
+        args: [];
+        result: Value;
+      };
+
+      Last: {
+        args: [];
+        result: Value;
+      };
     };
 
-    // TODO: First, Last, Head, Tail, map, reduce
+    // TODO: Head, Tail, map, reduce
 
     export const methodImpls: {
       [name in keyof MethodMap]: MethodImpl<
@@ -296,6 +322,20 @@ namespace Outcome {
       )),
       Values: (base, args) => base,
       String: (base, args) => String(JsString(base)),
+      First: (base, args) => {
+        if (base.v.length === 0) {
+          throw new Error('TODO: Should be impossible');
+        }
+
+        return base.v[0];
+      },
+      Last: (base, args) => {
+        if (base.v.length === 0) {
+          throw new Error('TODO: Should be impossible');
+        }
+
+        return base.v[base.v.length - 1];
+      },
     };
 
     export const methodArgLengths: {
@@ -306,6 +346,8 @@ namespace Outcome {
       Keys: 0,
       Values: 0,
       String: 0,
+      First: 0,
+      Last: 0,
     };
   }
 
