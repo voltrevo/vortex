@@ -1163,14 +1163,22 @@ namespace Outcome {
   ): Outcome {
     let value: Outcome | null = (() => {
       switch (op) {
+        case '-':
         case '+': {
+          const impl: (a: number, b: number) => number = (() => {
+            switch (op) {
+              case '-': return (a: number, b: number) => a - b;
+              case '+': return (a: number, b: number) => a + b;
+            }
+          })();
+
           function addAtoms(
             // TODO: Fix shadowing
             left: ValueAtom,
             right: ValueAtom
           ): ValueAtom | null {
             if (left.t === 'Number' && right.t === 'Number') {
-              return Number(left.v + right.v);
+              return Number(impl(left.v, right.v));
             }
 
             if (
@@ -1258,7 +1266,7 @@ namespace Outcome {
                 return Object(values);
               }
 
-              throw new Error('Shouldn\'t be possible');
+              return null;
             }
 
             return addAtoms(left, right);
@@ -1329,18 +1337,29 @@ namespace Outcome {
           return null;
         }
 
+        case '/':
         case '*': {
+          const impl: (a: number, b: number) => number = (() => {
+            switch (op) {
+              case '/': return (a: number, b: number) => a / b;
+              case '*': return (a: number, b: number) => a * b;
+            }
+          })();
+
           function multiplyValues(
             // TODO: Fix shadowing
             left: Value,
             right: Value,
           ): Value | null {
             if (left.t === 'Number' && right.t === 'Number') {
-              return Number(left.v * right.v);
+              return Number(impl(left.v, right.v));
             }
 
             const maybeNum = (
-              left.t === 'Number' || left.t === 'Unknown' ? left :
+              (
+                op === '*' && // Cannot divide with number on left
+                (left.t === 'Number' || left.t === 'Unknown')
+              ) ? left :
               right.t === 'Number' || right.t === 'Unknown' ? right :
               null
             );
@@ -1359,7 +1378,7 @@ namespace Outcome {
               const values: Value[] = [];
 
               for (const v of arr.v) {
-                const mul = multiplyValues(maybeNum, v);
+                const mul = multiplyValues(v, maybeNum);
 
                 if (mul === null) {
                   return null;
@@ -1381,7 +1400,7 @@ namespace Outcome {
               const values: { [key: string]: Value } = {};
 
               for (const key of JsObject.keys(obj.v)) {
-                const mul = multiplyValues(maybeNum, obj.v[key]);
+                const mul = multiplyValues(obj.v[key], maybeNum);
 
                 if (mul === null) {
                   return null;
@@ -1400,24 +1419,20 @@ namespace Outcome {
         }
 
         // Number only operators (for now)
-        case '-':
         case '<<':
         case '>>':
         case '&':
         case '^':
         case '|':
-        case '/':
         case '%':
         case '**': {
           const impl: (a: number, b: number) => number = (() => {
             switch (op) {
-              case '-': return (a: number, b: number) => a - b;
               case '<<': return (a: number, b: number) => a << b;
               case '>>': return (a: number, b: number) => a >> b;
               case '&': return (a: number, b: number) => a & b;
               case '^': return (a: number, b: number) => a ^ b;
               case '|': return (a: number, b: number) => a | b;
-              case '/': return (a: number, b: number) => a / b;
               case '%': return (a: number, b: number) => a % b;
               case '**': return (a: number, b: number) => a ** b;
             }
