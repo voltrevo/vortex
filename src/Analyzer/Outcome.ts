@@ -242,6 +242,10 @@ namespace Outcome {
         }
       }
 
+      if (rowLen === 0) {
+        return 'Array of empty arrays';
+      }
+
       return (
         arr.v.length === 0 ?
         [0, 0] :
@@ -1429,6 +1433,71 @@ namespace Outcome {
           ): Value | null {
             if (left.t === 'Number' && right.t === 'Number') {
               return Number(impl(left.v, right.v));
+            }
+
+            if (left.t === 'Array' && right.t === 'Array') {
+              const leftDims = Array.MatrixDimensions(left);
+
+              if (typeof leftDims === 'string') {
+                return null;
+              }
+
+              const rightDims = Array.MatrixDimensions(right);
+
+              if (rightDims === 'string') {
+                return null;
+              }
+
+              const [leftRows, leftCols] = leftDims;
+              const [rightRows, rightCols] = rightDims;
+
+              if (leftCols !== rightRows) {
+                // TODO: Surface better error
+                return null;
+              }
+
+              const rows: Value[] = [];
+
+              for (let i = 0; i < leftRows; i++) {
+                const row: Value[] = [];
+
+                for (let j = 0; j < rightCols; j++) {
+                  // Know that right.v is non-empty because it wouldn't have
+                  // passed the matrix test otherwise, therefore also know that
+                  // left.v[i].v is non-empty since it has the same length.
+                  let sum: Outcome | null = multiplyValues(
+                    (left.v[i] as Array).v[0],
+                    (right.v[0] as Array).v[j],
+                  );
+
+                  if (sum === null) {
+                    return null;
+                  }
+
+                  for (let k = 1; k < leftCols; k++) {
+                    const product = multiplyValues(
+                      (left.v[i] as Array).v[k],
+                      (right.v[k] as Array).v[j]
+                    );
+
+                    if (product === null) {
+                      return null;
+                    }
+
+                    sum = EvalVanillaOperator(exp, '+', [sum, product]);
+
+                    if (sum.t === 'exception') {
+                      return null;
+                    }
+                  }
+
+                  row.push(sum);
+                }
+
+                rows.push(Array(row));
+              }
+
+              return Array(rows);
             }
 
             const maybeNum = (
