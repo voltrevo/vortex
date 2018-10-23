@@ -1,8 +1,8 @@
 TODO: Fix output formatting bug for type errors in imports (and position issue?)
 TODO: Fix ! operator
+TODO: Allow object keys to be any functionless value
 TODO: String interpolation
 TODO: Raw strings
-TODO: Object -> Map (keys can be any functionless vortex value)
 TODO: Handle importing invalid files
 TODO: Naming consistency module vs file
 TODO: Argument destructuring
@@ -20,7 +20,6 @@ TODO: assert.static, also are type annotations equivalent to embedded assert.sta
 TODO: enable {x: i32 = 3;} for creation, which generalizes nicely to allow some names to be created by destructuring and not others: {[x: i32, y] = [1, 2]}
 TODO: Count operations in analyzer
 TODO: implement: if (foo := maybeFoo(); foo != null) { return foo; }
-TODO: Do something about confusing info labels for compile time in vim (can't ale render infos differently than warnings?)
 TODO: 0b 0x 0o literals (allow floats and e, e.g. 0b1.1e5 == 48 (what to do about e in hex?))
 TODO: Scope validation for class syntax
 TODO: Implement TODO prioritization and sorting
