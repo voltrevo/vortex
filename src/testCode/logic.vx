@@ -1,0 +1,37 @@
+func logic(op, a, b) => switch (op) {
+  'not' => switch (a) {
+    true => false;
+    false => true;
+  };
+
+  'and' => switch ([a, b]) {
+    [false, false] => false;
+    [false, true] => false;
+    [true, false] => false;
+    [true, true] => true;
+  };
+
+  'nand' => logic('not', logic('and', a, b), null);
+
+  'or' => switch ([a, b]) {
+    [false, false] => false;
+    [false, true] => true;
+    [true, false] => true;
+    [true, true] => true;
+  };
+
+  'nor' => logic('not', logic('or', a, b), null);
+
+  'xor' => switch ([a, b]) {
+    [false, false] => false;
+    [false, true] => true;
+    [true, false] => true;
+    [true, true] => false;
+  };
+
+  'nxor' => logic('not', logic('xor', a, b), null);
+};
+
+assert logic('nxor', true, true) == true;
+
+return 'done';
