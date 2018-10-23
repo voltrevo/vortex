@@ -1,0 +1,2 @@
+assert [1, 2, 3, 4]:reduce(func(a, b) => a + b) == 10;
+return 'done';

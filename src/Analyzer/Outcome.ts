@@ -275,6 +275,18 @@ namespace Outcome {
         name: 'map';
         argLength: 1;
       };
+
+      reduce: {
+        base: Array;
+        name: 'reduce';
+        argLength: 1;
+      };
+
+      reduceFrom: {
+        base: Array;
+        name: 'reduceFrom';
+        argLength: 2;
+      };
     };
 
     export const nonEmptyMethods: string[] = [
@@ -282,6 +294,7 @@ namespace Outcome {
       'Last',
       'Head',
       'Tail',
+      'reduce',
     ];
 
     export type Method = MethodMap[keyof MethodMap];
@@ -336,9 +349,17 @@ namespace Outcome {
         args: [Func];
         result: Array;
       };
-    };
 
-    // TODO: reduce
+      reduce: {
+        args: [Func];
+        result: Array;
+      };
+
+      reduceFrom: {
+        args: [Value, Func];
+        result: Array;
+      };
+    };
 
     export const methodImpls: {
       [name in keyof MethodMap]: MethodImpl<
@@ -361,7 +382,9 @@ namespace Outcome {
       Last: (base, []) => base.v[base.v.length - 1],
       Head: (base, []) => Array(base.v.slice(0, base.v.length - 1)),
       Tail: (base, []) => Array(base.v.slice(1, base.v.length)),
-      map: () => { throw new Error('Needs special implementation'); }
+      map: () => { throw new Error('Needs special implementation'); },
+      reduce: () => { throw new Error('Needs special implementation'); },
+      reduceFrom: () => { throw new Error('Needs special implementation'); },
     };
 
     export const methodArgLengths: {
@@ -377,6 +400,8 @@ namespace Outcome {
       Head: 0,
       Tail: 0,
       map: 1,
+      reduce: 1,
+      reduceFrom: 2,
     };
   }
 

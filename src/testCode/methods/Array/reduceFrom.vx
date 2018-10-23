@@ -1,0 +1,7 @@
+assert [
+  func(x) => 2 * x,
+  func(x) => x + 1,
+  func(x) => -x,
+]:reduceFrom(3, func(x, f) => f(x)) == -7;
+
+return 'done';

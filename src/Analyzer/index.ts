@@ -2167,13 +2167,15 @@ namespace Analyzer {
         return (az: Analyzer) => {
           const base = funcv.v.base;
 
+          // TODO: These special methods should be defined in the core library
+          // instead. Also could do with moving elsewhere at least.
           if (base.t === 'Array' && funcv.v.name === 'map') {
             const mapper = args[0];
 
             if (mapper.t !== 'Func') {
               const ex = Outcome.Exception(funcExp,
                 ['type-error', 'call-non-function'],
-                `Type error: attempt to call a ${func.t} as a function`
+                `Type error: attempt to call a ${mapper.t} as a function`
               );
 
               return [ex, az];
@@ -2199,6 +2201,76 @@ namespace Analyzer {
             return [out, az];
           }
 
+          // TODO: Reduce duplication with reduceFrom
+          if (base.t === 'Array' && funcv.v.name === 'reduce') {
+            const reducer = args[0];
+
+            if (reducer.t !== 'Func') {
+              const ex = Outcome.Exception(funcExp,
+                ['type-error', 'call-non-function'],
+                `Type error: attempt to call a ${reducer.t} as a function`
+              );
+
+              return [ex, az];
+            }
+
+            // Should know that base is non-empty
+            let value = base.v[0];
+
+            for (const el of base.v.slice(1)) {
+              let tout: TailCall | Outcome = TailCall(
+                funcExp,
+                reducer,
+                [value, el],
+              );
+
+              while (typeof tout === 'function') {
+                [tout, az] = tout(az);
+              }
+
+              if (tout.t === 'exception') {
+                return [tout, az];
+              }
+
+              value = tout;
+            }
+
+            return [value, az];
+          }
+
+          if (base.t === 'Array' && funcv.v.name === 'reduceFrom') {
+            let [value, reducer] = args;
+
+            if (reducer.t !== 'Func') {
+              const ex = Outcome.Exception(funcExp,
+                ['type-error', 'call-non-function'],
+                `Type error: attempt to call a ${reducer.t} as a function`
+              );
+
+              return [ex, az];
+            }
+
+            for (const el of base.v) {
+              let tout: TailCall | Outcome = TailCall(
+                funcExp,
+                reducer,
+                [value, el],
+              );
+
+              while (typeof tout === 'function') {
+                [tout, az] = tout(az);
+              }
+
+              if (tout.t === 'exception') {
+                return [tout, az];
+              }
+
+              value = tout;
+            }
+
+            return [value, az];
+          }
+
           const impl = Outcome.methodImpls[base.t][funcv.v.name];
 
           const out = impl(
@@ -2210,12 +2282,6 @@ namespace Analyzer {
 
           return [out, az];
         };
-
-        return Outcome.Exception(
-          funcExp,
-          ['not-implemented'],
-          'Not implemented ' + Outcome.JsString(func),
-        );
       }
 
       return (az: Analyzer) => {
