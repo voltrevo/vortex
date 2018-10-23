@@ -1729,6 +1729,20 @@ namespace Analyzer {
             return [ex, az];
           }
 
+          if (base.t === 'Array' && methodIdentifier.v === 'Transpose') {
+            const dims = Outcome.Array.MatrixDimensions(base);
+
+            if (typeof dims === 'string') {
+              const ex = Outcome.Exception(
+                exp,
+                ['not-found'], // TODO extra tag(s)
+                `Method not found: (${dims}):Transpose`,
+              );
+
+              return [ex, az];
+            }
+          }
+
           const func = Outcome.lookupMethod(base, methodIdentifier.v);
 
           if (func === null) {
@@ -1998,13 +2012,7 @@ namespace Analyzer {
             const dims = Outcome.Array.MatrixDimensions(base);
 
             if (typeof dims === 'string') {
-              const ex = Outcome.Exception(
-                funcExp,
-                ['type-error'],
-                `Type error: (${dims}):Transpose()`,
-              );
-
-              return [ex, az];
+              throw new Error('Shouldn\'t be possible');
             }
 
             const [rows, cols] = dims;
