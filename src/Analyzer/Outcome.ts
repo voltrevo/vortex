@@ -287,6 +287,24 @@ namespace Outcome {
         name: 'reduceFrom';
         argLength: 2;
       };
+
+      Row: {
+        base: Array;
+        name: 'Row';
+        argLength: 0;
+      };
+
+      Column: {
+        base: Array;
+        name: 'Column';
+        argLength: 0;
+      };
+
+      Transpose: {
+        base: Array;
+        name: 'Transpose';
+        argLength: 0;
+      };
     };
 
     export const nonEmptyMethods: string[] = [
@@ -359,6 +377,21 @@ namespace Outcome {
         args: [Value, Func];
         result: Array;
       };
+
+      Row: {
+        args: [Value, Func];
+        result: Array;
+      };
+
+      Column: {
+        args: [Value, Func];
+        result: Array;
+      };
+
+      Transpose: {
+        args: [Value, Func];
+        result: Array;
+      };
     };
 
     export const methodImpls: {
@@ -385,6 +418,12 @@ namespace Outcome {
       map: () => { throw new Error('Needs special implementation'); },
       reduce: () => { throw new Error('Needs special implementation'); },
       reduceFrom: () => { throw new Error('Needs special implementation'); },
+      Row: (base, []) => Array([base]),
+      Column: (base, []) => (Array(
+        // TODO: Unclear why {as any} was necessary below
+        (base as any).v.map((v: Value) => Array([v]))
+      )),
+      Transpose: () => { throw new Error('Needs special implementation'); },
     };
 
     export const methodArgLengths: {
@@ -402,6 +441,9 @@ namespace Outcome {
       map: 1,
       reduce: 1,
       reduceFrom: 2,
+      Row: 0,
+      Column: 0,
+      Transpose: 0,
     };
   }
 

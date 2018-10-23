@@ -1994,6 +1994,64 @@ namespace Analyzer {
             return [value, az];
           }
 
+          if (base.t === 'Array' && funcv.v.name === 'Transpose') {
+            let rowLen = 0;
+
+            if (base.v.length > 0) {
+              const firstRow = base.v[0];
+
+              if (firstRow.t !== 'Array') {
+                const ex = Outcome.Exception(
+                  funcExp,
+                  ['type-error'],
+                  'Type error: (array with non-array elements):Transpose()',
+                );
+
+                return [ex, az];
+              }
+
+              rowLen = firstRow.v.length;
+            }
+
+            for (const row of base.v.slice(1)) {
+              if (row.t !== 'Array') {
+                const ex = Outcome.Exception(
+                  funcExp,
+                  ['type-error'],
+                  'Type error: (array with non-array elements):Transpose()',
+                );
+
+                return [ex, az];
+              }
+
+              if (row.v.length !== rowLen) {
+                const ex = Outcome.Exception(
+                  funcExp,
+                  ['type-error'],
+                  'Type error: (array with inconsistent row length):Transpose()',
+                );
+
+                return [ex, az];
+              }
+            }
+
+            const values: Outcome.Array[] = [];
+
+            for (let i = 0; i < rowLen; i++) {
+              const newRow: Outcome.Value[] = [];
+
+              for (let j = 0; j < base.v.length; j++) {
+                newRow.push((base.v[j] as Outcome.Array).v[i]);
+              }
+
+              values.push(Outcome.Array(newRow));
+            }
+
+            const value = Outcome.Array(values);
+
+            return [value, az];
+          }
+
           const impl = Outcome.methodImpls[base.t][funcv.v.name];
 
           const out = impl(
