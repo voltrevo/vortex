@@ -83,12 +83,12 @@ namespace Analyzer {
   );
 
   export type ScopeEntry = {
-    origin: Syntax.Element;
+    origin: 0;
     data: Outcome.Value | RefValue;
   };
 
   export type ScopeValueEntry = {
-    origin: Syntax.Element;
+    origin: 0;
     data: Outcome.Value;
   };
 
@@ -119,7 +119,7 @@ namespace Analyzer {
       // The intention is {return [entry, az]} but a limitation in typescript
       // requires it to be reconstructed like this.
       const entryCopy = {
-        origin: entry.origin,
+        origin: 0 as 0,
         data: entry.data,
       };
 
@@ -176,10 +176,10 @@ namespace Analyzer {
   export function add(
     analyzer: Analyzer,
     name: string,
-    entry: ST['entry'],
+    data: ST['entry']['data'],
   ): Analyzer {
     return { ...analyzer,
-      scope: Scope.add(analyzer.scope, name, entry),
+      scope: Scope.add(analyzer.scope, name, { origin: 0, data }),
     };
   }
 
@@ -508,12 +508,9 @@ namespace Analyzer {
         }
 
         az = Analyzer.add(az, hoist.v.name.v, {
-          origin: hoist,
-          data: {
-            cat: 'ref',
-            t: 'func-ref',
-            v: hoist,
-          },
+          cat: 'ref',
+          t: 'func-ref',
+          v: hoist,
         });
       }
 
@@ -771,12 +768,9 @@ namespace Analyzer {
           const [importIdentifier] = statement.v;
 
           az = Analyzer.add(az, importIdentifier.v, {
-            origin: importIdentifier,
-            data: {
-              cat: 'ref',
-              t: 'import-ref',
-              v: statement,
-            },
+            cat: 'ref',
+            t: 'import-ref',
+            v: statement,
           });
 
           return [null, az];
@@ -924,10 +918,7 @@ namespace Analyzer {
             }
 
             if (exp.v.name) {
-              az = Analyzer.add(az, exp.v.name.v, {
-                origin: exp,
-                data: func,
-              });
+              az = Analyzer.add(az, exp.v.name.v, func);
             }
 
             return null;
@@ -1164,10 +1155,7 @@ namespace Analyzer {
           // leftExp would also work, but typescript doesn't know
           leftBaseExp.v,
 
-          {
-            origin: leftExp,
-            data: right,
-          },
+          right,
         );
 
         return [null, az];
@@ -2115,7 +2103,7 @@ namespace Analyzer {
         return [func, az];
       }
 
-      const args: ScopeValueEntry[] = [];
+      const args: Outcome.Value[] = [];
 
       for (const argExp of argExps) {
         let arg: Outcome;
@@ -2125,49 +2113,36 @@ namespace Analyzer {
           return [arg, az];
         }
 
-        args.push({
-          origin: argExp,
-          data: arg,
-        });
+        args.push(arg);
+      }
+
+      if (func.t === 'Unknown') {
+        return [Outcome.Unknown(), az];
       }
 
       let out: TailCall | Outcome | null = null;
 
-      checkNull((() => {
-        switch (func.t) {
-          case 'Unknown': {
-            // TODO: maybeException?
-            out = Outcome.Unknown();
-            return null;
-          }
+      const funcArgLength = Outcome.Func.ArgLength(func);
 
-          case 'Func': {
-            const funcArgLength = Outcome.Func.ArgLength(func);
-            if (funcArgLength !== args.length) {
-              const ex = Outcome.Exception(
-                exp,
-                ['type-error', 'arguments-length-mismatch'],
-                [
-                  'Arguments length mismatch: ',
-                  Outcome.JsString(func),
-                  ' requires ',
-                  funcArgLength,
-                  ' arguments but ',
-                  args.length,
-                  ' were provided'
-                ].join(''),
-              );
+      if (funcArgLength !== args.length) {
+        const ex = Outcome.Exception(
+          exp,
+          ['type-error', 'arguments-length-mismatch'],
+          [
+            'Arguments length mismatch: ',
+            Outcome.JsString(func),
+            ' requires ',
+            funcArgLength,
+            ' arguments but ',
+            args.length,
+            ' were provided'
+          ].join(''),
+        );
 
-              out = ex;
-              return null;
-            }
-
-            out = TailCall(funcExp, func, args);
-
-            return null;
-          }
-        }
-      })());
+        out = ex;
+      } else {
+        out = TailCall(funcExp, func, args);
+      }
 
       if (out === null) {
         throw new Error('Shouldn\'t be possible');
@@ -2179,7 +2154,7 @@ namespace Analyzer {
     export function TailCall(
       funcExp: Syntax.Expression,
       func: Outcome.Func,
-      argEntries: ScopeValueEntry[],
+      args: Outcome.Value[],
     ): TailCall | Outcome.Exception {
       // This is here because typescript forgets the narrowed type of func
       // inside the lambdas below.
@@ -2191,6 +2166,39 @@ namespace Analyzer {
       if (funcv.t === 'method') {
         return (az: Analyzer) => {
           const base = funcv.v.base;
+
+          if (base.t === 'Array' && funcv.v.name === 'map') {
+            const mapper = args[0];
+
+            if (mapper.t !== 'Func') {
+              const ex = Outcome.Exception(funcExp,
+                ['type-error', 'call-non-function'],
+                `Type error: attempt to call a ${func.t} as a function`
+              );
+
+              return [ex, az];
+            }
+
+            const values: Outcome.Value[] = [];
+
+            for (const el of base.v) {
+              let tout: TailCall | Outcome = TailCall(funcExp, mapper, [el]);
+
+              while (typeof tout === 'function') {
+                [tout, az] = tout(az);
+              }
+
+              if (tout.t === 'exception') {
+                return [tout, az];
+              }
+
+              values.push(tout);
+            }
+
+            const out = Outcome.Array(values);
+            return [out, az];
+          }
+
           const impl = Outcome.methodImpls[base.t][funcv.v.name];
 
           const out = impl(
@@ -2221,22 +2229,19 @@ namespace Analyzer {
           funcAz = Analyzer.add(
             funcAz,
             funcv.v.exp.v.name.v,
-            {
-              origin: funcv.v.exp,
-              data: func,
-            },
+            func,
           );
         }
 
-        for (let i = 0; i < argEntries.length; i++) {
+        for (let i = 0; i < args.length; i++) {
           // TODO: Argument destructuring
-          const argEntry = argEntries[i];
+          const arg = args[i];
           const [argIdentifier] = funcv.v.exp.v.args[i].v;
 
           funcAz = Analyzer.add(
             funcAz,
             argIdentifier.v,
-            argEntry,
+            arg,
           );
         }
 

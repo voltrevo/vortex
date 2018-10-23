@@ -250,25 +250,31 @@ namespace Outcome {
         base: Array;
         name: 'First';
         argLength: 0;
-      }
+      };
 
       Last: {
         base: Array;
         name: 'First';
         argLength: 0;
-      }
+      };
 
       Head: {
         base: Array;
         name: 'Head';
         argLength: 0;
-      }
+      };
 
       Tail: {
         base: Array;
         name: 'Tail';
         argLength: 0;
-      }
+      };
+
+      map: {
+        base: Array;
+        name: 'map';
+        argLength: 1;
+      };
     };
 
     export const nonEmptyMethods: string[] = [
@@ -325,9 +331,14 @@ namespace Outcome {
         args: [];
         result: Array;
       };
+
+      map: {
+        args: [Func];
+        result: Array;
+      };
     };
 
-    // TODO: map, reduce
+    // TODO: reduce
 
     export const methodImpls: {
       [name in keyof MethodMap]: MethodImpl<
@@ -335,21 +346,22 @@ namespace Outcome {
         MethodCallMap[name]
       >;
     } = {
-      Length: (base, args) => Number(base.v.length),
-      Entries: (base, args) => (Array(
+      Length: (base, []) => Number(base.v.length),
+      Entries: (base, []) => (Array(
         // TODO: Unclear why {as any} was necessary below
         (base as any).v.map((v: Value, i: number) => Array([Number(i), v]))
       )),
-      Keys: (base, args) => (Array(
+      Keys: (base, []) => (Array(
         // TODO: Unclear why {as any} was necessary below
         (base as any).v.map((v: Value, i: number) => Number(i))
       )),
-      Values: (base, args) => base,
-      String: (base, args) => String(JsString(base)),
-      First: (base, args) => base.v[0],
-      Last: (base, args) => base.v[base.v.length - 1],
-      Head: (base, args) => Array(base.v.slice(0, base.v.length - 1)),
-      Tail: (base, args) => Array(base.v.slice(1, base.v.length)),
+      Values: (base, []) => base,
+      String: (base, []) => String(JsString(base)),
+      First: (base, []) => base.v[0],
+      Last: (base, []) => base.v[base.v.length - 1],
+      Head: (base, []) => Array(base.v.slice(0, base.v.length - 1)),
+      Tail: (base, []) => Array(base.v.slice(1, base.v.length)),
+      map: () => { throw new Error('Needs special implementation'); }
     };
 
     export const methodArgLengths: {
@@ -364,6 +376,7 @@ namespace Outcome {
       Last: 0,
       Head: 0,
       Tail: 0,
+      map: 1,
     };
   }
 
