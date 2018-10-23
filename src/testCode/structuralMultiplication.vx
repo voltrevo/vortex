@@ -1,4 +1,4 @@
-// TODO: assert [1, 1] * 3 == [3, 3];
+assert [1, 1] * 3 == [3, 3];
 // TODO: assert [[2, 2]] * [[2], [2]] == [[8]];
 
 return 'done';

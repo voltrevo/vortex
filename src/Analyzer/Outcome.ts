@@ -13,17 +13,6 @@ namespace Outcome {
   }
 
   export namespace String {
-    export function multiply(
-      s: String,
-      n: Number,
-    ): String {
-      // TODO: Check n is an appropriate number (wait for integer
-      // implementation?)
-      return String(s.v.repeat(n.v));
-    }
-  }
-
-  export namespace String {
     // TODO: Not sure these are quite right
     export function escape(s: string) {
       return s.replace(/'|\\/g, m => '\\' + m);
@@ -227,33 +216,6 @@ namespace Outcome {
   }
 
   export namespace Array {
-    export function multiply(a: Array, n: Number): Array {
-      // TODO: Check n is an appropriate number (wait for integer
-      // implementation?)
-
-      switch (a.cat) {
-        case 'concrete': {
-          const res = ConcreteArray([]);
-
-          for (let i = 0; i < n.v; i++) {
-            res.v.push(...a.v);
-          }
-
-          return res;
-        }
-
-        case 'valid': {
-          const res = ValidArray([]);
-
-          for (let i = 0; i < n.v; i++) {
-            res.v.push(...a.v);
-          }
-
-          return res;
-        }
-      }
-    }
-
     export type MethodMap = {
       Length: {
         base: Array;
@@ -384,30 +346,6 @@ namespace Outcome {
   }
 
   export namespace Object {
-    export function multiply(
-      exp: Syntax.Expression,
-      obj: Object,
-      n: Number
-    ): Object | Exception {
-      if (n.v === 0) {
-        return ConcreteObject({});
-      }
-
-      if (n.v === 1) {
-        return obj;
-      }
-
-      if (JsObject.keys(obj.v).length === 0) {
-        return obj;
-      }
-
-      return Exception(exp,
-        ['object-multiplication'],
-        `Attempt to multiply non-empty object by ${n.v} (can only multiply ` +
-        'non-empty objects by 0 or 1)',
-      );
-    }
-
     export function subscript(
       exp: Syntax.Expression,
       obj: Value,

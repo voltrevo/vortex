@@ -1544,73 +1544,75 @@ namespace Analyzer {
         }
 
         case '*': {
+          function multiplyValues(
+            left: Outcome.Value,
+            right: Outcome.Value,
+          ): Outcome.Value | null {
+            if (left.t === 'Number' && right.t === 'Number') {
+              return Outcome.Number(left.v * right.v);
+            }
+
+            const maybeNum = (
+              left.t === 'Number' || left.t === 'Unknown' ? left :
+              right.t === 'Number' || right.t === 'Unknown' ? right :
+              null
+            );
+
+            if (maybeNum === null) {
+              return null;
+            }
+
+            const arr = (
+              left.t === 'Array' ? left :
+              right.t === 'Array' ? right :
+              null
+            );
+
+            if (arr !== null) {
+              const values: Outcome.Value[] = [];
+
+              for (const v of arr.v) {
+                const mul = multiplyValues(maybeNum, v);
+
+                if (mul === null) {
+                  return null;
+                }
+
+                values.push(mul);
+              }
+
+              return Outcome.Array(values);
+            }
+
+            const obj = (
+              left.t === 'Object' ? left :
+              right.t === 'Object' ? right :
+              null
+            );
+
+            if (obj !== null) {
+              const values: { [key: string]: Outcome.Value } = {};
+
+              for (const key of Object.keys(obj.v)) {
+                const mul = multiplyValues(maybeNum, obj.v[key]);
+
+                if (mul === null) {
+                  return null;
+                }
+
+                values[key] = mul;
+              }
+
+              return Outcome.Object(values);
+            }
+
+            return null;
+          }
+
           return vanillaOperator(
             az,
             exp,
-            (left, right) => {
-              if (left.t === 'Number' && right.t === 'Number') {
-                return Outcome.Number(left.v * right.v);
-              }
-
-              const str = (
-                left.t === 'String' ? left :
-                right.t === 'String' ? right :
-                null
-              );
-
-              const arr = (
-                left.t === 'Array' ? left :
-                right.t === 'Array' ? right :
-                null
-              );
-
-              const num = (
-                left.t === 'Number' ? left :
-                right.t === 'Number' ? right :
-                null
-              );
-
-              const obj = (
-                left.t === 'Object' ? left :
-                right.t === 'Object' ? right :
-                null
-              );
-
-              // TODO: Implement generic version of this which just requires
-              // non-number type to have a + operator
-              // TODO: Possibly configure limit for this behaviour during
-              // analysis?
-              if (str && num) {
-                return Outcome.String.multiply(str, num);
-              }
-
-              if (arr && num) {
-                return Outcome.Array.multiply(arr, num);
-              }
-
-              if (obj && num) {
-                return Outcome.Object.multiply(exp, obj, num);
-              }
-
-              const forbiddenTypes: Outcome.Value['t'][] = [
-                'Bool',
-                'Null',
-                'Func', // TODO: define function multiplication when appropriate
-              ];
-
-              if (
-                forbiddenTypes.indexOf(left.t) !== -1 ||
-                forbiddenTypes.indexOf(right.t) !== -1
-              ) {
-                return null;
-              }
-
-              if (left.t === 'Unknown' || right.t === 'Unknown') {
-                return Outcome.Unknown();
-              }
-
-              return null;
-            },
+            multiplyValues,
           );
         }
 
