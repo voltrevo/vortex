@@ -257,11 +257,25 @@ namespace Outcome {
         name: 'First';
         argLength: 0;
       }
+
+      Head: {
+        base: Array;
+        name: 'Head';
+        argLength: 0;
+      }
+
+      Tail: {
+        base: Array;
+        name: 'Tail';
+        argLength: 0;
+      }
     };
 
     export const nonEmptyMethods: string[] = [
       'First',
       'Last',
+      'Head',
+      'Tail',
     ];
 
     export type Method = MethodMap[keyof MethodMap];
@@ -301,9 +315,19 @@ namespace Outcome {
         args: [];
         result: Value;
       };
+
+      Head: {
+        args: [];
+        result: Array;
+      };
+
+      Tail: {
+        args: [];
+        result: Array;
+      };
     };
 
-    // TODO: Head, Tail, map, reduce
+    // TODO: map, reduce
 
     export const methodImpls: {
       [name in keyof MethodMap]: MethodImpl<
@@ -322,20 +346,10 @@ namespace Outcome {
       )),
       Values: (base, args) => base,
       String: (base, args) => String(JsString(base)),
-      First: (base, args) => {
-        if (base.v.length === 0) {
-          throw new Error('TODO: Should be impossible');
-        }
-
-        return base.v[0];
-      },
-      Last: (base, args) => {
-        if (base.v.length === 0) {
-          throw new Error('TODO: Should be impossible');
-        }
-
-        return base.v[base.v.length - 1];
-      },
+      First: (base, args) => base.v[0],
+      Last: (base, args) => base.v[base.v.length - 1],
+      Head: (base, args) => Array(base.v.slice(0, base.v.length - 1)),
+      Tail: (base, args) => Array(base.v.slice(1, base.v.length)),
     };
 
     export const methodArgLengths: {
@@ -348,6 +362,8 @@ namespace Outcome {
       String: 0,
       First: 0,
       Last: 0,
+      Head: 0,
+      Tail: 0,
     };
   }
 
