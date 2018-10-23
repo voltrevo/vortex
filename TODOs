@@ -1,5 +1,4 @@
 TODO: Test all inbuilt methods
-TODO: Support operators as function values in atomic expressions e.g. [1, 2, 3]:reduce(+);
 TODO: Fix output formatting bug for type errors in imports (and position issue?)
 TODO: Fix ! operator
 TODO: Allow object keys to be any functionless value
