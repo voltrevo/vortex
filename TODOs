@@ -7,7 +7,14 @@ TODO: Argument destructuring
 TODO: Class syntax
 TODO: Cross-type comparison operators e.g. :<:
 TODO: Allow object keys to be any functionless value
-TODO: Add Set as another native data structure, e.g. {(1, {()}, 2)} == {(2, {()}, 1)}
+
+TODO: Add Set as another native data structure
+        e.g.
+        {()} | {(3)} | {(1, 2)} == {(1, 2, 3)}
+        {(1, 2)} & {(2, 3)} == {(2)}
+        {(1, 2)} ^ {(2, 3)} == {(1, 3)}
+        {(1, 2)}:PowerSet() == {({()}, {(1)}, {(2)}, {(1, 2)})}
+
 TODO: Finish defining packaging system
 TODO: Consider extending addition, subtraction, and matrix multiplication to inconsistent dimensions by (basically) assuming zeros (possibly use :+:, :*: etc)
 TODO: Validator should call into Analyzer without waiting for complete context
