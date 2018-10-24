@@ -248,12 +248,11 @@ namespace Analyzer {
     outcome: Outcome,
   ): [Module_, Analyzer] {
     if (outcome.t === 'exception') {
-      az = addNote(az, Note(
-        outcome.v.origin.p,
-        'error',
-        ['exception', ...outcome.v.tags],
-        'Threw exception: ' + outcome.v.message,
-      ));
+      if (!('level' in outcome.v)) {
+        throw new Error('Shouldn\'t be possible');
+      }
+
+      az = addNote(az, outcome.v);
     }
 
     const existing = az.modules[file];
@@ -539,294 +538,308 @@ namespace Analyzer {
       az: Analyzer,
       statement: Syntax.Statement,
     ): [Outcome | TailCall | null, Analyzer] {
-      switch (statement.t) {
-        case 'e': {
-          return topExpression(az, statement.v);
-        }
+      let result: Outcome | TailCall | null;
 
-        case 'return': {
-          return tailableSubExpression(az, statement.v);
-        }
-
-        case 'breakpoint': {
-          debugger;
-          return [null, az];
-        }
-
-        case 'assert': {
-          let out: Outcome;
-          [out, az] = subExpression(az, statement.v);
-
-          if (out.t === 'exception') {
-            return [out, az];
+      [result, az] = ((): [Outcome | TailCall | null, Analyzer] => {
+        switch (statement.t) {
+          case 'e': {
+            return topExpression(az, statement.v);
           }
 
-          if (out.t === 'Unknown') {
-            az = Analyzer.addNote(az, Note(
-              statement.v.p,
-              out.v,
-              ['assert-unknown'],
-              `Asserted an unknown value`,
-            ));
+          case 'return': {
+            return tailableSubExpression(az, statement.v);
+          }
 
-            // TODO!: maybeException handling, treat as unknown as error
-            // sometimes
+          case 'breakpoint': {
+            debugger;
             return [null, az];
           }
 
-          if (out.t !== 'Bool') {
-            az = Analyzer.addNote(az, Note(
-              statement.v.p,
-              'error',
-              ['type-error', 'assert-non-bool'],
-              `Type error: assert ${out.t}`,
-            ));
+          case 'assert': {
+            let out: Outcome;
+            [out, az] = subExpression(az, statement.v);
 
-            return [out, az];
-          }
-
-          if (out.v === false) {
-            // TODO: Format code for other exceptions like this
-            const ex = Outcome.Exception(statement.v,
-              ['assert-false'],
-              `Asserted ${ExpressionString(az, statement.v)}`,
-            );
-
-            return [ex, az];
-          }
-
-          return [null, az];
-        }
-
-        case 'log.info':
-        case 'log.warn':
-        case 'log.error': {
-          let out: Outcome;
-          [out, az] = subExpression(az, statement.v);
-
-          const level = (() => {
-            switch (statement.t) {
-              case 'log.info': return 'info' as 'info';
-              case 'log.warn': return 'warn' as 'warn';
-              case 'log.error': return 'error' as 'error';
-            }
-          })();
-
-          az = Analyzer.addNote(az, Note(
-            statement.v.p,
-            level,
-            ['custom'],
-            Outcome.LongString(out),
-          ));
-
-          return [null, az];
-        }
-
-        case 'if': {
-          const [cond, block] = statement.v;
-          let condOut: Outcome;
-          [condOut, az] = subExpression(az, cond);
-
-          if (condOut.t === 'exception') {
-            return [condOut, az];
-          }
-
-          // TODO: unknown -> maybeException?
-
-          if (condOut.t !== 'Bool') {
-            const ex = Outcome.Exception(cond,
-              ['non-bool-condition', 'if-condition'],
-              `Type error: Non-bool condition: ${condOut.t}`,
-            );
-
-            return [ex, az];
-          }
-
-          if (condOut.v === true) {
-            az = Analyzer.push(az);
-            let blockOut: Outcome | TailCall | null;
-            [blockOut, az] = analyze.block(az, block);
-            az = Analyzer.pop(az);
-
-            if (blockOut !== null) {
-              return [blockOut, az];
-            }
-          }
-
-          return [null, az];
-        }
-
-        case 'for': {
-          const { control, block } = statement.v;
-
-          // TODO: Impure function - captures and contributes az mutations
-          function cond(): Outcome.Bool | Outcome.Exception {
-            if (control === null || control.t === 'range') {
-              return Outcome.Bool(true);
+            if (out.t === 'exception') {
+              return [out, az];
             }
 
-            const condExp = (() => {
-              switch (control.t) {
-                case 'condition': return control.v;
-                case 'setup; condition; next': return control.v[1];
+            if (out.t === 'Unknown') {
+              az = Analyzer.addNote(az, Note(
+                statement.v.p,
+                out.v,
+                ['assert-unknown'],
+                `Asserted an unknown value`,
+              ));
+
+              // TODO!: maybeException handling, treat as unknown as error
+              // sometimes
+              return [null, az];
+            }
+
+            if (out.t !== 'Bool') {
+              az = Analyzer.addNote(az, Note(
+                statement.v.p,
+                'error',
+                ['type-error', 'assert-non-bool'],
+                `Type error: assert ${out.t}`,
+              ));
+
+              return [out, az];
+            }
+
+            if (out.v === false) {
+              // TODO: Format code for other exceptions like this
+              const ex = Outcome.Exception(statement.v,
+                ['assert-false'],
+                `Asserted ${ExpressionString(az, statement.v)}`,
+              );
+
+              return [ex, az];
+            }
+
+            return [null, az];
+          }
+
+          case 'log.info':
+          case 'log.warn':
+          case 'log.error': {
+            let out: Outcome;
+            [out, az] = subExpression(az, statement.v);
+
+            const level = (() => {
+              switch (statement.t) {
+                case 'log.info': return 'info' as 'info';
+                case 'log.warn': return 'warn' as 'warn';
+                case 'log.error': return 'error' as 'error';
               }
             })();
 
+            az = Analyzer.addNote(az, Note(
+              statement.v.p,
+              level,
+              ['custom'],
+              Outcome.LongString(out),
+            ));
+
+            return [null, az];
+          }
+
+          case 'if': {
+            const [cond, block] = statement.v;
             let condOut: Outcome;
-            [condOut, az] = subExpression(az, condExp);
-
-            if (condOut.t !== 'Bool') {
-              const ex = Outcome.Exception(
-                condExp,
-                ['non-bool-condition', 'for-condition'],
-                `Type error: Non-bool condition: ${condOut.t}`,
-              );
-
-              return ex;
-            }
-
-            return condOut;
-          }
-
-          az = Analyzer.push(az);
-
-          let iterations = 0;
-          let mout: TailCall | Outcome | null = null;
-
-          let rangeData: null | {
-            targetExp: Syntax.Expression,
-            items: Outcome.Array,
-          } = null;
-
-          if (control) {
-            if (control.t === 'setup; condition; next') {
-              const [setup] = control.v;
-              let setupEx: Outcome.Exception | null;
-              [setupEx, az] = topExpression(az, setup);
-
-              if (setupEx !== null) {
-                return [setupEx, az];
-              }
-            } else if (control.t === 'range') {
-              const [targetExp, containerExp] = control.v;
-
-              let container: Outcome | null;
-              [container, az] = subExpression(az, containerExp);
-
-              if (container.t !== 'Array') {
-                // TODO: handle Unknown
-
-                const ex = Outcome.Exception(
-                  containerExp,
-                  ['type-error', 'for-control'],
-                  `Type error: for (_ of ${container.t}) {}`,
-                );
-
-                return [ex, az];
-              }
-
-              rangeData = { targetExp, items: container };
-            }
-          }
-
-          while (true) {
-            const condOut = cond(); // mutates az
+            [condOut, az] = subExpression(az, cond);
 
             if (condOut.t === 'exception') {
               return [condOut, az];
             }
 
-            // TODO: Note counting, deduplication with if
-
             // TODO: unknown -> maybeException?
 
-            if (condOut.v === false) {
-              break;
+            if (condOut.t !== 'Bool') {
+              const ex = Outcome.Exception(cond,
+                ['non-bool-condition', 'if-condition'],
+                `Type error: Non-bool condition: ${condOut.t}`,
+              );
+
+              return [ex, az];
             }
 
-            if (rangeData !== null) {
-              if (iterations >= rangeData.items.v.length) {
+            if (condOut.v === true) {
+              az = Analyzer.push(az);
+              let blockOut: Outcome | TailCall | null;
+              [blockOut, az] = analyze.block(az, block);
+              az = Analyzer.pop(az);
+
+              if (blockOut !== null) {
+                return [blockOut, az];
+              }
+            }
+
+            return [null, az];
+          }
+
+          case 'for': {
+            const { control, block } = statement.v;
+
+            // TODO: Impure function - captures and contributes az mutations
+            function cond(): Outcome.Bool | Outcome.Exception {
+              if (control === null || control.t === 'range') {
+                return Outcome.Bool(true);
+              }
+
+              const condExp = (() => {
+                switch (control.t) {
+                  case 'condition': return control.v;
+                  case 'setup; condition; next': return control.v[1];
+                }
+              })();
+
+              let condOut: Outcome;
+              [condOut, az] = subExpression(az, condExp);
+
+              if (condOut.t !== 'Bool') {
+                const ex = Outcome.Exception(
+                  condExp,
+                  ['non-bool-condition', 'for-condition'],
+                  `Type error: Non-bool condition: ${condOut.t}`,
+                );
+
+                return ex;
+              }
+
+              return condOut;
+            }
+
+            az = Analyzer.push(az);
+
+            let iterations = 0;
+            let mout: TailCall | Outcome | null = null;
+
+            let rangeData: null | {
+              targetExp: Syntax.Expression,
+              items: Outcome.Array,
+            } = null;
+
+            if (control) {
+              if (control.t === 'setup; condition; next') {
+                const [setup] = control.v;
+                let setupEx: Outcome.Exception | null;
+                [setupEx, az] = topExpression(az, setup);
+
+                if (setupEx !== null) {
+                  return [setupEx, az];
+                }
+              } else if (control.t === 'range') {
+                const [targetExp, containerExp] = control.v;
+
+                let container: Outcome | null;
+                [container, az] = subExpression(az, containerExp);
+
+                if (container.t !== 'Array') {
+                  // TODO: handle Unknown
+
+                  const ex = Outcome.Exception(
+                    containerExp,
+                    ['type-error', 'for-control'],
+                    `Type error: for (_ of ${container.t}) {}`,
+                  );
+
+                  return [ex, az];
+                }
+
+                rangeData = { targetExp, items: container };
+              }
+            }
+
+            while (true) {
+              const condOut = cond(); // mutates az
+
+              if (condOut.t === 'exception') {
+                return [condOut, az];
+              }
+
+              // TODO: Note counting, deduplication with if
+
+              // TODO: unknown -> maybeException?
+
+              if (condOut.v === false) {
                 break;
               }
 
-              [mout, az] = createOrAssign(
-                az,
-                rangeData.targetExp,
-                rangeData.targetExp,
-                ':=',
-                rangeData.items.v[iterations],
-              );
+              if (rangeData !== null) {
+                if (iterations >= rangeData.items.v.length) {
+                  break;
+                }
+
+                [mout, az] = createOrAssign(
+                  az,
+                  rangeData.targetExp,
+                  rangeData.targetExp,
+                  ':=',
+                  rangeData.items.v[iterations],
+                );
+
+                if (mout !== null) {
+                  break;
+                }
+              }
+
+              az = Analyzer.push(az);
+              [mout, az] = analyze.block(az, block);
+
+              if (
+                mout === null &&
+                control &&
+                control.t === 'setup; condition; next'
+              ) {
+                const [, , next] = control.v;
+                [mout, az] = topExpression(az, next);
+              }
+
+              az = Analyzer.pop(az);
+
+              iterations++;
 
               if (mout !== null) {
                 break;
               }
-            }
 
-            az = Analyzer.push(az);
-            [mout, az] = analyze.block(az, block);
+              if (iterations >= 2048) {
+                // TODO: Count total operations and limit execution based on that
+                // instead.
+                az = Analyzer.addNote(az, Note(
+                  statement.p,
+                  'warn',
+                  ['iteration-limit'],
+                  'Hit iteration limit of 2048',
+                ));
 
-            if (
-              mout === null &&
-              control &&
-              control.t === 'setup; condition; next'
-            ) {
-              const [, , next] = control.v;
-              [mout, az] = topExpression(az, next);
+                // Maybe exception?
+                mout = Outcome.Unknown('warn');
+                break;
+              }
             }
 
             az = Analyzer.pop(az);
 
-            iterations++;
-
-            if (mout !== null) {
-              break;
-            }
-
-            if (iterations >= 2048) {
-              // TODO: Count total operations and limit execution based on that
-              // instead.
-              az = Analyzer.addNote(az, Note(
-                statement.p,
-                'warn',
-                ['iteration-limit'],
-                'Hit iteration limit of 2048',
-              ));
-
-              // Maybe exception?
-              mout = Outcome.Unknown('warn');
-              break;
-            }
+            return [mout, az];
           }
 
-          az = Analyzer.pop(az);
+          case 'import': {
+            const [importIdentifier] = statement.v;
 
-          return [mout, az];
+            az = Analyzer.add(az, importIdentifier.v, {
+              cat: 'ref',
+              t: 'import-ref',
+              v: statement,
+            });
+
+            return [null, az];
+          }
+
+          case 'break':
+          case 'continue': {
+            const ex = Outcome.Exception(
+              statement,
+              // TODO: Need to capture more structure in compiler notes
+              ['not-implemented'],
+              `Not implemented: ${statement.t} statement`,
+            );
+
+            return [ex, az];
+          }
         }
+      })();
 
-        case 'import': {
-          const [importIdentifier] = statement.v;
-
-          az = Analyzer.add(az, importIdentifier.v, {
-            cat: 'ref',
-            t: 'import-ref',
-            v: statement,
-          });
-
-          return [null, az];
-        }
-
-        case 'break':
-        case 'continue': {
-          const ex = Outcome.Exception(
-            statement,
-            // TODO: Need to capture more structure in compiler notes
-            ['not-implemented'],
-            `Not implemented: ${statement.t} statement`,
-          );
-
-          return [ex, az];
-        }
+      if (
+        result !== null &&
+        typeof result !== 'function' &&
+        result.t === 'exception'
+      ) {
+        result = Outcome.Exception.unwind(result, statement);
       }
+
+      return [result, az];
     }
 
     export function topExpression(
@@ -1610,7 +1623,7 @@ namespace Analyzer {
           }
 
           if (container.t === 'Object') {
-            const out = Outcome.Object.subscript(exp, container, index);
+            const out = Outcome.Object.subscript(container, index);
             return [out, az];
           }
 
@@ -1664,7 +1677,7 @@ namespace Analyzer {
             return [obj, az];
           }
 
-          const out = Outcome.Object.subscript(exp, obj, Outcome.String(keyExp.v));
+          const out = Outcome.Object.subscript(obj, Outcome.String(keyExp.v));
           return [out, az];
         }
 
@@ -1711,11 +1724,7 @@ namespace Analyzer {
                 continue;
               }
 
-              combinedLabelValue = Outcome.TypedEqual(
-                labelExp,
-                testValue,
-                label
-              );
+              combinedLabelValue = Outcome.TypedEqual(testValue, label);
 
               if (combinedLabelValue.t === 'exception') {
                 // TODO: If it somehow did generate an exception, labelExp was

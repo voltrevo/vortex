@@ -602,7 +602,6 @@ namespace Outcome {
 
   export namespace Object {
     export function subscript(
-      exp: Syntax.Expression,
       obj: Value,
       index: Value,
     ): Outcome {
@@ -610,7 +609,8 @@ namespace Outcome {
         (obj.t !== 'Object' && obj.t !== 'Unknown') ||
         (index.t !== 'String' && index.t !== 'Unknown')
       ) {
-        return Exception(exp,
+        return Exception(
+          null,
           ['type-error', 'object-subscript'],
           `Type error: ${obj.t}[${index.t}]`,
         );
@@ -624,7 +624,8 @@ namespace Outcome {
       const maybeValue = obj.v[index.v];
 
       if (maybeValue === undefined) {
-        return Exception(exp,
+        return Exception(
+          null,
           ['key-not-found'],
           `Object key not found: ${index.v}`,
         );
@@ -816,19 +817,49 @@ namespace Outcome {
   export type Exception = {
     cat: 'invalid';
     t: 'exception';
-    v: {
-      origin: Syntax.Element;
-      tags: Note.Tag[];
-      message: string;
-    };
-  }
+    v: Note | {
+      tags: Note.Tag[],
+      message: string,
+    },
+  };
 
   export function Exception(
-    origin: Syntax.Element,
+    exp: Syntax.Element | null,
     tags: Note.Tag[],
     message: string
   ): Exception {
-    return { cat: 'invalid', t: 'exception', v: { origin, tags, message } };
+    if (exp !== null) {
+      return { cat: 'invalid', t: 'exception', v: Note(
+        exp.p,
+        'error',
+        tags,
+        message,
+      ) };
+    }
+
+    return { cat: 'invalid', t: 'exception', v: { tags, message } };
+  }
+
+  export namespace Exception {
+    export function unwind(e: Exception, exp: Syntax.Element) {
+      if (!('level' in e.v)) {
+        return JsObject.assign({}, e, {
+          v: JsObject.assign({}, e.v, {
+            pos: exp.p,
+            level: 'error',
+          }),
+        });
+      }
+
+      return JsObject.assign({}, e, {
+        v: JsObject.assign({}, e.v, {
+          subnotes: [...(e.v.subnotes || []), JsObject.assign({}, e.v, {
+            pos: exp.p,
+            message: 'Threw: ' + e.v.message,
+          })]
+        }),
+      });
+    }
   }
 
   export type Concrete = (
@@ -1054,7 +1085,12 @@ namespace Outcome {
       }}`;
 
       case 'Unknown': return `<unknown ${v.v}>`;
-      case 'exception': return `<exception: ${v.v.message}>`;
+
+      case 'exception': return (
+        v.v === null ?
+        '<exception>' :
+        `<exception: ${v.v.message}>`
+      );
     }
   }
 
@@ -1270,15 +1306,15 @@ namespace Outcome {
   }
 
   export function TypedEqual(
-    exp: Syntax.Expression,
     left: Concrete,
     right: Concrete,
   ): Bool | Exception {
     if (!SameType(left, right)) {
-      return Exception(exp,
+      return Exception(
+        null,
         ['type-error', 'comparison'],
-        // TODO: Show deep type information
-        `Type error: ${left.t} ${exp.t} ${right.t}`,
+        // TODO: Show deep type information, reconsider '=='
+        `Type error: ${left.t} == ${right.t}`,
       );
     }
 
@@ -1363,7 +1399,8 @@ namespace Outcome {
     const sameType = SameType(left, right);
 
     if (sameType === false) {
-      return Exception(exp,
+      return Exception(
+        null,
         ['type-error', 'comparison'],
         // TODO: Surfacing this is confusing because eg '>' gets swapped to '<'
         // and this inverts left and right (compared to user's code)
@@ -1392,8 +1429,8 @@ namespace Outcome {
     right: Concrete,
   ): Bool | Exception {
     switch (op) {
-      case '==': return TypedEqual(exp, left, right);
-      case '!=': return InvertIfBool(TypedEqual(exp, left, right));
+      case '==': return TypedEqual(left, right);
+      case '!=': return InvertIfBool(TypedEqual(left, right));
       case '<': return TypedLessThan(exp, left, right);
       case '>': return TypedLessThan(exp, right, left);
       case '<=': return InvertIfBool(TypedLessThan(exp, right, left));
@@ -1544,14 +1581,17 @@ namespace Outcome {
 
             for (const key of JsObject.keys(right.v)) {
               if (leftKeys[key]) {
-                return Exception(exp,
+                return Exception(
+                  null,
                   [
                     'duplicate',
                     'duplicate-key',
                     'object-addition',
                   ],
-                  'Type error: objects cannot be added due to duplicate ' +
-                  'key ' + key,
+                  (
+                    'Type error: objects cannot be added due to duplicate ' +
+                    'key ' + key
+                  ),
                 );
               }
             }
@@ -1825,7 +1865,7 @@ namespace Outcome {
 
     if (value === null) {
       value = Exception(
-        exp,
+        null,
         ['type-error', 'operator'],
         `Type error: ${left.t} ${exp.t} ${right.t}`,
       );
