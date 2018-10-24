@@ -1,0 +1,17 @@
+holdings := [
+  [1, 3, 20],
+  [0, 20, 5],
+];
+
+chipValues := [
+  [100],
+  [20],
+  [1],
+];
+
+assert holdings * chipValues == [
+  [180],
+  [405],
+];
+
+return 'done';

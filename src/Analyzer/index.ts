@@ -1729,8 +1729,11 @@ namespace Analyzer {
             return [ex, az];
           }
 
-          if (base.t === 'Array' && methodIdentifier.v === 'Transpose') {
-            const dims = Outcome.Array.MatrixDimensions(base);
+          if (
+            (base.t === 'Array' || base.t === 'Object') &&
+            methodIdentifier.v === 'Transpose'
+          ) {
+            const dims = Outcome.MatrixDimensions(base);
 
             if (typeof dims === 'string') {
               const ex = Outcome.Exception(
@@ -2008,28 +2011,35 @@ namespace Analyzer {
             return [value, az];
           }
 
-          if (base.t === 'Array' && funcv.v.name === 'Transpose') {
-            const dims = Outcome.Array.MatrixDimensions(base);
+          if (
+            (base.t === 'Array' || base.t === 'Object') &&
+            funcv.v.name === 'Transpose'
+          ) {
+            const dims = Outcome.MatrixDimensions(base);
 
             if (typeof dims === 'string') {
               throw new Error('Shouldn\'t be possible');
             }
 
-            const [rows, cols] = dims;
+            const [rowDim, colDim] = dims;
+            const rowSize = Outcome.Dimension.size(rowDim);
+            const colSize = Outcome.Dimension.size(colDim);
 
-            const values: Outcome.Array[] = [];
+            const values: (Outcome.Array | Outcome.Object)[] = [];
 
-            for (let i = 0; i < cols; i++) {
+            for (let i = 0; i < colSize; i++) {
+              const iKey = Outcome.Dimension.KeyAt(colDim, i);
               const newRow: Outcome.Value[] = [];
 
-              for (let j = 0; j < rows; j++) {
-                newRow.push((base.v[j] as Outcome.Array).v[i]);
+              for (let j = 0; j < rowSize; j++) {
+                const jKey = Outcome.Dimension.KeyAt(rowDim, j);
+                newRow.push((base as any).v[jKey].v[iKey]);
               }
 
-              values.push(Outcome.Array(newRow));
+              values.push(Outcome.Dimension.BuildArrayObject(rowDim, newRow));
             }
 
-            const value = Outcome.Array(values);
+            const value = Outcome.Dimension.BuildArrayObject(colDim, values);
 
             return [value, az];
           }

@@ -1,0 +1,50 @@
+inventories := {
+  alice: {apples: 3, oranges: 7},
+  bob: {apples: 7, oranges: 3},
+};
+
+prices := {
+  apples: {aud: 2, usd: 1},
+  oranges: {aud: 1, usd: 2},
+};
+
+// Sell inventory at the market
+assert inventories * prices == {
+  alice: {aud: 13, usd: 17},
+  bob: {aud: 17, usd: 13},
+};
+
+xrates := {
+  aud: {cents: 100},
+  usd: {cents: 130},
+};
+
+// Exchange aud, usd for cents
+assert inventories * prices * xrates == {
+  alice: {cents: 3510},
+  bob: {cents: 3390},
+};
+
+applePrices := {
+  apples: {applePieces: 8},
+  oranges: {applePieces: 6},
+};
+
+// Sell to the people who like apples
+assert inventories * applePrices == {
+  alice: {applePieces: 66},
+  bob: {applePieces: 74},
+};
+
+orangePrices := {
+  apples: {orangePieces: 6},
+  oranges: {orangePieces: 8},
+};
+
+// Sell to the people who like oranges
+assert inventories * orangePrices == {
+  alice: {orangePieces: 74},
+  bob: {orangePieces: 66},
+};
+
+return 'done';

@@ -1,0 +1,17 @@
+holdings := [
+  {blue: 1, green: 3, white: 20},
+  {blue: 0, green: 20, white: 5},
+];
+
+chipValues := {
+  blue: {white: 100},
+  green: {white: 20},
+  white: {white: 1},
+};
+
+assert holdings * chipValues == [
+  {white: 180},
+  {white: 405},
+];
+
+return 'done';

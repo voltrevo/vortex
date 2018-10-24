@@ -4,6 +4,7 @@ import Syntax from '../parser/Syntax';
 
 type Outcome = Outcome.Value | Outcome.Exception;
 const JsObject = Object;
+const JsArray = Array;
 
 namespace Outcome {
   export type String = { cat: 'concrete', t: 'String', v: string };
@@ -214,45 +215,123 @@ namespace Outcome {
     return { cat: 'valid', t: 'Array', v };
   }
 
-  export namespace Array {
-    export function MatrixDimensions(arr: Array): [number, number] | string {
-      if (arr.v.length === 0) {
-        return 'empty Array';
-      }
+  export type Dimension = number | string[];
 
-      let rowLen = 0;
-
-      if (arr.v.length > 0) {
-        const firstRow = arr.v[0];
-
-        if (firstRow.t !== 'Array') {
-          return 'Array with non-array elements';
-        }
-
-        rowLen = firstRow.v.length;
-      }
-
-      for (const row of arr.v.slice(1)) {
-        if (row.t !== 'Array') {
-          return 'Array with non-array elements';
-        }
-
-        if (row.v.length !== rowLen) {
-          return 'Array with inconsistent row length';
-        }
-      }
-
-      if (rowLen === 0) {
-        return 'Array of empty arrays';
-      }
-
-      return (
-        arr.v.length === 0 ?
-        [0, 0] :
-        [arr.v.length, (arr.v[0] as Array).v.length]
-      );
+  export function Dimension(value: Array | Object): Dimension {
+    if (value.t === 'Array') {
+      return value.v.length;
     }
 
+    return JsObject.keys(value.v).sort();
+  }
+
+  export namespace Dimension {
+    export function equals(a: Dimension, b: Dimension) {
+      if (typeof a === 'number' && typeof b === 'number') {
+        return a === b;
+      }
+
+      if (JsArray.isArray(a) && JsArray.isArray(b)) {
+        const len = a.length;
+
+        if (b.length !== len) {
+          return false;
+        }
+
+        for (let i = 0; i < len; i++) {
+          if (a[i] !== b[i]) {
+            return false;
+          }
+        }
+
+        return true;
+      }
+
+      return false;
+    }
+
+    // TODO: Capitalization
+    export function size(dim: Dimension): number {
+      if (typeof dim === 'number') {
+        return dim;
+      }
+
+      return dim.length;
+    }
+
+    export function KeyAt(dim: Dimension, i: number) {
+      if (typeof dim === 'number') {
+        return i;
+      }
+
+      return dim[i];
+    }
+
+    export function BuildArrayObject(
+      dim: Dimension,
+      values: Value[],
+    ): Array | Object {
+      const sz = size(dim);
+
+      if (sz !== values.length) {
+        throw new Error('Shouldn\'t be possible');
+      }
+
+      if (typeof dim === 'number') {
+        return Array(values);
+      }
+
+      const keyedValues: { [key: string]: Value } = {};
+
+      for (let i = 0; i < sz; i++) {
+        keyedValues[dim[i]] = values[i];
+      }
+
+      return Object(keyedValues);
+    }
+  }
+
+  // TODO: Make a specialization of the array type for matrices and return
+  // that instead.
+  export function MatrixDimensions(mat: Array | Object): (
+    [Dimension, Dimension] |
+    string
+  ) {
+    const outer = Dimension(mat);
+    const outerSize = Dimension.size(outer);
+
+    if (outerSize === 0) {
+      return 'empty ' + mat.t;
+    }
+
+    const firstRow: Value = mat.v[Dimension.KeyAt(outer, 0)];
+
+    if (firstRow.t !== 'Array' && firstRow.t !== 'Object') {
+      return mat.t + ' with ' + firstRow.t + ' element';
+    }
+
+    const inner = Dimension(firstRow);
+
+    for (let i = 1; i < outerSize; i++) {
+      const row: Value = mat.v[Dimension.KeyAt(outer, i)];
+
+      if (row.t !== 'Array' && row.t !== 'Object') {
+        return mat.t + ' with ' + row.t + ' element';
+      }
+
+      if (!Dimension.equals(Dimension(row), inner)) {
+        return mat.t + ' with inconsistent inner dimension';
+      }
+    }
+
+    if (Dimension.size(inner) === 0) {
+      return mat.t + ' of empty ' + firstRow.t + 's';
+    }
+
+    return [outer, inner];
+  }
+
+  export namespace Array {
     export type MethodMap = {
       Length: {
         base: Array;
@@ -417,18 +496,18 @@ namespace Outcome {
       };
 
       Row: {
-        args: [Value, Func];
+        args: [];
         result: Array;
       };
 
       Column: {
-        args: [Value, Func];
+        args: [];
         result: Array;
       };
 
       Transpose: {
-        args: [Value, Func];
-        result: Array;
+        args: [];
+        result: Array | Object;
       };
     };
 
@@ -578,6 +657,24 @@ namespace Outcome {
         name: 'String';
         argLength: 0;
       };
+
+      Row: {
+        base: Object;
+        name: 'Row';
+        argLength: 0;
+      };
+
+      Column: {
+        base: Object;
+        name: 'Column';
+        argLength: 0;
+      };
+
+      Transpose: {
+        base: Object;
+        name: 'Transpose';
+        argLength: 0;
+      };
     };
 
     export type Method = MethodMap[keyof MethodMap];
@@ -601,6 +698,21 @@ namespace Outcome {
       String: {
         args: [];
         result: String;
+      };
+
+      Row: {
+        args: [];
+        result: Array;
+      };
+
+      Column: {
+        args: [];
+        result: Object;
+      };
+
+      Transpose: {
+        args: [];
+        result: Array | Object;
       };
     };
 
@@ -628,6 +740,17 @@ namespace Outcome {
         )
       ),
       String: (base, args) => String(JsString(base)),
+      Row: (base, []) => Array([base]),
+      Column: (base, []) => {
+        const values: { [key: string]: Value } = {};
+
+        for (const key of JsObject.keys(base.v)) {
+          values[key] = Array([base.v[key]]);
+        }
+
+        return Object(values);
+      },
+      Transpose: () => { throw new Error('Needs special implementation'); },
     };
 
     export const methodArgLengths: {
@@ -637,6 +760,9 @@ namespace Outcome {
       Keys: 0,
       Values: 0,
       String: 0,
+      Row: 0,
+      Column: 0,
+      Transpose: 0,
     };
   }
 
@@ -1435,49 +1561,62 @@ namespace Outcome {
               return Number(impl(left.v, right.v));
             }
 
-            if (left.t === 'Array' && right.t === 'Array') {
-              const leftDims = Array.MatrixDimensions(left);
+            if (
+              (left.t === 'Array' || left.t === 'Object') &&
+              (right.t === 'Array' || right.t === 'Object')
+            ) {
+              const leftDims = MatrixDimensions(left);
 
               if (typeof leftDims === 'string') {
                 return null;
               }
 
-              const rightDims = Array.MatrixDimensions(right);
+              const rightDims = MatrixDimensions(right);
 
-              if (rightDims === 'string') {
+              if (typeof rightDims === 'string') {
                 return null;
               }
 
               const [leftRows, leftCols] = leftDims;
               const [rightRows, rightCols] = rightDims;
 
-              if (leftCols !== rightRows) {
+              if (!Dimension.equals(leftCols, rightRows)) {
                 // TODO: Surface better error
                 return null;
               }
 
+              const outerSize = Dimension.size(leftRows);
+              const middleSize = Dimension.size(leftCols);
+              const innerSize = Dimension.size(rightCols);
+
               const rows: Value[] = [];
 
-              for (let i = 0; i < leftRows; i++) {
+              for (let i = 0; i < outerSize; i++) {
                 const row: Value[] = [];
+                const iKey = Dimension.KeyAt(leftRows, i);
 
-                for (let j = 0; j < rightCols; j++) {
+                for (let j = 0; j < innerSize; j++) {
+                  const jKey = Dimension.KeyAt(rightCols, j);
+                  const firstKKey = Dimension.KeyAt(leftCols, 0);
+
                   // Know that right.v is non-empty because it wouldn't have
                   // passed the matrix test otherwise, therefore also know that
                   // left.v[i].v is non-empty since it has the same length.
                   let sum: Outcome | null = multiplyValues(
-                    (left.v[i] as Array).v[0],
-                    (right.v[0] as Array).v[j],
+                    (left as any).v[iKey].v[firstKKey],
+                    (right as any).v[firstKKey].v[jKey],
                   );
 
                   if (sum === null) {
                     return null;
                   }
 
-                  for (let k = 1; k < leftCols; k++) {
+                  for (let k = 1; k < middleSize; k++) {
+                    const kKey = Dimension.KeyAt(leftCols, k);
+
                     const product = multiplyValues(
-                      (left.v[i] as Array).v[k],
-                      (right.v[k] as Array).v[j]
+                      (left as any).v[iKey].v[kKey],
+                      (right as any).v[kKey].v[jKey]
                     );
 
                     if (product === null) {
@@ -1487,6 +1626,7 @@ namespace Outcome {
                     sum = EvalVanillaOperator(exp, '+', [sum, product]);
 
                     if (sum.t === 'exception') {
+                      // TODO: Return the exception
                       return null;
                     }
                   }
@@ -1494,10 +1634,10 @@ namespace Outcome {
                   row.push(sum);
                 }
 
-                rows.push(Array(row));
+                rows.push(Dimension.BuildArrayObject(rightCols, row));
               }
 
-              return Array(rows);
+              return Dimension.BuildArrayObject(leftRows, rows);
             }
 
             const maybeNum = (

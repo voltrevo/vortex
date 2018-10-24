@@ -7,6 +7,7 @@ TODO: Raw strings
 TODO: Handle importing invalid files
 TODO: Naming consistency module vs file
 TODO: Argument destructuring
+TODO: Consider extending addition, subtraction, and matrix multiplication to inconsistent dimensions by (basically) assuming zeros
 TODO: When an exception is generated, add a subnote for each level of the stack
 TODO: Validator should call into Analyzer without waiting for complete context
 TODO: Fix asserts passing due to unknowns during test (generally want asserts to be graceful with unknowns in the actual language) (test requires all imports to resolve?)
