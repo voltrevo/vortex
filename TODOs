@@ -41,7 +41,6 @@ TODO: {unreachable;}? asserts that statement is unreachable
         Should this be equivalent to {assert false;}?
 
 TODO: enable {x: i32 = 3;} for creation, which generalizes nicely to allow some names to be created by destructuring and not others: {[x: i32, y] = [1, 2]}
-TODO: Count operations in analyzer
 TODO: implement: if (foo := maybeFoo(); foo != null) { return foo; }
 TODO: 0b 0x 0o literals (allow floats and e, e.g. 0b1.1e5 == 48 (what to do about e in hex?))
 TODO: Implement TODO prioritization and sorting

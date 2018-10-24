@@ -14,6 +14,7 @@ type Analyzer = {
     [f: string]: Analyzer.Module_ | undefined;
   };
   scope: Analyzer.ScopeMapT;
+  steps: number;
 };
 
 function Analyzer(pack: Package): Analyzer {
@@ -45,6 +46,7 @@ function Analyzer(pack: Package): Analyzer {
     fileStack: [],
     modules,
     scope: Analyzer.ScopeMapT(),
+    steps: 0,
   };
 }
 
@@ -1365,6 +1367,8 @@ namespace Analyzer {
       az: Analyzer,
       exp: Syntax.Expression
     ): [Outcome, Analyzer] {
+      az = { ...az, steps: az.steps + 1 };
+
       switch (exp.t) {
         case 'NUMBER': { return [Outcome.Number(Number(exp.v)), az]; }
         case 'BOOL': { return [Outcome.Bool(exp.v), az]; }

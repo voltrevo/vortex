@@ -80,6 +80,7 @@ namespace Compiler {
       (
         // TODO: plural
         `Compiled ${files.length} file(s) in ` +
+        `${az.steps} steps and ` +
         `${(1000 * SecondsDiff(before, after)).toFixed(3)}ms`
       )
     ));
