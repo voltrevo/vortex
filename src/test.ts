@@ -6,8 +6,6 @@ import formatLocation from './formatLocation';
 import Note from './Note';
 import pretty from './pretty';
 
-const start = Date.now();
-
 const files = (spawnSync('git', ['ls-files'])
   .stdout
   .toString()
@@ -89,6 +87,9 @@ const readFile = (file: string): string | null => {
 };
 
 const allNotes: Note[] = Compiler.compile(files, readFile);
+
+log.info('>>> info: ' + allNotes[allNotes.length - 1].message);
+console.error();
 
 const moreFiles = [...files];
 
@@ -246,10 +247,6 @@ for (const tagInfo of unseenTagList.slice(0, unseenTagLimit)) {
 if (unseenTagLen > 5) {
   log.error(`>>> error: ${unseenTagLen - 5} more unseen tags`);
 }
-
-log.info('>>> info: ' +
-  `Compiled ${moreFiles.length} files in ${Date.now() - start}ms`
-);
 
 if (ok) {
   log.info('>>> info: Tag matching succeeded');
