@@ -1,4 +1,3 @@
-TODO: Fix asserts passing due to unknowns during test (generally want asserts to be graceful with unknowns in the actual language) (test requires all imports to resolve?)
 TODO: When an exception is generated, add a subnote for each level of the stack (check errors are surfaced when importing invalid files)
 TODO: Add tests for every possible note
 TODO: String interpolation
@@ -15,7 +14,25 @@ TODO: Validator should call into Analyzer without waiting for complete context
 TODO: Establish location indexing/linking so that caching the result of programs with equivalent syntax trees is possible
 TODO: Spaceship operator <=>
 TODO: Element-wise operators
-TODO: assert.static?, also are type annotations equivalent to embedded assert.static?
+TODO: assert.static?, also are type annotations equivalent to embedded assert.static? Should assert just be static? ie never exist at runtime and are an error if not proven to be true
+
+TODO: {unreachable;}? asserts that statement is unreachable
+        e.g.
+
+        if (0 <= x && x < 2) {
+          if (x == 0) {
+            return 'zero';
+          }
+
+          if (x == 1) {
+            return 'one';
+          }
+
+          unreachable;
+        }
+
+        Should this be equivalent to {assert false;}?
+
 TODO: enable {x: i32 = 3;} for creation, which generalizes nicely to allow some names to be created by destructuring and not others: {[x: i32, y] = [1, 2]}
 TODO: Count operations in analyzer
 TODO: implement: if (foo := maybeFoo(); foo != null) { return foo; }

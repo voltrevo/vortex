@@ -26,7 +26,7 @@ function Analyzer(pack: Package): Analyzer {
       modules[dep] = {
         loaded: false,
         program: null,
-        outcome: Outcome.Unknown(),
+        outcome: Outcome.Unknown('error'),
       };
 
       continue;
@@ -152,7 +152,7 @@ namespace Analyzer {
 
     if (mo.t === 'exception') {
       // TODO: This happens due to imports, and should be prevented elsewhere
-      mo = Outcome.Unknown();
+      mo = Outcome.Unknown('error');
     }
 
     const out = {
@@ -415,7 +415,7 @@ namespace Analyzer {
         'Import loop detected: ' + loopStr
       ));
 
-      return [Outcome.Unknown(), az];
+      return [Outcome.Unknown('error'), az];
     }
 
     let entryMod: Analyzer.Module_;
@@ -560,6 +560,13 @@ namespace Analyzer {
           }
 
           if (out.t === 'Unknown') {
+            az = Analyzer.addNote(az, Note(
+              statement.v.p,
+              out.v,
+              ['assert-unknown'],
+              `Asserted an unknown value`,
+            ));
+
             // TODO!: maybeException handling, treat as unknown as error
             // sometimes
             return [null, az];
@@ -784,7 +791,7 @@ namespace Analyzer {
               ));
 
               // Maybe exception?
-              mout = Outcome.Unknown();
+              mout = Outcome.Unknown('warn');
               break;
             }
           }
@@ -1672,8 +1679,8 @@ namespace Analyzer {
 
             if (testOut.cat !== 'concrete') {
               // TODO: Bailing with unknown here because comparison can't yet
-              // handle non-concrete values
-              return [Outcome.Unknown(), az];
+              // handle non-concrete values, also get level from contents
+              return [Outcome.Unknown('error'), az];
             }
 
             testValue = testOut;
@@ -1692,8 +1699,8 @@ namespace Analyzer {
             if (testValue !== null) {
               if (label.cat !== 'concrete') {
                 // TODO: Bailing with unknown here because comparison can't yet
-                // handle non-concrete values
-                return [Outcome.Unknown(), az];
+                // handle non-concrete values, also get level from contents
+                return [Outcome.Unknown('error'), az];
               }
 
               if (!Outcome.SameType(testValue, label)) {
@@ -1906,7 +1913,7 @@ namespace Analyzer {
       }
 
       if (func.t === 'Unknown') {
-        return [Outcome.Unknown(), az];
+        return [func, az];
       }
 
       let out: TailCall | Outcome | null = null;

@@ -618,7 +618,7 @@ namespace Outcome {
 
       if (obj.t === 'Unknown' || index.t === 'Unknown') {
         // TODO: maybeException?
-        return Unknown();
+        return Unknown.reduce(obj, index);
       }
 
       const maybeValue = obj.v[index.v];
@@ -766,10 +766,51 @@ namespace Outcome {
     };
   }
 
-  export type Unknown = { cat: 'valid', t: 'Unknown', v: null };
+  export type Level = 'info' | 'warn' | 'error';
 
-  export function Unknown(): Unknown {
-    return { cat: 'valid', t: 'Unknown', v: null };
+  export type Unknown = {
+    cat: 'valid',
+    t: 'Unknown',
+    v: Level,
+  };
+
+  export function Unknown(v: Level): Unknown {
+    return { cat: 'valid', t: 'Unknown', v };
+  }
+
+  export namespace Unknown {
+    export function reduce(left: Value, right: Value): Unknown {
+      let count = (
+        (left.t === 'Unknown' ? 1 : 0) +
+        (right.t === 'Unknown' ? 1 : 0)
+      );
+
+      if (count === 0) {
+        throw new Error('Shouldn\'t be possible');
+      }
+
+      if (count === 1) {
+        if (left.t === 'Unknown') {
+          return left;
+        }
+
+        if (right.t === 'Unknown') {
+          return right;
+        }
+
+        throw new Error('Shouldn\'t be possible');
+      }
+
+      if (left.v === 'error' || right.v === 'error') {
+        return Unknown('error');
+      }
+
+      if (left.v === 'warn' || right.v === 'warn') {
+        return Unknown('warn');
+      }
+
+      return Unknown('info');
+    }
   }
 
   export type Exception = {
@@ -1012,7 +1053,7 @@ namespace Outcome {
         )).join(',')
       }}`;
 
-      case 'Unknown': return '<unknown>';
+      case 'Unknown': return `<unknown ${v.v}>`;
       case 'exception': return `<exception: ${v.v.message}>`;
     }
   }
@@ -1391,7 +1432,7 @@ namespace Outcome {
               (left.t === 'Unknown' || left.t === 'Number') &&
               (right.t === 'Unknown' || right.t === 'Number')
             ) {
-              return Unknown();
+              return Unknown.reduce(left, right);
             }
 
             return null;
@@ -1537,7 +1578,7 @@ namespace Outcome {
           }
 
           if (left.t === 'Unknown' || right.t === 'Unknown') {
-            return Unknown();
+            return Unknown.reduce(left, right);
           }
 
           return null;
@@ -1731,7 +1772,7 @@ namespace Outcome {
             (left.t === 'Unknown' || right.t === 'Unknown') &&
             (left.t === 'Number' || right.t === 'Number')
           ) {
-            return Unknown();
+            return Unknown.reduce(left, right);
           }
 
           return null;
@@ -1754,7 +1795,7 @@ namespace Outcome {
             (left.t === 'Unknown' || right.t === 'Unknown') &&
             (left.t === 'Bool' || right.t === 'Bool')
           ) {
-            return Unknown();
+            return Unknown.reduce(left, right);
           }
 
           return null;
@@ -1767,14 +1808,14 @@ namespace Outcome {
         case '<=':
         case '>=': {
           if (left.t === 'Unknown' || right.t === 'Unknown') {
-            return Unknown();
+            return Unknown.reduce(left, right);
           }
 
           if (left.cat === 'valid' || right.cat === 'valid') {
             // (This case is for objects & arrays that have unknowns)
             // TODO: Should be possible to sometimes (often?) determine
             // ordering without concrete array/object.
-            return Unknown();
+            return Unknown('error'); // TODO: level should be based on contents
           }
 
           return TypedComparison(exp, op, left, right)

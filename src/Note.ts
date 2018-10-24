@@ -107,6 +107,7 @@ namespace Note {
     'for-condition' |
     'for-control' |
     'assert-non-bool' |
+    'assert-unknown' |
     'iteration-limit' |
     'assignment' |
     'statistics' |
@@ -191,6 +192,7 @@ namespace Note {
     'for-condition',
     'for-control',
     'assert-non-bool',
+    'assert-unknown',
     'iteration-limit',
     'assignment',
     'statistics',
