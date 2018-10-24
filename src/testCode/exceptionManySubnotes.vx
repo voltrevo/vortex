@@ -1,0 +1,16 @@
+func foo() {
+  ret := bar(); // #error #exception-trace
+  return ret;
+};
+
+func bar() {
+  ret := baz(); // #error #exception-trace
+  return ret;
+};
+
+func baz() {
+  assert false; // #error #exception-source
+  return 0;
+};
+
+return foo(); // #error #exception-trace

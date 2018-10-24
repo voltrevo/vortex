@@ -140,6 +140,7 @@ namespace Package {
           level: 'error',
           tags: ['error', 'package', 'not-found'],
           message: 'File not found: ' + file,
+          subnotes: [],
         }],
       };
     }
@@ -159,6 +160,7 @@ namespace Package {
             [e.hash.loc.first_line, e.hash.loc.first_column + 2],
             [e.hash.loc.last_line, e.hash.loc.last_column + 1],
           ]],
+          subnotes: [],
         });
       } else {
         notes.push({
@@ -166,6 +168,7 @@ namespace Package {
           level: 'error',
           tags: ['error', 'syntax', 'internal'],
           message: e.message,
+          subnotes: [],
         });
       }
 

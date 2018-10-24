@@ -1,0 +1,5 @@
+func a() => b();
+func b() => c();
+func c() => [][0]; // #error #out-of-bounds #exception #exception-source
+
+return a(); // #error #exception-trace

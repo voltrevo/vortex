@@ -295,12 +295,8 @@ namespace Analyzer {
 
     az = pushFile(az, file);
 
-    let out: Outcome | analyze.TailCall;
-    [out, az] = analyze.body(az, moduleEntry.program);
-
-    while (typeof out === 'function') {
-      [out, az] = out(az);
-    }
+    let out: Outcome;
+    [out, az] = analyze.fileBlock(az, moduleEntry.program);
 
     [mod, az] = setModule(az, file, out);
 
@@ -493,9 +489,31 @@ namespace Analyzer {
       return [mout, az];
     }
 
+    export function fileBlock(
+      az: Analyzer,
+      program: Syntax.Program,
+    ): [Outcome, Analyzer] {
+      let out: TailCall | Outcome | null;
+      [out, az] = blockImpl(az, program, true);
+
+      if (out === null || typeof out === 'function') {
+        throw new Error('Shouldn\'t be possible');
+      }
+
+      return [out, az];
+    }
+
     export function block(
       az: Analyzer,
       program: Syntax.Program,
+    ): [TailCall | Outcome | null, Analyzer] {
+      return blockImpl(az, program, false);
+    }
+
+    function blockImpl(
+      az: Analyzer,
+      program: Syntax.Program,
+      isFile: boolean,
     ): [TailCall | Outcome | null, Analyzer] {
       const hoists: Syntax.FunctionExpression[] = [];
       const statements: Syntax.Statement[] = [];
@@ -525,6 +543,16 @@ namespace Analyzer {
 
       for (const statement of statements) {
         [mout, az] = analyze.statement(az, statement);
+
+        if (isFile && typeof mout === 'function') {
+          while (typeof mout === 'function') {
+            [mout, az] = mout(az);
+          }
+
+          if (mout.t === 'exception') {
+            mout = Outcome.Exception.unwind(mout, statement);
+          }
+        }
 
         if (mout !== null) {
           break;

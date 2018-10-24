@@ -1,4 +1,4 @@
-for {
+for { // #error #exception-trace
   assert false; // #error #assert-false
   return 1;
 }

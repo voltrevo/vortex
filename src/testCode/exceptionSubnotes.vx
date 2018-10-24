@@ -1,5 +1,0 @@
-func a() => b(); // TODO: Show error here
-func b() => c(); // TODO: Show error here
-func c() => [][0]; // #error #out-of-bounds
-
-return a(); // TODO: Show error here

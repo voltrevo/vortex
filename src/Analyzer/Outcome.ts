@@ -828,6 +828,9 @@ namespace Outcome {
     tags: Note.Tag[],
     message: string
   ): Exception {
+    tags = ['exception', 'exception-source', ...tags];
+    message = 'Exception: ' + message;
+
     if (exp !== null) {
       return { cat: 'invalid', t: 'exception', v: Note(
         exp.p,
@@ -837,10 +840,27 @@ namespace Outcome {
       ) };
     }
 
+    tags = ['error', ...tags];
+
     return { cat: 'invalid', t: 'exception', v: { tags, message } };
   }
 
   export namespace Exception {
+    function sameLine(a: Note.Pos, b: Note.Pos) {
+      const [aFile, aRng] = a;
+      const [bFile, bRng] = b;
+
+      if (aFile !== bFile) {
+        return false;
+      }
+
+      if (aRng === null || bRng === null) {
+        return aRng === bRng;
+      }
+
+      return aRng[0][0] === bRng[0][0];
+    }
+
     export function unwind(e: Exception, exp: Syntax.Element) {
       if (!('level' in e.v)) {
         return JsObject.assign({}, e, {
@@ -851,11 +871,23 @@ namespace Outcome {
         });
       }
 
+      // Don't add multiple notes on the same line
+      for (const n of Note.flatten([e.v])) {
+        if (sameLine(n.pos, exp.p)) {
+          return e;
+        }
+      }
+
       return JsObject.assign({}, e, {
         v: JsObject.assign({}, e.v, {
-          subnotes: [...(e.v.subnotes || []), JsObject.assign({}, e.v, {
+          subnotes: [...e.v.subnotes, JsObject.assign({}, e.v, {
             pos: exp.p,
-            message: 'Threw: ' + e.v.message,
+            message: 'Trace (' + e.v.subnotes.length + '): ' + e.v.message,
+            tags: [
+              ...e.v.tags.filter(t => t !== 'exception-source'),
+              'exception-trace',
+            ],
+            subnotes: [],
           })]
         }),
       });

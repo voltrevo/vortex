@@ -6,7 +6,7 @@ type Note = {
   level: 'error' | 'warn' | 'info';
   tags: Note.Tag[],
   message: string;
-  subnotes?: Note[];
+  subnotes: Note[];
 };
 
 function Note(
@@ -14,7 +14,7 @@ function Note(
   level: 'error' | 'warn' | 'info',
   tags: Note.Tag[],
   message: string,
-  subnotes?: Note[],
+  subnotes: Note[] = [],
 ): Note {
   /* TODO: restore this
   const categories = [
@@ -40,7 +40,7 @@ function Note(
     level,
     tags: [level, ...tags],
     message,
-    ...(subnotes ? { subnotes } : {}),
+    subnotes,
   };
 }
 
@@ -87,6 +87,8 @@ namespace Note {
     'variable-disambiguation' |
     'unused' |
     'exception' |
+    'exception-source' |
+    'exception-trace' |
     'not-implemented' |
     'assert-false' |
     'type-error' |
@@ -172,6 +174,8 @@ namespace Note {
     'variable-disambiguation',
     'unused',
     'exception',
+    'exception-source',
+    'exception-trace',
     'not-implemented',
     'assert-false',
     'type-error',
