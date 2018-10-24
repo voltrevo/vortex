@@ -1,4 +1,3 @@
-TODO: Fix output formatting bug for type errors in imports (and position issue?)
 TODO: Implement ! and ~ operators
 TODO: Handle importing invalid files
 TODO: Fix asserts passing due to unknowns during test (generally want asserts to be graceful with unknowns in the actual language) (test requires all imports to resolve?)

@@ -140,16 +140,28 @@ const inputs: ({ type: 'file', name: string } | string)[] = [];
     throw new Error('no input files');
   }
 
+  const fileCache: { [file: string]: string | null } = {};
+
   const readFile = (file: string) => {
+    if (file === '(compiler)') {
+      return null;
+    }
+
     let text: string | null = null;
 
     if (file.slice(0, 2) !== '@/') {
       throw new Error('Expected a local read: ' + file);
     }
 
+    if (file in fileCache) {
+      return fileCache[file];
+    }
+
     try {
       text = fs.readFileSync(file.slice(2)).toString()
     } catch {}
+
+    fileCache[file] = text;
 
     return text;
   };
@@ -175,14 +187,14 @@ const inputs: ({ type: 'file', name: string } | string)[] = [];
     }
 
     if (format.value === 'pretty' && notes.length > 0) {
-      console.log();
+      console.error();
     }
 
     for (const note of notes) {
       switch (format.value) {
         case 'pretty': {
           // TODO: Make this better
-          pretty.print(note, text || '');
+          pretty.print(note, readFile(note.pos[0]));
           break;
         }
 

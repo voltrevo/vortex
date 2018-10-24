@@ -23,7 +23,13 @@ namespace pretty {
     return formatLocation(note.pos) + ':';
   }
 
-  export function print(note: Note, text: string) {
+  export function print(note: Note, text: string | null) {
+    if (text === null) {
+      printCompact(note);
+      console.error();
+      return;
+    }
+
     for (const line of ErrorContext(note, text)) {
       console.error(line);
     }
@@ -111,7 +117,7 @@ namespace pretty {
     const [, pos] = note.pos;
 
     if (!pos) {
-      return [CompactString(note)];
+      return [CompactString(note), ''];
     }
 
     const output = [];
