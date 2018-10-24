@@ -1,0 +1,4 @@
+assert true:String() == 'true';
+assert false:String() == 'false';
+
+return 'done';
