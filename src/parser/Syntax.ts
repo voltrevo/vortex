@@ -86,6 +86,8 @@ namespace Syntax {
     'unary ++' |
     'unary -' |
     'unary +' |
+    'unary !' |
+    'unary ~' |
     never
   );
 
@@ -280,6 +282,8 @@ namespace Syntax {
       case '>=':
       case 'unary -':
       case 'unary +':
+      case 'unary !':
+      case 'unary ~':
       case 'log.info':
       case 'log.warn':
       case 'log.error':

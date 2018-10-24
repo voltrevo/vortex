@@ -450,6 +450,8 @@ namespace Analyzer {
       case 'import':
       case 'unary -':
       case 'unary +':
+      case 'unary !':
+      case 'unary ~':
       case 'unary --':
       case 'unary ++': {
         const [value] = analyze.subExpression(analyzer, exp);
@@ -989,11 +991,13 @@ namespace Analyzer {
           case '>=':
           case 'unary -':
           case 'unary +':
+          case 'unary !':
+          case 'unary ~':
           case 'Array':
           case 'Object':
 
-          // Well, this is a top expression but it's processed as a statement, does
-          // it really belong here? Something is up TODO.
+          // Well, this is a top expression but it's processed as a statement,
+          // does it really belong here? Something is up TODO.
           case 'import':
 
           case 'switch':
@@ -1448,6 +1452,51 @@ namespace Analyzer {
           }
 
           const out = Outcome.Number(right.v * (exp.t === 'unary -' ? -1 : 1));
+          return [out, az];
+        }
+
+        case 'unary !': {
+          let right: Outcome;
+          [right, az] = subExpression(az, exp.v);
+
+          if (right.t === 'exception' || right.t === 'Unknown') {
+            return [right, az];
+          }
+
+          if (right.t !== 'Bool') {
+            const ex = Outcome.Exception(
+              exp,
+              ['type-error'], // TODO: tagging
+              `Type error: !${right.t}`,
+            );
+
+            return [ex, az];
+          }
+
+          const out = Outcome.Bool(!right.v);
+          return [out, az];
+        }
+
+        case 'unary ~': {
+          let right: Outcome;
+          [right, az] = subExpression(az, exp.v);
+
+          if (right.t === 'exception' || right.t === 'Unknown') {
+            return [right, az];
+          }
+
+          // TODO: Actually ~ should only be available on integer types
+          if (right.t !== 'Number') {
+            const ex = Outcome.Exception(
+              exp,
+              ['type-error'], // TODO: tagging
+              `Type error: ~${right.t}`,
+            );
+
+            return [ex, az];
+          }
+
+          const out = Outcome.Number(~right.v);
           return [out, az];
         }
 

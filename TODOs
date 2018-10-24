@@ -1,4 +1,3 @@
-TODO: Implement ! and ~ operators
 TODO: Fix asserts passing due to unknowns during test (generally want asserts to be graceful with unknowns in the actual language) (test requires all imports to resolve?)
 TODO: When an exception is generated, add a subnote for each level of the stack (check errors are surfaced when importing invalid files)
 TODO: Add tests for every possible note

@@ -2,6 +2,8 @@ import math from 'core'; // #warn #unused
 
 import factorial; // #info #is-duplicated TODO:error:not-found
 
+!true; // #warn #no-effect
+
 // main doesn't have special significance
 func main(n: i32) { // #warn #unused
   2 ** 3 ** 4; // #warn #no-effect #top-expression
