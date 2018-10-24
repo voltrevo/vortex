@@ -1,0 +1,13 @@
+assert {}:Column() == {};
+
+assert {
+  foo: null,
+  bar: null,
+  baz: null,
+}:Column() == {
+  foo: [null],
+  bar: [null],
+  baz: [null],
+};
+
+return 'done';

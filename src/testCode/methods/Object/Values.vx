@@ -1,0 +1,4 @@
+assert []:Values() == [];
+assert ['a', 'b']:Values() == ['a', 'b'];
+
+return 'done';

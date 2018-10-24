@@ -1,0 +1,4 @@
+assert []:Column() == [];
+assert ['foo', 'bar', 'baz']:Column() == [['foo'], ['bar'], ['baz']];
+
+return 'done';

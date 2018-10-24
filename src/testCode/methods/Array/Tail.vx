@@ -1,0 +1,4 @@
+assert ['foo']:Tail() == [];
+assert ['foo', 'bar', 'baz']:Tail() == ['bar', 'baz'];
+
+return 'done';

@@ -1,0 +1,4 @@
+assert []:Row() == [[]];
+assert ['foo', 'bar', 'baz']:Row() == [['foo', 'bar', 'baz']];
+
+return 'done';

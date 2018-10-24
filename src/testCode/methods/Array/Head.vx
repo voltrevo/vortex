@@ -1,0 +1,4 @@
+assert ['foo']:Head() == [];
+assert ['foo', 'bar', 'baz']:Head() == ['foo', 'bar'];
+
+return 'done';
