@@ -703,12 +703,26 @@ namespace Analyzer {
           }
 
           case 'for': {
+            debugger;
             const { control, block } = statement.v;
 
             // TODO: Impure function - captures and contributes az mutations
             function cond(): Outcome.Bool | Outcome.Exception {
               if (control === null || control.t === 'range') {
-                return Outcome.Bool(true);
+                const synthTrue = {
+                  t: 'BOOL' as 'BOOL',
+                  v: true,
+                  p: statement.p,
+                };
+
+                let condOut: Outcome;
+                [condOut, az] = subExpression(az, synthTrue);
+
+                if (condOut.t !== 'Bool' && condOut.t !== 'exception') {
+                  throw new Error('Shouldn\'t be possible');
+                }
+
+                return condOut;
               }
 
               const condExp = (() => {
@@ -835,21 +849,6 @@ namespace Analyzer {
                   mout = null;
                 }
 
-                break;
-              }
-
-              if (iterations >= 2048) {
-                // TODO: Count total operations and limit execution based on that
-                // instead.
-                az = Analyzer.addNote(az, Note(
-                  statement.p,
-                  'warn',
-                  ['iteration-limit'],
-                  'Hit iteration limit of 2048',
-                ));
-
-                // Maybe exception?
-                mout = Outcome.Unknown('warn');
                 break;
               }
             }
