@@ -57,16 +57,9 @@ func slow() { // #warn #unused
 
 func fast() {
   largest := 0;
-  keepGoing := true;
+  sum := 1996;
 
-  for (sum := 1998; sum >= 0 && keepGoing; sum--) {
-    sumMod10 := sum % 10;
-
-    for (sumMod10 != 6 && sumMod10 != 0) {
-      sum--;
-      sumMod10 = sum % 10;
-    }
-
+  for {
     rem := sum % 2;
     i := (sum + rem) / 2;
     j := (sum - rem) / 2;
@@ -75,19 +68,35 @@ func fast() {
       return largest;
     }
 
-    for (i * j > largest && i <= 999) {
-      product := i * j;
-
-      if (product % 10 == 9 && isPalindrome(product)) {
-        largest = product;
-      }
-
+    for (i * j % 10 != 9) {
       i++;
       j--;
     }
+
+    for (i <= 999 && i * j > largest) {
+      product := i * j;
+
+      if (isPalindrome(product)) {
+        largest = product;
+      }
+
+      i += switch (i % 10) {
+        3 => 10;
+        1 => 8;
+        9 => 2;
+      };
+
+      j = sum - i;
+    }
+
+    sum -= switch (sum % 10) {
+      6 => 6;
+      0 => 4;
+    };
   }
 
   return largest;
 };
 
-return fast();
+log.info fast(); // #info #custom
+return 'done';

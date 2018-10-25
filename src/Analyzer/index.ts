@@ -657,7 +657,7 @@ namespace Analyzer {
               statement.v.p,
               level,
               ['custom'],
-              Outcome.LongString(out),
+              Outcome.LongString(out) + ' (steps: ' + az.steps + ')',
             ));
 
             return [null, az];
