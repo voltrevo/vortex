@@ -1,0 +1,175 @@
+func basic(N) { // #warn #unused
+  oddPrimes := [];
+  oddN := N - 2;
+  i := 5;
+  flip := true;
+
+  for (oddPrimes:Length() < oddN) {
+    isPrime := true;
+
+    for (p of oddPrimes) {
+      if (p * p > i) {
+        break;
+      }
+
+      if (i % p == 0) {
+        isPrime = false;
+        break;
+      }
+    }
+
+    if (isPrime) {
+      oddPrimes ++= [i];
+    }
+
+    i += 2;
+
+    flip = !flip;
+    if (flip) {
+      i += 2;
+    }
+  }
+
+  log.info oddPrimes:Last();
+
+  return 'done';
+};
+
+// Surprisingly not as fast (need to try, removing evens, maybe wheel)
+func eratosthenes(N) { // #warn #unused
+  flags := [false, false];
+  limit := 8000;
+
+  for (i := 2; i < limit; i++) {
+    flags ++= [true];
+  }
+
+  i := 2;
+
+  for (i * i < limit) {
+    for (j := i * 2; j < limit; j += i) {
+      flags[j] = false;
+    }
+
+    i++;
+
+    for (!flags[i]) {
+      i++;
+    }
+  }
+
+  primes := [];
+
+  for (i = 0; i < limit; i++) {
+    if (flags[i]) {
+      primes ++= [i];
+    }
+  }
+
+  found := primes:Length() >= N;
+
+  if (found) {
+    log.info primes[N - 1];
+  }
+
+  if (!found) {
+    log.warn 'Insufficient limit, found ' ++ primes:Length():String() ++ ' primes';
+  }
+
+  return 'done';
+};
+
+func Wheel(primes) {
+  wheel := {};
+  wheel.primes := primes;
+  wheel.size := wheel.primes:reduce(*);
+  wheel.start := wheel.primes:Last() + 1;
+
+  for {
+    startGood := true;
+
+    for (p of wheel.primes) {
+      if (wheel.start % p == 0) {
+        startGood = false;
+        break;
+      }
+    }
+
+    if (startGood) {
+      break;
+    }
+
+    wheel.start += 1;
+  }
+
+  wheel.end := wheel.start + wheel.size;
+  wheel.jumps := [];
+
+  i := wheel.start + 1;
+  j := 1;
+
+  for {
+    jGood := true;
+
+    for (p of wheel.primes) {
+      if (i % p == 0) {
+        jGood = false;
+        break;
+      }
+    }
+
+    if (jGood) {
+      wheel.jumps ++= [j];
+      j = 0;
+    }
+
+    i++;
+    j++;
+
+    if (i == wheel.end) {
+      wheel.jumps ++= [j];
+      break;
+    }
+  }
+
+  return wheel;
+};
+
+func wheelStrat(N) {
+  initPrimes := [2, 3, 5, 7];
+
+  if (N <= initPrimes:Length()) {
+    return initPrimes[N - 1];
+  }
+
+  wheel := Wheel(initPrimes);
+  extraPrimes := [wheel.start];
+
+  extraN := N - initPrimes:Length();
+
+  i := wheel.start;
+
+  for (extraPrimes:Length() < extraN) {
+    for (j of wheel.jumps) {
+      i += j;
+
+      for (p of extraPrimes) {
+        if (p * p > i) {
+          extraPrimes ++= [i];
+          break;
+        }
+
+        if (i % p == 0) {
+          break;
+        }
+      }
+    }
+  }
+
+  return extraPrimes[extraN - 1];
+};
+
+// TODO: Can't handle the actual 10,001 in a reasonable time yet
+log.info wheelStrat(1001); // #info #custom
+
+return 'done';
