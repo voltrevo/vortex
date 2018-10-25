@@ -1,0 +1,57 @@
+primes := [2, 3, 5, 7, 11, 13, 17, 19];
+
+func factorize(n) {
+  res := [];
+
+  for (p of primes) {
+    i := 0;
+
+    for (n % p == 0) {
+      n /= p;
+      i++;
+    }
+
+    res ++= [i];
+  }
+
+  return res;
+};
+
+func unfactorize(factors) {
+  res := 1;
+
+  for ([p, i] of [primes, factors]:Transpose()) {
+    res *= p ** i;
+  }
+
+  return res;
+};
+
+func max(pair) => switch (pair[0] > pair[1]) {
+  true => pair[0];
+  false => pair[1];
+};
+
+func lcm(a, b) => [a, b]:Transpose():map(max);
+
+func range(first, last) {
+  res := [];
+
+  for (first <= last) {
+    res ++= [first];
+    first++;
+  }
+
+  return res;
+};
+
+res := (range(1, 20)
+  :map(factorize)
+  :reduce(lcm)
+);
+
+res = unfactorize(res);
+
+log.info res; // #info #custom
+
+return 'done';
