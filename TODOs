@@ -17,7 +17,7 @@ TODO: Add Set as another native data structure
         {(1, 2)} ^ {(2, 3)} == {(1, 3)}
         {(1, 2)}:PowerSet() == {({()}, {(1)}, {(2)}, {(1, 2)})}
 
-TODO: Finish defining packaging system
+TODO: Finish defining packaging system, warn on unused files
 TODO: Consider extending addition, subtraction, and matrix multiplication to inconsistent dimensions by (basically) assuming zeros (possibly use :+:, :*: etc)
 TODO: Validator should call into Analyzer without waiting for complete context
 TODO: Establish location indexing/linking so that caching the result of programs with equivalent syntax trees is possible
