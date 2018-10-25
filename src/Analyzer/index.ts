@@ -641,6 +641,10 @@ namespace Analyzer {
             let out: Outcome;
             [out, az] = subExpression(az, statement.v);
 
+            if (out.t === 'exception') {
+              return [out, az];
+            }
+
             const level = (() => {
               switch (statement.t) {
                 case 'log.info': return 'info' as 'info';
@@ -2190,6 +2194,7 @@ namespace Analyzer {
       return (az: Analyzer) => {
         let funcAz = { ...funcv.v.az,
           modules: az.modules,
+          steps: az.steps,
           // TODO: Not doing this should break in an interesting way
           // fileStack: az.fileStack,
         };
@@ -2222,13 +2227,13 @@ namespace Analyzer {
         if (body.t === 'expBody') {
           let nextOut: TailCall | Outcome;
           [nextOut, funcAz] = tailableSubExpression(funcAz, body.v);
-          az = { ...az, modules: funcAz.modules };
+          az = { ...az, modules: funcAz.modules, steps: funcAz.steps };
           return [nextOut, az];
         }
 
         let nextOut: TailCall | Outcome;
         [nextOut, funcAz] = analyze.body(funcAz, body);
-        az = { ...az, modules: funcAz.modules };
+        az = { ...az, modules: funcAz.modules, steps: funcAz.steps };
         return [nextOut, az];
       };
     }
