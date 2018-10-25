@@ -8,6 +8,7 @@ namespace Compiler {
   export function compile(
     files: string[],
     readFile: (f: string) => string | null,
+    opt: { stepLimit?: number } = {},
   ): Note[] {
     const before = process.hrtime();
 
@@ -43,7 +44,7 @@ namespace Compiler {
       }
     }
 
-    let az = Analyzer(pack);
+    let az = Analyzer(pack, opt);
 
     for (const f of Object.keys(pack.modules)) {
       const m = pack.modules[f];

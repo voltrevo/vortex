@@ -145,6 +145,7 @@ namespace Note {
     'creation' |
     'comparison' |
     'function-comparison' |
+    'step-limit-reached' |
     never
   );
 
@@ -232,6 +233,7 @@ namespace Note {
     'creation',
     'comparison',
     'function-comparison',
+    'step-limit-reached',
   ];
 
   export const isTag = memberTestFromArray<Tag>(tags);

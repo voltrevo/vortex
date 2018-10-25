@@ -179,7 +179,11 @@ const inputs: ({ type: 'file', name: string } | string)[] = [];
 
     const file = '@/' + (typeof input === 'string' ? '(stdin)' : input.name);
 
-    let notes = Compiler.compile([file], f => f === file ? text : readFile(f));
+    let notes = Compiler.compile(
+      [file],
+      f => f === file ? text : readFile(f),
+      { stepLimit: 20000 }, // TODO: Make this configurable
+    );
 
     if (format.value !== 'native') {
       // TODO: Need to remove Note/FileNote distinction

@@ -15,9 +15,13 @@ type Analyzer = {
   };
   scope: Analyzer.ScopeMapT;
   steps: number;
+  stepLimit: number | null;
 };
 
-function Analyzer(pack: Package): Analyzer {
+function Analyzer(
+  pack: Package,
+  opt: { stepLimit?: number } = {},
+): Analyzer {
   const modules: Analyzer['modules'] = {};
 
   for (const dep of Object.keys(pack.modules)) {
@@ -41,12 +45,15 @@ function Analyzer(pack: Package): Analyzer {
     };
   }
 
+  const { stepLimit = null } = opt;
+
   return {
     pack,
     fileStack: [],
     modules,
     scope: Analyzer.ScopeMapT(),
     steps: 0,
+    stepLimit,
   };
 }
 
@@ -704,6 +711,10 @@ namespace Analyzer {
 
               let condOut: Outcome;
               [condOut, az] = subExpression(az, condExp);
+
+              if (condOut.t === 'exception') {
+                return condOut;
+              }
 
               if (condOut.t !== 'Bool') {
                 const ex = Outcome.Exception(
@@ -1408,6 +1419,16 @@ namespace Analyzer {
       az: Analyzer,
       exp: Syntax.Expression
     ): [Outcome, Analyzer] {
+      if (az.stepLimit !== null && az.steps >= az.stepLimit) {
+        const ex = Outcome.Exception(
+          exp,
+          ['step-limit-reached'],
+          'Reached step limit of ' + az.steps,
+        );
+
+        return [ex, az];
+      }
+
       az = { ...az, steps: az.steps + 1 };
 
       switch (exp.t) {
