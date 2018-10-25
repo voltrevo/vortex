@@ -79,9 +79,10 @@ namespace Compiler {
       ['statistics', 'compile-time'],
       (
         // TODO: plural
-        `Compiled ${files.length} file(s) in ` +
-        `${az.steps} steps and ` +
-        `${(1000 * SecondsDiff(before, after)).toFixed(3)}ms`
+        `Compiled ${files.length} file(s), ` +
+        `${az.steps} steps, ` +
+        `${(1000 * SecondsDiff(before, after)).toFixed(3)}ms, ` +
+        `${(1e6 * SecondsDiff(before, after) / az.steps).toFixed(3)}μs/step`
       )
     ));
 
