@@ -486,10 +486,13 @@ namespace Analyzer {
       az: Analyzer,
       program: Syntax.Program,
     ): [TailCall | Outcome, Analyzer] {
-      let mout: Outcome | TailCall | null;
+      let mout: StatementResult;
       [mout, az] = block(az, program);
 
-      if (mout === null) {
+      if (
+        mout === null ||
+        (typeof mout !== 'function' && mout.t === 'break')
+      ) {
         throw new Error('Shouldn\'t be possible');
       }
 
@@ -500,10 +503,10 @@ namespace Analyzer {
       az: Analyzer,
       program: Syntax.Program,
     ): [Outcome, Analyzer] {
-      let out: TailCall | Outcome | null;
+      let out: StatementResult;
       [out, az] = blockImpl(az, program, true);
 
-      if (out === null || typeof out === 'function') {
+      if (out === null || typeof out === 'function' || out.t === 'break') {
         throw new Error('Shouldn\'t be possible');
       }
 
@@ -513,7 +516,7 @@ namespace Analyzer {
     export function block(
       az: Analyzer,
       program: Syntax.Program,
-    ): [TailCall | Outcome | null, Analyzer] {
+    ): [StatementResult, Analyzer] {
       return blockImpl(az, program, false);
     }
 
@@ -521,7 +524,7 @@ namespace Analyzer {
       az: Analyzer,
       program: Syntax.Program,
       isFile: boolean,
-    ): [TailCall | Outcome | null, Analyzer] {
+    ): [StatementResult, Analyzer] {
       const hoists: Syntax.FunctionExpression[] = [];
       const statements: Syntax.Statement[] = [];
 
@@ -546,7 +549,7 @@ namespace Analyzer {
         });
       }
 
-      let mout: TailCall | Outcome | null = null;
+      let mout: StatementResult = null;
 
       for (const statement of statements) {
         [mout, az] = analyze.statement(az, statement);
@@ -569,13 +572,15 @@ namespace Analyzer {
       return [mout, az];
     }
 
+    type StatementResult = Outcome | Outcome.Break | TailCall | null;
+
     export function statement(
       az: Analyzer,
       statement: Syntax.Statement,
-    ): [Outcome | TailCall | null, Analyzer] {
-      let result: Outcome | TailCall | null;
+    ): [StatementResult, Analyzer] {
+      let result: StatementResult;
 
-      [result, az] = ((): [Outcome | TailCall | null, Analyzer] => {
+      [result, az] = ((): [StatementResult, Analyzer] => {
         switch (statement.t) {
           case 'e': {
             return topExpression(az, statement.v);
@@ -685,7 +690,7 @@ namespace Analyzer {
 
             if (condOut.v === true) {
               az = Analyzer.push(az);
-              let blockOut: Outcome | TailCall | null;
+              let blockOut: StatementResult;
               [blockOut, az] = analyze.block(az, block);
               az = Analyzer.pop(az);
 
@@ -736,7 +741,7 @@ namespace Analyzer {
             az = Analyzer.push(az);
 
             let iterations = 0;
-            let mout: TailCall | Outcome | null = null;
+            let mout: StatementResult = null;
 
             let rangeData: null | {
               targetExp: Syntax.Expression,
@@ -824,6 +829,12 @@ namespace Analyzer {
               iterations++;
 
               if (mout !== null) {
+                if (typeof mout !== 'function' && mout.t === 'break') {
+                  // By breaking below, the break is fulfilled and we reset
+                  // to null.
+                  mout = null;
+                }
+
                 break;
               }
 
@@ -860,7 +871,10 @@ namespace Analyzer {
             return [null, az];
           }
 
-          case 'break':
+          case 'break': {
+            return [Outcome.Break(), az];
+          }
+
           case 'continue': {
             const ex = Outcome.Exception(
               statement,

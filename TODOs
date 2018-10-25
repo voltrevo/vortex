@@ -1,3 +1,4 @@
+TODO: Validator should emit an error for breaks and continues outside of loops
 TODO: Add tests for every possible note
 TODO: Return failure note should occur on last line instead of last statement
 TODO: Syntax to turn on compiler notes for return value

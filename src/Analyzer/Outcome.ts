@@ -895,6 +895,16 @@ namespace Outcome {
     }
   }
 
+  export type Break = {
+    cat: 'invalid',
+    t: 'break',
+    v: null,
+  };
+
+  export function Break(): Break {
+    return { cat: 'invalid', t: 'break', v: null };
+  }
+
   export type Concrete = (
     String |
     Number |
@@ -1477,7 +1487,7 @@ namespace Outcome {
 
     op: Syntax.VanillaOperator,
     [left, right]: [Outcome.Value, Outcome.Value],
-  ): Outcome {
+  ): Outcome.Value | Outcome.Exception {
     let value: Outcome | null = (() => {
       switch (op) {
         case '-':
