@@ -1,0 +1,8 @@
+globalState := {count: 0};
+
+func bad() {
+  globalState.count += 1; // #error #capture-mutation
+  return globalState.count;
+};
+
+return bad();
