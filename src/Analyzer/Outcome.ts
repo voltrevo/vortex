@@ -867,6 +867,7 @@ namespace Outcome {
           v: JsObject.assign({}, e.v, {
             pos: exp.p,
             level: 'error',
+            subnotes: [],
           }),
         });
       }
