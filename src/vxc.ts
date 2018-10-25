@@ -182,7 +182,7 @@ const inputs: ({ type: 'file', name: string } | string)[] = [];
     let notes = Compiler.compile(
       [file],
       f => f === file ? text : readFile(f),
-      { stepLimit: 20000 }, // TODO: Make this configurable
+      { stepLimit: 1000000 }, // TODO: Make this configurable
     );
 
     if (format.value !== 'native') {
