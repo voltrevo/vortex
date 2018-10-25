@@ -1,0 +1,88 @@
+func Digits(n) {
+  res := [];
+
+  for (n > 0) {
+    digit := n % 10;
+    res ++= [digit];
+    n -= digit;
+    n /= 10;
+  }
+
+  return res;
+};
+
+func isPalindrome(n) {
+  digits := Digits(n);
+
+  left := 0;
+  right := digits:Length() - 1;
+
+  for (left < right) {
+    if (digits[left] != digits[right]) {
+      return false;
+    }
+
+    left++;
+    right--;
+  }
+
+  return true;
+};
+
+func slow() { // #warn #unused
+  largest := 0;
+  keepGoing := true;
+
+  for (i := 999; i > 9 && keepGoing; i--) {
+    for (j := i; j > 9 && keepGoing; j--) {
+      product := i * j;
+
+      if (product <= largest) {
+        keepGoing = false;
+      }
+
+      if (product > largest) {
+        if (isPalindrome(product)) {
+          largest = product;
+          keepGoing = false;
+        }
+      }
+    }
+
+    keepGoing = (i - 1) ** 2 > largest;
+  }
+
+  return largest;
+};
+
+func fast() {
+  largest := 0;
+  keepGoing := true;
+
+  for (sum := 1998; sum >= 0 && keepGoing; sum--) {
+    rem := sum % 2;
+    i := (sum + rem) / 2;
+    j := (sum - rem) / 2;
+
+    if (i * j <= largest) {
+      return largest;
+    }
+
+    for (i * j > largest && i <= 999) {
+      product := i * j;
+
+      if (product % 10 == 9) {
+        if (isPalindrome(product)) {
+          largest = product;
+        }
+      }
+
+      i++;
+      j--;
+    }
+  }
+
+  return largest;
+};
+
+return fast();
