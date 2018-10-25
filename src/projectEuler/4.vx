@@ -60,6 +60,13 @@ func fast() {
   keepGoing := true;
 
   for (sum := 1998; sum >= 0 && keepGoing; sum--) {
+    sumMod10 := sum % 10;
+
+    for (sumMod10 != 6 && sumMod10 != 0) {
+      sum--;
+      sumMod10 = sum % 10;
+    }
+
     rem := sum % 2;
     i := (sum + rem) / 2;
     j := (sum - rem) / 2;
