@@ -1470,6 +1470,32 @@ namespace Analyzer {
           return [func, az];
         }
 
+        case '&&':
+        case '||': {
+          let left: Outcome;
+          [left, az] = subExpression(az, exp.v[0]);
+
+          if (left.t === 'exception') {
+            return [left, az];
+          }
+
+          if (left.t !== 'Bool') {
+            const ex = Outcome.Exception(
+              null,
+              ['type-error', 'operator'],
+              `Type error: ${left.t} ${exp.t} <not evaluated>`,
+            );
+
+            return [ex, az];
+          }
+
+          if (left.v === (exp.t === '||')) {
+            return [left, az];
+          }
+
+          return subExpression(az, exp.v[1]);
+        }
+
         case '**':
         case '<<':
         case '>>':
@@ -1477,8 +1503,6 @@ namespace Analyzer {
         case '>=':
         case '==':
         case '!=':
-        case '&&':
-        case '||':
         case '*':
         case '/':
         case '%':

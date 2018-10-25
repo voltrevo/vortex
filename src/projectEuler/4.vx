@@ -71,10 +71,8 @@ func fast() {
     for (i * j > largest && i <= 999) {
       product := i * j;
 
-      if (product % 10 == 9) {
-        if (isPalindrome(product)) {
-          largest = product;
-        }
+      if (product % 10 == 9 && isPalindrome(product)) {
+        largest = product;
       }
 
       i++;
