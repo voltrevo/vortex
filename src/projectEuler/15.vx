@@ -1,0 +1,41 @@
+import Repeat from './util';
+
+size := 21;
+
+func countPaths(cache, pos) {
+  [i, j] := pos;
+
+  if (i > j) {
+    [i, j] = [j, i];
+  }
+
+  if (i >= size || j >= size) {
+    return [0, cache];
+  }
+
+  cached := cache[i][j];
+
+  if (cached != -1) {
+    return [cached, cache];
+  }
+
+  [path1, path2] := [0, 0];
+
+  [path1, cache] = countPaths(cache, [i + 1, j]);
+  [path2, cache] = countPaths(cache, [i, j + 1]);
+
+  res := path1 + path2;
+
+  cache[i][j] = res;
+  return [res, cache];
+};
+
+cache := Repeat(Repeat(-1, size), size);
+cache[size - 1][size - 1] = 1;
+
+paths := 0;
+[paths, cache] = countPaths(cache, [0, 0]);
+
+log.info paths;
+
+return 'done';
