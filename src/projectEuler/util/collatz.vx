@@ -1,0 +1,81 @@
+smallLimit := 256;
+
+func collatzByK(args) {
+  [mul, rem] := args;
+
+  steps := 0;
+
+  for {
+    if (mul % 2 == 1) {
+      return [steps, [mul, rem]];
+    }
+
+    remM2 := rem % 2;
+
+    [mul, rem] = switch (remM2) {
+      0 => [mul, rem] / 2;
+      1 => (3 * [mul, rem] + [0, 1]) / 2;
+    };
+
+    steps += 1 + remM2;
+  }
+};
+
+table := (func() {
+  res := [];
+
+  for (i := 0; i < smallLimit; i++) {
+    res ++= [collatzByK([smallLimit, i])];
+  }
+
+  return res;
+})();
+
+func collatzSmall(n) {
+  steps := 0;
+
+  for (n != 1) {
+    mod2 := n % 2;
+
+    n = switch (mod2) {
+      0 => n / 2;
+      1 => (3 * n + 1) / 2;
+    };
+
+    steps += 1 + mod2;
+  }
+
+  return steps;
+};
+
+smallTable := (func() {
+  res := [0];
+
+  for (i := 1; i < smallLimit; i++) {
+    res ++= [collatzSmall(i)];
+  }
+
+  return res;
+})();
+
+func collatz(n) {
+  s := 0;
+
+  if (n < smallLimit) {
+    return smallTable[n];
+  }
+
+  for (n >= smallLimit) {
+    r := n % smallLimit;
+    k := (n - r) / smallLimit;
+
+    [steps, [mul, rem]] := table[r];
+
+    s += steps;
+    n = k * mul + rem;
+  }
+
+  return s + smallTable[n];
+};
+
+return collatz;
