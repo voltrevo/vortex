@@ -1,0 +1,58 @@
+import Primes from './util';
+
+primes := Primes(300);
+
+func factorize(n) {
+  res := [];
+
+  for (p of primes) {
+    i := 0;
+
+    for (n % p == 0) {
+      n /= p;
+      i++;
+    }
+
+    res ++= [i];
+
+    if (n == 1) {
+      break;
+    }
+  }
+
+  return res;
+};
+
+func NFactors(n) => (factorize(n)
+  :map(func(pi) => pi + 1)
+  :reduce(*)
+);
+
+tri := 1;
+i := 1;
+
+maxFactors := 0;
+
+guessFactors := 2 * 3 * 5 * 7;
+
+for {
+  nFactors := NFactors(tri);
+
+  if (nFactors > maxFactors) {
+    log.info [i, tri, nFactors, factorize(tri)];
+    maxFactors = nFactors;
+
+    if (maxFactors > 500) {
+      return 'done';
+    }
+  }
+
+  for {
+    i++;
+    tri += i;
+
+    if (tri % guessFactors == 0) {
+      break;
+    }
+  }
+}
