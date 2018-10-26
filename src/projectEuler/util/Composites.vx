@@ -1,0 +1,61 @@
+import Primes from './util';
+
+// Generates most composite numbers less than limit, misses composites with
+// prime factors greater than the square root. Not sure how to efficiently
+// fill in the blanks at this stage. Could be combined with an
+// eratosthenes-like sieve greater-than-sqrt numbers need to be processed
+// rather than less-than-sqrt numbers. Not sure whether that's efficient or
+// not. Conceived during attempt at speeding up problem 10.
+func Composites() {
+  res := [];
+  limit := 1000;
+
+  smallPrimes := Primes(32);
+
+  iParts := smallPrimes:map(func(p) => 0 * p);
+  smallLen := smallPrimes:Length();
+  i := 1;
+
+  for {
+    j := 0;
+
+    for {
+      iParts[j] += 1;
+      p := smallPrimes[j];
+      i *= p;
+
+      ok := i < limit;
+
+      if (!ok) {
+        for (part := iParts[j]; part > 0; part--) {
+          i /= p;
+        }
+
+        iParts[j] = 0;
+
+        j++;
+
+        if (j >= smallLen) {
+          return res;
+        }
+      }
+
+      if (ok) {
+        j = 0;
+
+        if (i != p) {
+          res ++= [i];
+        }
+      }
+    }
+
+    iParts[0] += 1;
+    i *= smallPrimes[0];
+    log.info iParts;
+    assert false;
+  }
+
+  return 'done';
+};
+
+return Composites;

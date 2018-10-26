@@ -1,0 +1,9 @@
+import Primes from './util';
+
+// Supposed to be going up to 2,000,000 but 20,000 is already maxing out on
+// processing limit.
+sum := Primes(20000):reduce(+);
+
+log.info sum;
+
+return 'done';
