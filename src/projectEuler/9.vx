@@ -1,0 +1,49 @@
+func slow() { // #warn #unused
+  for (abSum := 500; abSum <= 667; abSum++) {
+    aLimit := abSum / 2;
+
+    for (a := 1; a < aLimit; a++) {
+      b := abSum - a;
+      c := 1000 - abSum;
+
+      if (a * a + b * b == c * c) {
+        log.info [a, b, c];
+        return a * b * c;
+      }
+    }
+  }
+
+  return 'failed';
+};
+
+func fast() {
+  c := 5;
+
+  for {
+    c2 := c * c;
+
+    for (a := 1; a < c; a++) {
+      for (b := a + 1; b < c; b++) {
+        // Could speed up dramatically by choosing b to jump to the next factor
+        // of 1000 but this solution is already easily fast enough.
+        abc := a + b + c;
+
+        if (1000 % abc == 0) {
+          a2b2 := a * a + b * b;
+
+          if (a2b2 == c2) {
+            log.info [a, b, c]; // #info #custom
+            [a, b, c] *= 1000 / abc;
+            return a * b * c;
+          }
+        }
+      }
+    }
+
+    c++;
+  }
+};
+
+log.info fast(); // #info #custom
+
+return 'done';
