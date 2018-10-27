@@ -1,0 +1,12 @@
+return func(n) {
+  res := [];
+
+  for (n > 0) {
+    digit := n % 10;
+    res ++= [digit];
+    n -= digit;
+    n /= 10;
+  }
+
+  return res;
+};

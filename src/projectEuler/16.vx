@@ -1,0 +1,35 @@
+import Digits from './util';
+
+n := [1];
+sz := 1000000000000;
+
+for (pow := 0; pow < 1000; pow += 10) {
+  carry := 0;
+  i := 0;
+
+  for {
+    if (i >= n:Length()) {
+      if (carry > 0) {
+        n ++= [carry];
+      }
+
+      break;
+    }
+
+    d := n[i] * 1024 + carry;
+    rem := d % sz;
+
+    n[i] = rem;
+    carry = (d - rem) / sz;
+
+    i++;
+  }
+}
+
+log.info n;
+
+log.info (n
+  :map(func(part) => Digits(part):reduce(+)):reduce(+)
+);
+
+return 'done';
