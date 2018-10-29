@@ -1,4 +1,3 @@
-TODO: Fix validator not emitting error for top level subscript operator
 TODO: Fix scope collision with func parameter being reported without file name
 TODO: Validator should emit an error for breaks and continues outside of loops
 TODO: Add tests for every possible note
