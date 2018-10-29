@@ -10,7 +10,11 @@ const files = (spawnSync('git', ['ls-files'])
   .stdout
   .toString()
   .split('\n')
-  .filter(line => line !== '' && /\.vx$/.test(line))
+  .filter(line => (
+    line !== '' &&
+    /\.vx$/.test(line) &&
+    !/projectEuler/.test(line)
+  ))
   .sort((a, b) => (
     a.toUpperCase() < b.toUpperCase() ? -1 :
     a.toUpperCase() === b.toUpperCase() ? 0 :
@@ -86,7 +90,11 @@ const readFile = (file: string): string | null => {
   return text;
 };
 
-const allNotes: Note[] = Compiler.compile(files, readFile);
+const allNotes: Note[] = Compiler.compile(
+  files,
+  readFile,
+  { stepLimit: 3000000 },
+);
 
 log.info('>>> info: ' + allNotes[allNotes.length - 1].message);
 console.error();
