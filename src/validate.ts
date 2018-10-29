@@ -304,16 +304,19 @@ function validateFunctionScope(
             mutationTarget = el.v;
           }
 
-          if (mutationTarget !== null) {
+          let nameTarget = mutationTarget;
+
+          if (nameTarget !== null) {
             while (
-              mutationTarget.t === '.' ||
-              mutationTarget.t === 'subscript'
+              nameTarget.t === '.' ||
+              nameTarget.t === 'subscript'
             ) {
-              mutationTarget = mutationTarget.v[0];
+              nameTarget = nameTarget.v[0];
             }
 
-            if (mutationTarget.t === 'IDENTIFIER') {
-              const name = mutationTarget.v;
+            if (nameTarget.t === 'IDENTIFIER') {
+              const name = nameTarget.v;
+              const pos = nameTarget.p;
 
               return Syntax.Children(el).map(child => {
                 if (child !== mutationTarget) {
@@ -325,7 +328,7 @@ function validateFunctionScope(
                 return {
                   t: 'IDENTIFIER-mutationTarget' as 'IDENTIFIER-mutationTarget',
                   v: name,
-                  p: mutationTarget.p,
+                  p: pos,
                 };
               });
             }

@@ -1,7 +1,7 @@
 globalState := {count: 0}; // #info #capture-mutation
 
 func bad() {
-  globalState.count += 1; // #error #capture-mutation
+  [globalState.count] += [1]; // #error #capture-mutation
   return globalState.count; // #info #capture-mutation
 };
 
