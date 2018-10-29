@@ -703,7 +703,6 @@ namespace Analyzer {
           }
 
           case 'for': {
-            debugger;
             const { control, block } = statement.v;
 
             // TODO: Impure function - captures and contributes az mutations
