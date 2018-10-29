@@ -29,7 +29,7 @@ namespace Compiler {
         continue;
       }
 
-      const validationNotes = validate(f, m.program);
+      const validationNotes = validate(m.program);
 
       notes.push(...validationNotes);
 

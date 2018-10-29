@@ -8,10 +8,10 @@ import traverse from './traverse';
 
 export type Importer = (importExp: Syntax.Import) => Note[];
 
-export function validate(file: string, program: Syntax.Program): Note[] {
+export function validate(program: Syntax.Program): Note[] {
   const notes: Note[] = [];
 
-  notes.push(...validateBody(file, program));
+  notes.push(...validateBody(program));
 
   notes.push(...traverse<Syntax.Element, Note>(program, el => {
     const subNotes: Note[] = [];
@@ -21,14 +21,14 @@ export function validate(file: string, program: Syntax.Program): Note[] {
     const exp = Syntax.expressionFromElement(el);
 
     if (exp) {
-      subNotes.push(...validateExpression(file, exp));
+      subNotes.push(...validateExpression(exp));
     }
 
     if (el.t === 'Func') {
       const { body } = el.v;
 
       if (body.t === 'block') {
-        subNotes.push(...validateBody(file, body));
+        subNotes.push(...validateBody(body));
       }
     } else if (el.t === 'for') {
       // TODO: Disallow shallow return unless continue might occur
@@ -42,7 +42,7 @@ export function validate(file: string, program: Syntax.Program): Note[] {
         if (body.t === 'block') {
           // TODO: Allow methods to implicitly return this? Enforce return
           // consistency at least.
-          subNotes.push(...validateMethodBody(file, body));
+          subNotes.push(...validateMethodBody(body));
         }
       }
     } else if (el.t === 'block') {
@@ -67,7 +67,7 @@ export function validate(file: string, program: Syntax.Program): Note[] {
     return subNotes;
   }, Syntax.Children));
 
-  notes.push(...validateScope(file, program));
+  notes.push(...validateScope(program));
 
   return notes;
 }
@@ -131,7 +131,7 @@ type VInfo = {
   };
 };
 
-function validateScope(file: string, block: Syntax.Block) {
+function validateScope(block: Syntax.Block) {
   const synthFunction: Syntax.FunctionExpression = {
     t: 'Func',
     v: {
@@ -143,7 +143,6 @@ function validateScope(file: string, block: Syntax.Block) {
   };
 
   const funcValidation = validateFunctionScope(
-    file,
     { root: {} },
     synthFunction,
   );
@@ -156,7 +155,6 @@ function validateScope(file: string, block: Syntax.Block) {
 }
 
 function validateFunctionScope(
-  file: string,
   outerScope: Scope<ST>,
   func: Syntax.FunctionExpression,
 ): {
@@ -683,7 +681,7 @@ function validateFunctionScope(
         scope = Scope.set(scope, ident.v, mods);
       }
     } else if (item.t === 'Func') {
-      const funcValidation = validateFunctionScope(file, scope, item);
+      const funcValidation = validateFunctionScope(scope, item);
 
       notes.push(...funcValidation.notes);
       scope = funcValidation.scope;
@@ -734,7 +732,7 @@ function validateFunctionScope(
   return { notes, closure, scope };
 }
 
-function validateBody(file: string, body: Syntax.Block): Note[] {
+function validateBody(body: Syntax.Block): Note[] {
   const lastStatement: Syntax.Statement | undefined = (
     body.v[body.v.length - 1]
   );
@@ -748,10 +746,10 @@ function validateBody(file: string, body: Syntax.Block): Note[] {
     )];
   }
 
-  return validateStatementWillReturn(file, lastStatement);
+  return validateStatementWillReturn(lastStatement);
 }
 
-function validateMethodBody(file: string, body: Syntax.Block): Note[] {
+function validateMethodBody(body: Syntax.Block): Note[] {
   if (!hasReturn(body)) {
     // Methods are allowed to not have return statements. In this case they
     // implicitly `return this;`. However, if there are any return statements,
@@ -759,7 +757,7 @@ function validateMethodBody(file: string, body: Syntax.Block): Note[] {
     return [];
   }
 
-  return validateBody(file, body);
+  return validateBody(body);
 }
 
 function isValidTopExpression(e: Syntax.Expression) {
@@ -844,7 +842,7 @@ function InvalidAssignmentTargets(
   return invalids;
 }
 
-function validateExpression(file: string, exp: Syntax.Expression): Note[] {
+function validateExpression(exp: Syntax.Expression): Note[] {
   const notes: Note[] = [];
 
   if (exp.topExp && !isValidTopExpression(exp)) {
@@ -966,10 +964,7 @@ function validateExpression(file: string, exp: Syntax.Expression): Note[] {
   return notes;
 }
 
-function validateStatementWillReturn(
-  file: string,
-  statement: Syntax.Statement,
-): Note[] {
+function validateStatementWillReturn(statement: Syntax.Statement): Note[] {
   if (statement.t === 'return') {
     return [];
   }
