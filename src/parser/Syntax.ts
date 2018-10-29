@@ -301,7 +301,7 @@ namespace Syntax {
         return [value];
       }
 
-      case 'arg': { return []; }
+      case 'arg': { return el.v.filter(notNull); }
       case 'block': { return el.v; }
       case 'Array': { return el.v; }
 
@@ -453,5 +453,7 @@ namespace Syntax {
     return parserUntyped.parse(programText);
   }
 }
+
+function notNull<T>(x: T | null): x is T { return x !== null; }
 
 export default Syntax;

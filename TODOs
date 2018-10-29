@@ -1,5 +1,4 @@
 TODO: Emit unreachable errors based on break, continue
-TODO: Fix scope collision with func parameter being reported without file name
 TODO: Add tests for every possible note
 TODO: Return failure note should occur on last line instead of last statement
 TODO: Syntax to turn on compiler notes for return value
