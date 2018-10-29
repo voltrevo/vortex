@@ -4,7 +4,6 @@ TODO: Validation warning for variables that can be moved to an inner scope
 TODO: String interpolation
 TODO: Raw strings
 TODO: Naming consistency module vs file
-TODO: Argument destructuring
 TODO: Class syntax
 TODO: Cross-type comparison operators e.g. :<:
 TODO: Allow object keys to be any functionless value

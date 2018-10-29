@@ -1,0 +1,7 @@
+func abSum({a, b}) => a + b;
+func abPairSum({a, b, pair: [x, y]}) => a + b + x + y;
+
+assert abSum({a: 1, b: 2}) == 3;
+assert abPairSum({a: 1, b: 2, pair: [3, 4]}) == 10;
+
+return 'done';

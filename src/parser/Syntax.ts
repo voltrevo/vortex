@@ -216,7 +216,7 @@ namespace Syntax {
 
   export type Arg = {
     t: 'arg',
-    v: Identifier,
+    v: Expression,
     p: Pos
   };
 

@@ -180,10 +180,29 @@ function validateFunctionScope(
   }
 
   for (const arg of func.v.args) {
-    items.push({
-      t: 'CreateVariable',
-      v: arg.v,
-    });
+    function DestructuredArguments(
+      target: Syntax.Expression
+    ): CreateVariable[] {
+      if (target.t === 'Object') {
+        return concat(target.v.map(([, exp]) => DestructuredArguments(exp)));
+      }
+
+      if (target.t === 'Array') {
+        return concat(target.v.map(DestructuredArguments));
+      }
+
+      if (target.t === 'IDENTIFIER') {
+        return [{
+          t: 'CreateVariable' as 'CreateVariable',
+          v: target,
+        }];
+      }
+
+      // TODO: Emit errors for invalid argument
+      return [];
+    }
+
+    items.push(...DestructuredArguments(arg.v));
   }
 
   items.push(...traverse<ScopeItem, ScopeItem>(
@@ -307,16 +326,6 @@ function validateFunctionScope(
           }
 
           if (mutationTarget !== null) {
-            function concat<T>(arr: T[][]): T[] {
-              const res: T[] = [];
-
-              for (const el of arr) {
-                res.push(...el);
-              }
-
-              return res;
-            }
-
             function TargetBases(
               target: Syntax.Element
             ): IdentifierMutationTarget[] {
@@ -1149,4 +1158,14 @@ function hasReturn(block: Syntax.Block) {
   }
 
   return false;
+}
+
+function concat<T>(arr: T[][]): T[] {
+  const res: T[] = [];
+
+  for (const el of arr) {
+    res.push(...el);
+  }
+
+  return res;
 }

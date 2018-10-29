@@ -1146,7 +1146,7 @@ namespace Analyzer {
             [
               'Destructuring length mismatch: ',
               leftExp.v.length,
-              ' targets but only ',
+              ' targets for ',
               numRightValues,
               ' values',
             ].join(''),
@@ -2246,13 +2246,21 @@ namespace Analyzer {
         for (let i = 0; i < args.length; i++) {
           // TODO: Argument destructuring
           const arg = args[i];
-          const argIdentifier = funcv.v.exp.v.args[i].v;
+          const argExp = funcv.v.exp.v.args[i].v;
 
-          funcAz = Analyzer.add(
+          let mex: Outcome.Exception | null;
+          [mex, funcAz] = createOrAssign(
             funcAz,
-            argIdentifier.v,
-            arg,
+            argExp,
+            argExp,
+            ':=',
+            arg
           );
+
+          if (mex !== null) {
+            az = { ...az, modules: funcAz.modules, steps: funcAz.steps };
+            return [mex, az];
+          }
         }
 
         const body = funcv.v.exp.v.body;
