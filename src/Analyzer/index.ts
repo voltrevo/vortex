@@ -491,7 +491,7 @@ namespace Analyzer {
 
       if (
         mout === null ||
-        (typeof mout !== 'function' && mout.t === 'break')
+        (typeof mout !== 'function' && mout.t === 'control')
       ) {
         throw new Error('Shouldn\'t be possible');
       }
@@ -506,7 +506,7 @@ namespace Analyzer {
       let out: StatementResult;
       [out, az] = blockImpl(az, program, true);
 
-      if (out === null || typeof out === 'function' || out.t === 'break') {
+      if (out === null || typeof out === 'function' || out.t === 'control') {
         throw new Error('Shouldn\'t be possible');
       }
 
@@ -572,7 +572,7 @@ namespace Analyzer {
       return [mout, az];
     }
 
-    type StatementResult = Outcome | Outcome.Break | TailCall | null;
+    type StatementResult = Outcome | Outcome.Control | TailCall | null;
 
     export function statement(
       az: Analyzer,
@@ -842,10 +842,18 @@ namespace Analyzer {
               iterations++;
 
               if (mout !== null) {
-                if (typeof mout !== 'function' && mout.t === 'break') {
-                  // By breaking below, the break is fulfilled and we reset
-                  // to null.
-                  mout = null;
+                if (typeof mout !== 'function' && mout.t === 'control') {
+                  // By breaking/continuing below, the control outcome is
+                  // fulfilled and we reset to null.
+                  if (mout.v == 'break') {
+                    mout = null;
+                    break;
+                  }
+
+                  if (mout.v === 'continue') {
+                    mout = null;
+                    continue;
+                  }
                 }
 
                 break;
@@ -870,18 +878,11 @@ namespace Analyzer {
           }
 
           case 'break': {
-            return [Outcome.Break(), az];
+            return [Outcome.Control('break'), az];
           }
 
           case 'continue': {
-            const ex = Outcome.Exception(
-              statement,
-              // TODO: Need to capture more structure in compiler notes
-              ['not-implemented'],
-              `Not implemented: ${statement.t} statement`,
-            );
-
-            return [ex, az];
+            return [Outcome.Control('continue'), az];
           }
         }
       })();

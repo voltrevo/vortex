@@ -895,14 +895,14 @@ namespace Outcome {
     }
   }
 
-  export type Break = {
+  export type Control = {
     cat: 'invalid',
-    t: 'break',
-    v: null,
+    t: 'control',
+    v: 'break' | 'continue',
   };
 
-  export function Break(): Break {
-    return { cat: 'invalid', t: 'break', v: null };
+  export function Control(v: 'break' | 'continue'): Control {
+    return { cat: 'invalid', t: 'control', v };
   }
 
   export type Concrete = (

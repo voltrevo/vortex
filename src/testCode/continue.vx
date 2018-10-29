@@ -1,0 +1,14 @@
+nums := [1, 2, 3, 11, 12, 13];
+sum := 0;
+
+for (n of nums) {
+  if (n < 10) {
+    continue;
+  }
+
+  sum += n;
+}
+
+assert sum == 36;
+
+return 'done';
