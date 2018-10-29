@@ -2246,7 +2246,7 @@ namespace Analyzer {
         for (let i = 0; i < args.length; i++) {
           // TODO: Argument destructuring
           const arg = args[i];
-          const [argIdentifier] = funcv.v.exp.v.args[i].v;
+          const argIdentifier = funcv.v.exp.v.args[i].v;
 
           funcAz = Analyzer.add(
             funcAz,

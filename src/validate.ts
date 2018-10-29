@@ -182,7 +182,7 @@ function validateFunctionScope(
   for (const arg of func.v.args) {
     items.push({
       t: 'CreateVariable',
-      v: arg.v[0],
+      v: arg.v,
     });
   }
 

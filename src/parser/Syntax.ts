@@ -216,7 +216,7 @@ namespace Syntax {
 
   export type Arg = {
     t: 'arg',
-    v: [Identifier, Identifier | null],
+    v: Identifier,
     p: Pos
   };
 
@@ -301,7 +301,7 @@ namespace Syntax {
         return [value];
       }
 
-      case 'arg': { return el.v.filter(notNull); }
+      case 'arg': { return [el.v]; }
       case 'block': { return el.v; }
       case 'Array': { return el.v; }
 
@@ -467,7 +467,5 @@ namespace Syntax {
     return program;
   }
 }
-
-function notNull<T>(x: T | null): x is T { return x !== null; }
 
 export default Syntax;

@@ -65,7 +65,8 @@
 "("                   return '('
 ")"                   return ')'
 "="                   return '='
-":"                   return ':'
+[:](?=[a-zA-Z])       return 'METHODLOOKUP'
+":"                   return 'ATTR'
 ","                   return ','
 "!"                   return '!'
 "~"                   return '~'
@@ -98,7 +99,7 @@
 %left '*' '/' '%'
 %right '**'
 %left '!' '~' POSTFIX UMINUS UPLUS
-%left '(' ')' '[' ']' '.' ':'
+%left '(' ')' '[' ']' '.' METHODLOOKUP
 
 %start program
 
@@ -227,10 +228,8 @@ nonEmptyArgs
     ;
 
 arg
-    : identifier
-        {$$ = { t: 'arg', v: [$1, null], p: L(@$) }}
-    | identifier ':' identifier
-        {$$ = { t: 'arg', v: [$1, $3], p: L(@$) }}
+    : e
+        {$$ = { t: 'arg', v: $1, p: L(@$) }}
     ;
 
 block
@@ -323,7 +322,7 @@ e
         {$$ = $2;}
     | e '(' eList ')'
         {$$ = { t: 'functionCall', v: [$1, $3], p: L(@$) }}
-    | e ':' identifier
+    | e METHODLOOKUP identifier
         {$$ = { t: 'methodLookup', v: [$1, $3], p: L(@$) }}
     | e '[' e ']'
         {$$ = { t: 'subscript', v: [$1, $3], p: L(@$) }}
@@ -500,9 +499,9 @@ propListNonEmpty
     ;
 
 prop
-    : identifier ':' eop
+    : identifier ATTR eop
         {$$ = [$1, $3]}
-    | string ':' eop
+    | string ATTR eop
         {$$ = [$1, $3]}
     | identifier
         {$$ = [$1, $1]}
@@ -517,7 +516,7 @@ class
 
 /* TODO: proper type parsing (just identifier right now) */
 classType
-    : ':' identifier
+    : ATTR identifier
         {$$ = $2}
     ;
 
@@ -529,7 +528,7 @@ classMembers
     ;
 
 classMember
-    : identifier ':' identifier ';'
+    : identifier ATTR identifier ';'
         {$$ = [$1, $3]}
     ;
 
@@ -541,7 +540,7 @@ classMethods
     ;
 
 classMethod
-    : classMethodModifiers ':' identifier '(' args ')' classMethodBody
+    : classMethodModifiers METHODLOOKUP identifier '(' args ')' classMethodBody
         {$$ = { modifiers: $1, name: $3, args: $5, body: $7, p: L(@$) }}
     ;
 
