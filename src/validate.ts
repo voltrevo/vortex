@@ -764,14 +764,30 @@ function validateReturn(body: Syntax.Block): Note[] {
 
   if (!lastStatement) {
     return [Note(
-      body.p,
+      lastChar(body.p),
       'error',
       ['validation', 'control-flow', 'return-failure', 'empty-body'],
-      'Empty body',
+      'Control reaches end of body without returning a value',
     )];
   }
 
-  return validateStatementWillReturn(lastStatement);
+  const { ok, notes } = validateStatementWillReturn(lastStatement);
+
+  if (!ok) {
+    notes.push(Note(
+      lastChar(body.p),
+      'error',
+      ['validation', 'control-flow', 'return-failure'],
+      'Control might reach end of body without returning a value',
+    ));
+  }
+
+  return notes;
+}
+
+function lastChar(pos: Syntax.Pos): Syntax.Pos {
+  const [file, [, end]] = pos;
+  return [file, [end, end]];
 }
 
 function validateMethodBody(body: Syntax.Block): Note[] {
@@ -989,20 +1005,27 @@ function validateExpression(exp: Syntax.Expression): Note[] {
   return notes;
 }
 
-function validateStatementWillReturn(statement: Syntax.Statement): Note[] {
+function validateStatementWillReturn(
+  statement: Syntax.Statement,
+): {
+  ok: boolean,
+  notes: Note[]
+} {
   if (statement.t === 'return') {
-    return [];
+    return { ok: true, notes: [] };
   }
+
+  let ok = true;
 
   if (statement.t === 'for') {
     const { control, block } = statement.v;
 
-    const issues: Note[] = [];
+    const notes: Note[] = [];
 
     if (!hasReturn(block)) {
-      issues.push(Note(
+      notes.push(Note(
         statement.p,
-        'error',
+        'warn',
         [
           'validation',
           'control-flow',
@@ -1015,14 +1038,20 @@ function validateStatementWillReturn(statement: Syntax.Statement): Note[] {
           'return statements'
         ),
       ));
+
+      ok = false;
     }
 
     if (control === null) {
       const breaks = findBreaks(block);
 
-      issues.push(...breaks.map(brk => Note(
+      if (breaks.length > 0) {
+        ok = false;
+      }
+
+      notes.push(...breaks.map(brk => Note(
         brk.p,
-        'error',
+        'warn',
         [
           'validation',
           'control-flow',
@@ -1031,14 +1060,16 @@ function validateStatementWillReturn(statement: Syntax.Statement): Note[] {
           'break-prevents-return',
         ],
         (
-          'Break statement not allowed in for loop which needs to return a ' +
+          'Break statement in for loop prevents it from always returning a ' +
           'value (either add a return statement after the loop or remove it)'
         ),
       )));
     } else {
-      issues.push(Note(
+      ok = false;
+
+      notes.push(Note(
         statement.p,
-        'error',
+        'warn',
         [
           'validation',
           'control-flow',
@@ -1047,22 +1078,17 @@ function validateStatementWillReturn(statement: Syntax.Statement): Note[] {
           'control-clause-prevents-return',
         ],
         (
-          `(${control.t}) clause not allowed in for loop which needs to ` +
-          `return a value (either add a return statement after the loop or ` +
-          `remove (${control.t}))`
+          `(${control.t}) clause prevents for loop from always returning a ` +
+          `value (either add a return statement after the loop or remove ` +
+          `(${control.t}))`
         ),
       ));
     }
 
-    return issues;
+    return { ok, notes };
   }
 
-  return [Note(
-    statement.p,
-    'error',
-    ['validation', 'control-flow', 'return-failure'],
-    'Last statement of body does not return',
-  )];
+  return { ok: false, notes: [] };
 }
 
 function findBreaks(

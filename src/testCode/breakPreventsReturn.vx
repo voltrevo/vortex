@@ -1,4 +1,4 @@
 for {
-  break; // #error #break-prevents-return
+  break; // #warn #break-prevents-return
   return 1; // #warn #unreachable
-}
+} // #error #return-failure

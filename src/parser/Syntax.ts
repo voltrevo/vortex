@@ -450,7 +450,21 @@ namespace Syntax {
   }
 
   export function Program(programText: string): Program {
-    return parserUntyped.parse(programText);
+    const program: Program = parserUntyped.parse(programText);
+
+    const lines = programText.split('\n');
+    let lineCount = lines.length;
+
+    if (lines[lines.length - 1] === '') {
+      // Don't count trailing newline as a line
+      lineCount--;
+    }
+
+    if (program.p[1][1][0] !== lineCount) {
+      program.p[1][1] = [lineCount, 1];
+    }
+
+    return program;
   }
 }
 

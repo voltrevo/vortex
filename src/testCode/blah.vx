@@ -19,4 +19,5 @@ func() { // #warn #no-effect #top-expression
 
 a++; // #error #not-found
 
-foo.d.e := 42; // #error #return-failure
+foo.d.e := 42;
+// #error #return-failure
