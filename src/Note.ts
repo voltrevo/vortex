@@ -116,6 +116,7 @@ namespace Note {
     'compiler' |
     'file-outcome' |
     'break-prevents-return' |
+    'loop-control-outside-loop' |
     'invalid-assignment-target' |
     'mutation-target' |
     'unreachable' |
@@ -203,6 +204,7 @@ namespace Note {
     'compiler',
     'file-outcome',
     'break-prevents-return',
+    'loop-control-outside-loop',
     'invalid-assignment-target',
     'mutation-target',
     'unreachable',

@@ -733,6 +733,27 @@ function validateFunctionScope(
 }
 
 function validateBody(body: Syntax.Block): Note[] {
+  const notes: Note[] = [];
+
+  const controls = findControlStatements(body);
+
+  notes.push(...controls.map(control => Note(
+    control.p,
+    'error',
+    [
+      'validation',
+      'control-flow',
+      'loop-control-outside-loop',
+    ],
+    control.t + ' statement outside loop',
+  )));
+
+  notes.push(...validateReturn(body));
+
+  return notes;
+}
+
+function validateReturn(body: Syntax.Block): Note[] {
   const lastStatement: Syntax.Statement | undefined = (
     body.v[body.v.length - 1]
   );
@@ -757,7 +778,7 @@ function validateMethodBody(body: Syntax.Block): Note[] {
     return [];
   }
 
-  return validateBody(body);
+  return validateReturn(body);
 }
 
 function isValidTopExpression(e: Syntax.Expression) {
@@ -1055,6 +1076,23 @@ function findBreaks(
   }
 
   return breaks;
+}
+
+function findControlStatements(
+  block: Syntax.Block
+): (Syntax.BreakStatement | Syntax.ContinueStatement)[] {
+  const statements: (Syntax.BreakStatement | Syntax.ContinueStatement)[] = [];
+
+  for (const statement of block.v) {
+    if (statement.t === 'break' || statement.t === 'continue') {
+      statements.push(statement);
+    } else if (statement.t === 'if') {
+      const [, ifBlock] = statement.v;
+      statements.push(...findControlStatements(ifBlock));
+    }
+  }
+
+  return statements;
 }
 
 function hasReturn(block: Syntax.Block) {

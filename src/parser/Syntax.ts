@@ -176,7 +176,7 @@ namespace Syntax {
     { t: 'return', v: Expression, p: Pos } |
     { t: 'assert', v: Expression, p: Pos, topExp?: true } |
     BreakStatement |
-    { t: 'continue', p: Pos } |
+    ContinueStatement |
     IfStatement |
     ForStatement |
     Import |
@@ -188,6 +188,7 @@ namespace Syntax {
   );
 
   export type BreakStatement = { t: 'break', p: Pos };
+  export type ContinueStatement = { t: 'continue', p: Pos };
 
   export type IfStatement = { t: 'if', v: [Expression, Block], p: Pos };
 
