@@ -304,34 +304,54 @@ function validateFunctionScope(
             mutationTarget = el.v;
           }
 
-          let nameTarget = mutationTarget;
+          if (mutationTarget !== null) {
+            function concat<T>(arr: T[][]): T[] {
+              const res: T[] = [];
 
-          if (nameTarget !== null) {
-            while (
-              nameTarget.t === '.' ||
-              nameTarget.t === 'subscript'
-            ) {
-              nameTarget = nameTarget.v[0];
+              for (const el of arr) {
+                res.push(...el);
+              }
+
+              return res;
             }
 
-            if (nameTarget.t === 'IDENTIFIER') {
-              const name = nameTarget.v;
-              const pos = nameTarget.p;
+            function TargetBases(
+              target: Syntax.Element
+            ): IdentifierMutationTarget[] {
+              while (
+                target.t === '.' ||
+                target.t === 'subscript'
+              ) {
+                target = target.v[0];
+              }
 
-              return Syntax.Children(el).map(child => {
-                if (child !== mutationTarget) {
-                  return child;
-                }
+              if (target.t === 'Object') {
+                return concat(target.v.map(([, exp]) => TargetBases(exp)));
+              }
 
-                // More typescript griping: it's really silly that typescript
-                // requires 'as' below
-                return {
+              if (target.t === 'Array') {
+                return concat(target.v.map(TargetBases));
+              }
+
+              if (target.t === 'IDENTIFIER') {
+                return [{
                   t: 'IDENTIFIER-mutationTarget' as 'IDENTIFIER-mutationTarget',
-                  v: name,
-                  p: pos,
-                };
-              });
+                  v: target.v,
+                  p: target.p,
+                }];
+              }
+
+              return []; // Invalid assignment target detected elsewhere
             }
+
+            const targetBases = TargetBases(mutationTarget);
+
+            const nonTargetChildren = (Syntax
+              .Children(el)
+              .filter(el => el !== mutationTarget)
+            );
+
+            return [...targetBases, ...nonTargetChildren];
           }
 
           if (el.t === 'Object') {
