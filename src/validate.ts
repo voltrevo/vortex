@@ -1101,63 +1101,40 @@ function validateStatementWillReturn(
 }
 
 function findBreaks(
-  block: Syntax.Block
+  el: Syntax.Block
 ): Syntax.BreakStatement[] {
-  const breaks: Syntax.BreakStatement[] = [];
-
-  for (const statement of block.v) {
-    if (statement.t === 'break') {
-      breaks.push(statement);
-    } else if (statement.t === 'if') {
-      const [, ifBlock] = statement.v;
-      breaks.push(...findBreaks(ifBlock));
-    }
-  }
-
-  return breaks;
+  return traverse<Syntax.Element, Syntax.BreakStatement>(
+    el,
+    el => el.t === 'break' ? [el] : [],
+    el => el.t === 'block' || el.t === 'if' ? Syntax.Children(el) : [],
+  );
 }
 
 function findControlStatements(
-  block: Syntax.Block
+  el: Syntax.Block
 ): (Syntax.BreakStatement | Syntax.ContinueStatement)[] {
-  const statements: (Syntax.BreakStatement | Syntax.ContinueStatement)[] = [];
-
-  for (const statement of block.v) {
-    if (statement.t === 'break' || statement.t === 'continue') {
-      statements.push(statement);
-    } else if (statement.t === 'if') {
-      const [, ifBlock] = statement.v;
-      statements.push(...findControlStatements(ifBlock));
-    }
-  }
-
-  return statements;
+  return traverse<
+    Syntax.Element,
+    Syntax.BreakStatement | Syntax.ContinueStatement
+  >(
+    el,
+    el => el.t === 'break' || el.t === 'continue' ? [el] : [],
+    el => el.t === 'block' || el.t === 'if' ? Syntax.Children(el) : [],
+  );
 }
 
 function hasReturn(block: Syntax.Block) {
-  for (const statement of block.v) {
-    if (statement.t === 'return') {
-      return true;
-    }
+  const returns = traverse<Syntax.Element, Syntax.ReturnStatement>(
+    block,
+    el => el.t === 'return' ? [el] : [],
+    el => (
+      el.t === 'block' || el.t === 'if' || el.t === 'for' ?
+      Syntax.Children(el) :
+      []
+    ),
+  );
 
-    if (statement.t === 'if') {
-      const [, subBlock] = statement.v;
-
-      if (hasReturn(subBlock)) {
-        return true;
-      }
-    }
-
-    if (statement.t === 'for') {
-      const { block: subBlock } = statement.v;
-
-      if (hasReturn(subBlock)) {
-        return true;
-      }
-    }
-  }
-
-  return false;
+  return returns.length > 0;
 }
 
 function concat<T>(arr: T[][]): T[] {

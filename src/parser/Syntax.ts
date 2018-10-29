@@ -173,7 +173,7 @@ namespace Syntax {
 
   export type Statement = (
     ExpressionStatement |
-    { t: 'return', v: Expression, p: Pos } |
+    ReturnStatement |
     { t: 'assert', v: Expression, p: Pos, topExp?: true } |
     BreakStatement |
     ContinueStatement |
@@ -187,10 +187,19 @@ namespace Syntax {
     never
   );
 
+  export type ReturnStatement = { t: 'return', v: Expression, p: Pos };
   export type BreakStatement = { t: 'break', p: Pos };
   export type ContinueStatement = { t: 'continue', p: Pos };
 
-  export type IfStatement = { t: 'if', v: [Expression, Block], p: Pos };
+  export type IfStatement = {
+    t: 'if',
+    v: {
+      cond: Expression,
+      block: Block,
+      else_: null | Block | IfStatement,
+    },
+    p: Pos,
+  };
 
   export type ForStatement = {
     t: 'for',
@@ -317,7 +326,7 @@ namespace Syntax {
 
       case 'e': { return [el.v]; }
       case 'return': { return [el.v]; }
-      case 'if': { return el.v; }
+      case 'if': { return [el.v.cond, el.v.block, el.v.else_].filter(notNull); }
       case 'break': { return [] };
       case 'continue': { return [] };
 
@@ -467,5 +476,7 @@ namespace Syntax {
     return program;
   }
 }
+
+function notNull<T>(x: T | null): x is T { return x !== null; }
 
 export default Syntax;

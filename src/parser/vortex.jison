@@ -10,6 +10,7 @@
 '{'                   return '{'
 '}'                   return '}'
 'if'                  return 'IF'
+'else'                return 'ELSE'
 'for'                 return 'FOR'
 'of'                  return 'OF'
 'func'                return 'FUNC'
@@ -170,8 +171,17 @@ LOG
     ;
 
 if
-    : IF '(' e ')' block
-        {$$ = { t: 'if', v: [$3, $5], p: L(@$) }}
+    : IF '(' e ')' block ifTail
+        {$$ = { t: 'if', v: {cond: $3, block: $5, else_: $6}, p: L(@$) }}
+    ;
+
+ifTail
+    :
+        {$$ = null}
+    | ELSE block
+        {$$ = $2}
+    | ELSE if
+        {$$ = $2}
     ;
 
 for

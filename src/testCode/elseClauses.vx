@@ -1,0 +1,21 @@
+func describeNum(x) {
+  msg := null;
+
+  if (x < 10) {
+    msg = 'less than 10';
+  } else if (x == 10) {
+    msg = 'equal to 10';
+  } else {
+    msg = 'greater than 10';
+  }
+
+  return msg;
+};
+
+assert [9, 10, 11]:map(describeNum) == [
+  'less than 10',
+  'equal to 10',
+  'greater than 10',
+];
+
+return 'done';

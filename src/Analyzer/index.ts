@@ -669,7 +669,7 @@ namespace Analyzer {
           }
 
           case 'if': {
-            const [cond, block] = statement.v;
+            const {cond, block, else_} = statement.v;
             let condOut: Outcome;
             [condOut, az] = subExpression(az, cond);
 
@@ -696,6 +696,26 @@ namespace Analyzer {
 
               if (blockOut !== null) {
                 return [blockOut, az];
+              }
+            } else if (else_ !== null) {
+              if (else_.t === 'block') {
+                az = Analyzer.push(az);
+                let blockOut: StatementResult;
+                [blockOut, az] = analyze.block(az, else_);
+                az = Analyzer.pop(az);
+
+                if (blockOut !== null) {
+                  return [blockOut, az];
+                }
+              } else if (else_.t === 'if') {
+                let out: StatementResult;
+                [out, az] = analyze.statement(az, else_);
+
+                if (out !== null) {
+                  return [out, az];
+                }
+              } else {
+                throw new Error('Shouldn\'t be possible');
               }
             }
 
