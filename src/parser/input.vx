@@ -66,8 +66,10 @@ func trailing() { // #warn #unused
   block comments work too
 */
 
-continue; // #error #validation #loop-control-outside-loop
-break; // #error #validation #loop-control-outside-loop
+if (true) {
+  continue; // #error #validation #loop-control-outside-loop
+  break; // #error #validation #loop-control-outside-loop #warn #unreachable
+}
 
 func() {}; // #error #empty-body #warn #no-effect
 

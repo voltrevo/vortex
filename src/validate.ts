@@ -46,10 +46,10 @@ export function validate(program: Syntax.Program): Note[] {
         }
       }
     } else if (el.t === 'block') {
-      let returned = false;
+      let reachable = true;
 
       for (const statement of el.v) {
-        if (returned) {
+        if (!reachable) {
           subNotes.push(Note(
             statement.p,
             'warn',
@@ -58,8 +58,12 @@ export function validate(program: Syntax.Program): Note[] {
           ));
         }
 
-        if (statement.t === 'return') {
-          returned = true;
+        if (
+          statement.t === 'return' ||
+          statement.t === 'break' ||
+          statement.t === 'continue'
+        ) {
+          reachable = false;
         }
       }
     }

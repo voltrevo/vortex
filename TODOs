@@ -1,4 +1,3 @@
-TODO: Emit unreachable errors based on break, continue
 TODO: Add tests for every possible note
 TODO: Return failure note should occur on last line instead of last statement
 TODO: Syntax to turn on compiler notes for return value
