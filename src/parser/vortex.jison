@@ -210,11 +210,12 @@ funcName
         {$$ = $1}
     ;
 
-/* TODO: Check trailing commas for args */
 args
     :
         {$$ = []}
     | nonEmptyArgs
+        {$$ = $1}
+    | nonEmptyArgs ','
         {$$ = $1}
     ;
 
