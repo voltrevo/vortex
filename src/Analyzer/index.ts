@@ -1085,10 +1085,9 @@ namespace Analyzer {
           case 'functionCall':
           case 'methodLookup':
           case '.': {
-            throw new Error(
-              'Non-top expression at top level should have been caught ' +
-              'during validation.'
-            );
+            // Ignoring invalid top-level expression. Validator should warn
+            // about this.
+            return null;
           }
         }
       })());
