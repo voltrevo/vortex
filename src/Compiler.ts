@@ -7,7 +7,7 @@ import { validate } from './validate';
 namespace Compiler {
   export function compile(
     files: string[],
-    readFile: (f: string) => string | null,
+    readFile: (f: string) => string | Error,
     opt: { stepLimit?: number } = {},
   ): Note[] {
     const before = process.hrtime();
@@ -55,19 +55,27 @@ namespace Compiler {
 
       let mod: Analyzer.Module_;
       [mod, az] = Analyzer.runFile(az, f);
+    }
 
-      if (mod.loaded === false || mod.outcome === null) {
+    for (const f of Object.keys(az.modules)) {
+      const m = az.modules[f];
+
+      if (m === undefined) {
         throw new Error('Shouldn\'t be possible');
       }
 
-      notes.push(...mod.notes);
+      if (!m.loaded) {
+        continue;
+      }
 
-      if (files.indexOf(f) !== -1) {
+      notes.push(...m.notes);
+
+      if (files.indexOf(f) !== -1 && m.outcome) {
         notes.push(Note(
           [f, null],
           'info',
           ['compiler', 'file-outcome'],
-          `Outcome: ${Outcome.LongString(mod.outcome)}`,
+          `Outcome: ${Outcome.LongString(m.outcome)}`,
         ));
       }
     }
@@ -93,7 +101,7 @@ namespace Compiler {
   export function compileText(text: string): Note[] {
     return compile(
       ['(anonymous)'],
-      f => f === '(anonymous)' ? text : null,
+      f => f === '(anonymous)' ? text : new Error('isolated text compilation'),
     );
   }
 }

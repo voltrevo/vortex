@@ -48,7 +48,7 @@ namespace Package {
   export function set(
     pack: Package,
     file: string,
-    text: string | null,
+    text: string | Error,
   ): Package {
     const moduleEntry = parse(file, text);
 
@@ -118,7 +118,7 @@ namespace Package {
 
   export function setLocalDependencies(
     pack: Package,
-    readFile: (file: string) => string | null,
+    readFile: (file: string) => string | Error,
   ): Package {
     while (pack.dependencies.local.length > 0) {
       const file = pack.dependencies.local[0];
@@ -130,16 +130,16 @@ namespace Package {
 
   export function parse(
     file: string,
-    text: string | null,
+    text: string | Error,
   ): Module | ParserNotes {
-    if (text === null) {
+    if (typeof text !== 'string') {
       return {
         t: 'ParserNotes',
         notes: [{
           pos: [file, null],
           level: 'error',
           tags: ['error', 'package', 'not-found'],
-          message: 'File not found: ' + file,
+          message: 'File read failed: ' + file + ': ' + text.message,
           subnotes: [],
         }],
       };

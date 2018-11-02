@@ -23,8 +23,8 @@ namespace pretty {
     return formatLocation(note.pos) + ':';
   }
 
-  export function print(note: Note, text: string | null) {
-    if (text === null) {
+  export function print(note: Note, text: string | Error) {
+    if (typeof text !== 'string') {
       printCompact(note);
       console.error();
       return;

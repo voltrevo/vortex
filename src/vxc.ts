@@ -140,14 +140,14 @@ const inputs: ({ type: 'file', name: string } | string)[] = [];
     throw new Error('no input files');
   }
 
-  const fileCache: { [file: string]: string | null } = {};
+  const fileCache: { [file: string]: string | Error } = {};
 
   const readFile = (file: string) => {
     if (file === '(compiler)') {
-      return null;
+      return new Error('invalid');
     }
 
-    let text: string | null = null;
+    let text: string | Error | null = null;
 
     if (file.slice(0, 2) !== '@/') {
       throw new Error('Expected a local read: ' + file);
@@ -161,81 +161,74 @@ const inputs: ({ type: 'file', name: string } | string)[] = [];
       text = fs.readFileSync(file.slice(2)).toString()
     } catch {}
 
+    if (text === null) {
+      text = new Error('not found');
+    }
+
     fileCache[file] = text;
 
     return text;
   };
 
-  for (const input of inputs) {
-    let text: string | null = null;
+  const files = inputs.map(input => (
+    '@/' + (typeof input === 'string' ? '(stdin)' : input.name)
+  ));
 
-    try {
-      text = (
-        typeof input === 'string' ?
-        input :
-        fs.readFileSync(input.name).toString()
-      );
-    } catch {}
+  let notes = Compiler.compile(
+    files,
+    readFile,
+    { stepLimit: 1000000 }, // TODO: Make this configurable
+  );
 
-    const file = '@/' + (typeof input === 'string' ? '(stdin)' : input.name);
+  if (format.value !== 'native') {
+    notes = Note.flatten(notes as Note[]);
+  }
 
-    let notes = Compiler.compile(
-      [file],
-      f => f === file ? text : readFile(f),
-      { stepLimit: 1000000 }, // TODO: Make this configurable
-    );
+  if (format.value === 'pretty' && notes.length > 0) {
+    console.error();
+  }
 
-    if (format.value !== 'native') {
-      // TODO: Need to remove Note/FileNote distinction
-      notes = Note.flatten(notes as Note[]) as any;
-    }
+  for (const note of notes) {
+    switch (format.value) {
+      case 'pretty': {
+        // TODO: Make this better
+        pretty.print(note, readFile(note.pos[0]));
+        break;
+      }
 
-    if (format.value === 'pretty' && notes.length > 0) {
-      console.error();
-    }
+      case 'compact': {
+        pretty.printCompact(note);
+        break;
+      }
 
-    for (const note of notes) {
-      switch (format.value) {
-        case 'pretty': {
-          // TODO: Make this better
-          pretty.print(note, readFile(note.pos[0]));
+      case 'native': {
+        console.error(JSON.stringify(note));
+        break;
+      }
+
+      case 'vim-ale': {
+        const [file, range] = note.pos;
+
+        if (file !== '@/(stdin)' || range === null) {
           break;
         }
 
-        case 'compact': {
-          pretty.printCompact(note);
-          break;
-        }
+        console.error(JSON.stringify({
+          lnum: range[0][0],
+          end_lnum: range[1][0],
+          col: range[0][1],
+          end_col: range[1][1],
+          text: `${note.message} ${note.tags.map(t => '#' + t).join(' ')}`,
+          type: note.level[0].toUpperCase(),
+        }));
 
-        case 'native': {
-          console.error(JSON.stringify(note));
-          break;
-        }
+        break;
+      }
 
-        case 'vim-ale': {
-          const [file, range] = note.pos;
-
-          if (file !== '@/(stdin)' || range === null) {
-            break;
-          }
-
-          console.error(JSON.stringify({
-            lnum: range[0][0],
-            end_lnum: range[1][0],
-            col: range[0][1],
-            end_col: range[1][1],
-            text: `${note.message} ${note.tags.map(t => '#' + t).join(' ')}`,
-            type: note.level[0].toUpperCase(),
-          }));
-
-          break;
-        }
-
-        default:
-          // TODO: Why doesn't typescript know this is impossible?
-          throw new Error('Should not be possible');
-      };
-    }
+      default:
+        // TODO: Why doesn't typescript know this is impossible?
+        throw new Error('Should not be possible');
+    };
   }
 })().catch(e => {
   setTimeout(() => { throw e; });

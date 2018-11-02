@@ -75,7 +75,7 @@ const log = {
 
 let ok = true;
 
-const readFile = (file: string): string | null => {
+const readFile = (file: string): string | Error => {
   let text: string | null = null;
 
   // TODO: Need to handle 'files' like (stdin) and (compiler) better
@@ -86,6 +86,10 @@ const readFile = (file: string): string | null => {
   try {
     text = readFileSync(file.slice(2)).toString();
   } catch {}
+
+  if (text === null) {
+    return new Error('not found');
+  }
 
   return text;
 };
@@ -116,7 +120,7 @@ for (const file of moreFiles) {
 
   const notes = Note.flatten(allNotes.filter(n => n.pos[0] === file));
 
-  if (fileText !== null) {
+  if (typeof fileText === 'string') {
     const lines = fileText.split('\n');
     let lineNo = 0;
     for (const line of lines) {
