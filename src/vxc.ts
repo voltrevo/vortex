@@ -125,15 +125,21 @@ if (args._.indexOf('-') !== -1 && args._.length > 1) {
   throw new Error('Refusing to read from both files and stdin');
 }
 
-const inputs: ({ type: 'file', name: string } | string)[] = [];
+const inputs: { type: 'file', name: string }[] = [];
 
 (async () => {
-  for (const arg of args._) {
+  let stdinText: string | null = null;
+
+  if (args._.indexOf('-') !== -1) {
+    stdinText = await getStdin();
+  }
+
+  for (let arg of args._) {
     if (arg === '-') {
-      inputs.push(await getStdin());
-    } else {
-      inputs.push({ type: 'file', name: arg });
+      arg = '(stdin)';
     }
+
+    inputs.push({ type: 'file', name: arg });
   }
 
   if (inputs.length === 0) {
@@ -145,6 +151,14 @@ const inputs: ({ type: 'file', name: string } | string)[] = [];
   const readFile = (file: string) => {
     if (file === '(compiler)') {
       return new Error('invalid');
+    }
+
+    if (file === '@/(stdin)') {
+      if (stdinText === null) {
+        throw new Error('Shouldn\'t be possible');
+      }
+
+      return stdinText;
     }
 
     let text: string | Error | null = null;
@@ -170,9 +184,7 @@ const inputs: ({ type: 'file', name: string } | string)[] = [];
     return text;
   };
 
-  const files = inputs.map(input => (
-    '@/' + (typeof input === 'string' ? '(stdin)' : input.name)
-  ));
+  const files = inputs.map(input => '@/' + input.name);
 
   let notes = Compiler.compile(
     files,
