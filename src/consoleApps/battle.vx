@@ -1,0 +1,83 @@
+initState := {
+  monsterHitPoints: 35,
+  rand: iterateRand(0.12783),
+};
+
+weapons := [
+  {name: 'fist', damage: 1, accuracy: 1},
+  {name: 'axe', damage: 10, accuracy: 0.5},
+];
+
+newline := '
+';
+
+func iterateRand(rand) {
+  for (i := 0; i < 5; i++) {
+    rand = rand - (rand ** 2 + 1) / (2 * rand + 0.00001);
+  }
+
+  for (rand >= 1) {
+    rand /= 10;
+  }
+
+  for (i := 0; i < 5; i++) {
+    rand = 10 * rand - rand;
+  }
+
+  for (rand >= 1) {
+    rand /= 10;
+  }
+
+  return rand;
+};
+
+func render(state) {
+  display := newline;
+  display ++= newline;
+
+  if (state.monsterHitPoints == 0) {
+    display ++= 'You have defeated the monster! Press Ctrl+D ';
+    return display;
+  }
+
+  display ++= 'The monster has ' ++ state.monsterHitPoints:String() ++ 'HP' ++ newline;
+  display ++= newline;
+  display ++= 'You have the following weapons available:' ++ newline;
+
+  for (weapon of weapons) {
+    display ++= weapon.name ++ newline;
+  }
+
+  display ++= newline;
+  display ++= 'How will you attack? ';
+
+  return display;
+};
+
+func reducer(state, action) {
+  if (state:String() == 'null') {
+    state = initState;
+    state.display := render(state);
+    return state;
+  }
+
+  state.rand = iterateRand(state.rand);
+
+  for (weapon of weapons) {
+    if (action == weapon.name) {
+      if (state.rand < weapon.accuracy) {
+        state.monsterHitPoints -= weapon.damage;
+      }
+
+      if (state.monsterHitPoints < 0) {
+        state.monsterHitPoints = 0;
+      }
+    }
+  }
+
+  state.display = render(state);
+
+  return state;
+};
+
+return reducer;
