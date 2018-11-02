@@ -1,3 +1,4 @@
+TODO: Place import trace notes at lookup site rather than at import expression
 TODO: Add tests for every possible note
 TODO: Syntax to turn on compiler notes for return value
 TODO: Validation warning for variables that can be moved to an inner scope
