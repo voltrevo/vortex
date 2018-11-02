@@ -94,7 +94,7 @@ const readFile = (file: string): string | Error => {
   return text;
 };
 
-const allNotes: Note[] = Compiler.compile(
+const [allNotes] = Compiler.compile(
   files,
   readFile,
   { stepLimit: 3000000 },

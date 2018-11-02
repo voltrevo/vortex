@@ -2102,8 +2102,23 @@ namespace Analyzer {
       return [out, az];
     }
 
+    export function functionCallValue(
+      az: Analyzer,
+      funcExp: Syntax.Expression | null,
+      func: Outcome.Func,
+      args: Outcome.Value[],
+    ): [Outcome, Analyzer] {
+      let out: Outcome | TailCall = TailCall(funcExp, func, args);
+
+      while (typeof out === 'function') {
+        [out, az] = out(az);
+      }
+
+      return [out, az];
+    }
+
     export function TailCall(
-      funcExp: Syntax.Expression,
+      funcExp: Syntax.Expression | null,
       func: Outcome.Func,
       args: Outcome.Value[],
     ): TailCall | Outcome.Exception {

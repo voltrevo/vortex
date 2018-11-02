@@ -186,7 +186,7 @@ const inputs: { type: 'file', name: string }[] = [];
 
   const files = inputs.map(input => '@/' + input.name);
 
-  let notes = Compiler.compile(
+  let [notes] = Compiler.compile(
     files,
     readFile,
     { stepLimit: 1000000 }, // TODO: Make this configurable

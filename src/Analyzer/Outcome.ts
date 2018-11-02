@@ -1435,7 +1435,7 @@ namespace Outcome {
   }
 
   export function TypedLessThan(
-    exp: Syntax.Expression,
+    exp: Syntax.Expression | null,
     left: Concrete,
     right: Concrete,
   ): Bool | Exception {
@@ -1466,7 +1466,7 @@ namespace Outcome {
   type ComparisonOp = '==' | '!=' | '<' | '>' | '<=' | '>=';
 
   export function TypedComparison(
-    exp: Syntax.Expression,
+    exp: Syntax.Expression | null,
     op: ComparisonOp,
     left: Concrete,
     right: Concrete,
@@ -1483,7 +1483,7 @@ namespace Outcome {
 
   export function EvalVanillaOperator(
     // TODO: exp Shouldn't be necessary (should add positions as stack unwinds)
-    exp: Syntax.Expression,
+    exp: Syntax.Expression | null,
 
     op: Syntax.VanillaOperator,
     [left, right]: [Outcome.Value, Outcome.Value],
@@ -1910,7 +1910,7 @@ namespace Outcome {
       value = Exception(
         null,
         ['type-error', 'operator'],
-        `Type error: ${left.t} ${exp.t} ${right.t}`,
+        `Type error: ${left.t} ${op} ${right.t}`,
       );
     }
 

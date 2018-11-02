@@ -9,7 +9,7 @@ namespace Compiler {
     files: string[],
     readFile: (f: string) => string | Error,
     opt: { stepLimit?: number } = {},
-  ): Note[] {
+  ): [Note[], Analyzer] {
     const before = process.hrtime();
 
     let pack = Package();
@@ -95,10 +95,10 @@ namespace Compiler {
       )
     ));
 
-    return notes;
+    return [notes, az];
   }
 
-  export function compileText(text: string): Note[] {
+  export function compileText(text: string): [Note[], Analyzer] {
     return compile(
       ['(anonymous)'],
       f => f === '(anonymous)' ? text : new Error('isolated text compilation'),

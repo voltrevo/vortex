@@ -1,0 +1,21 @@
+func reducer(state, action) {
+  if (state:String() == 'null') {
+    return {display: 'What\'s your name? ', count: 0};
+  }
+
+  state.count += 1;
+
+  if (state.count == 1) {
+    state.name := action;
+    state.display = 'Hi ' ++ state.name ++ ' ';
+    return state;
+  }
+
+  state.display = state.name ++ ', could you press Ctrl+D? ;-) ';
+
+  return state;
+};
+
+assert reducer(null, null).display == 'What\'s your name? ';
+
+return reducer;
