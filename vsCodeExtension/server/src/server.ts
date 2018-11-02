@@ -7,7 +7,6 @@
 import {
   createConnection,
   TextDocuments,
-  TextDocument,
   Diagnostic,
   DiagnosticSeverity,
   ProposedFeatures,
@@ -106,7 +105,7 @@ connection.onDidChangeConfiguration((/*change*/) => {
   }
 
   // Revalidate all open text documents
-  documents.all().forEach(validateTextDocument);
+  validateDocuments();
 });
 
 /*
@@ -133,36 +132,73 @@ documents.onDidClose(e => {
 
 // The content of a text document has changed. This event is emitted
 // when the text document first opened or when its content has changed.
-documents.onDidChangeContent(change => {
-  validateTextDocument(change.document);
+documents.onDidChangeContent((/*change*/) => {
+  validateDocuments();
 });
 
-async function validateTextDocument(textDocument: TextDocument): Promise<void> {
-  // In this simple example we get the settings for every validate run.
-  // let settings = await getDocumentSettings(textDocument.uri);
+async function validateDocuments(): Promise<void> {
+  const docs = documents.all();
 
-  // The validator creates diagnostics for all uppercase words length 2 and more
-  let text = textDocument.getText();
-  const notes = vortex.Note.flatten(vortex.compile(text));
+  if (docs.length === 0) {
+    return Promise.resolve();
+  }
 
-  const diagnostics: Diagnostic[] = [];
+  const firstDoc = docs[0];
+
+  const baseMatch = firstDoc.uri.match(/^[^\/]*\/\/[^/]*/);
+
+  if (baseMatch === null) {
+    throw new Error('Shouldn\'t be possible');
+  }
+
+  const base = baseMatch[0];
+
+  const paths = docs.map(doc => doc.uri.replace(base, '@'));
+
+  function readFile(f: string): string | Error {
+    const uri = f.replace('@', base);
+    const doc = documents.get(uri);
+
+    if (!doc) {
+      return new Error('Document not open: ' + uri);
+    }
+
+    return doc.getText();
+  }
+
+  const notes = (vortex
+    .Note
+    .flatten(
+      vortex.Compiler.compile(paths, readFile, { stepLimit: 1000000 })
+    )
+  );
+
+  const diagnostics = new Map<string, Diagnostic[]>();
+
+  for (const uri of docs.map(doc => doc.uri)) {
+    diagnostics.set(uri, []);
+  }
 
   for (const note of notes) {
-    diagnostics.push({
-      range: (
-        note.pos ?
-        {
-          start: {
-            line: note.pos[0][0] - 1,
-            character: note.pos[0][1],
-          },
-          end: {
-            line: note.pos[0][0] - 1,
-            character: note.pos[0][1],
-          }
-        } :
-        { start: { line: 0, character: 0 }, end: { line: 0, character: 0 } }
-      ),
+    if (!note.pos[1]) {
+      continue;
+    }
+
+    const uri = note.pos[0].replace('@', base);
+    const el = diagnostics.get(uri) || [];
+    diagnostics.set(uri, el);
+
+    el.push({
+      range: ({
+        start: {
+          line: note.pos[1][0][0] - 1,
+          character: note.pos[1][0][1] - 1,
+        },
+        end: {
+          line: note.pos[1][0][0] - 1,
+          character: note.pos[1][0][1] - 1,
+        }
+      }),
       message: note.message,
       severity: (() => {
         switch (note.level) {
@@ -176,52 +212,12 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
   }
 
   // Send the computed diagnostics to VSCode.
-  connection.sendDiagnostics({
-    uri: textDocument.uri,
-    diagnostics,
-  });
-
-  /*
-  let pattern = /\b[A-Z]{2,}\b/g;
-  let m: RegExpExecArray | null;
-
-  let problems = 0;
-  let diagnostics: Diagnostic[] = [];
-  while ((m = pattern.exec(text)) && problems < settings.maxNumberOfProblems) {
-    problems++;
-    let diagnosic: Diagnostic = {
-      severity: DiagnosticSeverity.Warning,
-      range: {
-        start: textDocument.positionAt(m.index),
-        end: textDocument.positionAt(m.index + m[0].length)
-      },
-      message: `${m[0]} is all uppercase.`,
-      source: 'ex'
-    };
-    if (hasDiagnosticRelatedInformationCapability) {
-      diagnosic.relatedInformation = [
-        {
-          location: {
-            uri: textDocument.uri,
-            range: Object.assign({}, diagnosic.range)
-          },
-          message: 'Spelling matters'
-        },
-        {
-          location: {
-            uri: textDocument.uri,
-            range: Object.assign({}, diagnosic.range)
-          },
-          message: 'Particularly for names'
-        }
-      ];
-    }
-    diagnostics.push(diagnosic);
+  for (const uri of diagnostics.keys()) {
+    connection.sendDiagnostics({
+      uri,
+      diagnostics: diagnostics.get(uri) || [],
+    });
   }
-
-  // Send the computed diagnostics to VSCode.
-  connection.sendDiagnostics({ uri: textDocument.uri, diagnostics });
-  */
 }
 
 connection.onDidChangeWatchedFiles(_change => {
