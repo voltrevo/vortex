@@ -71,6 +71,7 @@ namespace Note {
     'package' |
     'invalid-import-source' |
     'import-loop' |
+    'import-trace' |
     'infinite-loop' |
     'no-effect' |
     'top-expression' |
@@ -159,6 +160,7 @@ namespace Note {
     'package',
     'invalid-import-source',
     'import-loop',
+    'import-trace',
     'infinite-loop',
     'no-effect',
     'top-expression',

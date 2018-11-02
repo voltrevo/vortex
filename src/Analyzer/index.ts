@@ -1,4 +1,5 @@
 import checkNull from '../checkNull';
+import formatLocation from '../formatLocation';
 import Note from '../Note';
 import Package from '../Package';
 import Scope from '../Scope';
@@ -329,8 +330,9 @@ namespace Analyzer {
     }
 
     const entry = az.modules[resolved];
+    const depEntry = az.pack.modules[resolved];
 
-    if (entry === undefined) {
+    if (entry === undefined || depEntry === undefined) {
       if (resolved.split('/')[0] === '@') {
         throw new Error('Shouldn\'t be possible');
       }
@@ -342,6 +344,23 @@ namespace Analyzer {
       );
 
       return [ex, az];
+    }
+
+    function ImportTraceNote(n: Note) {
+      return Note(
+        import_.p,
+        'error',
+        ['import-trace'],
+        'Import trace ' + formatLocation(n.pos) + ': ' + n.message,
+      );
+    }
+
+    for (const n of depEntry.notes) {
+      if (n.level !== 'error') {
+        continue;
+      }
+
+      az = Analyzer.addNote(az, ImportTraceNote(n));
     }
 
     // This case would be handled nicely by @below but typescript
@@ -425,8 +444,16 @@ namespace Analyzer {
     let entryMod: Analyzer.Module_;
     [entryMod, az] = Analyzer.runFile(az, resolved);
 
-    if (entryMod.outcome === null) {
+    if (entryMod.loaded === false || entryMod.outcome === null) {
       throw new Error('Shouldn\'t be possible');
+    }
+
+    for (const n of entryMod.notes) {
+      if (n.level !== 'error') {
+        continue;
+      }
+
+      az = Analyzer.addNote(az, ImportTraceNote(n));
     }
 
     return [entryMod.outcome, az];
