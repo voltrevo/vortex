@@ -453,6 +453,12 @@ namespace Analyzer {
         continue;
       }
 
+      if (n.tags.indexOf('import-loop') !== -1) {
+        // Import loop messages already have their own way of showing trace
+        // information.
+        continue;
+      }
+
       az = Analyzer.addNote(az, ImportTraceNote(n));
     }
 
