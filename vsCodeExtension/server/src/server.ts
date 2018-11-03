@@ -169,7 +169,7 @@ async function validateDocuments(): Promise<void> {
   const notes = (vortex
     .Note
     .flatten(
-      vortex.Compiler.compile(paths, readFile, { stepLimit: 1000000 })
+      vortex.Compiler.compile(paths, readFile, { stepLimit: 1000000 })[0]
     )
   );
 
