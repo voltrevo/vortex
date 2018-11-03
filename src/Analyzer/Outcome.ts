@@ -1460,7 +1460,7 @@ namespace Outcome {
     }
 
     // as Out because typescript incompleteness
-    return { t: 'Bool', v: !out.v } as Out;
+    return { cat: 'concrete', t: 'Bool', v: !out.v } as Out;
   }
 
   type ComparisonOp = '==' | '!=' | '<' | '>' | '<=' | '>=';
