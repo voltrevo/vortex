@@ -69,7 +69,7 @@ func reduce(state, action) {
   return state;
 };
 
-log.info (func() {
+assert 'done' == (func() {
   state := reduce(null, 0.2873);
   state = reduce(state, 'hit');
   state = reduce(state, 'hit');
@@ -83,7 +83,7 @@ log.info (func() {
   state = reduce(state, 'finish');
   log.info state.display;
 
-  return 'testing done';
+  return 'done';
 })();
 
 return reduce;
