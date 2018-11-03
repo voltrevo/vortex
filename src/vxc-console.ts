@@ -95,7 +95,7 @@ const rl = readline.createInterface({
 function reducePrintReadLoop(
   reducer: Outcome.Func,
   state: Outcome,
-  action: Outcome.Null | Outcome.String,
+  action: Outcome.Null | Outcome.String | Outcome.Number,
 ) {
   if (state.cat !== 'concrete') {
     if (state.t === 'exception') {
@@ -137,4 +137,4 @@ function reducePrintReadLoop(
   });
 }
 
-reducePrintReadLoop(entryValue, Outcome.Null(), Outcome.Null());
+reducePrintReadLoop(entryValue, Outcome.Null(), Outcome.Number(Math.random()));

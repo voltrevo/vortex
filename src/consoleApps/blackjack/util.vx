@@ -1,4 +1,6 @@
-util := {
+import util;
+
+return {
   MinMax: func(a, b) => switch (a < b) {
     true => [a, b];
     false => [b, a];
@@ -26,6 +28,26 @@ util := {
 
     return [picked, newArr];
   },
-};
 
-return util;
+  iterateRand: func(rand) {
+    for (i := 0; i < 5; i++) {
+      rand = rand - (rand ** 2 + 1) / (2 * rand + 0.00001);
+    }
+
+    rand = util.abs(rand);
+
+    for (rand >= 1) {
+      rand /= 10;
+    }
+
+    for (i := 0; i < 5; i++) {
+      rand *= 9;
+    }
+
+    for (rand >= 1) {
+      rand /= 10;
+    }
+
+    return rand;
+  },
+};

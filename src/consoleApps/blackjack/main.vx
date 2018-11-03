@@ -43,6 +43,8 @@ apply := {
 func reduce(state, action) {
   if (state:String() == 'null') {
     state = initState;
+    assert action > 0;
+    state.rand = action;
     [state.display, state.options] = render(state);
     return state;
   }
@@ -60,6 +62,7 @@ func reduce(state, action) {
     return state;
   }
 
+  state.rand = util.iterateRand(state.rand);
   state = apply[action](state);
   [state.display, state.options] = render(state);
 
@@ -67,7 +70,7 @@ func reduce(state, action) {
 };
 
 log.info (func() {
-  state := reduce(null, null);
+  state := reduce(null, 0.2873);
   state = reduce(state, 'hit');
   state = reduce(state, 'hit');
   state = reduce(state, 'hit');
