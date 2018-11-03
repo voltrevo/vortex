@@ -1,0 +1,31 @@
+util := {
+  MinMax: func(a, b) => switch (a < b) {
+    true => [a, b];
+    false => [b, a];
+  },
+
+  abs: func(x) => switch (x >= 0) {
+    true => x;
+    false => -x;
+  },
+
+  pick: func(arr, rand) {
+    pickI := arr:Length() * rand;
+    pickI -= pickI % 1;
+
+    newArr := [];
+    picked := null;
+
+    for ([i, x] of arr:Entries()) {
+      if (i == pickI) {
+        picked = x;
+      } else {
+        newArr ++= [x];
+      }
+    }
+
+    return [picked, newArr];
+  },
+};
+
+return util;

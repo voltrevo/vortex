@@ -1,0 +1,69 @@
+import util;
+
+MinMax := util.MinMax;
+abs := util.abs;
+
+cards := [
+  { name: 'A', values: [1, 11] },
+  { name: '2', values: [2] },
+  { name: '3', values: [3] },
+  { name: '4', values: [4] },
+  { name: '5', values: [5] },
+  { name: '6', values: [6] },
+  { name: '7', values: [7] },
+  { name: '8', values: [8] },
+  { name: '9', values: [9] },
+  { name: '10', values: [10] },
+  { name: 'J', values: [10] },
+  { name: 'Q', values: [10] },
+  { name: 'K', values: [10] },
+];
+
+suits := ['♠', '♥', '♦', '♣'];
+
+fullDeck := (func() {
+  res := [];
+
+  for (suit of suits) {
+    for (card of cards) {
+      res ++= [card ++ {suit}];
+    }
+  }
+
+  return res;
+})();
+
+func scoreHand(hand) {
+  possibleScores := [0];
+
+  for (card of hand) {
+    newScores := [];
+
+    for (value of card.values) {
+      newScores ++= possibleScores:map(func(s) => s + value);
+    }
+
+    possibleScores = newScores;
+  }
+
+  return possibleScores:reduce(BestScore);
+};
+
+func BestScore(s1, s2) {
+  [min, max] := MinMax(s1, s2);
+
+  if (s1 <= 21 || s2 <= 21) {
+    if (s1 > 21 || s2 > 21) {
+      return min;
+    }
+
+    return max;
+  }
+
+  return switch (abs(s1 - 21) < abs(s2 - 21)) {
+    true => s1;
+    false => s2;
+  };
+};
+
+return {fullDeck, scoreHand, BestScore};

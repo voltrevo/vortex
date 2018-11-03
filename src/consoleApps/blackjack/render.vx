@@ -1,0 +1,94 @@
+import blackjack;
+
+newline := '
+';
+
+func renderHand(hand) {
+  if (hand:Length() == 0) {
+    return 'empty';
+  }
+
+  return (hand
+    :map(func(card) => card.name ++ card.suit ++ '  ')
+    :reduce(++)
+  );
+};
+
+func renderOptions(options) {
+  res := 'Options:';
+
+  for (op of options) {
+    res ++= newline ++ '  ' ++ op;
+  }
+
+  return res;
+};
+
+func render({deck, mode, playerHand, dealerHand, rand, display, options}) {
+  parts := [];
+  parts ++= ['There are ' ++ deck:Length():String() ++ ' cards in the deck'];
+
+  True := [rand, display] == [rand, display];
+  options = null;
+
+  parts ++= ['Your hand:   ' ++ renderHand(playerHand)];
+
+  if (mode == 'playing') {
+    score := blackjack.scoreHand(playerHand);
+
+    options = switch {
+      (score > 21) => ['stay'];
+      (True == True) => ['hit', 'stay'];
+    };
+  } else if (mode == 'dealing') {
+    parts ++= ['Dealer hand: ' ++ renderHand(dealerHand)];
+
+    score := blackjack.scoreHand(dealerHand);
+
+    options = switch {
+      (score > 15) => ['finish'];
+      true => ['next'];
+    };
+  } else if (mode == 'finished') {
+    parts ++= ['Dealer hand: ' ++ renderHand(dealerHand)];
+
+    playerScore := blackjack.scoreHand(playerHand);
+    dealerScore := blackjack.scoreHand(dealerHand);
+
+    parts ++= [
+      'Your score:   ' ++ playerScore:String() ++ newline ++
+      'Dealer score: ' ++ dealerScore:String()
+    ];
+
+    parts ++= switch {
+      (playerScore == dealerScore) =>
+        ['===> TIE <===']
+      ;
+
+      (playerScore == blackjack.BestScore(playerScore, dealerScore)) =>
+        ['===> YOU WIN <===']
+      ;
+
+      true =>
+        ['===> YOU LOSE <===']
+      ;
+    };
+
+    options = [];
+  } else {
+    assert false;
+  }
+
+  if (options:Length() > 0) {
+    parts ++= [
+      renderOptions(options),
+      'What will you do? '
+    ];
+  }
+
+  msg := parts:reduce(func(acc, next) => acc ++ newline ++ newline ++ next);
+
+  return [msg, options];
+};
+
+return render;

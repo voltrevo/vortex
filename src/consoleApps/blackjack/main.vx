@@ -1,0 +1,86 @@
+import blackjack;
+import util;
+import render;
+
+initState := {
+  deck: blackjack.fullDeck,
+  mode: 'playing',
+  playerHand: [],
+  dealerHand: [],
+  rand: 0.4817,
+  display: null,
+  options: null,
+};
+
+apply := {
+  hit: func(state) {
+    [card, rest] := util.pick(state.deck, state.rand);
+    state.deck = rest;
+    state.playerHand ++= [card];
+
+    return state;
+  },
+
+  stay: func(state) {
+    state.mode = 'dealing';
+    return state;
+  },
+
+  next: func(state) {
+    [card, rest] := util.pick(state.deck, state.rand);
+    state.deck = rest;
+    state.dealerHand ++= [card];
+
+    return state;
+  },
+
+  finish: func(state) {
+    state.mode = 'finished';
+    return state;
+  },
+};
+
+func reduce(state, action) {
+  if (state:String() == 'null') {
+    state = initState;
+    [state.display, state.options] = render(state);
+    return state;
+  }
+
+  optionValid := false;
+
+  for (op of state.options) {
+    if (action == op) {
+      optionValid = true;
+      break;
+    }
+  }
+
+  if (!optionValid) {
+    return state;
+  }
+
+  state = apply[action](state);
+  [state.display, state.options] = render(state);
+
+  return state;
+};
+
+log.info (func() {
+  state := reduce(null, null);
+  state = reduce(state, 'hit');
+  state = reduce(state, 'hit');
+  state = reduce(state, 'hit');
+  state = reduce(state, 'hit');
+  state = reduce(state, 'stay');
+  state = reduce(state, 'next');
+  state = reduce(state, 'next');
+  state = reduce(state, 'next');
+  state = reduce(state, 'next');
+  state = reduce(state, 'finish');
+  log.info state.display;
+
+  return 'testing done';
+})();
+
+return reduce;
