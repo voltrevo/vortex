@@ -1,27 +1,35 @@
 initState := {
   monsterHitPoints: 35,
   rand: iterateRand(0.12783),
+  missed: false,
 };
 
 weapons := [
   {name: 'fist', damage: 1, accuracy: 1},
-  {name: 'axe', damage: 10, accuracy: 0.5},
+  {name: 'axe', damage: 10, accuracy: 0.3},
 ];
 
 newline := '
 ';
+
+func abs(x) => switch (x < 0) {
+  true => -x;
+  false => x;
+};
 
 func iterateRand(rand) {
   for (i := 0; i < 5; i++) {
     rand = rand - (rand ** 2 + 1) / (2 * rand + 0.00001);
   }
 
+  rand = abs(rand);
+
   for (rand >= 1) {
     rand /= 10;
   }
 
   for (i := 0; i < 5; i++) {
-    rand = 10 * rand - rand;
+    rand *= 9;
   }
 
   for (rand >= 1) {
@@ -38,6 +46,11 @@ func render(state) {
   if (state.monsterHitPoints == 0) {
     display ++= 'You have defeated the monster! Press Ctrl+D ';
     return display;
+  }
+
+  if (state.missed) {
+    display ++= 'Your attack missed!' ++ newline;
+    display ++= newline;
   }
 
   display ++= 'The monster has ' ++ state.monsterHitPoints:String() ++ 'HP' ++ newline;
@@ -63,10 +76,14 @@ func reducer(state, action) {
 
   state.rand = iterateRand(state.rand);
 
+  state.missed = false;
+
   for (weapon of weapons) {
     if (action == weapon.name) {
       if (state.rand < weapon.accuracy) {
         state.monsterHitPoints -= weapon.damage;
+      } else {
+        state.missed = true;
       }
 
       if (state.monsterHitPoints < 0) {
