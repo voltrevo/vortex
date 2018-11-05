@@ -29,25 +29,27 @@ return {
     return [picked, newArr];
   },
 
-  iterateRand: func(rand) {
-    for (i := 0; i < 5; i++) {
-      rand = rand - (rand ** 2 + 1) / (2 * rand + 0.00001);
-    }
-
-    rand = util.abs(rand);
-
-    for (rand >= 1) {
-      rand /= 10;
-    }
+  iterateRand: func iterateRand(rand) {
+    r := rand;
 
     for (i := 0; i < 5; i++) {
-      rand *= 9;
+      r -= (r ** 2 + 1) / (2 * r);
     }
 
-    for (rand >= 1) {
-      rand /= 10;
+    if (r == r + 1) {
+      return iterateRand(iterateRand(rand + 0.1) + 0.1);
     }
 
-    return rand;
+    return util.abs(1000 * r) % 1;
+  },
+
+  repeat: func(x, n) {
+    res := [];
+
+    for (i := 0; i < n; i++) {
+      res ++= [x];
+    }
+
+    return res;
   },
 };
