@@ -1518,13 +1518,7 @@ namespace Analyzer {
           [entry, az] = Analyzer.get(az, exp.v);
 
           if (entry === null) {
-            const ex = Outcome.Exception(
-              exp,
-              ['not-found'],
-              `Variable does not exist: ${exp.v}`
-            );
-
-            return [ex, az];
+            throw new Error('Shouldn\'t be possible');
           }
 
           return [entry.data, az];

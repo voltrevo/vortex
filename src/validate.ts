@@ -285,7 +285,7 @@ function validateFunctionScope(
             )
           );
 
-          const children: ScopeItem[] = [];
+          const children: ScopeItem[] = [right];
 
           for (const target of targets) {
             if (target.t === 'IDENTIFIER') {
@@ -294,8 +294,6 @@ function validateFunctionScope(
               children.push(target);
             }
           }
-
-          children.push(right);
 
           return children;
         }
@@ -566,7 +564,8 @@ function validateFunctionScope(
                     (
                       `Function {${use.origin.v}} is not available here ` +
                       `because it captures {${clItem.identifier.v}} which ` +
-                      `doesn't exist until ${formatLocation(clItem.origin.p)}`
+                      `doesn't exist until after ` +
+                      formatLocation(clItem.origin.p)
                     ),
                     [
                       Note(

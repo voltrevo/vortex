@@ -1,0 +1,19 @@
+foo := {
+  bar: func(n) {
+    if (n == 0) {
+      return 'foo.bar';
+    }
+
+    return baz(n - 1);
+  },
+};
+
+func baz(n) {
+  if (n == 0) {
+    return 'baz';
+  }
+
+  return foo.bar(n - 1);
+};
+
+return foo.bar(3);
