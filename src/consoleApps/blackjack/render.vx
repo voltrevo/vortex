@@ -37,8 +37,8 @@ func render({deck, mode, playerHand, dealerHand, rand, display, options}) {
     score := blackjack.scoreHand(playerHand);
 
     options = switch {
-      (score > 21) => ['stay'];
-      (True == True) => ['hit', 'stay'];
+      (score > 21) => ['stand'];
+      (True == True) => ['hit', 'stand'];
     };
   } else if (mode == 'dealing') {
     parts ++= ['Dealer hand: ' ++ renderHand(dealerHand)];

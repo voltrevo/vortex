@@ -21,7 +21,7 @@ apply := {
     return state;
   },
 
-  stay: func(state) {
+  stand: func(state) {
     state.mode = 'dealing';
     return state;
   },
@@ -75,7 +75,7 @@ assert 'done' == (func() {
   state = reduce(state, 'hit');
   state = reduce(state, 'hit');
   state = reduce(state, 'hit');
-  state = reduce(state, 'stay');
+  state = reduce(state, 'stand');
   state = reduce(state, 'next');
   state = reduce(state, 'next');
   state = reduce(state, 'next');
