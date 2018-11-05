@@ -13,7 +13,7 @@ const files = (spawnSync('git', ['ls-files'])
   .filter(line => (
     line !== '' &&
     /\.vx$/.test(line) &&
-    !/projectEuler/.test(line)
+    /testCode/.test(line)
   ))
   .sort((a, b) => (
     a.toUpperCase() < b.toUpperCase() ? -1 :
