@@ -3,13 +3,13 @@ import blackjack;
 newline := '
 ';
 
-func renderHand(hand) {
-  if (hand:Length() == 0) {
-    return 'empty';
-  }
+func renderCard(card) {
+  return card.name ++ card.suit;
+};
 
+func renderHand(hand) {
   return (hand
-    :map(func(card) => card.name ++ card.suit ++ '  ')
+    :map(func(card) => renderCard(card) ++ '  ')
     :reduce(++)
   );
 };
@@ -24,84 +24,75 @@ func renderOptions(options) {
   return res;
 };
 
-func render({deck, mode, playerHand, dealerHand, rand, display, options}) {
-  parts := [];
-  parts ++= ['There are ' ++ deck:Length():String() ++ ' cards in the deck'];
+func renderScore(hand) {
+  score := blackjack.scoreHand(hand);
 
-  True := [rand, display] == [rand, display];
-  options = null;
+  return switch {
+    (score <= 21) => score:String();
+    true => 'BUST';
+  };
+};
+
+func padLeft(len, str) {
+  for (str:Length() < len) {
+    str = ' ' ++ str;
+  }
+
+  return str;
+};
+
+func render({rand, deck, account, bet, playerHand, dealerHand, options}) {
+  parts := [
+    newline ++ '====================================',
+    (
+      'Account: $' ++ padLeft(3, account:String()) ++ newline ++
+      'Bet:     $' ++ padLeft(3, bet:String())
+    )
+  ];
+
+  // TODO: This is a hack to suppress the warning for not using rand.
+  True := [rand, deck]:Length() == 2;
+
+  optionsStr := options:String();
+
+  finished := optionsStr == '[]' || optionsStr == '[\'next\']';
+
+  if (finished) {
+    parts ++= ['Dealer hand: ' ++ renderHand(dealerHand)];
+  } else {
+    parts ++= ['Dealer hand: ' ++ renderCard(dealerHand[0]) ++ '  ??'];
+  }
 
   parts ++= ['Your hand:   ' ++ renderHand(playerHand)];
 
-  if (mode == 'playing') {
-    score := blackjack.scoreHand(playerHand);
-
-    options = switch {
-      (score > 21) => ['stand'];
-      (True == True) => ['hit', 'stand'];
-    };
-  } else if (mode == 'dealing') {
-    parts ++= ['Dealer hand: ' ++ renderHand(dealerHand)];
-
-    score := blackjack.scoreHand(dealerHand);
-
-    options = switch {
-      (score > 15) => ['finish'];
-      true => ['next'];
-    };
-  } else if (mode == 'finished') {
-    parts ++= ['Dealer hand: ' ++ renderHand(dealerHand)];
-
-    playerScore := blackjack.scoreHand(playerHand);
-    dealerScore := blackjack.scoreHand(dealerHand);
-
-    func ScoreString(score) => switch {
-      (score == 100) => 'BUST';
-      true => score:String();
-    };
-
+  if (finished) {
     parts ++= [
-      'Your score:   ' ++ ScoreString(playerScore) ++ newline ++
-      'Dealer score: ' ++ ScoreString(dealerScore)
+      'Your score:   ' ++ renderScore(playerHand) ++ newline ++
+      'Dealer score: ' ++ renderScore(dealerHand)
     ];
 
-    parts ++= switch {
-      (playerScore == 100) =>
-        ['===> YOU LOSE <===']
-      ;
+    betStr := '  $' ++ bet:String();
 
-      (dealerScore == 100) =>
-        ['===> YOU WIN <===']
-      ;
-
-      (playerScore == dealerScore) =>
-        ['===> TIE <===']
-      ;
-
-      (playerScore > dealerScore) =>
-        ['===> YOU WIN <===']
-      ;
-
-      true =>
-        ['===> YOU LOSE <===']
-      ;
+    parts ++= switch (blackjack.WinLossTie(playerHand, dealerHand)) {
+      'win' => ['===> WIN <===' ++ newline ++ betStr ++ ' added'];
+      'loss' => ['===> LOSS <===' ++ newline ++ betStr ++ ' deducted'];
+      'tie' => ['===> TIE <==='];
     };
-
-    options = [];
-  } else {
-    assert false;
   }
 
-  if (options:Length() > 0) {
-    parts ++= [
-      renderOptions(options),
-      'What will you do? '
-    ];
-  }
+  parts ++= switch {
+    (options:Length() == 0) =>
+      ['Game Over']
+    ;
+
+    True =>
+      [renderOptions(options), 'What will you do? ']
+    ;
+  };
 
   msg := parts:reduce(func(acc, next) => acc ++ newline ++ newline ++ next);
 
-  return [msg, options];
+  return msg;
 };
 
 return render;

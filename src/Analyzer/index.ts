@@ -1763,6 +1763,46 @@ namespace Analyzer {
             return [out, az];
           }
 
+          if (container.t === 'String') {
+            // TODO: Dedupe with array
+
+            if (index.t !== 'Number') {
+              const ex = Outcome.Exception(exp,
+                ['type-error', 'subscript'],
+                `Type error: ${container.t}[${index.t}]`,
+              );
+
+              return [ex, az];
+            }
+
+            if (index.v < 0 || index.v !== Math.floor(index.v)) {
+              const ex = Outcome.Exception(indexExp,
+                ['subscript', 'out-of-bounds', 'index-bad'],
+                `Invalid string index: ${index.v}`,
+              );
+
+              return [ex, az];
+            }
+
+            if (index.v >= container.v.length) {
+              const ex = Outcome.Exception(
+                exp,
+                ['out-of-bounds', 'index-too-large'],
+                [
+                  'Out of bounds: index ',
+                  index.v,
+                  ' but string is only length ',
+                  container.v.length
+                ].join(''),
+              );
+
+              return [ex, az];
+            }
+
+            const out = Outcome.String(container.v[index.v]);
+            return [out, az];
+          }
+
           const ex = Outcome.Exception(exp,
             ['type-error', 'subscript', 'object'],
             `Type error: ${container.t}[${index.t}]`,

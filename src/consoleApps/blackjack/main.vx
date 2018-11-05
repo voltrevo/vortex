@@ -2,74 +2,14 @@ import blackjack;
 import util;
 import render;
 
-initState := {
-  deck: blackjack.fullDeck,
-  mode: 'playing',
-  playerHand: [],
-  dealerHand: [],
-  rand: 0.4817,
-  display: null,
-  options: null,
-};
-
-func apply(action) => switch (action) {
-  'hit' => func(state) {
-    [card, rest] := util.pick(state.deck, state.rand);
-    state.deck = rest;
-    state.playerHand ++= [card];
-
-    return state;
-  };
-
-  'stand' => func(state) {
-    state.mode = 'dealing';
-    state.options = ['next'];
-    state = reduce(state, 'next');
-    state = reduce(state, 'next');
-    return state;
-  };
-
-  'next' => func(state) {
-    [card, rest] := util.pick(state.deck, state.rand);
-    state.deck = rest;
-    state.dealerHand ++= [card];
-
-    return state;
-  };
-
-  'finish' => func(state) {
-    state.mode = 'finished';
-    return state;
-  };
-};
-
 func reduce(state, action) {
   if (state:String() == 'null') {
-    state = initState;
-    assert action > 0;
-    state.rand = action;
-    [state.display, state.options] = render(state);
-    state = reduce(state, 'hit');
-    state = reduce(state, 'hit');
-    return state;
+    state = {blackjack: blackjack.Init(action)};
+  } else {
+    state = {blackjack: blackjack.reduce(state.blackjack, action)};
   }
 
-  optionValid := false;
-
-  for (op of state.options) {
-    if (action == op) {
-      optionValid = true;
-      break;
-    }
-  }
-
-  if (!optionValid) {
-    return state;
-  }
-
-  state.rand = util.iterateRand(state.rand);
-  state = apply(action)(state);
-  [state.display, state.options] = render(state);
+  state.display := render(state.blackjack);
 
   return state;
 };

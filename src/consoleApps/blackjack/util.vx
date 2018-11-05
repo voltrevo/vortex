@@ -1,6 +1,6 @@
 import util;
 
-return {
+res := {
   MinMax: func(a, b) => switch (a < b) {
     true => [a, b];
     false => [b, a];
@@ -9,24 +9,6 @@ return {
   abs: func(x) => switch (x >= 0) {
     true => x;
     false => -x;
-  },
-
-  pick: func(arr, rand) {
-    pickI := arr:Length() * rand;
-    pickI -= pickI % 1;
-
-    newArr := [];
-    picked := null;
-
-    for ([i, x] of arr:Entries()) {
-      if (i == pickI) {
-        picked = x;
-      } else {
-        newArr ++= [x];
-      }
-    }
-
-    return [picked, newArr];
   },
 
   iterateRand: func iterateRand(rand) {
@@ -52,4 +34,20 @@ return {
 
     return res;
   },
+
+  shuffle: func(rand, arr) {
+    len := arr:Length();
+    limit := len - 1;
+
+    for (i := 0; i < limit; i++) {
+      j := i + rand * (len - i);
+      j -= j % 1;
+      rand = util.iterateRand(rand);
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+
+    return [arr, rand];
+  },
 };
+
+return res;
