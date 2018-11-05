@@ -55,17 +55,30 @@ func render({deck, mode, playerHand, dealerHand, rand, display, options}) {
     playerScore := blackjack.scoreHand(playerHand);
     dealerScore := blackjack.scoreHand(dealerHand);
 
+    func ScoreString(score) => switch {
+      (score == 100) => 'BUST';
+      true => score:String();
+    };
+
     parts ++= [
-      'Your score:   ' ++ playerScore:String() ++ newline ++
-      'Dealer score: ' ++ dealerScore:String()
+      'Your score:   ' ++ ScoreString(playerScore) ++ newline ++
+      'Dealer score: ' ++ ScoreString(dealerScore)
     ];
 
     parts ++= switch {
+      (playerScore == 100) =>
+        ['===> YOU LOSE <===']
+      ;
+
+      (dealerScore == 100) =>
+        ['===> YOU WIN <===']
+      ;
+
       (playerScore == dealerScore) =>
         ['===> TIE <===']
       ;
 
-      (playerScore == blackjack.BestScore(playerScore, dealerScore)) =>
+      (playerScore > dealerScore) =>
         ['===> YOU WIN <===']
       ;
 

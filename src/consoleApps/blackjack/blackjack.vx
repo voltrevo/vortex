@@ -1,7 +1,6 @@
 import util;
 
 MinMax := util.MinMax;
-abs := util.abs;
 
 cards := [
   { name: 'A', values: [1, 11] },
@@ -46,24 +45,19 @@ func scoreHand(hand) {
     possibleScores = newScores;
   }
 
-  return possibleScores:reduce(BestScore);
+  possibleScores = possibleScores:filter(func(score) => score <= 21);
+
+  return possibleScores:reduceFrom(100, BestScore);
 };
 
 func BestScore(s1, s2) {
   [min, max] := MinMax(s1, s2);
 
-  if (s1 <= 21 || s2 <= 21) {
-    if (s1 > 21 || s2 > 21) {
-      return min;
-    }
-
-    return max;
+  if (max == 100) {
+    return min;
   }
 
-  return switch (abs(s1 - 21) < abs(s2 - 21)) {
-    true => s1;
-    false => s2;
-  };
+  return max;
 };
 
 return {fullDeck, scoreHand, BestScore};

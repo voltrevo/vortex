@@ -2161,6 +2161,56 @@ namespace Analyzer {
             return [out, az];
           }
 
+          // TODO: Reduce duplication with reduce
+          if (base.t === 'Array' && funcv.v.name === 'filter') {
+            const filterFn = args[0];
+
+            if (filterFn.t !== 'Func') {
+              const ex = Outcome.Exception(funcExp,
+                ['type-error', 'call-non-function'],
+                `Type error: attempt to call a ${filterFn.t} as a function`
+              );
+
+              return [ex, az];
+            }
+
+            const values: Outcome.Value[] = [];
+
+            for (const el of base.v) {
+              let tout: TailCall | Outcome = TailCall(
+                funcExp,
+                filterFn,
+                [el],
+              );
+
+              while (typeof tout === 'function') {
+                [tout, az] = tout(az);
+              }
+
+              if (tout.t === 'exception') {
+                return [tout, az];
+              }
+
+              if (tout.t !== 'Bool') {
+                const ex = Outcome.Exception(funcExp,
+                  ['type-error'],
+                  `Type error: filter function ${filterFn.t} needed to ` +
+                  `return a Bool but it returned a(n) ${tout.t}`
+                );
+
+                return [ex, az];
+              }
+
+              if (tout.v) {
+                values.push(el);
+              }
+            }
+
+            const res = Outcome.Array(values);
+
+            return [res, az];
+          }
+
           // TODO: Reduce duplication with reduceFrom
           if (base.t === 'Array' && funcv.v.name === 'reduce') {
             const reducer = args[0];

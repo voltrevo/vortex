@@ -12,32 +12,35 @@ initState := {
   options: null,
 };
 
-apply := {
-  hit: func(state) {
+func apply(action) => switch (action) {
+  'hit' => func(state) {
     [card, rest] := util.pick(state.deck, state.rand);
     state.deck = rest;
     state.playerHand ++= [card];
 
     return state;
-  },
+  };
 
-  stand: func(state) {
+  'stand' => func(state) {
     state.mode = 'dealing';
+    state.options = ['next'];
+    state = reduce(state, 'next');
+    state = reduce(state, 'next');
     return state;
-  },
+  };
 
-  next: func(state) {
+  'next' => func(state) {
     [card, rest] := util.pick(state.deck, state.rand);
     state.deck = rest;
     state.dealerHand ++= [card];
 
     return state;
-  },
+  };
 
-  finish: func(state) {
+  'finish' => func(state) {
     state.mode = 'finished';
     return state;
-  },
+  };
 };
 
 func reduce(state, action) {
@@ -46,6 +49,8 @@ func reduce(state, action) {
     assert action > 0;
     state.rand = action;
     [state.display, state.options] = render(state);
+    state = reduce(state, 'hit');
+    state = reduce(state, 'hit');
     return state;
   }
 
@@ -63,7 +68,7 @@ func reduce(state, action) {
   }
 
   state.rand = util.iterateRand(state.rand);
-  state = apply[action](state);
+  state = apply(action)(state);
   [state.display, state.options] = render(state);
 
   return state;
@@ -72,12 +77,7 @@ func reduce(state, action) {
 assert 'done' == (func() {
   state := reduce(null, 0.2873);
   state = reduce(state, 'hit');
-  state = reduce(state, 'hit');
-  state = reduce(state, 'hit');
-  state = reduce(state, 'hit');
   state = reduce(state, 'stand');
-  state = reduce(state, 'next');
-  state = reduce(state, 'next');
   state = reduce(state, 'next');
   state = reduce(state, 'next');
   state = reduce(state, 'finish');

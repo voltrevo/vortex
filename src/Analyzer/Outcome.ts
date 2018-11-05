@@ -387,6 +387,12 @@ namespace Outcome {
         argLength: 0;
       };
 
+      filter: {
+        base: Array;
+        name: 'filter';
+        argLength: 1;
+      };
+
       map: {
         base: Array;
         name: 'map';
@@ -480,6 +486,11 @@ namespace Outcome {
         result: Array;
       };
 
+      filter: {
+        args: [Func];
+        result: Array;
+      };
+
       map: {
         args: [Func];
         result: Array;
@@ -532,6 +543,7 @@ namespace Outcome {
       Last: (base, []) => base.v[base.v.length - 1],
       Head: (base, []) => Array(base.v.slice(0, base.v.length - 1)),
       Tail: (base, []) => Array(base.v.slice(1, base.v.length)),
+      filter: () => { throw new Error('Needs special implementation'); },
       map: () => { throw new Error('Needs special implementation'); },
       reduce: () => { throw new Error('Needs special implementation'); },
       reduceFrom: () => { throw new Error('Needs special implementation'); },
@@ -556,6 +568,7 @@ namespace Outcome {
       Head: 0,
       Tail: 0,
       map: 1,
+      filter: 1,
       reduce: 1,
       reduceFrom: 2,
       Row: 0,
