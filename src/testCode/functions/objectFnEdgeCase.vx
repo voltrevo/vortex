@@ -1,10 +1,10 @@
-foo := {
+foo := { // #info #incomplete-closure
   bar: func(n) {
     if (n == 0) {
       return 'foo.bar';
     }
 
-    return baz(n - 1);
+    return baz(n - 1); // #error #incomplete-closure
   },
 };
 
@@ -13,7 +13,7 @@ func baz(n) {
     return 'baz';
   }
 
-  return foo.bar(n - 1);
+  return foo.bar(n - 1); // #info #incomplete-closure
 };
 
 return foo.bar(3);
