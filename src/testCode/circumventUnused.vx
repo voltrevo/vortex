@@ -1,0 +1,5 @@
+[a, b] := [0, 0]; // TODO: Warn that {a} and {b} are unused
+a += b;
+b += a;
+
+return 'done';

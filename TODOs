@@ -1,4 +1,4 @@
-TODO: More unused warnings via return value dependency analysis
+TODO: More unused warnings via return value dependency analysis (see cirumventUnused.vx)
 TODO: Place import trace notes at lookup site rather than at import expression
 TODO: Add tests for every possible note
 TODO: Syntax to turn on compiler notes for return value
