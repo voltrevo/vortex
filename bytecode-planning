@@ -1,0 +1,123 @@
+- Bytecode is typeless/dynamic for now. Might add {mode=typed} later or have a separate bytecode for typed / efficient purposes, or it might be more appropriate to go straight to webassembly instead.
+
+stack machine
+
+two stacks:
+- evaluation stack
+- locals stack
+
+natively understands the vortex universe of values
+
+type followed by data to fill that type
+
+eg this pushes 163 onto the stack
+  {i32} 00 00 00 a3
+  |     |
+  ^ {type} is a stand-in for a byte with arbitrary value to represent that type, the exact mapping can be determined later
+        |
+        ^ 4 bytes representing the i32, in big endian order {due to apparent hardware preference for big endian, but this might change
+
+eg these 7 bytes push [null, true, 60u8] onto the stack:
+  {array} {null} {bool} 01 {u8} 3c {end}
+
+
+Tentative values for codes:
+
+code     | byte
+---------------
+{end}    | 00 // not a vortex value, but used in the bytecode representation of vortex values
+
+
+                                    literals
+                                   ==========
+
+type     | bytes
+----------------
+{null}   | 0
+         |
+{bool}   | 1 // only 00 and 01 are legal
+         |
+{u8}     | 1
+{u16}    | 2
+{u32}    | 4
+{u64}    | 8
+{i8}     | 1 // aka char
+{i16}    | 2 // aka short
+{i32}    | 4 // aka int
+{i64}    | 8 // aka long
+         |
+{f8}     | 1 // to be implemented later, but reserve a code for it
+{f16}    | 2 // to be implemented later, but reserve a code for it
+{f32}    | 4
+{f64}    | 8
+         |
+         |   // {ubig}, {ibig}, {fbig} ?
+         |
+{string} | variable - followed by utf8 byte sequence terminated by {end}
+{array}  | variable - followed by a sequence of values followed by {end}
+{object} | variable - followed by an even number of values followed by {end}
+{set}    | variable - followed by an ordered sequence of values followed by {end}
+
+
+                                stack operators
+                               =================
+
+operator | description           | arguments
+-----------------------------------------
+{<<}     | left bit shift        | 2
+{>>}     | right bit shift       | 2
+{~}      | bitwise negate        | 1
+         |                       |
+{&}      | intersection          | 2
+{^}      | exclusive union       | 2
+{|}      | union                 | 2
+         |                       |
+{<}      | less                  | 2
+{>}      | greater               | 2
+{<=}     | less or equal         | 2
+{>=}     | greater or equal      | 2
+         |                       |
+{==}     | equal                 | 2
+{!=}     | not equal             | 2
+{not}    | not                   | 1
+{&&}     | and                   | 2
+{||}     | or                    | 2
+{not}    | not                   | 1
+         |                       |
+{*}      | multiply              | 2
+{/}      | divide                | 2
+{%}      | modulus               | 2
+{**}     | exponentiation        | 2
+{-}      | minus                 | 2
+{+}      | plus                  | 2
+{neg}    | negate                | 1
+         |                       |
+{inc}    | increment             | 1
+{dec}    | decrement             | 1
+         |                       |
+{++}     | concatenate           | 2
+         |                       |
+{index}  | index/at              | 2
+
+
+                                locals operators
+                               ==================
+
+operator | description           | arguments
+--------------------------------------------
+{get}    | get local             | 1
+{set}    | set local             | 2
+
+
+                                  control flow
+                                 ==============
+
+return
+yield
+if
+for
+break
+continue
+goto
+
+                                       ><
