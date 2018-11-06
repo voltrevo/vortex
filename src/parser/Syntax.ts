@@ -65,7 +65,6 @@ namespace Syntax {
     '&' |
     '^' |
     '|' |
-    // TODO: !, ~
     never
   );
 
