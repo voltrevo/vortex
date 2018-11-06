@@ -1,0 +1,4 @@
+return func(a, b) => switch {
+  (a >= b) => a;
+  true => b;
+};

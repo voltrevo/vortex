@@ -1,4 +1,4 @@
-// import Math from 'core'; // TODO: bad implementation TODO:error:not-implemented
+import max from './util';
 
 n := 600851475143;
 i := 2;
@@ -13,6 +13,6 @@ for {
   i++;
 
   if (i * i > n) {
-    return Math.max(p, n); // #error #not-found
+    return max(p, n); // #error #not-found
   }
 }

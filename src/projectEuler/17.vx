@@ -73,7 +73,7 @@ func WordLen(n) {
   }
 
   assert false;
-  return null; // TODO: Should be unreachable error
+  return null; // TODO-1: Should be unreachable error
 };
 
 log.info (Range(1000)

@@ -13,7 +13,7 @@ const files = (spawnSync('git', ['ls-files'])
   .filter(line => (
     line !== '' &&
     /\.vx$/.test(line) &&
-    /testCode/.test(line)
+    /testCode|parser/.test(line)
   ))
   .sort((a, b) => (
     a.toUpperCase() < b.toUpperCase() ? -1 :
@@ -290,6 +290,9 @@ function compareArrays(a: any[], b: any[]) {
 function TodoSortPriority(line: string) {
   return [
     /^TODOs:/.test(line) ? 0 : 1,
+    /TODO!/.test(line) ? 0 : 1,
+    /TODO-easy/.test(line) ? 0 : 1,
+    /TODO-[0-9]/.test(line) ? (line as any).match(/TODO-[0-9]/)[0] : 'z',
     /^[^:]*\.vx:/.test(line) ? 0 : 1,
     line.split(':')[0],
     Number(line.split(':')[1]),
@@ -301,7 +304,10 @@ const todos = (spawnSync('git', ['grep', '-n', 'TODO'])
   .stdout
   .toString()
   .split('\n')
-  .filter(line => line !== '')
+  .filter(line => (
+    line !== '' &&
+    (!/^[^:]*test.ts:/.test(line) || /\/\//.test(line))
+  ))
   .sort((a, b) => {
     return compareArrays(
       TodoSortPriority(a),

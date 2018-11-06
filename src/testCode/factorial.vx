@@ -1,4 +1,4 @@
-// import Error from 'core'; // TODO:error:not-implemented
+// import Error from 'core'; // TODO:error:not-implemented:nominal-typing
 
 return func factorial(n) => switch {
   (n < 0) => Error('Invalid input'); // #error #not-found

@@ -77,7 +77,7 @@ foo := func() {}; // #error #warn #control-flow #unused
 
 func loops() { // #warn #unused
   for {
-    infiniteLoop := 1; // #warn #unused TODO:infinite-loop
+    infiniteLoop := 1; // #warn #unused TODO-easy:infinite-loop
   }
 
   for (1) {} // TODO: type-error

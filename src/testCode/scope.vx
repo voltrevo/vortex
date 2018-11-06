@@ -5,4 +5,4 @@ for (x := 1; y; x++) { // #error #error #duplicate #not-found
   return y;
 }
 
-return y; // #error #not-found TODO:unreachable
+return y; // #error #not-found
