@@ -13,9 +13,83 @@ namespace Vortex {
       vector<Value> closure;
       vector<Value> locals;
       stack<Value> calc;
+
+      void push(Value v) { calc.push(v); }
+
+      Value pop() {
+        auto v = calc.top();
+        calc.pop();
+        return v;
+      }
     };
 
     stack<Context> cc;
+
+    class Decoder {
+      byte* pos;
+
+    public:
+      Decoder(byte* init) { pos = init; }
+
+      Code get() { return (Code)(*pos++); };
+      byte getByte() { return *pos++; }
+
+      Value getValue(Code type) {
+        switch (type) {
+          case NULL_: {
+            return Value();
+          }
+
+          case BOOL: {
+            switch (getByte()) {
+              case byte(0): {
+                return Value(false);
+              }
+
+              case byte(1): {
+                return Value(true);
+              }
+
+              default: throw InternalError();
+            }
+          }
+
+          case INT32: {
+            auto v = *(int*)(pos);
+            pos += 4;
+            return Value(v);
+          }
+
+          case FLOAT64: {
+            auto v = *(double*)(pos);
+            pos += 8;
+            return Value(v);
+          }
+
+          case UINT8:
+          case UINT16:
+          case UINT32:
+          case UINT64:
+
+          case INT8:
+          case INT16:
+          case INT64:
+
+          case FLOAT8:
+          case FLOAT16:
+          case FLOAT32:
+
+          case STRING:
+          case ARRAY:
+          case OBJECT:
+          case SET:
+          case FUNC:
+            throw NotImplementedError();
+
+          default: throw InternalError();
+      }
+    }
+  };
 
   public:
     Machine() {
@@ -23,14 +97,15 @@ namespace Vortex {
     }
 
     void process(byte* code) {
+      auto pos = Decoder(code);
       Context& ctx = cc.top();
 
       while (true) {
-        auto b = (Code)(*code++);
+        auto instr = pos.get();
 
-        switch (GetClass(b)) {
+        switch (GetClass(instr)) {
           case SPECIAL: {
-            if (b == END) {
+            if (instr == END) {
               return;
             }
 
@@ -38,80 +113,16 @@ namespace Vortex {
           }
 
           case TOP_TYPE: {
-            switch (b) {
-              case NULL_: {
-                ctx.calc.push(Value());
-                break;
-              }
-
-              case BOOL: {
-                auto encoded = (Code)(*code++);
-
-                switch (encoded) {
-                  case byte(0): {
-                    ctx.calc.push(Value(false));
-                    break;
-                  }
-
-                  case byte(1): {
-                    ctx.calc.push(Value(true));
-                    break;
-                  }
-
-                  default: throw InternalError();
-                }
-
-                break;
-              }
-
-              case INT32: {
-                auto v = *(int*)(code);
-                code += 4;
-                ctx.calc.push(Value(v));
-                break;
-              }
-
-              case FLOAT64: {
-                auto v = *(double*)(code);
-                code += 8;
-                ctx.calc.push(Value(v));
-                break;
-              }
-
-              case UINT8:
-              case UINT16:
-              case UINT32:
-              case UINT64:
-
-              case INT8:
-              case INT16:
-              case INT64:
-
-              case FLOAT8:
-              case FLOAT16:
-              case FLOAT32:
-
-              case STRING:
-              case ARRAY:
-              case OBJECT:
-              case SET:
-              case FUNC:
-                throw NotImplementedError();
-
-              default: throw InternalError();
-            }
-
+            ctx.calc.push(pos.getValue(instr));
             break;
           }
 
           case BINARY_OPERATOR: {
-            Value right = ctx.calc.top();
-            ctx.calc.pop();
+            Value right = ctx.pop();
+            Value left = ctx.pop();
 
-            Value left = ctx.calc.top();
-            ctx.calc.pop();
+            Value res = BinaryOperator(left, right, instr);
 
-            Value res = BinaryOperator(left, right, b);
             ctx.calc.push(res);
 
             break;
