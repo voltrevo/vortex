@@ -50,6 +50,104 @@ namespace Vortex {
       Code get() { return (Code)(*pos++); };
       byte getByte() { return *pos++; }
 
+      void prev() { pos--; }
+
+      void skip(Code code) {
+        switch (GetClass(code)) {
+          case SPECIAL: {
+            if (code != END) {
+              throw InternalError();
+            }
+          }
+
+          case TOP_TYPE: {
+            switch (code) {
+              case NULL_: {
+                return;
+              }
+
+              case BOOL: {
+                pos++;
+                return;
+              }
+
+              case INT32: {
+                pos += 4;
+                return;
+              }
+
+              case FLOAT64: {
+                pos += 8;
+                return;
+              }
+
+              case UINT8:
+              case UINT16:
+              case UINT32:
+              case UINT64:
+
+              case INT8:
+              case INT16:
+              case INT64:
+
+              case FLOAT8:
+              case FLOAT16:
+              case FLOAT32:
+
+              case STRING:
+              case ARRAY:
+              case OBJECT:
+              case SET:
+              case FUNC:
+                throw NotImplementedError();
+
+              default:
+                throw InternalError();
+            }
+          }
+
+          case BINARY_OPERATOR:
+          case UNARY_OPERATOR: {
+            return;
+          }
+
+          case SCOPE: {
+            pos++;
+            return;
+          }
+
+          case CONTROL: {
+            switch (code) {
+              case IF: {
+                while (true) {
+                  auto instr = get();
+
+                  if (instr == END) {
+                    return;
+                  }
+
+                  skip(instr);
+                }
+              }
+
+              case CALL:
+              case RETURN:
+              case EMIT:
+              case BREAK:
+              case CONTINUE: {
+                return;
+              }
+
+              case LOOP:
+                throw NotImplementedError();
+
+              default:
+                throw InternalError();
+            }
+          }
+        }
+      }
+
       Value getValue(Code type) {
         switch (type) {
           case NULL_: {
@@ -102,18 +200,14 @@ namespace Vortex {
           case FUNC:
             throw NotImplementedError();
 
-          default: throw InternalError();
+          default:
+            throw InternalError();
       }
     }
   };
 
   public:
-    Machine() {
-      cc.push(Context());
-    }
-
-    Value process(byte* code) {
-      auto pos = Decoder(code);
+    Decoder run(Decoder pos) {
       Context& ctx = cc.top();
 
       while (true) {
@@ -121,7 +215,13 @@ namespace Vortex {
 
         switch (GetClass(instr)) {
           case SPECIAL: {
-            throw InternalError();
+            switch (instr) {
+              case END:
+                return pos;
+
+              default:
+                throw InternalError();
+            }
           }
 
           case TOP_TYPE: {
@@ -167,16 +267,72 @@ namespace Vortex {
             throw NotImplementedError();
 
           case CONTROL: {
-            if (instr == RETURN) {
-              auto result = ctx.pop();
-              cc.pop();
-              return result;
+            switch (instr) {
+              case RETURN: {
+                pos.prev();
+                return pos;
+              }
+
+              case IF: {
+                auto cond = ctx.pop();
+
+                if (cond.type != BOOL) {
+                  throw TypeError();
+                }
+
+                if (cond.data.BOOL) {
+                  pos = run(pos);
+                } else {
+                  pos.skip(instr);
+                }
+
+                break;
+              }
+
+              case CALL:
+              case EMIT:
+              case LOOP:
+              case BREAK:
+              case CONTINUE:
+                throw NotImplementedError();
+
+              default:
+                throw InternalError();
             }
 
-            throw NotImplementedError();
+            break;
           }
         }
       }
+    }
+
+    Value eval(byte* code) {
+      auto prevSize = cc.size();
+
+      cc.push(Context());
+      auto pos = Decoder(code);
+      pos = run(pos);
+
+      auto instr = pos.get();
+
+      if (instr != RETURN) {
+        throw InternalError();
+      }
+
+      auto& ctx = cc.top();
+      auto res = ctx.pop();
+
+      if (ctx.calc.size() != 0) {
+        throw InternalError();
+      }
+
+      cc.pop();
+
+      if (cc.size() != prevSize)  {
+        throw InternalError();
+      }
+
+      return res;
     }
   };
 }
