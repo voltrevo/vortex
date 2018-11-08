@@ -50,14 +50,18 @@ namespace Vortex {
                 switch (encoded) {
                   case byte(0): {
                     ctx.calc.push(Value(false));
+                    break;
                   }
 
                   case byte(1): {
                     ctx.calc.push(Value(true));
+                    break;
                   }
 
                   default: throw InternalError();
                 }
+
+                break;
               }
 
               case INT32: {

@@ -183,15 +183,157 @@ namespace Vortex {
       case EX_UNION:
       case UNION:
 
-      case LESS:
-      case GREATER:
-      case LESS_EQ:
-      case GREATER_EQ:
+      case LESS: {
+        Code type = left.type;
 
-      case EQUAL:
-      case NOT_EQUAL:
-      case AND:
-      case OR:
+        if (right.type != type) {
+          throw TypeError();
+        }
+
+        switch (type) {
+          case INT32: {
+            return Value(left.data.INT32 < right.data.INT32);
+          }
+
+          case FLOAT64: {
+            return Value(left.data.FLOAT64 < right.data.FLOAT64);
+          }
+
+          default: throw TypeError();
+        }
+      }
+
+      case GREATER: {
+        Code type = left.type;
+
+        if (right.type != type) {
+          throw TypeError();
+        }
+
+        switch (type) {
+          case INT32: {
+            return Value(left.data.INT32 > right.data.INT32);
+          }
+
+          case FLOAT64: {
+            return Value(left.data.FLOAT64 > right.data.FLOAT64);
+          }
+
+          default: throw TypeError();
+        }
+      }
+
+      case LESS_EQ: {
+        Code type = left.type;
+
+        if (right.type != type) {
+          throw TypeError();
+        }
+
+        switch (type) {
+          case INT32: {
+            return Value(left.data.INT32 <= right.data.INT32);
+          }
+
+          case FLOAT64: {
+            return Value(left.data.FLOAT64 <= right.data.FLOAT64);
+          }
+
+          default: throw TypeError();
+        }
+      }
+
+      case GREATER_EQ: {
+        Code type = left.type;
+
+        if (right.type != type) {
+          throw TypeError();
+        }
+
+        switch (type) {
+          case INT32: {
+            return Value(left.data.INT32 >= right.data.INT32);
+          }
+
+          case FLOAT64: {
+            return Value(left.data.FLOAT64 >= right.data.FLOAT64);
+          }
+
+          default: throw TypeError();
+        }
+      }
+
+      case EQUAL: {
+        Code type = left.type;
+
+        if (right.type != type) {
+          return Value(false);
+        }
+
+        switch (type) {
+          case INT32: {
+            return Value(left.data.INT32 == right.data.INT32);
+          }
+
+          case FLOAT64: {
+            return Value(left.data.FLOAT64 == right.data.FLOAT64);
+          }
+
+          default: throw TypeError();
+        }
+      }
+
+      case NOT_EQUAL: {
+        Code type = left.type;
+
+        if (right.type != type) {
+          return Value(true);
+        }
+
+        switch (type) {
+          case INT32: {
+            return Value(left.data.INT32 != right.data.INT32);
+          }
+
+          case FLOAT64: {
+            return Value(left.data.FLOAT64 != right.data.FLOAT64);
+          }
+
+          default: throw TypeError();
+        }
+      }
+
+      case AND: {
+        Code type = left.type;
+
+        if (right.type != type) {
+          throw TypeError();
+        }
+
+        switch (type) {
+          case BOOL: {
+            return Value(left.data.BOOL && right.data.BOOL);
+          }
+
+          default: throw TypeError();
+        }
+      }
+
+      case OR: {
+        Code type = left.type;
+
+        if (right.type != type) {
+          throw TypeError();
+        }
+
+        switch (type) {
+          case BOOL: {
+            return Value(left.data.BOOL || right.data.BOOL);
+          }
+
+          default: throw TypeError();
+        }
+      }
 
       case CONCAT:
 
