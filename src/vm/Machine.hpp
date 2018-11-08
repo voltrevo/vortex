@@ -17,6 +17,10 @@ namespace Vortex {
       void push(Value v) { calc.push(v); }
 
       Value pop() {
+        if (calc.empty()) {
+          throw InternalError();
+        }
+
         auto v = calc.top();
         calc.pop();
         return v;
@@ -49,6 +53,8 @@ namespace Vortex {
 
       Code get() { return (Code)(*pos++); };
       byte getByte() { return *pos++; }
+
+      Code peekBehind() { return (Code)(*(pos - 1)); }
 
       void prev() { pos--; }
 
@@ -118,6 +124,7 @@ namespace Vortex {
 
           case CONTROL: {
             switch (code) {
+              case LOOP:
               case IF: {
                 while (true) {
                   auto instr = get();
@@ -137,9 +144,6 @@ namespace Vortex {
               case CONTINUE: {
                 return;
               }
-
-              case LOOP:
-                throw NotImplementedError();
 
               default:
                 throw InternalError();
@@ -269,7 +273,6 @@ namespace Vortex {
           case CONTROL: {
             switch (instr) {
               case RETURN: {
-                pos.prev();
                 return pos;
               }
 
@@ -282,18 +285,60 @@ namespace Vortex {
 
                 if (cond.data.BOOL) {
                   pos = run(pos);
+
+                  switch (pos.peekBehind()) {
+                    case RETURN:
+                    case BREAK:
+                    case CONTINUE: {
+                      return pos;
+                    }
+
+                    case END: {
+                      break;
+                    }
+
+                    default:
+                      throw InternalError();
+                  }
                 } else {
-                  pos.skip(instr);
+                  pos.skip(IF);
                 }
 
                 break;
               }
 
+              case LOOP: {
+                while (true) {
+                  auto nextPos = run(pos);
+
+                  switch (nextPos.peekBehind()) {
+                    case CONTINUE:
+                    case END: {
+                      continue;
+                    }
+
+                    case BREAK: {
+                      pos.skip(LOOP);
+                      break;
+                    }
+
+                    default:
+                      throw InternalError();
+                  }
+
+                  break;
+                }
+
+                break;
+              }
+
+              case BREAK:
+              case CONTINUE: {
+                return pos;
+              }
+
               case CALL:
               case EMIT:
-              case LOOP:
-              case BREAK:
-              case CONTINUE:
                 throw NotImplementedError();
 
               default:
@@ -313,7 +358,7 @@ namespace Vortex {
       auto pos = Decoder(code);
       pos = run(pos);
 
-      auto instr = pos.get();
+      auto instr = pos.peekBehind();
 
       if (instr != RETURN) {
         throw InternalError();
