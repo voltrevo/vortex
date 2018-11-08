@@ -1,14 +1,16 @@
 #include <iostream>
 
 #include "Value.hpp"
+using namespace Vortex;
 
 int main() {
-  Vortex::Value left(27);
-  Vortex::Value right(10);
+  auto calc = BinaryOperator(
+    Value(3),
+    Value(4),
+    POWER
+  );
 
-  Vortex::Value sum = Vortex::plus(left, right);
-
-  std::cout << sum.data._Int32 << std::endl;
+  std::cout << calc.data.INT32 << std::endl;
 
   return 0;
 }
