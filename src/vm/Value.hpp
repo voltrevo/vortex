@@ -13,6 +13,8 @@ namespace Vortex {
   struct Value {
     Code type;
 
+    struct null {};
+
     union {
       bool BOOL;
       int INT32;
@@ -20,50 +22,25 @@ namespace Vortex {
       deque<Value>* ARRAY;
     } data;
 
-    Value() {
-      type = NULL_;
-    }
-
-    void clear() {
+    void dealloc() {
       if (type == ARRAY) {
         delete data.ARRAY;
       }
-
-      type = NULL_;
     }
 
-    ~Value() {
-      clear();
-    }
-
-    Value(const Value& other) {
-      *this = other;
-    }
-
-    Value(Value&& other) {
-      type = other.type;
-      data = other.data;
-      other.data.ARRAY = nullptr;
-    }
-
-    Value& operator=(const Value& rhs) {
-      clear();
-      type = rhs.type;
-
-      if (rhs.type != ARRAY) {
-        data = rhs.data;
-      } else {
-        data.ARRAY = new deque<Value>(*rhs.data.ARRAY);
-      }
-
-      return *this;
-    }
+    ~Value() { dealloc(); }
 
     Value& operator=(Value&& rhs) {
       type = rhs.type;
       data = rhs.data;
       rhs.data.ARRAY = nullptr;
       return *this;
+    }
+
+    Value() = default;
+
+    Value(null v) {
+      type = NULL_;
     }
 
     Value(bool v) {
@@ -84,6 +61,29 @@ namespace Vortex {
     Value(deque<Value>* v) {
       type = ARRAY;
       data.ARRAY = v;
+    }
+
+    Value(const Value& other) {
+      *this = other;
+    }
+
+    Value(Value&& other) {
+      type = other.type;
+      data = other.data;
+      other.data.ARRAY = nullptr;
+    }
+
+    Value& operator=(const Value& rhs) {
+      dealloc();
+      type = rhs.type;
+
+      if (rhs.type != ARRAY) {
+        data = rhs.data;
+      } else {
+        data.ARRAY = new deque<Value>(*rhs.data.ARRAY);
+      }
+
+      return *this;
     }
 
     friend ostream& operator<<(ostream& os, const Value& value) {
@@ -145,7 +145,7 @@ namespace Vortex {
     }
   };
 
-  Value BinaryOperator(Value left, Value right, Code op) {
+  void BinaryOperator(Value& left, Value right, Code op) {
     switch (op) {
       case PLUS: {
         Code type = left.type;
@@ -156,11 +156,13 @@ namespace Vortex {
 
         switch (type) {
           case INT32: {
-            return Value(left.data.INT32 + right.data.INT32);
+            left.data.INT32 += right.data.INT32;
+            return;
           }
 
           case FLOAT64: {
-            return Value(left.data.FLOAT64 + right.data.FLOAT64);
+            left.data.FLOAT64 += right.data.FLOAT64;
+            return;
           }
 
           default: throw TypeError();
@@ -176,11 +178,13 @@ namespace Vortex {
 
         switch (type) {
           case INT32: {
-            return Value(left.data.INT32 - right.data.INT32);
+            left.data.INT32 -= right.data.INT32;
+            return;
           }
 
           case FLOAT64: {
-            return Value(left.data.FLOAT64 - right.data.FLOAT64);
+            left.data.FLOAT64 -= right.data.FLOAT64;
+            return;
           }
 
           default: throw TypeError();
@@ -196,11 +200,13 @@ namespace Vortex {
 
         switch (type) {
           case INT32: {
-            return Value(left.data.INT32 * right.data.INT32);
+            left.data.INT32 *= right.data.INT32;
+            return;
           }
 
           case FLOAT64: {
-            return Value(left.data.FLOAT64 * right.data.FLOAT64);
+            left.data.FLOAT64 *= right.data.FLOAT64;
+            return;
           }
 
           default: throw TypeError();
@@ -216,11 +222,13 @@ namespace Vortex {
 
         switch (type) {
           case INT32: {
-            return Value(left.data.INT32 / right.data.INT32);
+            left.data.INT32 /= right.data.INT32;
+            return;
           }
 
           case FLOAT64: {
-            return Value(left.data.FLOAT64 / right.data.FLOAT64);
+            left.data.FLOAT64 /= right.data.FLOAT64;
+            return;
           }
 
           default: throw TypeError();
@@ -236,11 +244,13 @@ namespace Vortex {
 
         switch (type) {
           case INT32: {
-            return Value(left.data.INT32 % right.data.INT32);
+            left.data.INT32 %= right.data.INT32;
+            return;
           }
 
           case FLOAT64: {
-            return Value(fmod(left.data.FLOAT64, right.data.FLOAT64));
+            left.data.FLOAT64 = fmod(left.data.FLOAT64, right.data.FLOAT64);
+            return;
           }
 
           default: throw TypeError();
@@ -257,19 +267,19 @@ namespace Vortex {
         switch (type) {
           case INT32: {
             // Exponentiation by squaring
-            int res = 1;
             int base = left.data.INT32;
+            left.data.INT32 = 1;
             int exponent = right.data.INT32;
 
             while (true) {
               if (exponent % 2 == 1) {
-                res *= base;
+                left.data.INT32 *= base;
               }
 
               exponent /= 2;
 
               if (exponent == 0) {
-                return res;
+                return;
               }
 
               base *= base;
@@ -277,7 +287,8 @@ namespace Vortex {
           }
 
           case FLOAT64: {
-            return Value(pow(left.data.FLOAT64, right.data.FLOAT64));
+            left.data.FLOAT64 = pow(left.data.FLOAT64, right.data.FLOAT64);
+            return;
           }
 
           default: throw TypeError();
@@ -300,11 +311,17 @@ namespace Vortex {
 
         switch (type) {
           case INT32: {
-            return Value(left.data.INT32 < right.data.INT32);
+            bool res = left.data.INT32 < right.data.INT32;
+            left.type = BOOL;
+            left.data.BOOL = res;
+            return;
           }
 
           case FLOAT64: {
-            return Value(left.data.FLOAT64 < right.data.FLOAT64);
+            bool res = left.data.FLOAT64 < right.data.FLOAT64;
+            left.type = BOOL;
+            left.data.BOOL = res;
+            return;
           }
 
           default: throw TypeError();
@@ -320,11 +337,17 @@ namespace Vortex {
 
         switch (type) {
           case INT32: {
-            return Value(left.data.INT32 > right.data.INT32);
+            bool res = left.data.INT32 > right.data.INT32;
+            left.type = BOOL;
+            left.data.BOOL = res;
+            return;
           }
 
           case FLOAT64: {
-            return Value(left.data.FLOAT64 > right.data.FLOAT64);
+            bool res = left.data.FLOAT64 > right.data.FLOAT64;
+            left.type = BOOL;
+            left.data.BOOL = res;
+            return;
           }
 
           default: throw TypeError();
@@ -340,11 +363,17 @@ namespace Vortex {
 
         switch (type) {
           case INT32: {
-            return Value(left.data.INT32 <= right.data.INT32);
+            bool res = left.data.INT32 <= right.data.INT32;
+            left.type = BOOL;
+            left.data.BOOL = res;
+            return;
           }
 
           case FLOAT64: {
-            return Value(left.data.FLOAT64 <= right.data.FLOAT64);
+            bool res = left.data.FLOAT64 <= right.data.FLOAT64;
+            left.type = BOOL;
+            left.data.BOOL = res;
+            return;
           }
 
           default: throw TypeError();
@@ -360,11 +389,17 @@ namespace Vortex {
 
         switch (type) {
           case INT32: {
-            return Value(left.data.INT32 >= right.data.INT32);
+            bool res = left.data.INT32 >= right.data.INT32;
+            left.type = BOOL;
+            left.data.BOOL = res;
+            return;
           }
 
           case FLOAT64: {
-            return Value(left.data.FLOAT64 >= right.data.FLOAT64);
+            bool res = left.data.FLOAT64 >= right.data.FLOAT64;
+            left.type = BOOL;
+            left.data.BOOL = res;
+            return;
           }
 
           default: throw TypeError();
@@ -375,16 +410,24 @@ namespace Vortex {
         Code type = left.type;
 
         if (right.type != type) {
-          return Value(false);
+          left.dealloc();
+          left.type = BOOL;
+          left.data.BOOL = false;
         }
 
         switch (type) {
           case INT32: {
-            return Value(left.data.INT32 == right.data.INT32);
+            bool res = left.data.INT32 == right.data.INT32;
+            left.type = BOOL;
+            left.data.BOOL = res;
+            return;
           }
 
           case FLOAT64: {
-            return Value(left.data.FLOAT64 == right.data.FLOAT64);
+            bool res = left.data.FLOAT64 == right.data.FLOAT64;
+            left.type = BOOL;
+            left.data.BOOL = res;
+            return;
           }
 
           default: throw TypeError();
@@ -395,16 +438,24 @@ namespace Vortex {
         Code type = left.type;
 
         if (right.type != type) {
-          return Value(true);
+          left.dealloc();
+          left.type = BOOL;
+          left.data.BOOL = true;
         }
 
         switch (type) {
           case INT32: {
-            return Value(left.data.INT32 != right.data.INT32);
+            bool res = left.data.INT32 != right.data.INT32;
+            left.type = BOOL;
+            left.data.BOOL = res;
+            return;
           }
 
           case FLOAT64: {
-            return Value(left.data.FLOAT64 != right.data.FLOAT64);
+            bool res = left.data.FLOAT64 != right.data.FLOAT64;
+            left.type = BOOL;
+            left.data.BOOL = res;
+            return;
           }
 
           default: throw TypeError();
@@ -420,7 +471,8 @@ namespace Vortex {
 
         switch (type) {
           case BOOL: {
-            return Value(left.data.BOOL && right.data.BOOL);
+            left.data.BOOL = left.data.BOOL && right.data.BOOL;
+            return;
           }
 
           default: throw TypeError();
@@ -436,7 +488,8 @@ namespace Vortex {
 
         switch (type) {
           case BOOL: {
-            return Value(left.data.BOOL || right.data.BOOL);
+            left.data.BOOL = left.data.BOOL || right.data.BOOL;
+            return;
           }
 
           default: throw TypeError();

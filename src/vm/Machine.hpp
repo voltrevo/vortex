@@ -1,4 +1,5 @@
-#include <stack>
+#include <cassert>
+#include <deque>
 #include <vector>
 using namespace std;
 
@@ -12,18 +13,23 @@ namespace Vortex {
       vector<Value> args;
       vector<Value> closure;
       vector<Value> locals;
-      stack<Value> calc;
+      deque<Value> calc;
 
-      void push(Value v) { calc.push(v); }
+      void push(Value v) { calc.push_back(v); }
 
       Value pop() {
-        if (calc.empty()) {
-          throw InternalError();
-        }
-
-        auto v = calc.top();
-        calc.pop();
+        assert(!calc.empty());
+        auto v = move(calc.back());
+        calc.pop_back();
         return v;
+      }
+
+      pair<Value*, Value*> BackPair() {
+        assert(calc.size() >= 2);
+        auto iter = calc.end();
+        Value* right = &*(--iter);
+        Value* left = &*(--iter);
+        return make_pair(left, right);
       }
 
       Value getLocal(byte i) {
@@ -43,7 +49,7 @@ namespace Vortex {
       }
     };
 
-    stack<Context> cc;
+    deque<Context> cc;
 
     class Decoder {
       byte* pos;
@@ -167,7 +173,7 @@ namespace Vortex {
       Value getValue(Code type) {
         switch (type) {
           case NULL_: {
-            return Value();
+            return Value(Value::null());
           }
 
           case BOOL: {
@@ -242,7 +248,7 @@ namespace Vortex {
 
   public:
     Decoder run(Decoder pos) {
-      Context& ctx = cc.top();
+      Context& ctx = cc.back();
 
       while (true) {
         auto instr = pos.get();
@@ -259,18 +265,14 @@ namespace Vortex {
           }
 
           case TOP_TYPE: {
-            ctx.calc.push(pos.getValue(instr));
+            ctx.push(pos.getValue(instr));
             break;
           }
 
           case BINARY_OPERATOR: {
-            Value right = ctx.pop();
-            Value left = ctx.pop();
-
-            Value res = BinaryOperator(left, right, instr);
-
-            ctx.calc.push(res);
-
+            auto backPair = ctx.BackPair();
+            BinaryOperator(*backPair.first, *backPair.second, instr);
+            ctx.calc.pop_back();
             break;
           }
 
@@ -388,7 +390,7 @@ namespace Vortex {
     Value eval(byte* code) {
       auto prevSize = cc.size();
 
-      cc.push(Context());
+      cc.push_back(Context());
       auto pos = Decoder(code);
       pos = run(pos);
 
@@ -398,14 +400,14 @@ namespace Vortex {
         throw InternalError();
       }
 
-      auto& ctx = cc.top();
+      auto& ctx = cc.back();
       auto res = ctx.pop();
 
       if (ctx.calc.size() != 0) {
         throw InternalError();
       }
 
-      cc.pop();
+      cc.pop_back();
 
       if (cc.size() != prevSize)  {
         throw InternalError();
