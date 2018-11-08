@@ -11,6 +11,12 @@ int main() {
     MULTIPLY,
     INT32, 1, 0, 0, 0,
     PLUS,
+    SET_LOCAL, 0,
+    GET_LOCAL, 0,
+    GET_LOCAL, 0,
+    GET_LOCAL, 0,
+    PLUS,
+    PLUS,
     RETURN,
   };
 

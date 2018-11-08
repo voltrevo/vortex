@@ -21,6 +21,22 @@ namespace Vortex {
         calc.pop();
         return v;
       }
+
+      Value getLocal(byte i) {
+        if (i >= locals.size()) {
+          throw InternalError();
+        }
+
+        return locals[i];
+      }
+
+      void setLocal(byte i, Value v) {
+        while (i >= locals.size()) {
+          locals.push_back(Value());
+        }
+
+        locals[i] = v;
+      }
     };
 
     stack<Context> cc;
@@ -124,8 +140,30 @@ namespace Vortex {
             break;
           }
 
+          case SCOPE: {
+            switch (instr) {
+              case GET_LOCAL: {
+                ctx.push(ctx.getLocal(pos.getByte()));
+                break;
+              }
+
+              case SET_LOCAL: {
+                ctx.setLocal(pos.getByte(), ctx.pop());
+                break;
+              }
+
+              case GET_ARGUMENT:
+              case GET_CAPTURE:
+                throw NotImplementedError();
+
+              default:
+                throw InternalError();
+            }
+
+            break;
+          }
+
           case UNARY_OPERATOR:
-          case SCOPE:
             throw NotImplementedError();
 
           case CONTROL: {
