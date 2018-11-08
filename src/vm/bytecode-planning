@@ -15,7 +15,7 @@ eg this pushes 163 onto the stack
   |     |
   ^ {type} is a stand-in for a u8big with arbitrary value to represent that type, the exact mapping can be determined later
         |
-        ^ 4 bytes representing the i32, in big endian order {due to apparent hardware preference for big endian, but this might change
+        ^ 4 bytes representing the i32, in little endian order
 
 eg these 7 bytes push [null, true, 60u8] onto the stack:
   {array} {null} {bool} 01 {u8} 3c {end}
