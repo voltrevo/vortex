@@ -322,6 +322,10 @@ namespace Vortex {
                       break;
                     }
 
+                    case RETURN: {
+                      return nextPos;
+                    }
+
                     default:
                       throw InternalError();
                   }

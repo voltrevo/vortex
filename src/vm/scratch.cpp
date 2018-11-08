@@ -127,12 +127,10 @@ int main() {
       INT32, 0xe8, 3, 0, 0,
       EQUAL,
       IF,
-        BREAK,
+        GET_LOCAL, 0,
+        RETURN,
       END,
     END,
-
-    GET_LOCAL, 0,
-    RETURN,
   };
 
   auto machine = Machine();
