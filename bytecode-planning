@@ -104,7 +104,7 @@ operator | description           | arguments
 {*}      | multiply              | 2
 {/}      | divide                | 2
 {%}      | modulus               | 2
-{**}     | exponentiation        | 2
+{**}     | power                 | 2
 {-}      | minus                 | 2
 {+}      | plus                  | 2
 {neg}    | negate                | 1

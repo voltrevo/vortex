@@ -1,71 +1,218 @@
 #pragma once
 
+#include <cmath>
 #include <exception>
 #include <variant>
 using namespace std;
 
-template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
-template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
+#include "Codes.hpp"
 
 namespace Vortex {
   class TypeError: std::exception {
     const char* what() const noexcept { return "Type error"; }
   };
 
-  enum class TopType: unsigned char {
-    Null,
-    Bool,
-    Int32,
-    Float64,
+  class InternalError: std::exception {
+    const char* what() const noexcept { return "Internal error"; }
+  };
+
+  class NotImplementedError: std::exception {
+    const char* what() const noexcept { return "Not implemented"; }
   };
 
   struct Value {
-    TopType type;
+    Code type;
 
     union {
-      struct {} _Null;
-      bool _Bool;
-      int _Int32;
-      double _Float64;
+      struct {} NULL_;
+      bool BOOL;
+      int INT32;
+      double FLOAT64;
     } data;
 
     Value() {
-      type = TopType::Null;
+      type = NULL_;
     }
 
     Value(bool v) {
-      type = TopType::Bool;
-      data._Bool = v;
+      type = BOOL;
+      data.BOOL = v;
     }
 
     Value(int v) {
-      type = TopType::Int32;
-      data._Int32 = v;
+      type = INT32;
+      data.INT32 = v;
     }
 
     Value(double v) {
-      type = TopType::Float64;
-      data._Float64 = v;
+      type = FLOAT64;
+      data.FLOAT64 = v;
     }
   };
 
-  Value plus(Value left, Value right) {
-    TopType type = left.type;
+  Value BinaryOperator(Value left, Value right, Code op) {
+    switch (op) {
+      case PLUS: {
+        Code type = left.type;
 
-    if (right.type != type) {
-      throw TypeError();
-    }
+        if (right.type != type) {
+          throw TypeError();
+        }
 
-    switch (type) {
-      case TopType::Int32: {
-        return Value(left.data._Int32 + right.data._Int32);
+        switch (type) {
+          case INT32: {
+            return Value(left.data.INT32 + right.data.INT32);
+          }
+
+          case FLOAT64: {
+            return Value(left.data.FLOAT64 + right.data.FLOAT64);
+          }
+
+          default: throw TypeError();
+        }
       }
 
-      case TopType::Float64: {
-        return Value(left.data._Float64 + right.data._Float64);
+      case MINUS: {
+        Code type = left.type;
+
+        if (right.type != type) {
+          throw TypeError();
+        }
+
+        switch (type) {
+          case INT32: {
+            return Value(left.data.INT32 - right.data.INT32);
+          }
+
+          case FLOAT64: {
+            return Value(left.data.FLOAT64 - right.data.FLOAT64);
+          }
+
+          default: throw TypeError();
+        }
       }
 
-      default: throw TypeError();
+      case MULTIPLY: {
+        Code type = left.type;
+
+        if (right.type != type) {
+          throw TypeError();
+        }
+
+        switch (type) {
+          case INT32: {
+            return Value(left.data.INT32 * right.data.INT32);
+          }
+
+          case FLOAT64: {
+            return Value(left.data.FLOAT64 * right.data.FLOAT64);
+          }
+
+          default: throw TypeError();
+        }
+      }
+
+      case DIVIDE: {
+        Code type = left.type;
+
+        if (right.type != type) {
+          throw TypeError();
+        }
+
+        switch (type) {
+          case INT32: {
+            return Value(left.data.INT32 / right.data.INT32);
+          }
+
+          case FLOAT64: {
+            return Value(left.data.FLOAT64 / right.data.FLOAT64);
+          }
+
+          default: throw TypeError();
+        }
+      }
+
+      case MODULUS: {
+        Code type = left.type;
+
+        if (right.type != type) {
+          throw TypeError();
+        }
+
+        switch (type) {
+          case INT32: {
+            return Value(left.data.INT32 % right.data.INT32);
+          }
+
+          case FLOAT64: {
+            return Value(fmod(left.data.FLOAT64, right.data.FLOAT64));
+          }
+
+          default: throw TypeError();
+        }
+      }
+
+      case POWER: {
+        Code type = left.type;
+
+        if (right.type != type) {
+          throw TypeError();
+        }
+
+        switch (type) {
+          case INT32: {
+            // Exponentiation by squaring
+            int res = 1;
+            int base = left.data.INT32;
+            int exponent = right.data.INT32;
+
+            while (true) {
+              if (exponent % 2 == 1) {
+                res *= base;
+              }
+
+              exponent /= 2;
+
+              if (exponent == 0) {
+                return res;
+              }
+
+              base *= base;
+            }
+          }
+
+          case FLOAT64: {
+            return Value(pow(left.data.FLOAT64, right.data.FLOAT64));
+          }
+
+          default: throw TypeError();
+        }
+      }
+
+      case LEFT_SHIFT:
+      case RIGHT_SHIFT:
+
+      case INTERSECT:
+      case EX_UNION:
+      case UNION:
+
+      case LESS:
+      case GREATER:
+      case LESS_EQ:
+      case GREATER_EQ:
+
+      case EQUAL:
+      case NOT_EQUAL:
+      case AND:
+      case OR:
+
+      case CONCAT:
+
+      case INDEX:
+        throw NotImplementedError();
+
+      default:
+        throw InternalError();
     }
   }
 }
