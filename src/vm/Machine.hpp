@@ -96,7 +96,7 @@ namespace Vortex {
       cc.push(Context());
     }
 
-    void process(byte* code) {
+    Value process(byte* code) {
       auto pos = Decoder(code);
       Context& ctx = cc.top();
 
@@ -105,10 +105,6 @@ namespace Vortex {
 
         switch (GetClass(instr)) {
           case SPECIAL: {
-            if (instr == END) {
-              return;
-            }
-
             throw InternalError();
           }
 
@@ -130,8 +126,17 @@ namespace Vortex {
 
           case UNARY_OPERATOR:
           case SCOPE:
-          case CONTROL:
             throw NotImplementedError();
+
+          case CONTROL: {
+            if (instr == RETURN) {
+              auto result = ctx.pop();
+              cc.pop();
+              return result;
+            }
+
+            throw NotImplementedError();
+          }
         }
       }
     }

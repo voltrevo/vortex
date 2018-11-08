@@ -11,17 +11,13 @@ int main() {
     MULTIPLY,
     INT32, 1, 0, 0, 0,
     PLUS,
-    INT32, 10, 0, 0, 0,
-    GREATER,
-    BOOL, 1,
-    AND,
-    END,
+    RETURN,
   };
 
   auto machine = Machine();
-  machine.process(code.data());
+  Value result = machine.process(code.data());
 
-  std::cout << machine.top().data.BOOL << std::endl;
+  std::cout << result.data.INT32 << std::endl;
 
   return 0;
 }
