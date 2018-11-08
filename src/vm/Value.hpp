@@ -1,25 +1,12 @@
 #pragma once
 
 #include <cmath>
-#include <exception>
-#include <variant>
 using namespace std;
 
 #include "Codes.hpp"
+#include "Exceptions.hpp"
 
 namespace Vortex {
-  class TypeError: std::exception {
-    const char* what() const noexcept { return "Type error"; }
-  };
-
-  class InternalError: std::exception {
-    const char* what() const noexcept { return "Internal error"; }
-  };
-
-  class NotImplementedError: std::exception {
-    const char* what() const noexcept { return "Not implemented"; }
-  };
-
   struct Value {
     Code type;
 

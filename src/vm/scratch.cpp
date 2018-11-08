@@ -1,16 +1,21 @@
 #include <iostream>
+#include <vector>
 
-#include "Value.hpp"
+#include "Machine.hpp"
 using namespace Vortex;
 
 int main() {
-  auto calc = BinaryOperator(
-    Value(3),
-    Value(4),
-    POWER
-  );
+  vector<byte> code = {
+    INT32, 1, 0, 0, 0,
+    INT32, 1, 0, 0, 0,
+    PLUS,
+    END,
+  };
 
-  std::cout << calc.data.INT32 << std::endl;
+  auto machine = Machine();
+  machine.process(code.data());
+
+  std::cout << machine.top().data.INT32 << std::endl;
 
   return 0;
 }
