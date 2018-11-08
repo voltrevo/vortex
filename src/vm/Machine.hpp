@@ -87,6 +87,19 @@ namespace Vortex {
                 return;
               }
 
+              case ARRAY: {
+                // TODO: Deduplicate with IF, LOOP
+                while (true) {
+                  auto instr = get();
+
+                  if (instr == END) {
+                    return;
+                  }
+
+                  skip(instr);
+                }
+              }
+
               case UINT8:
               case UINT16:
               case UINT32:
@@ -101,7 +114,6 @@ namespace Vortex {
               case FLOAT32:
 
               case STRING:
-              case ARRAY:
               case OBJECT:
               case SET:
               case FUNC:
@@ -184,6 +196,25 @@ namespace Vortex {
             return Value(v);
           }
 
+          case ARRAY: {
+            auto items = new deque<Value>();
+
+            while (true) {
+              auto itemType = get();
+
+              switch (itemType) {
+                case END: {
+                  return Value(items);
+                }
+
+                default: {
+                  items->push_back(getValue(itemType));
+                  continue;
+                }
+              }
+            }
+          }
+
           case UINT8:
           case UINT16:
           case UINT32:
@@ -198,7 +229,6 @@ namespace Vortex {
           case FLOAT32:
 
           case STRING:
-          case ARRAY:
           case OBJECT:
           case SET:
           case FUNC:

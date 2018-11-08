@@ -1,6 +1,9 @@
 #pragma once
 
 #include <cmath>
+#include <deque>
+#include <string>
+#include <sstream>
 using namespace std;
 
 #include "Codes.hpp"
@@ -11,14 +14,54 @@ namespace Vortex {
     Code type;
 
     union {
-      struct {} NULL_;
       bool BOOL;
       int INT32;
       double FLOAT64;
+      deque<Value>* ARRAY;
     } data;
 
     Value() {
       type = NULL_;
+    }
+
+    void clear() {
+      if (type == ARRAY) {
+        delete data.ARRAY;
+      }
+
+      type = NULL_;
+    }
+
+    ~Value() {
+      clear();
+    }
+
+    Value(const Value& other) {
+      *this = other;
+    }
+
+    Value(Value&& other) {
+      type = other.type;
+      data = other.data;
+    }
+
+    Value& operator=(const Value& rhs) {
+      clear();
+      type = rhs.type;
+
+      if (rhs.type != ARRAY) {
+        data = rhs.data;
+      } else {
+        data.ARRAY = new deque<Value>(*rhs.data.ARRAY);
+      }
+
+      return *this;
+    }
+
+    Value& operator=(Value&& rhs) {
+      type = rhs.type;
+      data = rhs.data;
+      return *this;
     }
 
     Value(bool v) {
@@ -34,6 +77,65 @@ namespace Vortex {
     Value(double v) {
       type = FLOAT64;
       data.FLOAT64 = v;
+    }
+
+    Value(deque<Value>* v) {
+      type = ARRAY;
+      data.ARRAY = v;
+    }
+
+    friend ostream& operator<<(ostream& os, const Value& value) {
+      switch (value.type) {
+        case NULL_: {
+          os << "null";
+          break;
+        }
+
+        case BOOL: {
+          os << value.data.BOOL;
+          break;
+        }
+
+        case INT32: {
+          os << value.data.INT32;
+          break;
+        }
+
+        case FLOAT64: {
+          os << value.data.FLOAT64;
+          break;
+        }
+
+        case ARRAY: {
+          os << '[';
+
+          bool notFirst = false;
+
+          for (auto& v: *value.data.ARRAY) {
+            if (notFirst) {
+              os << ", ";
+            }
+
+            os << v;
+            notFirst = true;
+          }
+
+          os << ']';
+
+          break;
+        }
+
+        default:
+          throw InternalError();
+      }
+
+      return os;
+    }
+
+    string LongString() {
+      auto oss = ostringstream();
+      oss << *this;
+      return oss.str();
     }
   };
 

@@ -7,7 +7,8 @@ using namespace Vortex;
 int main() {
   vector<byte> code = {
     /*
-    // sum := 3 * 5 + 1; return sum + sum + sum;
+    // sum := 3 * 5 + 1;
+    // return sum + sum + sum;
     INT32, 3, 0, 0, 0,
     INT32, 5, 0, 0, 0,
     MULTIPLY,
@@ -85,6 +86,7 @@ int main() {
     RETURN,
     */
 
+    /*
     //sum := 0;
     //for (i := 1; i < 1000; i++) {
     //  if (i % 3 == 0 || i % 5 == 0) {
@@ -131,12 +133,21 @@ int main() {
         RETURN,
       END,
     END,
+    */
+
+    /* TODO: get this working
+    // return [];
+    ARRAY,
+      NULL_,
+    END,
+    RETURN,
+    */
   };
 
   auto machine = Machine();
   Value result = machine.eval(code.data());
 
-  std::cout << result.data.INT32 << std::endl;
+  std::cout << result << std::endl;
 
   return 0;
 }
