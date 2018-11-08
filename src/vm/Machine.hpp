@@ -178,9 +178,5 @@ namespace Vortex {
         }
       }
     }
-
-    Value top() {
-      return cc.top().calc.top();
-    }
   };
 }
