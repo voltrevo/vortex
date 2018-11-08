@@ -126,7 +126,7 @@ int main() {
       SET_LOCAL, 1,
 
       GET_LOCAL, 1,
-      INT32, 0xe8, 3, 0, 0,
+      INT32, 232, 3, 0, 0,
       EQUAL,
       IF,
         GET_LOCAL, 0,
@@ -135,13 +135,14 @@ int main() {
     END,
     */
 
-    /* TODO: get this working
-    // return [];
+    // return [null];
     ARRAY,
       NULL_,
+      NULL_,
+      BOOL, 1,
+      INT32, 0, 1, 0, 0,
     END,
     RETURN,
-    */
   };
 
   auto machine = Machine();

@@ -43,6 +43,7 @@ namespace Vortex {
     Value(Value&& other) {
       type = other.type;
       data = other.data;
+      other.data.ARRAY = nullptr;
     }
 
     Value& operator=(const Value& rhs) {
@@ -61,6 +62,7 @@ namespace Vortex {
     Value& operator=(Value&& rhs) {
       type = rhs.type;
       data = rhs.data;
+      rhs.data.ARRAY = nullptr;
       return *this;
     }
 
@@ -92,7 +94,11 @@ namespace Vortex {
         }
 
         case BOOL: {
-          os << value.data.BOOL;
+          if (value.data.BOOL) {
+            os << "true";
+          } else {
+            os << "false";
+          }
           break;
         }
 
