@@ -194,6 +194,20 @@ int main() {
       CONCAT,
       RETURN,
     }},
+    {"length", {
+      ARRAY,
+        INT32, 3, 0, 0, 0,
+        INT32, 1, 0, 0, 0,
+        INT32, 4, 0, 0, 0,
+      END,
+      LENGTH,
+      STRING,
+        1, 2, 3, 4, 5,
+      END,
+      LENGTH,
+      PLUS,
+      RETURN,
+    }},
   };
 
   for (auto& [name, program]: programs) {

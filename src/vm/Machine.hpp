@@ -303,6 +303,11 @@ namespace Vortex {
             break;
           }
 
+          case UNARY_OPERATOR: {
+            UnaryOperator(ctx.calc.back(), instr);
+            break;
+          }
+
           case SCOPE: {
             switch (instr) {
               case GET_LOCAL: {
@@ -325,9 +330,6 @@ namespace Vortex {
 
             break;
           }
-
-          case UNARY_OPERATOR:
-            throw NotImplementedError();
 
           case CONTROL: {
             switch (instr) {

@@ -600,6 +600,43 @@ namespace Vortex {
       }
 
       case INDEX:
+      case HAS_INDEX:
+        throw NotImplementedError();
+
+      default:
+        throw InternalError();
+    }
+  }
+
+  void UnaryOperator(Value& value, Code op) {
+    switch (op) {
+      case LENGTH: {
+        switch (value.type) {
+          case ARRAY: {
+            int len = value.data.ARRAY->size();
+            delete value.data.ARRAY;
+            value.type = INT32;
+            value.data.INT32 = len;
+            return;
+          }
+
+          case STRING: {
+            int len = value.data.STRING->size();
+            delete value.data.STRING;
+            value.type = INT32;
+            value.data.INT32 = len;
+            return;
+          }
+
+          default: throw TypeError();
+        }
+      }
+
+      case NEGATE:
+      case BIT_NEGATE:
+      case NOT:
+      case INC:
+      case DEC:
         throw NotImplementedError();
 
       default:

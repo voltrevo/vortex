@@ -72,6 +72,7 @@ namespace Vortex {
     PUSH_FRONT,
 
     INDEX,
+    HAS_INDEX,
 
     // UNARY_OPERATOR
     NEGATE,
@@ -79,6 +80,7 @@ namespace Vortex {
     NOT,
     INC,
     DEC,
+    LENGTH,
 
     // SCOPE
     GET_LOCAL,
@@ -156,6 +158,7 @@ namespace Vortex {
       case PUSH_FRONT:
 
       case INDEX:
+      case HAS_INDEX:
         return BINARY_OPERATOR;
 
       case NEGATE:
@@ -163,6 +166,7 @@ namespace Vortex {
       case NOT:
       case INC:
       case DEC:
+      case LENGTH:
         return UNARY_OPERATOR;
 
       case GET_LOCAL:
