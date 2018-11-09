@@ -1,0 +1,34 @@
+0
+set-local 0
+1
+set-local 1
+loop {
+  get-local 1
+  3
+  %
+  0
+  ==
+  get-local 1
+  5
+  %
+  0
+  ==
+  ||
+  if {
+    get-local 0
+    get-local 1
+    +
+    set-local 0
+  }
+  get-local 1
+  1
+  +
+  set-local 1
+  get-local 1
+  1000
+  ==
+  if {
+    get-local 0
+    return
+  }
+}

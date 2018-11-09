@@ -1,0 +1,22 @@
+0
+set-local 0
+1
+set-local 1
+loop {
+  get-local 0
+  get-local 1
+  +
+  set-local 0
+  get-local 1
+  4
+  ==
+  if {
+    break
+  }
+  get-local 1
+  1
+  +
+  set-local 1
+}
+get-local 0
+return
