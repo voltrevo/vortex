@@ -1,0 +1,12 @@
+3
+5
+*
+1
++
+set-local 0
+get-local 0
+get-local 0
+get-local 0
++
++
+return

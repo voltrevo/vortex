@@ -18,4 +18,8 @@ namespace Vortex {
   class BadIndexError: std::exception {
     const char* what() const noexcept { return "Bad index"; }
   };
+
+  class SyntaxError: std::exception {
+    const char* what() const noexcept { return "Syntax error"; }
+  };
 }
