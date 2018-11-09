@@ -1,0 +1,14 @@
+[]
+{'': true, 'a': 256, 'b': [false, true, false]}
+set-local 0
+get-local 0
+''
+index
+push-back
+get-local 0
+push-back
+get-local 0
+'b'
+index
+push-back
+return

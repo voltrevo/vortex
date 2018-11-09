@@ -1,0 +1,7 @@
+#!/bin/bash
+
+for filename in *.vat; do
+  echo "$filename: "
+  run <"$filename"
+  echo
+done

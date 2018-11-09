@@ -1,23 +1,9 @@
 #pragma once
 
-#include <istream>
-#include <map>
-#include <optional>
-#include <string>
-using namespace std;
-
 #include "Codes.hpp"
-#include "Exceptions.hpp"
+#include "Value.hpp"
 
 namespace Vortex {
-  string getWord(istream& in) {
-    string res;
-    in >> res;
-    return res;
-  }
-
-  using byte = unsigned char;
-
   map<string, Code> codeMap = {
     // SPECIAL
     {"}", END},
@@ -105,35 +91,44 @@ namespace Vortex {
     {"continue", CONTINUE},
   };
 
-  optional<Code> lookup(string word) {
-    auto pos = codeMap.find(word);
+  int parseInt(istream& in) {
+    int res = 0;
+    bool negative = false;
 
-    if (pos == codeMap.end()) {
-      return nullopt;
+    char c = in.peek();
+
+    if (c == '-') {
+      negative = true;
+      in.get();
     }
 
-    return pos->second;
-  }
+    while (true) {
+      c = in.peek();
 
-  int parseInt(string word) {
-    int res = 0;
+      if (in.eof()) {
+        break;
+      }
 
-    for (auto c: word) {
       int digit = c - '0';
 
       if (digit < 0 || digit > 9) {
-        throw SyntaxError();
+        break;
       }
 
       res *= 10;
       res += digit;
+      in.get();
+    }
+
+    if (negative) {
+      res = -res;
     }
 
     return res;
   }
 
-  byte parseByteNumber(string word) {
-    int res = parseInt(word);
+  byte parseByteNumber(istream& in) {
+    int res = parseInt(in);
 
     if (res > 255) {
       throw BadIndexError();
@@ -142,51 +137,223 @@ namespace Vortex {
     return res;
   }
 
-  void assemble(istream& in, ostream& out) {
-    auto get = [&]() { return getWord(in); };
-
+  void skipWhitespace(istream& in) {
     while (true) {
-      auto word = get();
+      char c = in.peek();
 
       if (in.eof()) {
+        return;
+      }
+
+      if (c == ' ' || c == '\n' || c == '\t' || c == '\r') {
+        in.get();
+        continue;
+      }
+
+      break;
+    }
+  }
+
+  void parse(istream& in, ostream& out) {
+    skipWhitespace(in);
+    char c = in.peek();
+
+    if (in.eof()) {
+      return;
+    }
+
+    if (('0' <= c && c <= '9') || c == '-') {
+      int res = parseInt(in);
+      out.put(INT32);
+      out.write((char*)&res, 4);
+      return;
+    }
+
+    if (c == '[') {
+      out.put(ARRAY);
+      in.get();
+
+      while (true) {
+        skipWhitespace(in);
+
+        c = in.peek();
+
+        if (c == ']') {
+          in.get();
+          break;
+        }
+
+        parse(in, out);
+
+        skipWhitespace(in);
+        c = in.peek();
+
+        if (c == ',') {
+          in.get();
+          continue;
+        }
+
+        if (c == ']') {
+          continue;
+        }
+
+        throw SyntaxError();
+      }
+
+      out.put(END);
+      return;
+    }
+
+    if (c == '\'') {
+      out.put(STRING);
+      in.get();
+
+      while (true) {
+        c = in.get();
+
+        if (c == '\'') {
+          break;
+        }
+
+        if (c == '\\') {
+          c = in.get();
+
+          if (c != '\'') {
+            throw SyntaxError();
+          }
+        }
+
+        out.put(c);
+      }
+
+      out.put(END);
+      return;
+    }
+
+    if (c == '{') {
+      out.put(OBJECT);
+      in.get();
+
+      while (true) {
+        skipWhitespace(in);
+
+        c = in.peek();
+
+        if (c == '}') {
+          in.get();
+          break;
+        }
+
+        if (c != '\'') {
+          // TODO: Actually, need to preferentially parse identifiers here
+          throw SyntaxError();
+        }
+
+        parse(in, out);
+
+        skipWhitespace(in);
+        c = in.get();
+
+        if (c != ':') {
+          throw SyntaxError();
+        }
+
+        parse(in, out);
+
+        c = in.peek();
+
+        if (c == ',') {
+          in.get();
+          continue;
+        }
+
+        if (c == '}') {
+          continue;
+        }
+
+        throw SyntaxError();
+      }
+
+      out.put(END);
+      return;
+    }
+
+    if (c == '}') {
+      out.put(END);
+      in.get();
+      return;
+    }
+
+    skipWhitespace(in);
+    string word;
+
+    while (
+      c != ']' && c != '}' && c != ',' &&
+      c != ' ' && c != '\n' && c != '\r' && c != '\t'
+    ) {
+      word += in.get();
+      c = in.peek();
+    }
+
+    if (word == "true") {
+      out.put(BOOL);
+      out.put(1);
+      return;
+    }
+
+    if (word == "false") {
+      out.put(BOOL);
+      out.put(0);
+      return;
+    }
+
+    if (word == "null") {
+      out.put(NULL_);
+      return;
+    }
+
+    auto pos = codeMap.find(word);
+
+    if (pos == codeMap.end()) {
+      throw SyntaxError();
+    }
+
+    Code code = pos->second;
+    out.put(code);
+
+    switch (code) {
+      case LOOP:
+      case IF: {
+        skipWhitespace(in);
+
+        if (in.get() != '{') {
+          throw new SyntaxError();
+        }
+
         break;
       }
 
-      auto code = lookup(word);
+      case GET_LOCAL:
+      case SET_LOCAL:
+      case GET_ARGUMENT:
+      case GET_CAPTURE: {
+        skipWhitespace(in);
+        byte b = parseByteNumber(in);
+        out.put(b);
+        break;
+      }
 
-      if (code) {
-        out.put(*code);
+      default:
+        break;
+    }
+  }
 
-        switch (*code) {
-          case LOOP:
-          case IF: {
-            auto next = get();
+  void assemble(istream& in, ostream& out) {
+    while (true) {
+      parse(in, out);
 
-            if (next != "{") {
-              throw new SyntaxError();
-            }
-
-            break;
-          }
-
-          case GET_LOCAL:
-          case SET_LOCAL:
-          case GET_ARGUMENT:
-          case GET_CAPTURE: {
-            byte b = parseByteNumber(get());
-            out.put(b);
-            break;
-          }
-
-          default:
-            break;
-        }
-      } else {
-        if ('0' <= word[0] && word[0] <= '9') {
-          int num = parseInt(word);
-          out.put(INT32);
-          out.write((char*)&num, 4);
-        }
+      if (in.eof()) {
+        return;
       }
     }
   }
