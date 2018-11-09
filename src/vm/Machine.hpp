@@ -51,6 +51,7 @@ namespace Vortex {
 
     deque<Context> cc;
 
+  public:
     class Decoder {
       byte* pos;
 
@@ -292,11 +293,147 @@ namespace Vortex {
 
           default:
             throw InternalError();
+        }
       }
-    }
-  };
 
-  public:
+      void disassemble(ostream& os, string indent, Code code) {
+        switch (GetClass(code)) {
+          case SPECIAL: {
+            if (code != PROGRAM) {
+              throw InternalError();
+            }
+
+            while (true) {
+              auto instr = get();
+
+              if (instr == END) {
+                return;
+              }
+
+              disassemble(os, indent, instr);
+            }
+          }
+
+          case TOP_TYPE: {
+            auto v = getValue(code);
+            os << indent << v << endl;
+            return;
+          }
+
+          case BINARY_OPERATOR: {
+            os << indent;
+
+            switch (code) {
+              case EQUAL: os << "==" << endl; return;
+              case NOT_EQUAL: os << "!=" << endl; return;
+              case AND: os << "&&" << endl; return;
+              case OR: os << "||" << endl; return;
+
+              case LESS: os << "<" << endl; return;
+              case GREATER: os << ">" << endl; return;
+              case LESS_EQ: os << "<=" << endl; return;
+              case GREATER_EQ: os << ">=" << endl; return;
+
+              case PLUS: os << "+" << endl; return;
+              case MINUS: os << "+" << endl; return;
+              case MULTIPLY: os << "*" << endl; return;
+              case DIVIDE: os << "/" << endl; return;
+              case MODULUS: os << "%" << endl; return;
+              case POWER: os << "**" << endl; return;
+
+              case LEFT_SHIFT: os << "<<" << endl; return;
+              case RIGHT_SHIFT: os << ">>" << endl; return;
+
+              case INTERSECT: os << "&" << endl; return;
+              case EX_UNION: os << "^" << endl; return;
+              case UNION: os << "|" << endl; return;
+
+              case CONCAT: os << "++" << endl; return;
+              case PUSH_BACK: os << "push-back" << endl; return;
+              case PUSH_FRONT: os << "push-front" << endl; return;
+
+              case INDEX: os << "index" << endl; return;
+              case HAS_INDEX: os << "has-index" << endl; return;
+
+              default: throw InternalError();
+            }
+          }
+
+          case UNARY_OPERATOR: {
+            os << indent;
+
+            switch (code) {
+              case NEGATE: os << "negate" << endl; return;
+              case BIT_NEGATE: os << "~" << endl; return;
+              case NOT: os << "!" << endl; return;
+              case INC: os << "inc" << endl; return;
+              case DEC: os << "dec" << endl; return;
+              case LENGTH: os << "length" << endl; return;
+
+              default: throw InternalError();
+            }
+          }
+
+          case SCOPE: {
+            os << indent;
+
+            switch (code) {
+              case GET_LOCAL: os << "get-local "; break;
+              case SET_LOCAL: os << "set-local "; break;
+              case GET_ARGUMENT: os << "get-argument "; break;
+              case GET_CAPTURE: os << "get-capture "; break;
+
+              default: throw InternalError();
+            }
+
+            os << (int)getByte() << endl;
+            return;
+          }
+
+          case CONTROL: {
+            os << indent;
+
+            switch (code) {
+              case LOOP:
+              case IF: {
+                if (code == LOOP) {
+                  os << "loop {";
+                } else {
+                  os << "if {";
+                }
+
+                os << endl;
+
+                string nextIndent = indent + "  ";
+
+                while (true) {
+                  auto instr = get();
+
+                  if (instr == END) {
+                    break;
+                  }
+
+                  disassemble(os, nextIndent, instr);
+                }
+
+                os << indent << "}" << endl;
+                return;
+              }
+
+              case CALL: os << "call" << endl; return;
+              case RETURN: os << "return" << endl; return;
+              case EMIT: os << "emit" << endl; return;
+              case BREAK: os << "break" << endl; return;
+              case CONTINUE: os << "continue" << endl; return;
+
+              default:
+                throw InternalError();
+            }
+          }
+        }
+      }
+    };
+
     Decoder run(Decoder pos) {
       Context& ctx = cc.back();
 

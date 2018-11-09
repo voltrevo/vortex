@@ -15,6 +15,7 @@ namespace Vortex {
   enum Code: byte {
     // SPECIAL
     END,
+    PROGRAM,
     INVALID,
 
     // TOP_TYPE
@@ -101,6 +102,7 @@ namespace Vortex {
   CodeClass GetClass(Code code) {
     switch (code) {
       case END:
+      case PROGRAM:
       case INVALID:
         return SPECIAL;
 

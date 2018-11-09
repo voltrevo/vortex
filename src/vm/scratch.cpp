@@ -202,7 +202,7 @@ int main() {
       END,
       LENGTH,
       STRING,
-        1, 2, 3, 4, 5,
+        97, 98, 99, 100, 101,
       END,
       LENGTH,
       PLUS,
@@ -217,7 +217,7 @@ int main() {
       INT32, 2, 0, 0, 0,
       INDEX,
       STRING,
-        1, 2, 3, 4, 5,
+        97, 98, 99, 100, 101,
       END,
       INT32, 3, 0, 0, 0,
       INDEX,
@@ -299,14 +299,22 @@ int main() {
 
   for (auto& [name, program]: programs) {
     try {
+      cout << name << ":" << endl;
+
+      auto decoder = Machine::Decoder(program.data());
+      decoder.disassemble(cout, "  ", PROGRAM);
+      cout << endl;
+
       auto machine = Machine();
       Value result = machine.eval(program.data());
-      cout << name << ": " << result << endl;
+      cout << "  output: " << result << endl;
     } catch (const exception& e) {
       cout << name << " threw " << e.what() << endl;
     } catch (...) {
       cout << name << " threw... huh?" << endl;
     }
+
+    cout << endl << endl;
   }
 
   return 0;
