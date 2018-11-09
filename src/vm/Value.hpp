@@ -18,7 +18,9 @@ namespace Vortex {
       bool BOOL;
       int INT32;
       double FLOAT64;
+      deque<char>* STRING;
       deque<Value>* ARRAY;
+      void* PTR;
     };
 
     Code type;
@@ -29,6 +31,8 @@ namespace Vortex {
 
       if (type == ARRAY) {
         delete data.ARRAY;
+      } else if (type == STRING) {
+        delete data.STRING;
       }
 
       #ifndef NDEBUG
@@ -41,7 +45,7 @@ namespace Vortex {
     Value& operator=(Value&& rhs) {
       type = rhs.type;
       data = rhs.data;
-      rhs.data.ARRAY = nullptr;
+      rhs.data.PTR = nullptr;
       return *this;
     }
 
@@ -75,14 +79,21 @@ namespace Vortex {
       data.ARRAY = v;
     }
 
+    Value(deque<char>* v) {
+      type = STRING;
+      data.STRING = v;
+    }
+
     void copyConstruct(const Value& other) {
       assert(other.type != INVALID);
       type = other.type;
 
-      if (other.type != ARRAY) {
-        data = other.data;
-      } else {
+      if (other.type == ARRAY) {
         data.ARRAY = new deque<Value>(*other.data.ARRAY);
+      } else if (other.type == STRING) {
+        data.STRING = new deque<char>(*other.data.STRING);
+      } else {
+        data = other.data;
       }
     }
 
@@ -93,7 +104,7 @@ namespace Vortex {
     Value(Value&& other) {
       type = other.type;
       data = other.data;
-      other.data.ARRAY = nullptr;
+      other.type = INVALID;
     }
 
     Value& operator=(const Value& rhs) {
@@ -153,6 +164,22 @@ namespace Vortex {
           }
 
           os << ']';
+
+          break;
+        }
+
+        case STRING: {
+          os << '\'';
+
+          for (auto& c: *value.data.STRING) {
+            if (c == '\'') {
+              os << "\\'";
+            } else {
+              os << c;
+            }
+          }
+
+          os << '\'';
 
           break;
         }
@@ -535,6 +562,16 @@ namespace Vortex {
               left.data.ARRAY->end(),
               right.data.ARRAY->begin(),
               right.data.ARRAY->end()
+            );
+
+            return;
+          }
+
+          case STRING: {
+            left.data.STRING->insert(
+              left.data.STRING->end(),
+              right.data.STRING->begin(),
+              right.data.STRING->end()
             );
 
             return;

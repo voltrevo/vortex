@@ -184,6 +184,16 @@ int main() {
       PUSH_FRONT,
       RETURN,
     }},
+    {"hello-world", {
+      STRING,
+        72, 101, 108, 108, 111, 32, // 'Hello '
+      END,
+      STRING,
+        119, 111, 114, 108, 100, 33, // 'world!'
+      END,
+      CONCAT,
+      RETURN,
+    }},
   };
 
   for (auto& [name, program]: programs) {

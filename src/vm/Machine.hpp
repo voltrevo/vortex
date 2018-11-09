@@ -106,6 +106,16 @@ namespace Vortex {
                 }
               }
 
+              case STRING: {
+                while (true) {
+                  auto b = getByte();
+
+                  if (b == 0) {
+                    return;
+                  }
+                }
+              }
+
               case UINT8:
               case UINT16:
               case UINT32:
@@ -119,7 +129,6 @@ namespace Vortex {
               case FLOAT16:
               case FLOAT32:
 
-              case STRING:
               case OBJECT:
               case SET:
               case FUNC:
@@ -221,6 +230,25 @@ namespace Vortex {
             }
           }
 
+          case STRING: {
+            auto items = new deque<char>();
+
+            while (true) {
+              auto b = getByte();
+
+              switch (b) {
+                case 0: {
+                  return Value(items);
+                }
+
+                default: {
+                  items->push_back(b);
+                  continue;
+                }
+              }
+            }
+          }
+
           case UINT8:
           case UINT16:
           case UINT32:
@@ -234,7 +262,6 @@ namespace Vortex {
           case FLOAT16:
           case FLOAT32:
 
-          case STRING:
           case OBJECT:
           case SET:
           case FUNC:
