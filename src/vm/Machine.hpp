@@ -93,7 +93,8 @@ namespace Vortex {
                 return;
               }
 
-              case ARRAY: {
+              case ARRAY:
+              case OBJECT: {
                 // TODO: Deduplicate with IF, LOOP
                 while (true) {
                   auto instr = get();
@@ -129,7 +130,6 @@ namespace Vortex {
               case FLOAT16:
               case FLOAT32:
 
-              case OBJECT:
               case SET:
               case FUNC:
                 throw NotImplementedError();
@@ -230,6 +230,30 @@ namespace Vortex {
             }
           }
 
+          case OBJECT: {
+            auto items = new map<deque<char>, Value>();
+
+            while (true) {
+              auto keyType = get();
+
+              switch (keyType) {
+                case END: {
+                  return Value(items);
+                }
+
+                case STRING: {
+                  Value key = getValue(STRING);
+                  items->insert(make_pair(*key.data.STRING, getValue(get())));
+                  continue;
+                }
+
+                default: {
+                  throw TypeError();
+                }
+              }
+            }
+          }
+
           case STRING: {
             auto items = new deque<char>();
 
@@ -262,7 +286,6 @@ namespace Vortex {
           case FLOAT16:
           case FLOAT32:
 
-          case OBJECT:
           case SET:
           case FUNC:
             throw NotImplementedError();

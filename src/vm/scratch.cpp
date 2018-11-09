@@ -266,6 +266,35 @@ int main() {
 
       RETURN,
     }},
+    {"objects", {
+      ARRAY, END,
+
+      OBJECT,
+        STRING, END, BOOL, 1,
+        STRING, 97, END, INT32, 0, 1, 0, 0,
+        STRING, 98, END, ARRAY,
+          BOOL, 0,
+          BOOL, 1,
+          BOOL, 0,
+        END,
+      END,
+      SET_LOCAL, 0,
+
+      GET_LOCAL, 0,
+      STRING, END,
+      INDEX,
+      PUSH_BACK,
+
+      GET_LOCAL, 0,
+      PUSH_BACK,
+
+      GET_LOCAL, 0,
+      STRING, 98, END,
+      INDEX,
+      PUSH_BACK,
+
+      RETURN,
+    }},
   };
 
   for (auto& [name, program]: programs) {

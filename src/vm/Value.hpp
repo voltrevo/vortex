@@ -3,6 +3,7 @@
 #include <cassert>
 #include <cmath>
 #include <deque>
+#include <map>
 #include <string>
 #include <sstream>
 using namespace std;
@@ -20,6 +21,7 @@ namespace Vortex {
       double FLOAT64;
       deque<char>* STRING;
       deque<Value>* ARRAY;
+      map<deque<char>, Value>* OBJECT;
       void* PTR;
     };
 
@@ -33,6 +35,8 @@ namespace Vortex {
         delete data.ARRAY;
       } else if (type == STRING) {
         delete data.STRING;
+      } else if (type == OBJECT) {
+        delete data.OBJECT;
       }
 
       #ifndef NDEBUG
@@ -84,6 +88,11 @@ namespace Vortex {
       data.STRING = v;
     }
 
+    Value(map<deque<char>, Value>* v) {
+      type = OBJECT;
+      data.OBJECT = v;
+    }
+
     void copyConstruct(const Value& other) {
       assert(other.type != INVALID);
       type = other.type;
@@ -92,6 +101,8 @@ namespace Vortex {
         data.ARRAY = new deque<Value>(*other.data.ARRAY);
       } else if (other.type == STRING) {
         data.STRING = new deque<char>(*other.data.STRING);
+      } else if (other.type == OBJECT) {
+        data.OBJECT = new map<deque<char>, Value>(*other.data.OBJECT);
       } else {
         data = other.data;
       }
@@ -181,6 +192,30 @@ namespace Vortex {
           }
 
           os << '\'';
+
+          break;
+        }
+
+        case OBJECT: {
+          os << '{';
+
+          bool notFirst = false;
+
+          for (auto& [key, value]: *value.data.OBJECT) {
+            if (notFirst) {
+              os << ", ";
+            }
+
+            Value keyHack;
+            keyHack.type = STRING;
+            keyHack.data.STRING = const_cast<deque<char>*>(&key);
+            os << Value(keyHack) << ": " << value;
+            keyHack.type = INVALID;
+
+            notFirst = true;
+          }
+
+          os << '}';
 
           break;
         }
@@ -578,6 +613,20 @@ namespace Vortex {
             return;
           }
 
+          case OBJECT: {
+            for (const auto& [key, value]: *right.data.OBJECT) {
+              auto pos = left.data.OBJECT->find(key);
+
+              if (pos != left.data.OBJECT->end()) {
+                throw TypeError();
+              }
+
+              left.data.OBJECT->at(key) = value;
+            }
+
+            return;
+          }
+
           default: throw TypeError();
         }
       }
@@ -601,12 +650,12 @@ namespace Vortex {
       }
 
       case INDEX: {
-        if (right.type != INT32) {
-          throw TypeError();
-        }
-
         switch (left.type) {
           case ARRAY: {
+            if (right.type != INT32) {
+              throw TypeError();
+            }
+
             if (
               right.data.INT32 < 0 ||
               (unsigned int)right.data.INT32 >= left.data.ARRAY->size()
@@ -619,6 +668,10 @@ namespace Vortex {
           }
 
           case STRING: {
+            if (right.type != INT32) {
+              throw TypeError();
+            }
+
             if (
               right.data.INT32 < 0 ||
               (unsigned int)right.data.INT32 >= left.data.STRING->size()
@@ -627,6 +680,21 @@ namespace Vortex {
             }
 
             left = left.data.STRING->at(right.data.INT32);
+            return;
+          }
+
+          case OBJECT: {
+            if (right.type != STRING) {
+              throw TypeError();
+            }
+
+            auto pos = left.data.OBJECT->find(*right.data.STRING);
+
+            if (pos == left.data.OBJECT->end()) {
+              throw BadIndexError();
+            }
+
+            left = pos->second;
             return;
           }
 
