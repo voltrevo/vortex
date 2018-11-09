@@ -14,4 +14,8 @@ namespace Vortex {
   class NotImplementedError: std::exception {
     const char* what() const noexcept { return "Not implemented"; }
   };
+
+  class BadIndexError: std::exception {
+    const char* what() const noexcept { return "Bad index"; }
+  };
 }

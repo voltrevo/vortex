@@ -208,6 +208,64 @@ int main() {
       PLUS,
       RETURN,
     }},
+    {"index", {
+      ARRAY,
+        INT32, 3, 0, 0, 0,
+        INT32, 1, 0, 0, 0,
+        INT32, 4, 0, 0, 0,
+      END,
+      INT32, 2, 0, 0, 0,
+      INDEX,
+      STRING,
+        1, 2, 3, 4, 5,
+      END,
+      INT32, 3, 0, 0, 0,
+      INDEX,
+      PLUS,
+      RETURN,
+    }},
+    {"has-index", {
+      ARRAY,
+        INT32, 3, 0, 0, 0,
+        INT32, 1, 0, 0, 0,
+        INT32, 4, 0, 0, 0,
+      END,
+      SET_LOCAL, 0,
+
+      ARRAY, END,
+
+      GET_LOCAL, 0,
+      INT32, 0, 0, 0, 0,
+      HAS_INDEX,
+      PUSH_BACK,
+
+      GET_LOCAL, 0,
+      INT32, 1, 0, 0, 0,
+      HAS_INDEX,
+      PUSH_BACK,
+
+      GET_LOCAL, 0,
+      INT32, 2, 0, 0, 0,
+      HAS_INDEX,
+      PUSH_BACK,
+
+      GET_LOCAL, 0,
+      INT32, 3, 0, 0, 0,
+      HAS_INDEX,
+      PUSH_BACK,
+
+      GET_LOCAL, 0,
+      INT32, 4, 0, 0, 0,
+      HAS_INDEX,
+      PUSH_BACK,
+
+      GET_LOCAL, 0,
+      INT32, 255, 255, 255, 255,
+      HAS_INDEX,
+      PUSH_BACK,
+
+      RETURN,
+    }},
   };
 
   for (auto& [name, program]: programs) {

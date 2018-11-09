@@ -108,8 +108,9 @@ namespace Vortex {
     }
 
     Value& operator=(const Value& rhs) {
+      Value tmp(rhs);
       dealloc();
-      copyConstruct(rhs);
+      *this = move(tmp);
       return *this;
     }
 
@@ -599,9 +600,67 @@ namespace Vortex {
         return;
       }
 
-      case INDEX:
-      case HAS_INDEX:
-        throw NotImplementedError();
+      case INDEX: {
+        if (right.type != INT32) {
+          throw TypeError();
+        }
+
+        switch (left.type) {
+          case ARRAY: {
+            if (
+              right.data.INT32 < 0 ||
+              (unsigned int)right.data.INT32 >= left.data.ARRAY->size()
+            ) {
+              throw BadIndexError();
+            }
+
+            left = left.data.ARRAY->at(right.data.INT32);
+            return;
+          }
+
+          case STRING: {
+            if (
+              right.data.INT32 < 0 ||
+              (unsigned int)right.data.INT32 >= left.data.STRING->size()
+            ) {
+              throw BadIndexError();
+            }
+
+            left = left.data.STRING->at(right.data.INT32);
+            return;
+          }
+
+          default: throw TypeError();
+        }
+      }
+
+      case HAS_INDEX: {
+        if (right.type != INT32) {
+          throw TypeError();
+        }
+
+        switch (left.type) {
+          case ARRAY: {
+            left = Value(
+              right.data.INT32 >= 0 &&
+              (unsigned int)right.data.INT32 < left.data.ARRAY->size()
+            );
+
+            return;
+          }
+
+          case STRING: {
+            left = Value(
+              right.data.INT32 >= 0 &&
+              (unsigned int)right.data.INT32 < left.data.STRING->size()
+            );
+
+            return;
+          }
+
+          default: throw TypeError();
+        }
+      }
 
       default:
         throw InternalError();
