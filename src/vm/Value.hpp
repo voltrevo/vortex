@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cassert>
 #include <cmath>
 #include <deque>
 #include <string>
@@ -23,9 +24,15 @@ namespace Vortex {
     } data;
 
     void dealloc() {
+      assert(GetClass(type) == TOP_TYPE || type == INVALID);
+
       if (type == ARRAY) {
         delete data.ARRAY;
       }
+
+      #ifndef NDEBUG
+        type = INVALID;
+      #endif
     }
 
     ~Value() { dealloc(); }
@@ -37,7 +44,11 @@ namespace Vortex {
       return *this;
     }
 
-    Value() = default;
+    Value() {
+      // This is necessary to avoid the possibility that type happens to get
+      // ARRAY and causes invalid memory access when deallocating.
+      type = INVALID;
+    };
 
     Value(null v) {
       type = NULL_;
@@ -63,8 +74,19 @@ namespace Vortex {
       data.ARRAY = v;
     }
 
+    void copyConstruct(const Value& other) {
+      assert(other.type != INVALID);
+      type = other.type;
+
+      if (other.type != ARRAY) {
+        data = other.data;
+      } else {
+        data.ARRAY = new deque<Value>(*other.data.ARRAY);
+      }
+    }
+
     Value(const Value& other) {
-      *this = other;
+      copyConstruct(other);
     }
 
     Value(Value&& other) {
@@ -75,14 +97,7 @@ namespace Vortex {
 
     Value& operator=(const Value& rhs) {
       dealloc();
-      type = rhs.type;
-
-      if (rhs.type != ARRAY) {
-        data = rhs.data;
-      } else {
-        data.ARRAY = new deque<Value>(*rhs.data.ARRAY);
-      }
-
+      copyConstruct(rhs);
       return *this;
     }
 
@@ -145,7 +160,7 @@ namespace Vortex {
     }
   };
 
-  void BinaryOperator(Value& left, Value right, Code op) {
+  void BinaryOperator(Value& left, const Value& right, Code op) {
     switch (op) {
       case PLUS: {
         Code type = left.type;
@@ -496,7 +511,27 @@ namespace Vortex {
         }
       }
 
-      case CONCAT:
+      case CONCAT: {
+        Code type = left.type;
+
+        if (right.type != type) {
+          throw TypeError();
+        }
+
+        switch (type) {
+          case ARRAY: {
+            left.data.ARRAY->insert(
+              left.data.ARRAY->end(),
+              right.data.ARRAY->begin(),
+              right.data.ARRAY->end()
+            );
+
+            return;
+          }
+
+          default: throw TypeError();
+        }
+      }
 
       case INDEX:
         throw NotImplementedError();

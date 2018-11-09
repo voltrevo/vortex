@@ -141,6 +141,33 @@ int main() {
       END,
       RETURN,
     }},
+    {"array-of-arrays", {
+      // return [[1, 2], [3, 4]];
+      ARRAY,
+        ARRAY,
+          INT32, 1, 0, 0, 0,
+          INT32, 2, 0, 0, 0,
+        END,
+        ARRAY,
+          INT32, 3, 0, 0, 0,
+          INT32, 4, 0, 0, 0,
+        END,
+      END,
+      RETURN,
+    }},
+    {"concat", {
+      // return [1, 2] ++ [3, 4];
+      ARRAY,
+        INT32, 1, 0, 0, 0,
+        INT32, 2, 0, 0, 0,
+      END,
+      ARRAY,
+        INT32, 3, 0, 0, 0,
+        INT32, 4, 0, 0, 0,
+      END,
+      CONCAT,
+      RETURN,
+    }},
   };
 
   for (auto& [name, program]: programs) {
@@ -150,10 +177,8 @@ int main() {
       cout << name << ": " << result << endl;
     } catch (const exception& e) {
       cout << name << " threw " << e.what() << endl;
-      throw;
     } catch (...) {
       cout << name << " threw... huh?" << endl;
-      throw;
     }
   }
 

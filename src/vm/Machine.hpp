@@ -15,7 +15,7 @@ namespace Vortex {
       vector<Value> locals;
       deque<Value> calc;
 
-      void push(Value v) { calc.push_back(v); }
+      void push(Value v) { calc.push_back(move(v)); }
 
       Value pop() {
         assert(!calc.empty());
@@ -45,7 +45,7 @@ namespace Vortex {
           locals.push_back(Value());
         }
 
-        locals[i] = v;
+        locals[i] = move(v);
       }
     };
 
