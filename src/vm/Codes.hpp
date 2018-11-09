@@ -68,6 +68,8 @@ namespace Vortex {
     UNION,
 
     CONCAT,
+    PUSH_BACK,
+    PUSH_FRONT,
 
     INDEX,
 
@@ -150,6 +152,8 @@ namespace Vortex {
       case UNION:
 
       case CONCAT:
+      case PUSH_BACK:
+      case PUSH_FRONT:
 
       case INDEX:
         return BINARY_OPERATOR;

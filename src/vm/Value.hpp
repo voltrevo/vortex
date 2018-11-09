@@ -12,16 +12,17 @@ using namespace std;
 
 namespace Vortex {
   struct Value {
-    Code type;
-
     struct null {};
 
-    union {
+    union Data {
       bool BOOL;
       int INT32;
       double FLOAT64;
       deque<Value>* ARRAY;
-    } data;
+    };
+
+    Code type;
+    Data data;
 
     void dealloc() {
       assert(GetClass(type) == TOP_TYPE || type == INVALID);
@@ -99,6 +100,16 @@ namespace Vortex {
       dealloc();
       copyConstruct(rhs);
       return *this;
+    }
+
+    friend void swap(Value& left, Value& right) {
+      Code tmpType = left.type;
+      Data tmpData = left.data;
+
+      left.type = right.type;
+      left.data = right.data;
+      right.type = tmpType;
+      right.data = tmpData;
     }
 
     friend ostream& operator<<(ostream& os, const Value& value) {
@@ -531,6 +542,24 @@ namespace Vortex {
 
           default: throw TypeError();
         }
+      }
+
+      case PUSH_BACK: {
+        if (left.type != ARRAY) {
+          throw TypeError();
+        }
+
+        left.data.ARRAY->push_back(right);
+        return;
+      }
+
+      case PUSH_FRONT: {
+        if (left.type != ARRAY) {
+          throw TypeError();
+        }
+
+        left.data.ARRAY->push_front(right);
+        return;
       }
 
       case INDEX:
