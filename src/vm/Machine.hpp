@@ -52,10 +52,10 @@ namespace Vortex {
 
   public:
     class Decoder {
-      byte* pos;
+      deque<byte>::iterator pos;
 
     public:
-      Decoder(byte* init) { pos = init; }
+      Decoder(deque<byte>::iterator init) { pos = init; }
 
       Code get() { return (Code)(*pos++); };
       byte getByte() { return *pos++; }
@@ -200,14 +200,26 @@ namespace Vortex {
           }
 
           case INT32: {
-            auto v = *(int*)(pos);
-            pos += 4;
+            int v;
+            byte* vaddr = (byte*)&v;
+            *vaddr++ = *pos++;
+            *vaddr++ = *pos++;
+            *vaddr++ = *pos++;
+            *vaddr++ = *pos++;
             return Value(v);
           }
 
           case FLOAT64: {
-            auto v = *(double*)(pos);
-            pos += 8;
+            double v;
+            byte* vaddr = (byte*)&v;
+            *vaddr++ = *pos++;
+            *vaddr++ = *pos++;
+            *vaddr++ = *pos++;
+            *vaddr++ = *pos++;
+            *vaddr++ = *pos++;
+            *vaddr++ = *pos++;
+            *vaddr++ = *pos++;
+            *vaddr++ = *pos++;
             return Value(v);
           }
 
@@ -287,8 +299,21 @@ namespace Vortex {
           case FLOAT32:
 
           case VSET:
-          case FUNC:
             throw NotImplementedError();
+
+          case FUNC: {
+            auto start = pos;
+
+            while (true) {
+              auto instr = get();
+
+              if (instr == END) {
+                return Value(new deque<byte>(start, pos));
+              }
+
+              skip(instr);
+            }
+          }
 
           default:
             throw InternalError();
@@ -572,7 +597,7 @@ namespace Vortex {
       }
     }
 
-    Value eval(byte* code) {
+    Value eval(deque<byte>::iterator code) {
       auto prevSize = cc.size();
 
       cc.push_back(Context());

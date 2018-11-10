@@ -5,7 +5,7 @@
 using namespace Vortex;
 
 int main() {
-  vector<pair<string, vector<byte>>> programs = {
+  vector<pair<string, deque<byte>>> programs = {
     {"basic-arithmetic", {
       // sum := 3 * 5 + 1;
       // return sum + sum + sum;
@@ -301,12 +301,12 @@ int main() {
     try {
       cout << name << ":" << endl;
 
-      auto decoder = Machine::Decoder(program.data());
+      auto decoder = Machine::Decoder(program.begin());
       decoder.disassemble(cout, "  ", PROGRAM);
       cout << endl;
 
       auto machine = Machine();
-      Value result = machine.eval(program.data());
+      Value result = machine.eval(program.begin());
       cout << "  output: " << result << endl;
     } catch (const exception& e) {
       cout << name << " threw " << e.what() << endl;

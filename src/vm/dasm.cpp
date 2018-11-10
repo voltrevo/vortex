@@ -4,7 +4,7 @@
 using namespace Vortex;
 
 int main() {
-  vector<byte> bytes;
+  deque<byte> bytes;
 
   while (true) {
     byte b = cin.get();
@@ -16,7 +16,7 @@ int main() {
     bytes.push_back(b);
   }
 
-  auto decoder = Machine::Decoder(bytes.data());
+  auto decoder = Machine::Decoder(bytes.begin());
   decoder.disassemble(cout, "", PROGRAM);
 
   return 0;

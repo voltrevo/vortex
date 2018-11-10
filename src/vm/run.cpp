@@ -9,9 +9,12 @@ using namespace Vortex;
 int main() {
   auto oss = ostringstream();
   assemble(cin, oss);
+  string s = oss.str();
+
+  auto bytes = deque<byte>(s.begin(), s.end());
 
   auto machine = Machine();
-  Value result = machine.eval((byte*)oss.str().c_str());
+  Value result = machine.eval(bytes.begin());
   cout << result << endl;
 
   return 0;

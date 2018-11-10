@@ -22,6 +22,7 @@ namespace Vortex {
       deque<char>* STRING;
       deque<Value>* ARRAY;
       map<deque<char>, Value>* OBJECT;
+      deque<byte>* FUNC;
       void* PTR;
     };
 
@@ -37,6 +38,8 @@ namespace Vortex {
         delete data.STRING;
       } else if (type == OBJECT) {
         delete data.OBJECT;
+      } else if (type == FUNC) {
+        delete data.FUNC;
       }
 
       #ifndef NDEBUG
@@ -93,6 +96,11 @@ namespace Vortex {
       data.OBJECT = v;
     }
 
+    Value(deque<byte>* v) {
+      type = FUNC;
+      data.FUNC = v;
+    }
+
     void copyConstruct(const Value& other) {
       assert(other.type != INVALID);
       type = other.type;
@@ -103,6 +111,8 @@ namespace Vortex {
         data.STRING = new deque<char>(*other.data.STRING);
       } else if (other.type == OBJECT) {
         data.OBJECT = new map<deque<char>, Value>(*other.data.OBJECT);
+      } else if (other.type == FUNC) {
+        data.FUNC = new deque<byte>(*other.data.FUNC);
       } else {
         data = other.data;
       }
@@ -218,6 +228,10 @@ namespace Vortex {
           os << '}';
 
           break;
+        }
+
+        case FUNC: {
+          os << "<func>";
         }
 
         default:
