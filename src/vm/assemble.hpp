@@ -67,6 +67,8 @@ namespace Vortex {
     {"index", INDEX},
     {"has-index", HAS_INDEX},
 
+    {"capture", CAPTURE},
+
     // UNARY_OPERATOR
     {"negate", NEGATE},
     {"~", BIT_NEGATE},

@@ -355,6 +355,8 @@ namespace Vortex {
               case INDEX: os << "index" << endl; return;
               case HAS_INDEX: os << "has-index" << endl; return;
 
+              case CAPTURE: os << "capture" << endl; return;
+
               default: throw InternalError();
             }
           }

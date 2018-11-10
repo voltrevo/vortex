@@ -75,6 +75,8 @@ namespace Vortex {
     INDEX,
     HAS_INDEX,
 
+    CAPTURE,
+
     // UNARY_OPERATOR
     NEGATE,
     BIT_NEGATE,
@@ -159,6 +161,8 @@ namespace Vortex {
 
       case INDEX:
       case HAS_INDEX:
+
+      case CAPTURE:
         return BINARY_OPERATOR;
 
       case NEGATE:
