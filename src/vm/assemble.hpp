@@ -33,7 +33,7 @@ namespace Vortex {
     //{"", ARRAY},
     //{"", OBJECT},
     //{"", VSET},
-    //{"", FUNC},
+    {"func", FUNC},
 
     // BINARY_OPERATOR
     {"==", EQUAL},
@@ -323,6 +323,7 @@ namespace Vortex {
     out.put(code);
 
     switch (code) {
+      case FUNC:
       case LOOP:
       case IF: {
         skipWhitespace(in);

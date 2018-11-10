@@ -1,0 +1,5 @@
+20
+func { 2 * 1 + } set 0
+get 0 call
+get 0 call
+return

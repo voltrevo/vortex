@@ -131,8 +131,20 @@ namespace Vortex {
               case FLOAT32:
 
               case VSET:
-              case FUNC:
                 throw NotImplementedError();
+
+              case FUNC: {
+                // TODO: Deduplication
+                while (true) {
+                  auto instr = get();
+
+                  if (instr == END) {
+                    return;
+                  }
+
+                  skip(instr);
+                }
+              }
 
               default:
                 throw InternalError();
@@ -339,8 +351,29 @@ namespace Vortex {
           }
 
           case TOP_TYPE: {
-            auto v = getValue(code);
-            os << indent << v << endl;
+            if (code == FUNC) {
+              // TODO: Deduplicate with loop, if
+              // TODO: Move disassemble to its own file
+              os << "func {" << endl;
+
+              string nextIndent = indent + "  ";
+
+              while (true) {
+                auto instr = get();
+
+                if (instr == END) {
+                  break;
+                }
+
+                disassemble(os, nextIndent, instr);
+              }
+
+              os << indent << "}" << endl;
+            } else {
+              auto v = getValue(code);
+              os << indent << v << endl;
+            }
+
             return;
           }
 
@@ -583,7 +616,23 @@ namespace Vortex {
                 return pos;
               }
 
-              case CALL:
+              case CALL: {
+                auto func = pop();
+
+                if (func.type != FUNC) {
+                  throw TypeError();
+                }
+
+                auto funcDecoder = Decoder(func.data.FUNC->begin());
+                // TODO: Just make context a parameter of run?
+                // TODO: Use a shared stack for locals and use an offset?
+                cc.push_back(Context());
+                run(funcDecoder);
+                cc.pop_back();
+
+                break;
+              }
+
               case EMIT:
                 throw NotImplementedError();
 
