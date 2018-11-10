@@ -1,0 +1,6 @@
+hfunc 0 {
+  +
+}
+
+20 20 get-func 0 call
+return

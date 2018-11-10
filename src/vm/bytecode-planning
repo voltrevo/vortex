@@ -126,8 +126,6 @@ code      | description           | followed by
 ---------------------------------------------
 {get}     | get local             | u8big (outputs to top of stack)
 {=}       | set local             | u8big (consumes top of stack)
-{get-arg} | get argument          | u8big (outputs to top of stack)
-{get-cap} | get capture           | u8big (outputs to top of stack)
 
 
                                   control flow

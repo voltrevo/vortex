@@ -1,4 +1,4 @@
-all: bin/run bin/scratch bin/asm bin/dasm
+all: bin/run bin/scratch bin/asm bin/dasm test
 
 bin/run: *.*pp
 	clang++ -std=c++17 -g run.cpp -o bin/run
@@ -11,6 +11,9 @@ bin/asm: *.*pp
 
 bin/dasm: *.*pp
 	clang++ -std=c++17 -g dasm.cpp -o bin/dasm
+
+test: bin/run
+	bash ./testFiles/test
 
 clean:
 	rm bin/*

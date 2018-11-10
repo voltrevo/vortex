@@ -1,13 +1,13 @@
 30
-set-local 0
+set 0
 7
 10
 <
 if {
-  get-local 0
+  get 0
   20
   +
-  set-local 0
+  set 0
 }
-get-local 0
+get 0
 return

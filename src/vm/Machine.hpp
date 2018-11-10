@@ -131,7 +131,7 @@ namespace Vortex {
               case FLOAT16:
               case FLOAT32:
 
-              case SET:
+              case VSET:
               case FUNC:
                 throw NotImplementedError();
 
@@ -287,7 +287,7 @@ namespace Vortex {
           case FLOAT16:
           case FLOAT32:
 
-          case SET:
+          case VSET:
           case FUNC:
             throw NotImplementedError();
 
@@ -378,10 +378,8 @@ namespace Vortex {
             os << indent;
 
             switch (code) {
-              case GET_LOCAL: os << "get-local "; break;
-              case SET_LOCAL: os << "set-local "; break;
-              case GET_ARGUMENT: os << "get-argument "; break;
-              case GET_CAPTURE: os << "get-capture "; break;
+              case GET: os << "get "; break;
+              case SET: os << "set "; break;
 
               default: throw InternalError();
             }
@@ -470,19 +468,15 @@ namespace Vortex {
 
           case SCOPE: {
             switch (instr) {
-              case GET_LOCAL: {
+              case GET: {
                 ctx.push(ctx.getLocal(pos.getByte()));
                 break;
               }
 
-              case SET_LOCAL: {
+              case SET: {
                 ctx.setLocal(pos.getByte(), ctx.pop());
                 break;
               }
-
-              case GET_ARGUMENT:
-              case GET_CAPTURE:
-                throw NotImplementedError();
 
               default:
                 throw InternalError();

@@ -32,7 +32,7 @@ namespace Vortex {
     //{"", STRING},
     //{"", ARRAY},
     //{"", OBJECT},
-    //{"", SET},
+    //{"", VSET},
     //{"", FUNC},
 
     // BINARY_OPERATOR
@@ -76,10 +76,8 @@ namespace Vortex {
     {"length", LENGTH},
 
     // SCOPE
-    {"get-local", GET_LOCAL},
-    {"set-local", SET_LOCAL},
-    {"get-argument", GET_ARGUMENT},
-    {"get-capture", GET_CAPTURE},
+    {"get", GET},
+    {"set", SET},
 
     // CONTROL
     {"call", CALL},
@@ -333,10 +331,8 @@ namespace Vortex {
         break;
       }
 
-      case GET_LOCAL:
-      case SET_LOCAL:
-      case GET_ARGUMENT:
-      case GET_CAPTURE: {
+      case GET:
+      case SET: {
         skipWhitespace(in);
         byte b = parseByteNumber(in);
         out.put(b);

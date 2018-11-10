@@ -40,7 +40,7 @@ namespace Vortex {
     STRING,
     ARRAY,
     OBJECT,
-    SET,
+    VSET,
     FUNC,
 
     // BINARY_OPERATOR
@@ -84,10 +84,8 @@ namespace Vortex {
     LENGTH,
 
     // SCOPE
-    GET_LOCAL,
-    SET_LOCAL,
-    GET_ARGUMENT,
-    GET_CAPTURE,
+    GET,
+    SET,
 
     // CONTROL
     CALL,
@@ -127,7 +125,7 @@ namespace Vortex {
       case STRING:
       case ARRAY:
       case OBJECT:
-      case SET:
+      case VSET:
       case FUNC:
         return TOP_TYPE;
 
@@ -171,10 +169,8 @@ namespace Vortex {
       case LENGTH:
         return UNARY_OPERATOR;
 
-      case GET_LOCAL:
-      case SET_LOCAL:
-      case GET_ARGUMENT:
-      case GET_CAPTURE:
+      case GET:
+      case SET:
         return SCOPE;
 
       case CALL:

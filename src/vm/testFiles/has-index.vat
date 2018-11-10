@@ -1,27 +1,27 @@
 [3, 1, 4]
-set-local 0
+set 0
 []
-get-local 0
+get 0
 0
 has-index
 push-back
-get-local 0
+get 0
 1
 has-index
 push-back
-get-local 0
+get 0
 2
 has-index
 push-back
-get-local 0
+get 0
 3
 has-index
 push-back
-get-local 0
+get 0
 4
 has-index
 push-back
-get-local 0
+get 0
 -1
 has-index
 push-back

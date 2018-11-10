@@ -1,6 +1,8 @@
-#!/bin/bash
+#!/bin/bash -e
 
-for filename in *.vat; do
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
+
+for filename in "$DIR"/*.vat; do
   echo "$filename: "
   run <"$filename"
   echo

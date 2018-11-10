@@ -3,10 +3,10 @@
 *
 1
 +
-set-local 0
-get-local 0
-get-local 0
-get-local 0
+set 0
+get 0
+get 0
+get 0
 +
 +
 return
