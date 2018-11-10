@@ -1,6 +1,9 @@
-hfunc 0 {
-  +
-}
+gfunc 0 { + }
+20 20 gcall 0
 
-20 20 get-func 0 call
-return
+func { + }
+20 20 call
+
+plus
+
+return // 40

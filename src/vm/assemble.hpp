@@ -82,6 +82,7 @@ namespace Vortex {
     {"set", SET},
 
     // CONTROL
+    {"gcall", GCALL},
     {"call", CALL},
     {"return", RETURN},
     {"emit", EMIT},

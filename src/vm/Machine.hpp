@@ -10,27 +10,7 @@ using namespace std;
 namespace Vortex {
   class Machine {
     struct Context {
-      vector<Value> args;
-      vector<Value> closure;
       vector<Value> locals;
-      deque<Value> calc;
-
-      void push(Value v) { calc.push_back(move(v)); }
-
-      Value pop() {
-        assert(!calc.empty());
-        auto v = move(calc.back());
-        calc.pop_back();
-        return v;
-      }
-
-      pair<Value*, Value*> BackPair() {
-        assert(calc.size() >= 2);
-        auto iter = calc.end();
-        Value* right = &*(--iter);
-        Value* left = &*(--iter);
-        return make_pair(left, right);
-      }
 
       Value getLocal(byte i) {
         if (i >= locals.size()) {
@@ -48,6 +28,25 @@ namespace Vortex {
         locals[i] = move(v);
       }
     };
+
+    deque<Value> calc;
+
+    void push(Value v) { calc.push_back(move(v)); }
+
+    Value pop() {
+      assert(!calc.empty());
+      auto v = move(calc.back());
+      calc.pop_back();
+      return v;
+    }
+
+    pair<Value*, Value*> BackPair() {
+      assert(calc.size() >= 2);
+      auto iter = calc.end();
+      Value* right = &*(--iter);
+      Value* left = &*(--iter);
+      return make_pair(left, right);
+    }
 
     deque<Context> cc;
 
@@ -420,6 +419,7 @@ namespace Vortex {
                 return;
               }
 
+              case GCALL: os << "gcall" << endl; return;
               case CALL: os << "call" << endl; return;
               case RETURN: os << "return" << endl; return;
               case EMIT: os << "emit" << endl; return;
@@ -452,31 +452,31 @@ namespace Vortex {
           }
 
           case TOP_TYPE: {
-            ctx.push(pos.getValue(instr));
+            push(pos.getValue(instr));
             break;
           }
 
           case BINARY_OPERATOR: {
-            auto backPair = ctx.BackPair();
+            auto backPair = BackPair();
             BinaryOperator(*backPair.first, *backPair.second, instr);
-            ctx.calc.pop_back();
+            calc.pop_back();
             break;
           }
 
           case UNARY_OPERATOR: {
-            UnaryOperator(ctx.calc.back(), instr);
+            UnaryOperator(calc.back(), instr);
             break;
           }
 
           case SCOPE: {
             switch (instr) {
               case GET: {
-                ctx.push(ctx.getLocal(pos.getByte()));
+                push(ctx.getLocal(pos.getByte()));
                 break;
               }
 
               case SET: {
-                ctx.setLocal(pos.getByte(), ctx.pop());
+                ctx.setLocal(pos.getByte(), pop());
                 break;
               }
 
@@ -494,7 +494,7 @@ namespace Vortex {
               }
 
               case IF: {
-                auto cond = ctx.pop();
+                auto cond = pop();
 
                 if (cond.type != BOOL) {
                   throw TypeError();
@@ -585,10 +585,9 @@ namespace Vortex {
         throw InternalError();
       }
 
-      auto& ctx = cc.back();
-      auto res = ctx.pop();
+      auto res = pop();
 
-      if (ctx.calc.size() != 0) {
+      if (calc.size() != 0) {
         throw InternalError();
       }
 

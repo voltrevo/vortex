@@ -16,6 +16,7 @@ namespace Vortex {
     // SPECIAL
     END,
     PROGRAM,
+    GFUNC,
     INVALID,
 
     // TOP_TYPE
@@ -90,6 +91,7 @@ namespace Vortex {
     SET,
 
     // CONTROL
+    GCALL,
     CALL,
     RETURN,
     EMIT,
@@ -103,6 +105,7 @@ namespace Vortex {
     switch (code) {
       case END:
       case PROGRAM:
+      case GFUNC:
       case INVALID:
         return SPECIAL;
 
@@ -177,6 +180,7 @@ namespace Vortex {
       case SET:
         return SCOPE;
 
+      case GCALL:
       case CALL:
       case RETURN:
       case EMIT:
