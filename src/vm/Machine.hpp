@@ -31,6 +31,31 @@ namespace Vortex {
 
     deque<Value> calc;
 
+  public:
+    class Decoder; // TODO: Clean this up
+  private:
+    vector<Decoder> gfuncs;
+
+    Decoder getGFunc(byte i) {
+      if (i >= gfuncs.size()) {
+        throw InternalError();
+      }
+
+      return gfuncs[i];
+    }
+
+    void setGFunc(byte i, Decoder decoder) {
+      if (i < gfuncs.size()) {
+        gfuncs[i] = decoder;
+      }
+
+      while (i + 1 < gfuncs.size()) {
+        gfuncs.push_back(Decoder(deque<byte>::iterator()));
+      }
+
+      gfuncs.push_back(move(decoder));
+    }
+
     void push(Value v) { calc.push_back(move(v)); }
 
     Value pop() {
@@ -52,13 +77,16 @@ namespace Vortex {
 
   public:
     class Decoder {
+      deque<byte>::iterator start;
       deque<byte>::iterator pos;
 
     public:
-      Decoder(deque<byte>::iterator init) { pos = init; }
+      Decoder(deque<byte>::iterator init) { start = pos = init; }
 
       Code get() { return (Code)(*pos++); };
       byte getByte() { return *pos++; }
+
+      int location() { return pos - start; }
 
       Code peekBehind() { return (Code)(*(pos - 1)); }
 
@@ -67,9 +95,28 @@ namespace Vortex {
       void skip(Code code) {
         switch (GetClass(code)) {
           case SPECIAL: {
-            if (code != END) {
-              throw InternalError();
+            if (code == GFUNC) {
+              get();
+
+              // TODO: Deduplication
+              while (true) {
+                auto instr = get();
+
+                if (instr == END) {
+                  return;
+                }
+
+                skip(instr);
+              }
+
+              break;
             }
+
+            if (code == END) {
+              break;
+            }
+
+            throw InternalError();
           }
 
           case TOP_TYPE: {
@@ -174,6 +221,11 @@ namespace Vortex {
 
                   skip(instr);
                 }
+              }
+
+              case GCALL: {
+                get();
+                return;
               }
 
               case CALL:
@@ -335,19 +387,42 @@ namespace Vortex {
       void disassemble(ostream& os, string indent, Code code) {
         switch (GetClass(code)) {
           case SPECIAL: {
-            if (code != PROGRAM) {
-              throw InternalError();
-            }
+            if (code == GFUNC) {
+              // TODO: Deduplicate with loop, if
+              // TODO: Move disassemble to its own file
+              os << "gfunc " << (int)get() << " {" << endl;
 
-            while (true) {
-              auto instr = get();
+              string nextIndent = indent + "  ";
 
-              if (instr == END) {
-                return;
+              while (true) {
+                auto instr = get();
+
+                if (instr == END) {
+                  break;
+                }
+
+                disassemble(os, nextIndent, instr);
               }
 
-              disassemble(os, indent, instr);
+              os << indent << "}" << endl;
+              break;
             }
+
+            if (code == PROGRAM) {
+              while (true) {
+                auto instr = get();
+
+                if (instr == END) {
+                  return;
+                }
+
+                disassemble(os, indent, instr);
+              }
+
+              break;
+            }
+
+            throw InternalError();
           }
 
           case TOP_TYPE: {
@@ -392,7 +467,7 @@ namespace Vortex {
               case GREATER_EQ: os << ">=" << endl; return;
 
               case PLUS: os << "+" << endl; return;
-              case MINUS: os << "+" << endl; return;
+              case MINUS: os << "-" << endl; return;
               case MULTIPLY: os << "*" << endl; return;
               case DIVIDE: os << "/" << endl; return;
               case MODULUS: os << "%" << endl; return;
@@ -504,9 +579,18 @@ namespace Vortex {
               case END:
                 return pos;
 
+              case GFUNC: {
+                int id = pos.getByte();
+                setGFunc(id, pos);
+                pos.skip(FUNC);
+                break;
+              }
+
               default:
                 throw InternalError();
             }
+
+            break;
           }
 
           case TOP_TYPE: {
@@ -624,6 +708,19 @@ namespace Vortex {
                 }
 
                 auto funcDecoder = Decoder(func.data.FUNC->begin());
+                // TODO: Just make context a parameter of run?
+                // TODO: Use a shared stack for locals and use an offset?
+                cc.push_back(Context());
+                run(funcDecoder);
+                cc.pop_back();
+
+                break;
+              }
+
+              case GCALL: {
+                int id = pos.getByte();
+
+                auto funcDecoder = getGFunc(id);
                 // TODO: Just make context a parameter of run?
                 // TODO: Use a shared stack for locals and use an offset?
                 cc.push_back(Context());

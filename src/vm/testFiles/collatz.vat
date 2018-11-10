@@ -1,0 +1,57 @@
+gfunc 0 {
+  set 0
+  0 set 1
+
+  loop {
+    get 0 1 == if {
+      get 1
+      return
+    }
+
+    get 0 2 % 0 == if {
+      get 0 2 /
+      set 0
+
+      get 1 1 +
+      set 1
+
+      continue
+    }
+
+    get 0 1000000000 > if {
+      true 1 >
+    }
+
+    get 0 3 * 1 + 2 /
+    set 0
+
+    get 1 2 +
+    set 1
+  }
+}
+
+[]
+
+1 set 0
+-1 set 1
+
+loop {
+  get 0 gcall 0
+  set 2
+
+  get 2 get 1 >= if {
+    []
+    get 0 push-back
+    get 2 push-back
+    push-back
+
+    get 2 set 1
+  }
+
+  get 0 1 +
+  set 0
+
+  get 0 1000 == if {
+    return
+  }
+}

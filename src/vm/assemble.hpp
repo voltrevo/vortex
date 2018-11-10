@@ -8,6 +8,7 @@ namespace Vortex {
     // SPECIAL
     {"}", END},
     //{"", PROGRAM},
+    {"gfunc", GFUNC},
     //{"", INVALID},
 
     // TOP_TYPE
@@ -164,7 +165,23 @@ namespace Vortex {
     }
 
     if (('0' <= c && c <= '9') || c == '-') {
-      int res = parseInt(in);
+      int res;
+
+      if (c == '-') {
+        in.get();
+
+        c = in.peek();
+
+        if ('0' <= c && c <= '9') {
+          res = -parseInt(in);
+        } else {
+          out.put(MINUS);
+          return;
+        }
+      } else {
+        res = parseInt(in);
+      }
+
       out.put(INT32);
       out.write((char*)&res, 4);
       return;
@@ -335,6 +352,22 @@ namespace Vortex {
         break;
       }
 
+      case GFUNC: {
+        skipWhitespace(in);
+
+        byte b = parseByteNumber(in);
+        out.put(b);
+
+        skipWhitespace(in);
+
+        if (in.get() != '{') {
+          throw new SyntaxError();
+        }
+
+        break;
+      }
+
+      case GCALL:
       case GET:
       case SET: {
         skipWhitespace(in);

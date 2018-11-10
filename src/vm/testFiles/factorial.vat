@@ -1,0 +1,15 @@
+gfunc 0 {
+  set 0
+
+  get 0 0 == if {
+    1 return
+  }
+
+  get 0 1 -
+  gcall 0
+
+  get 0 *
+}
+
+6 gcall 0
+return
