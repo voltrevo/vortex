@@ -134,7 +134,7 @@ code      | description           | followed by
 code        | description
 ---------------------------------------------------
 {call}      | enter function
-{return}    | return to parent context with value
+{return}    | return to parent context
 {emit}      | TODO
 {if}        | continue as normal if true, otherwise skip until matching {end}
 {loop}      | remember this location, jump back here on {continue} or if matching {end} occurs
