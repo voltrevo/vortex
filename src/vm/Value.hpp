@@ -248,501 +248,524 @@ namespace Vortex {
     }
   };
 
+  namespace BinaryOperators {
+    void plus(Value& left, const Value& right) {
+      Code type = left.type;
+
+      if (right.type != type) {
+        throw TypeError();
+      }
+
+      switch (type) {
+        case INT32: {
+          left.data.INT32 += right.data.INT32;
+          return;
+        }
+
+        case FLOAT64: {
+          left.data.FLOAT64 += right.data.FLOAT64;
+          return;
+        }
+
+        default: throw TypeError();
+      }
+    }
+
+    void minus(Value& left, const Value& right) {
+      Code type = left.type;
+
+      if (right.type != type) {
+        throw TypeError();
+      }
+
+      switch (type) {
+        case INT32: {
+          left.data.INT32 -= right.data.INT32;
+          return;
+        }
+
+        case FLOAT64: {
+          left.data.FLOAT64 -= right.data.FLOAT64;
+          return;
+        }
+
+        default: throw TypeError();
+      }
+    }
+
+    void multiply(Value& left, const Value& right) {
+      Code type = left.type;
+
+      if (right.type != type) {
+        throw TypeError();
+      }
+
+      switch (type) {
+        case INT32: {
+          left.data.INT32 *= right.data.INT32;
+          return;
+        }
+
+        case FLOAT64: {
+          left.data.FLOAT64 *= right.data.FLOAT64;
+          return;
+        }
+
+        default: throw TypeError();
+      }
+    }
+
+    void divide(Value& left, const Value& right) {
+      Code type = left.type;
+
+      if (right.type != type) {
+        throw TypeError();
+      }
+
+      switch (type) {
+        case INT32: {
+          left.data.INT32 /= right.data.INT32;
+          return;
+        }
+
+        case FLOAT64: {
+          left.data.FLOAT64 /= right.data.FLOAT64;
+          return;
+        }
+
+        default: throw TypeError();
+      }
+    }
+
+    void modulus(Value& left, const Value& right) {
+      Code type = left.type;
+
+      if (right.type != type) {
+        throw TypeError();
+      }
+
+      switch (type) {
+        case INT32: {
+          left.data.INT32 %= right.data.INT32;
+          return;
+        }
+
+        case FLOAT64: {
+          left.data.FLOAT64 = fmod(left.data.FLOAT64, right.data.FLOAT64);
+          return;
+        }
+
+        default: throw TypeError();
+      }
+    }
+
+    void power(Value& left, const Value& right) {
+      Code type = left.type;
+
+      if (right.type != type) {
+        throw TypeError();
+      }
+
+      switch (type) {
+        case INT32: {
+          // Exponentiation by squaring
+          int base = left.data.INT32;
+          left.data.INT32 = 1;
+          int exponent = right.data.INT32;
+
+          while (true) {
+            if (exponent % 2 == 1) {
+              left.data.INT32 *= base;
+            }
+
+            exponent /= 2;
+
+            if (exponent == 0) {
+              return;
+            }
+
+            base *= base;
+          }
+        }
+
+        case FLOAT64: {
+          left.data.FLOAT64 = pow(left.data.FLOAT64, right.data.FLOAT64);
+          return;
+        }
+
+        default: throw TypeError();
+      }
+    }
+
+    void less(Value& left, const Value& right) {
+      Code type = left.type;
+
+      if (right.type != type) {
+        throw TypeError();
+      }
+
+      switch (type) {
+        case INT32: {
+          bool res = left.data.INT32 < right.data.INT32;
+          left.type = BOOL;
+          left.data.BOOL = res;
+          return;
+        }
+
+        case FLOAT64: {
+          bool res = left.data.FLOAT64 < right.data.FLOAT64;
+          left.type = BOOL;
+          left.data.BOOL = res;
+          return;
+        }
+
+        default: throw TypeError();
+      }
+    }
+
+    void greater(Value& left, const Value& right) {
+      Code type = left.type;
+
+      if (right.type != type) {
+        throw TypeError();
+      }
+
+      switch (type) {
+        case INT32: {
+          bool res = left.data.INT32 > right.data.INT32;
+          left.type = BOOL;
+          left.data.BOOL = res;
+          return;
+        }
+
+        case FLOAT64: {
+          bool res = left.data.FLOAT64 > right.data.FLOAT64;
+          left.type = BOOL;
+          left.data.BOOL = res;
+          return;
+        }
+
+        default: throw TypeError();
+      }
+    }
+
+    void lessEq(Value& left, const Value& right) {
+      Code type = left.type;
+
+      if (right.type != type) {
+        throw TypeError();
+      }
+
+      switch (type) {
+        case INT32: {
+          bool res = left.data.INT32 <= right.data.INT32;
+          left.type = BOOL;
+          left.data.BOOL = res;
+          return;
+        }
+
+        case FLOAT64: {
+          bool res = left.data.FLOAT64 <= right.data.FLOAT64;
+          left.type = BOOL;
+          left.data.BOOL = res;
+          return;
+        }
+
+        default: throw TypeError();
+      }
+    }
+
+    void greaterEq(Value& left, const Value& right) {
+      Code type = left.type;
+
+      if (right.type != type) {
+        throw TypeError();
+      }
+
+      switch (type) {
+        case INT32: {
+          bool res = left.data.INT32 >= right.data.INT32;
+          left.type = BOOL;
+          left.data.BOOL = res;
+          return;
+        }
+
+        case FLOAT64: {
+          bool res = left.data.FLOAT64 >= right.data.FLOAT64;
+          left.type = BOOL;
+          left.data.BOOL = res;
+          return;
+        }
+
+        default: throw TypeError();
+      }
+    }
+
+    void equal(Value& left, const Value& right) {
+      Code type = left.type;
+
+      if (right.type != type) {
+        left.dealloc();
+        left.type = BOOL;
+        left.data.BOOL = false;
+      }
+
+      switch (type) {
+        case INT32: {
+          bool res = left.data.INT32 == right.data.INT32;
+          left.type = BOOL;
+          left.data.BOOL = res;
+          return;
+        }
+
+        case FLOAT64: {
+          bool res = left.data.FLOAT64 == right.data.FLOAT64;
+          left.type = BOOL;
+          left.data.BOOL = res;
+          return;
+        }
+
+        default: throw TypeError();
+      }
+    }
+
+    void notEqual(Value& left, const Value& right) {
+      Code type = left.type;
+
+      if (right.type != type) {
+        left.dealloc();
+        left.type = BOOL;
+        left.data.BOOL = true;
+      }
+
+      switch (type) {
+        case INT32: {
+          bool res = left.data.INT32 != right.data.INT32;
+          left.type = BOOL;
+          left.data.BOOL = res;
+          return;
+        }
+
+        case FLOAT64: {
+          bool res = left.data.FLOAT64 != right.data.FLOAT64;
+          left.type = BOOL;
+          left.data.BOOL = res;
+          return;
+        }
+
+        default: throw TypeError();
+      }
+    }
+
+    void and_(Value& left, const Value& right) {
+      Code type = left.type;
+
+      if (right.type != type) {
+        throw TypeError();
+      }
+
+      switch (type) {
+        case BOOL: {
+          left.data.BOOL = left.data.BOOL && right.data.BOOL;
+          return;
+        }
+
+        default: throw TypeError();
+      }
+    }
+
+    void or_(Value& left, const Value& right) {
+      Code type = left.type;
+
+      if (right.type != type) {
+        throw TypeError();
+      }
+
+      switch (type) {
+        case BOOL: {
+          left.data.BOOL = left.data.BOOL || right.data.BOOL;
+          return;
+        }
+
+        default: throw TypeError();
+      }
+    }
+
+    void concat(Value& left, const Value& right) {
+      Code type = left.type;
+
+      if (right.type != type) {
+        throw TypeError();
+      }
+
+      switch (type) {
+        case ARRAY: {
+          left.data.ARRAY->insert(
+            left.data.ARRAY->end(),
+            right.data.ARRAY->begin(),
+            right.data.ARRAY->end()
+          );
+
+          return;
+        }
+
+        case STRING: {
+          left.data.STRING->insert(
+            left.data.STRING->end(),
+            right.data.STRING->begin(),
+            right.data.STRING->end()
+          );
+
+          return;
+        }
+
+        case OBJECT: {
+          for (const auto& [key, value]: *right.data.OBJECT) {
+            auto pos = left.data.OBJECT->find(key);
+
+            if (pos != left.data.OBJECT->end()) {
+              throw TypeError();
+            }
+
+            left.data.OBJECT->at(key) = value;
+          }
+
+          return;
+        }
+
+        default: throw TypeError();
+      }
+    }
+
+    void pushBack(Value& left, const Value& right) {
+      if (left.type != ARRAY) {
+        throw TypeError();
+      }
+
+      left.data.ARRAY->push_back(right);
+    }
+
+    void pushFront(Value& left, const Value& right) {
+      if (left.type != ARRAY) {
+        throw TypeError();
+      }
+
+      left.data.ARRAY->push_front(right);
+    }
+
+    void index(Value& left, const Value& right) {
+      switch (left.type) {
+        case ARRAY: {
+          if (right.type != INT32) {
+            throw TypeError();
+          }
+
+          if (
+            right.data.INT32 < 0 ||
+            (unsigned int)right.data.INT32 >= left.data.ARRAY->size()
+          ) {
+            throw BadIndexError();
+          }
+
+          left = left.data.ARRAY->at(right.data.INT32);
+          return;
+        }
+
+        case STRING: {
+          if (right.type != INT32) {
+            throw TypeError();
+          }
+
+          if (
+            right.data.INT32 < 0 ||
+            (unsigned int)right.data.INT32 >= left.data.STRING->size()
+          ) {
+            throw BadIndexError();
+          }
+
+          left = left.data.STRING->at(right.data.INT32);
+          return;
+        }
+
+        case OBJECT: {
+          if (right.type != STRING) {
+            throw TypeError();
+          }
+
+          auto pos = left.data.OBJECT->find(*right.data.STRING);
+
+          if (pos == left.data.OBJECT->end()) {
+            throw BadIndexError();
+          }
+
+          left = pos->second;
+          return;
+        }
+
+        default: throw TypeError();
+      }
+    }
+
+    void hasIndex(Value& left, const Value& right) {
+      if (right.type != INT32) {
+        throw TypeError();
+      }
+
+      switch (left.type) {
+        case ARRAY: {
+          left = Value(
+            right.data.INT32 >= 0 &&
+            (unsigned int)right.data.INT32 < left.data.ARRAY->size()
+          );
+
+          return;
+        }
+
+        case STRING: {
+          left = Value(
+            right.data.INT32 >= 0 &&
+            (unsigned int)right.data.INT32 < left.data.STRING->size()
+          );
+
+          return;
+        }
+
+        default: throw TypeError();
+      }
+    }
+  }
+
   void BinaryOperator(Value& left, const Value& right, Code op) {
     switch (op) {
-      case PLUS: {
-        Code type = left.type;
-
-        if (right.type != type) {
-          throw TypeError();
-        }
-
-        switch (type) {
-          case INT32: {
-            left.data.INT32 += right.data.INT32;
-            return;
-          }
-
-          case FLOAT64: {
-            left.data.FLOAT64 += right.data.FLOAT64;
-            return;
-          }
-
-          default: throw TypeError();
-        }
-      }
-
-      case MINUS: {
-        Code type = left.type;
-
-        if (right.type != type) {
-          throw TypeError();
-        }
-
-        switch (type) {
-          case INT32: {
-            left.data.INT32 -= right.data.INT32;
-            return;
-          }
-
-          case FLOAT64: {
-            left.data.FLOAT64 -= right.data.FLOAT64;
-            return;
-          }
-
-          default: throw TypeError();
-        }
-      }
-
-      case MULTIPLY: {
-        Code type = left.type;
-
-        if (right.type != type) {
-          throw TypeError();
-        }
-
-        switch (type) {
-          case INT32: {
-            left.data.INT32 *= right.data.INT32;
-            return;
-          }
-
-          case FLOAT64: {
-            left.data.FLOAT64 *= right.data.FLOAT64;
-            return;
-          }
-
-          default: throw TypeError();
-        }
-      }
-
-      case DIVIDE: {
-        Code type = left.type;
-
-        if (right.type != type) {
-          throw TypeError();
-        }
-
-        switch (type) {
-          case INT32: {
-            left.data.INT32 /= right.data.INT32;
-            return;
-          }
-
-          case FLOAT64: {
-            left.data.FLOAT64 /= right.data.FLOAT64;
-            return;
-          }
-
-          default: throw TypeError();
-        }
-      }
-
-      case MODULUS: {
-        Code type = left.type;
-
-        if (right.type != type) {
-          throw TypeError();
-        }
-
-        switch (type) {
-          case INT32: {
-            left.data.INT32 %= right.data.INT32;
-            return;
-          }
-
-          case FLOAT64: {
-            left.data.FLOAT64 = fmod(left.data.FLOAT64, right.data.FLOAT64);
-            return;
-          }
-
-          default: throw TypeError();
-        }
-      }
-
-      case POWER: {
-        Code type = left.type;
-
-        if (right.type != type) {
-          throw TypeError();
-        }
-
-        switch (type) {
-          case INT32: {
-            // Exponentiation by squaring
-            int base = left.data.INT32;
-            left.data.INT32 = 1;
-            int exponent = right.data.INT32;
-
-            while (true) {
-              if (exponent % 2 == 1) {
-                left.data.INT32 *= base;
-              }
-
-              exponent /= 2;
-
-              if (exponent == 0) {
-                return;
-              }
-
-              base *= base;
-            }
-          }
-
-          case FLOAT64: {
-            left.data.FLOAT64 = pow(left.data.FLOAT64, right.data.FLOAT64);
-            return;
-          }
-
-          default: throw TypeError();
-        }
-      }
+      case PLUS: BinaryOperators::plus(left, right); break;
+      case MINUS: BinaryOperators::minus(left, right); break;
+      case MULTIPLY: BinaryOperators::multiply(left, right); break;
+      case DIVIDE: BinaryOperators::divide(left, right); break;
+      case MODULUS: BinaryOperators::modulus(left, right); break;
+      case POWER: BinaryOperators::power(left, right); break;
 
       case LEFT_SHIFT:
       case RIGHT_SHIFT:
-
       case INTERSECT:
       case EX_UNION:
       case UNION:
-
-      case LESS: {
-        Code type = left.type;
-
-        if (right.type != type) {
-          throw TypeError();
-        }
-
-        switch (type) {
-          case INT32: {
-            bool res = left.data.INT32 < right.data.INT32;
-            left.type = BOOL;
-            left.data.BOOL = res;
-            return;
-          }
-
-          case FLOAT64: {
-            bool res = left.data.FLOAT64 < right.data.FLOAT64;
-            left.type = BOOL;
-            left.data.BOOL = res;
-            return;
-          }
-
-          default: throw TypeError();
-        }
-      }
-
-      case GREATER: {
-        Code type = left.type;
-
-        if (right.type != type) {
-          throw TypeError();
-        }
-
-        switch (type) {
-          case INT32: {
-            bool res = left.data.INT32 > right.data.INT32;
-            left.type = BOOL;
-            left.data.BOOL = res;
-            return;
-          }
-
-          case FLOAT64: {
-            bool res = left.data.FLOAT64 > right.data.FLOAT64;
-            left.type = BOOL;
-            left.data.BOOL = res;
-            return;
-          }
-
-          default: throw TypeError();
-        }
-      }
-
-      case LESS_EQ: {
-        Code type = left.type;
-
-        if (right.type != type) {
-          throw TypeError();
-        }
-
-        switch (type) {
-          case INT32: {
-            bool res = left.data.INT32 <= right.data.INT32;
-            left.type = BOOL;
-            left.data.BOOL = res;
-            return;
-          }
-
-          case FLOAT64: {
-            bool res = left.data.FLOAT64 <= right.data.FLOAT64;
-            left.type = BOOL;
-            left.data.BOOL = res;
-            return;
-          }
-
-          default: throw TypeError();
-        }
-      }
-
-      case GREATER_EQ: {
-        Code type = left.type;
-
-        if (right.type != type) {
-          throw TypeError();
-        }
-
-        switch (type) {
-          case INT32: {
-            bool res = left.data.INT32 >= right.data.INT32;
-            left.type = BOOL;
-            left.data.BOOL = res;
-            return;
-          }
-
-          case FLOAT64: {
-            bool res = left.data.FLOAT64 >= right.data.FLOAT64;
-            left.type = BOOL;
-            left.data.BOOL = res;
-            return;
-          }
-
-          default: throw TypeError();
-        }
-      }
-
-      case EQUAL: {
-        Code type = left.type;
-
-        if (right.type != type) {
-          left.dealloc();
-          left.type = BOOL;
-          left.data.BOOL = false;
-        }
-
-        switch (type) {
-          case INT32: {
-            bool res = left.data.INT32 == right.data.INT32;
-            left.type = BOOL;
-            left.data.BOOL = res;
-            return;
-          }
-
-          case FLOAT64: {
-            bool res = left.data.FLOAT64 == right.data.FLOAT64;
-            left.type = BOOL;
-            left.data.BOOL = res;
-            return;
-          }
-
-          default: throw TypeError();
-        }
-      }
-
-      case NOT_EQUAL: {
-        Code type = left.type;
-
-        if (right.type != type) {
-          left.dealloc();
-          left.type = BOOL;
-          left.data.BOOL = true;
-        }
-
-        switch (type) {
-          case INT32: {
-            bool res = left.data.INT32 != right.data.INT32;
-            left.type = BOOL;
-            left.data.BOOL = res;
-            return;
-          }
-
-          case FLOAT64: {
-            bool res = left.data.FLOAT64 != right.data.FLOAT64;
-            left.type = BOOL;
-            left.data.BOOL = res;
-            return;
-          }
-
-          default: throw TypeError();
-        }
-      }
-
-      case AND: {
-        Code type = left.type;
-
-        if (right.type != type) {
-          throw TypeError();
-        }
-
-        switch (type) {
-          case BOOL: {
-            left.data.BOOL = left.data.BOOL && right.data.BOOL;
-            return;
-          }
-
-          default: throw TypeError();
-        }
-      }
-
-      case OR: {
-        Code type = left.type;
-
-        if (right.type != type) {
-          throw TypeError();
-        }
-
-        switch (type) {
-          case BOOL: {
-            left.data.BOOL = left.data.BOOL || right.data.BOOL;
-            return;
-          }
-
-          default: throw TypeError();
-        }
-      }
-
-      case CONCAT: {
-        Code type = left.type;
-
-        if (right.type != type) {
-          throw TypeError();
-        }
-
-        switch (type) {
-          case ARRAY: {
-            left.data.ARRAY->insert(
-              left.data.ARRAY->end(),
-              right.data.ARRAY->begin(),
-              right.data.ARRAY->end()
-            );
-
-            return;
-          }
-
-          case STRING: {
-            left.data.STRING->insert(
-              left.data.STRING->end(),
-              right.data.STRING->begin(),
-              right.data.STRING->end()
-            );
-
-            return;
-          }
-
-          case OBJECT: {
-            for (const auto& [key, value]: *right.data.OBJECT) {
-              auto pos = left.data.OBJECT->find(key);
-
-              if (pos != left.data.OBJECT->end()) {
-                throw TypeError();
-              }
-
-              left.data.OBJECT->at(key) = value;
-            }
-
-            return;
-          }
-
-          default: throw TypeError();
-        }
-      }
-
-      case PUSH_BACK: {
-        if (left.type != ARRAY) {
-          throw TypeError();
-        }
-
-        left.data.ARRAY->push_back(right);
-        return;
-      }
-
-      case PUSH_FRONT: {
-        if (left.type != ARRAY) {
-          throw TypeError();
-        }
-
-        left.data.ARRAY->push_front(right);
-        return;
-      }
-
-      case INDEX: {
-        switch (left.type) {
-          case ARRAY: {
-            if (right.type != INT32) {
-              throw TypeError();
-            }
-
-            if (
-              right.data.INT32 < 0 ||
-              (unsigned int)right.data.INT32 >= left.data.ARRAY->size()
-            ) {
-              throw BadIndexError();
-            }
-
-            left = left.data.ARRAY->at(right.data.INT32);
-            return;
-          }
-
-          case STRING: {
-            if (right.type != INT32) {
-              throw TypeError();
-            }
-
-            if (
-              right.data.INT32 < 0 ||
-              (unsigned int)right.data.INT32 >= left.data.STRING->size()
-            ) {
-              throw BadIndexError();
-            }
-
-            left = left.data.STRING->at(right.data.INT32);
-            return;
-          }
-
-          case OBJECT: {
-            if (right.type != STRING) {
-              throw TypeError();
-            }
-
-            auto pos = left.data.OBJECT->find(*right.data.STRING);
-
-            if (pos == left.data.OBJECT->end()) {
-              throw BadIndexError();
-            }
-
-            left = pos->second;
-            return;
-          }
-
-          default: throw TypeError();
-        }
-      }
-
-      case HAS_INDEX: {
-        if (right.type != INT32) {
-          throw TypeError();
-        }
-
-        switch (left.type) {
-          case ARRAY: {
-            left = Value(
-              right.data.INT32 >= 0 &&
-              (unsigned int)right.data.INT32 < left.data.ARRAY->size()
-            );
-
-            return;
-          }
-
-          case STRING: {
-            left = Value(
-              right.data.INT32 >= 0 &&
-              (unsigned int)right.data.INT32 < left.data.STRING->size()
-            );
-
-            return;
-          }
-
-          default: throw TypeError();
-        }
-      }
+        throw NotImplementedError();
+
+      case LESS: BinaryOperators::less(left, right); break;
+      case GREATER: BinaryOperators::greater(left, right); break;
+      case LESS_EQ: BinaryOperators::lessEq(left, right); break;
+      case GREATER_EQ: BinaryOperators::greaterEq(left, right); break;
+      case EQUAL: BinaryOperators::equal(left, right); break;
+      case NOT_EQUAL: BinaryOperators::notEqual(left, right); break;
+
+      case AND: BinaryOperators::and_(left, right); break;
+      case OR: BinaryOperators::or_(left, right); break;
+
+      case CONCAT: BinaryOperators::concat(left, right); break;
+      case PUSH_BACK: BinaryOperators::pushBack(left, right); break;
+      case PUSH_FRONT: BinaryOperators::pushFront(left, right); break;
+      case INDEX: BinaryOperators::index(left, right); break;
+      case HAS_INDEX: BinaryOperators::hasIndex(left, right); break;
 
       default:
         throw InternalError();
