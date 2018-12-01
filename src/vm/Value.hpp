@@ -8,6 +8,7 @@
 #include <string>
 #include <sstream>
 
+#include <immer/box.hpp>
 #include <immer/flex_vector.hpp>
 
 #include "Codes.hpp"
@@ -18,6 +19,7 @@ namespace Vortex {
     struct null {};
 
     using String = immer::flex_vector<char>;
+    using Array = immer::flex_vector<immer::box<Value>>;
 
     struct StringComparator {
       bool operator()(const String& left, const String& right) const {
@@ -37,7 +39,7 @@ namespace Vortex {
       int INT32;
       double FLOAT64;
       String* STRING;
-      std::deque<Value>* ARRAY;
+      Array* ARRAY;
       Object* OBJECT;
       std::deque<byte>* FUNC;
       void* PTR;
@@ -98,7 +100,7 @@ namespace Vortex {
       data.FLOAT64 = v;
     }
 
-    explicit Value(std::deque<Value>* v) {
+    explicit Value(Array* v) {
       type = ARRAY;
       data.ARRAY = v;
     }
@@ -125,7 +127,7 @@ namespace Vortex {
       type = other.type;
 
       if (other.type == ARRAY) {
-        data.ARRAY = new std::deque<Value>(*other.data.ARRAY);
+        data.ARRAY = new Array(*other.data.ARRAY);
       } else if (other.type == STRING) {
         data.STRING = new String(*other.data.STRING);
       } else if (other.type == OBJECT) {
@@ -619,12 +621,7 @@ namespace Vortex {
 
       switch (type) {
         case ARRAY: {
-          left.data.ARRAY->insert(
-            left.data.ARRAY->end(),
-            right.data.ARRAY->begin(),
-            right.data.ARRAY->end()
-          );
-
+          *left.data.ARRAY = *left.data.ARRAY + *right.data.ARRAY;
           return;
         }
 
@@ -656,7 +653,7 @@ namespace Vortex {
         throw TypeError();
       }
 
-      left.data.ARRAY->push_back(right);
+      *left.data.ARRAY = left.data.ARRAY->push_back(right);
     }
 
     void pushFront(Value& left, const Value& right) {
@@ -664,7 +661,7 @@ namespace Vortex {
         throw TypeError();
       }
 
-      left.data.ARRAY->push_front(right);
+      *left.data.ARRAY = left.data.ARRAY->push_front(right);
     }
 
     void index(Value& left, const Value& right) {

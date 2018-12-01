@@ -4,6 +4,8 @@
 #include <ostream>
 #include <string>
 
+#include <immer/flex_vector_transient.hpp>
+
 #include "Value.hpp"
 
 namespace Vortex {
@@ -219,18 +221,18 @@ namespace Vortex {
         }
 
         case ARRAY: {
-          auto items = new std::deque<Value>();
+          auto items = Value::Array().transient();
 
           while (true) {
             auto itemType = get();
 
             switch (itemType) {
               case END: {
-                return Value(items);
+                return Value(new Value::Array(items.persistent()));
               }
 
               default: {
-                items->push_back(getValue(itemType));
+                items.push_back(getValue(itemType));
                 continue;
               }
             }
