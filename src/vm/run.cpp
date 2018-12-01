@@ -1,21 +1,19 @@
 #include <iostream>
 #include <sstream>
-using namespace std;
 
 #include "assemble.hpp"
 #include "Machine.hpp"
-using namespace Vortex;
 
 int main() {
-  auto oss = ostringstream();
-  assemble(cin, oss);
-  string s = oss.str();
+  auto oss = std::ostringstream();
+  Vortex::assemble(std::cin, oss);
+  std::string s = oss.str();
 
-  auto bytes = deque<byte>(s.begin(), s.end());
+  auto bytes = std::deque<Vortex::byte>(s.begin(), s.end());
 
-  auto machine = Machine();
-  Value result = machine.eval(bytes.begin());
-  cout << result << endl;
+  auto machine = Vortex::Machine();
+  Vortex::Value result = machine.eval(bytes.begin());
+  std::cout << result << std::endl;
 
   return 0;
 }

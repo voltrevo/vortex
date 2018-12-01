@@ -1,16 +1,16 @@
 all: bin/run bin/scratch bin/asm bin/dasm test
 
 bin/run: *.*pp
-	clang++ -std=c++17 -O3 run.cpp -o bin/run
+	clang++ -I. -std=c++17 -O3 run.cpp -o bin/run
 
 bin/scratch: *.*pp
-	clang++ -std=c++17 -O3 scratch.cpp -o bin/scratch
+	clang++ -I. -std=c++17 -O3 scratch.cpp -o bin/scratch
 
 bin/asm: *.*pp
-	clang++ -std=c++17 -O3 asm.cpp -o bin/asm
+	clang++ -I. -std=c++17 -O3 asm.cpp -o bin/asm
 
 bin/dasm: *.*pp
-	clang++ -std=c++17 -O3 dasm.cpp -o bin/dasm
+	clang++ -I. -std=c++17 -O3 dasm.cpp -o bin/dasm
 
 test: bin/run
 	bash ./testFiles/test

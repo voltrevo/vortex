@@ -1,10 +1,13 @@
 #pragma once
 
+#include <map>
+#include <string>
+
 #include "Codes.hpp"
 #include "Value.hpp"
 
 namespace Vortex {
-  map<string, Code> codeMap = {
+  std::map<std::string, Code> codeMap = {
     // SPECIAL
     {"}", END},
     //{"", PROGRAM},
@@ -93,7 +96,7 @@ namespace Vortex {
     {"continue", CONTINUE},
   };
 
-  int parseInt(istream& in) {
+  int parseInt(std::istream& in) {
     int res = 0;
     bool negative = false;
 
@@ -129,7 +132,7 @@ namespace Vortex {
     return res;
   }
 
-  byte parseByteNumber(istream& in) {
+  byte parseByteNumber(std::istream& in) {
     int res = parseInt(in);
 
     if (res > 255) {
@@ -139,7 +142,7 @@ namespace Vortex {
     return res;
   }
 
-  void skipWhitespace(istream& in) {
+  void skipWhitespace(std::istream& in) {
     while (true) {
       char c = in.peek();
 
@@ -156,7 +159,7 @@ namespace Vortex {
     }
   }
 
-  void parse(istream& in, ostream& out) {
+  void parse(std::istream& in, std::ostream& out) {
     skipWhitespace(in);
     char c = in.peek();
 
@@ -303,7 +306,7 @@ namespace Vortex {
     }
 
     skipWhitespace(in);
-    string word;
+    std::string word;
 
     while (
       c != ']' && c != '}' && c != ',' &&
@@ -381,7 +384,7 @@ namespace Vortex {
     }
   }
 
-  void assemble(istream& in, ostream& out) {
+  void assemble(std::istream& in, std::ostream& out) {
     while (true) {
       parse(in, out);
 

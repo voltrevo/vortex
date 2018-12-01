@@ -1,24 +1,22 @@
 #include <iostream>
-using namespace std;
 
 #include "Decoder.hpp"
-using namespace Vortex;
 
 int main() {
-  deque<byte> bytes;
+  std::deque<Vortex::byte> bytes;
 
   while (true) {
-    byte b = cin.get();
+    Vortex::byte b = std::cin.get();
 
-    if (cin.eof()) {
+    if (std::cin.eof()) {
       break;
     }
 
     bytes.push_back(b);
   }
 
-  auto decoder = Decoder(bytes.begin());
-  decoder.disassemble(cout, "", PROGRAM);
+  auto decoder = Vortex::Decoder(bytes.begin());
+  decoder.disassemble(std::cout, "", Vortex::PROGRAM);
 
   return 0;
 }

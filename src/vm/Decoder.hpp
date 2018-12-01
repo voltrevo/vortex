@@ -1,16 +1,19 @@
 #pragma once
 
 #include <deque>
+#include <map>
+#include <ostream>
+#include <string>
 
 #include "Value.hpp"
 
 namespace Vortex {
   class Decoder {
-    deque<byte>::iterator start;
-    deque<byte>::iterator pos;
+    std::deque<byte>::iterator start;
+    std::deque<byte>::iterator pos;
 
   public:
-    Decoder(deque<byte>::iterator init) { start = pos = init; }
+    Decoder(std::deque<byte>::iterator init) { start = pos = init; }
 
     Code get() { return (Code)(*pos++); };
     byte getByte() { return *pos++; }
@@ -217,7 +220,7 @@ namespace Vortex {
         }
 
         case ARRAY: {
-          auto items = new deque<Value>();
+          auto items = new std::deque<Value>();
 
           while (true) {
             auto itemType = get();
@@ -236,7 +239,7 @@ namespace Vortex {
         }
 
         case OBJECT: {
-          auto items = new map<deque<char>, Value>();
+          auto items = new std::map<std::deque<char>, Value>();
 
           while (true) {
             auto keyType = get();
@@ -260,7 +263,7 @@ namespace Vortex {
         }
 
         case STRING: {
-          auto items = new deque<char>();
+          auto items = new std::deque<char>();
 
           while (true) {
             auto b = getByte();
@@ -301,7 +304,7 @@ namespace Vortex {
             auto instr = get();
 
             if (instr == END) {
-              return Value(new deque<byte>(start, pos));
+              return Value(new std::deque<byte>(start, pos));
             }
 
             skip(instr);
@@ -313,15 +316,15 @@ namespace Vortex {
       }
     }
 
-    void disassemble(ostream& os, string indent, Code code) {
+    void disassemble(std::ostream& os, std::string indent, Code code) {
       switch (GetClass(code)) {
         case SPECIAL: {
           if (code == GFUNC) {
             // TODO: Deduplicate with loop, if
             // TODO: Move disassemble to its own file
-            os << "gfunc " << (int)get() << " {" << endl;
+            os << "gfunc " << (int)get() << " {" << std::endl;
 
-            string nextIndent = indent + "  ";
+            std::string nextIndent = indent + "  ";
 
             while (true) {
               auto instr = get();
@@ -333,7 +336,7 @@ namespace Vortex {
               disassemble(os, nextIndent, instr);
             }
 
-            os << indent << "}" << endl;
+            os << indent << "}" << std::endl;
             break;
           }
 
@@ -358,9 +361,9 @@ namespace Vortex {
           if (code == FUNC) {
             // TODO: Deduplicate with loop, if
             // TODO: Move disassemble to its own file
-            os << "func {" << endl;
+            os << "func {" << std::endl;
 
-            string nextIndent = indent + "  ";
+            std::string nextIndent = indent + "  ";
 
             while (true) {
               auto instr = get();
@@ -372,10 +375,10 @@ namespace Vortex {
               disassemble(os, nextIndent, instr);
             }
 
-            os << indent << "}" << endl;
+            os << indent << "}" << std::endl;
           } else {
             auto v = getValue(code);
-            os << indent << v << endl;
+            os << indent << v << std::endl;
           }
 
           return;
@@ -385,38 +388,38 @@ namespace Vortex {
           os << indent;
 
           switch (code) {
-            case EQUAL: os << "==" << endl; return;
-            case NOT_EQUAL: os << "!=" << endl; return;
-            case AND: os << "&&" << endl; return;
-            case OR: os << "||" << endl; return;
+            case EQUAL: os << "==" << std::endl; return;
+            case NOT_EQUAL: os << "!=" << std::endl; return;
+            case AND: os << "&&" << std::endl; return;
+            case OR: os << "||" << std::endl; return;
 
-            case LESS: os << "<" << endl; return;
-            case GREATER: os << ">" << endl; return;
-            case LESS_EQ: os << "<=" << endl; return;
-            case GREATER_EQ: os << ">=" << endl; return;
+            case LESS: os << "<" << std::endl; return;
+            case GREATER: os << ">" << std::endl; return;
+            case LESS_EQ: os << "<=" << std::endl; return;
+            case GREATER_EQ: os << ">=" << std::endl; return;
 
-            case PLUS: os << "+" << endl; return;
-            case MINUS: os << "-" << endl; return;
-            case MULTIPLY: os << "*" << endl; return;
-            case DIVIDE: os << "/" << endl; return;
-            case MODULUS: os << "%" << endl; return;
-            case POWER: os << "**" << endl; return;
+            case PLUS: os << "+" << std::endl; return;
+            case MINUS: os << "-" << std::endl; return;
+            case MULTIPLY: os << "*" << std::endl; return;
+            case DIVIDE: os << "/" << std::endl; return;
+            case MODULUS: os << "%" << std::endl; return;
+            case POWER: os << "**" << std::endl; return;
 
-            case LEFT_SHIFT: os << "<<" << endl; return;
-            case RIGHT_SHIFT: os << ">>" << endl; return;
+            case LEFT_SHIFT: os << "<<" << std::endl; return;
+            case RIGHT_SHIFT: os << ">>" << std::endl; return;
 
-            case INTERSECT: os << "&" << endl; return;
-            case EX_UNION: os << "^" << endl; return;
-            case UNION: os << "|" << endl; return;
+            case INTERSECT: os << "&" << std::endl; return;
+            case EX_UNION: os << "^" << std::endl; return;
+            case UNION: os << "|" << std::endl; return;
 
-            case CONCAT: os << "++" << endl; return;
-            case PUSH_BACK: os << "push-back" << endl; return;
-            case PUSH_FRONT: os << "push-front" << endl; return;
+            case CONCAT: os << "++" << std::endl; return;
+            case PUSH_BACK: os << "push-back" << std::endl; return;
+            case PUSH_FRONT: os << "push-front" << std::endl; return;
 
-            case INDEX: os << "index" << endl; return;
-            case HAS_INDEX: os << "has-index" << endl; return;
+            case INDEX: os << "index" << std::endl; return;
+            case HAS_INDEX: os << "has-index" << std::endl; return;
 
-            case CAPTURE: os << "capture" << endl; return;
+            case CAPTURE: os << "capture" << std::endl; return;
 
             default: throw InternalError();
           }
@@ -426,12 +429,12 @@ namespace Vortex {
           os << indent;
 
           switch (code) {
-            case NEGATE: os << "negate" << endl; return;
-            case BIT_NEGATE: os << "~" << endl; return;
-            case NOT: os << "!" << endl; return;
-            case INC: os << "inc" << endl; return;
-            case DEC: os << "dec" << endl; return;
-            case LENGTH: os << "length" << endl; return;
+            case NEGATE: os << "negate" << std::endl; return;
+            case BIT_NEGATE: os << "~" << std::endl; return;
+            case NOT: os << "!" << std::endl; return;
+            case INC: os << "inc" << std::endl; return;
+            case DEC: os << "dec" << std::endl; return;
+            case LENGTH: os << "length" << std::endl; return;
 
             default: throw InternalError();
           }
@@ -447,7 +450,7 @@ namespace Vortex {
             default: throw InternalError();
           }
 
-          os << (int)getByte() << endl;
+          os << (int)getByte() << std::endl;
           return;
         }
 
@@ -463,9 +466,9 @@ namespace Vortex {
                 os << "if {";
               }
 
-              os << endl;
+              os << std::endl;
 
-              string nextIndent = indent + "  ";
+              std::string nextIndent = indent + "  ";
 
               while (true) {
                 auto instr = get();
@@ -477,16 +480,16 @@ namespace Vortex {
                 disassemble(os, nextIndent, instr);
               }
 
-              os << indent << "}" << endl;
+              os << indent << "}" << std::endl;
               return;
             }
 
-            case GCALL: os << "gcall" << endl; return;
-            case CALL: os << "call" << endl; return;
-            case RETURN: os << "return" << endl; return;
-            case EMIT: os << "emit" << endl; return;
-            case BREAK: os << "break" << endl; return;
-            case CONTINUE: os << "continue" << endl; return;
+            case GCALL: os << "gcall" << std::endl; return;
+            case CALL: os << "call" << std::endl; return;
+            case RETURN: os << "return" << std::endl; return;
+            case EMIT: os << "emit" << std::endl; return;
+            case BREAK: os << "break" << std::endl; return;
+            case CONTINUE: os << "continue" << std::endl; return;
 
             default:
               throw InternalError();

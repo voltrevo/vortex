@@ -3,10 +3,11 @@
 
 #include "Decoder.hpp"
 #include "Machine.hpp"
-using namespace Vortex;
 
 int main() {
-  vector<pair<string, deque<byte>>> programs = {
+  using namespace Vortex;
+
+  std::vector<std::pair<std::string, std::deque<byte>>> programs = {
     {"basic-arithmetic", {
       // sum := 3 * 5 + 1;
       // return sum + sum + sum;
@@ -300,22 +301,22 @@ int main() {
 
   for (auto& [name, program]: programs) {
     try {
-      cout << name << ":" << endl;
+      std::cout << name << ":" << std::endl;
 
       auto decoder = Decoder(program.begin());
-      decoder.disassemble(cout, "  ", PROGRAM);
-      cout << endl;
+      decoder.disassemble(std::cout, "  ", PROGRAM);
+      std::cout << std::endl;
 
       auto machine = Machine();
       Value result = machine.eval(program.begin());
-      cout << "  output: " << result << endl;
-    } catch (const exception& e) {
-      cout << name << " threw " << e.what() << endl;
+      std::cout << "  output: " << result << std::endl;
+    } catch (const std::exception& e) {
+      std::cout << name << " threw " << e.what() << std::endl;
     } catch (...) {
-      cout << name << " threw... huh?" << endl;
+      std::cout << name << " threw... huh?" << std::endl;
     }
 
-    cout << endl << endl;
+    std::cout << std::endl << std::endl;
   }
 
   return 0;

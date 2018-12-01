@@ -1,7 +1,6 @@
 #include <cassert>
 #include <deque>
 #include <vector>
-using namespace std;
 
 #include "Codes.hpp"
 #include "Decoder.hpp"
@@ -11,7 +10,7 @@ using namespace std;
 namespace Vortex {
   class Machine {
     struct Context {
-      vector<Value> locals;
+      std::vector<Value> locals;
 
       Value getLocal(byte i) {
         if (i >= locals.size()) {
@@ -26,12 +25,12 @@ namespace Vortex {
           locals.push_back(Value());
         }
 
-        locals[i] = move(v);
+        locals[i] = std::move(v);
       }
     };
 
-    deque<Value> calc;
-    vector<Decoder> gfuncs;
+    std::deque<Value> calc;
+    std::vector<Decoder> gfuncs;
 
     Decoder getGFunc(byte i) {
       if (i >= gfuncs.size()) {
@@ -47,30 +46,30 @@ namespace Vortex {
       }
 
       while (i + 1u < gfuncs.size()) {
-        gfuncs.push_back(Decoder(deque<byte>::iterator()));
+        gfuncs.push_back(Decoder(std::deque<byte>::iterator()));
       }
 
-      gfuncs.push_back(move(decoder));
+      gfuncs.push_back(std::move(decoder));
     }
 
-    void push(Value v) { calc.push_back(move(v)); }
+    void push(Value v) { calc.push_back(std::move(v)); }
 
     Value pop() {
       assert(!calc.empty());
-      auto v = move(calc.back());
+      auto v = std::move(calc.back());
       calc.pop_back();
       return v;
     }
 
-    pair<Value*, Value*> BackPair() {
+    std::pair<Value*, Value*> BackPair() {
       assert(calc.size() >= 2);
       auto iter = calc.end();
       Value* right = &*(--iter);
       Value* left = &*(--iter);
-      return make_pair(left, right);
+      return std::make_pair(left, right);
     }
 
-    deque<Context> cc;
+    std::deque<Context> cc;
 
   public:
     Decoder run(Decoder pos) {
@@ -249,7 +248,7 @@ namespace Vortex {
       }
     }
 
-    Value eval(deque<byte>::iterator code) {
+    Value eval(std::deque<byte>::iterator code) {
       auto prevSize = cc.size();
 
       cc.push_back(Context());

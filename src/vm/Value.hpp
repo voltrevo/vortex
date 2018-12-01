@@ -6,7 +6,8 @@
 #include <map>
 #include <string>
 #include <sstream>
-using namespace std;
+
+#include <immer/vector.hpp>
 
 #include "Codes.hpp"
 #include "Exceptions.hpp"
@@ -19,10 +20,10 @@ namespace Vortex {
       bool BOOL;
       int INT32;
       double FLOAT64;
-      deque<char>* STRING;
-      deque<Value>* ARRAY;
-      map<deque<char>, Value>* OBJECT;
-      deque<byte>* FUNC;
+      std::deque<char>* STRING;
+      std::deque<Value>* ARRAY;
+      std::map<std::deque<char>, Value>* OBJECT;
+      std::deque<byte>* FUNC;
       void* PTR;
     };
 
@@ -81,22 +82,22 @@ namespace Vortex {
       data.FLOAT64 = v;
     }
 
-    Value(deque<Value>* v) {
+    Value(std::deque<Value>* v) {
       type = ARRAY;
       data.ARRAY = v;
     }
 
-    Value(deque<char>* v) {
+    Value(std::deque<char>* v) {
       type = STRING;
       data.STRING = v;
     }
 
-    Value(map<deque<char>, Value>* v) {
+    Value(std::map<std::deque<char>, Value>* v) {
       type = OBJECT;
       data.OBJECT = v;
     }
 
-    Value(deque<byte>* v) {
+    Value(std::deque<byte>* v) {
       type = FUNC;
       data.FUNC = v;
     }
@@ -106,13 +107,13 @@ namespace Vortex {
       type = other.type;
 
       if (other.type == ARRAY) {
-        data.ARRAY = new deque<Value>(*other.data.ARRAY);
+        data.ARRAY = new std::deque<Value>(*other.data.ARRAY);
       } else if (other.type == STRING) {
-        data.STRING = new deque<char>(*other.data.STRING);
+        data.STRING = new std::deque<char>(*other.data.STRING);
       } else if (other.type == OBJECT) {
-        data.OBJECT = new map<deque<char>, Value>(*other.data.OBJECT);
+        data.OBJECT = new std::map<std::deque<char>, Value>(*other.data.OBJECT);
       } else if (other.type == FUNC) {
-        data.FUNC = new deque<byte>(*other.data.FUNC);
+        data.FUNC = new std::deque<byte>(*other.data.FUNC);
       } else {
         data = other.data;
       }
@@ -131,7 +132,7 @@ namespace Vortex {
     Value& operator=(const Value& rhs) {
       Value tmp(rhs);
       dealloc();
-      *this = move(tmp);
+      *this = std::move(tmp);
       return *this;
     }
 
@@ -145,7 +146,7 @@ namespace Vortex {
       right.data = tmpData;
     }
 
-    friend ostream& operator<<(ostream& os, const Value& value) {
+    friend std::ostream& operator<<(std::ostream& os, const Value& value) {
       switch (value.type) {
         case NULL_: {
           os << "null";
@@ -218,7 +219,7 @@ namespace Vortex {
 
             Value keyHack;
             keyHack.type = STRING;
-            keyHack.data.STRING = const_cast<deque<char>*>(&key);
+            keyHack.data.STRING = const_cast<std::deque<char>*>(&key);
             os << Value(keyHack) << ": " << value;
             keyHack.type = INVALID;
 
@@ -241,8 +242,8 @@ namespace Vortex {
       return os;
     }
 
-    string LongString() {
-      auto oss = ostringstream();
+    std::string LongString() {
+      auto oss = std::ostringstream();
       oss << *this;
       return oss.str();
     }
