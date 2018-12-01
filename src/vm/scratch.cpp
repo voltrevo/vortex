@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vector>
 
+#include "Decoder.hpp"
 #include "Machine.hpp"
 using namespace Vortex;
 
@@ -301,7 +302,7 @@ int main() {
     try {
       cout << name << ":" << endl;
 
-      auto decoder = Machine::Decoder(program.begin());
+      auto decoder = Decoder(program.begin());
       decoder.disassemble(cout, "  ", PROGRAM);
       cout << endl;
 

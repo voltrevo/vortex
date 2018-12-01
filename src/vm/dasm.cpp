@@ -1,6 +1,7 @@
 #include <iostream>
+using namespace std;
 
-#include "Machine.hpp"
+#include "Decoder.hpp"
 using namespace Vortex;
 
 int main() {
@@ -16,7 +17,7 @@ int main() {
     bytes.push_back(b);
   }
 
-  auto decoder = Machine::Decoder(bytes.begin());
+  auto decoder = Decoder(bytes.begin());
   decoder.disassemble(cout, "", PROGRAM);
 
   return 0;
