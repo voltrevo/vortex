@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <cassert>
 #include <cmath>
 #include <deque>
@@ -7,7 +8,7 @@
 #include <string>
 #include <sstream>
 
-#include <immer/vector.hpp>
+#include <immer/flex_vector.hpp>
 
 #include "Codes.hpp"
 #include "Exceptions.hpp"
@@ -16,13 +17,28 @@ namespace Vortex {
   struct Value {
     struct null {};
 
+    using String = immer::flex_vector<char>;
+
+    struct StringComparator {
+      bool operator()(const String& left, const String& right) const {
+        return std::lexicographical_compare(
+          left.begin(),
+          left.end(),
+          right.begin(),
+          right.end()
+        );
+      }
+    };
+
+    using Object = std::map<String, Value, StringComparator>;
+
     union Data {
       bool BOOL;
       int INT32;
       double FLOAT64;
-      std::deque<char>* STRING;
+      String* STRING;
       std::deque<Value>* ARRAY;
-      std::map<std::deque<char>, Value>* OBJECT;
+      Object* OBJECT;
       std::deque<byte>* FUNC;
       void* PTR;
     };
@@ -63,44 +79,46 @@ namespace Vortex {
       type = INVALID;
     };
 
-    Value(null v) {
+    explicit Value(null v) {
       type = NULL_;
     }
 
-    Value(bool v) {
+    explicit Value(bool v) {
       type = BOOL;
       data.BOOL = v;
     }
 
-    Value(int v) {
+    explicit Value(int v) {
       type = INT32;
       data.INT32 = v;
     }
 
-    Value(double v) {
+    explicit Value(double v) {
       type = FLOAT64;
       data.FLOAT64 = v;
     }
 
-    Value(std::deque<Value>* v) {
+    explicit Value(std::deque<Value>* v) {
       type = ARRAY;
       data.ARRAY = v;
     }
 
-    Value(std::deque<char>* v) {
+    explicit Value(String* v) {
       type = STRING;
       data.STRING = v;
     }
 
-    Value(std::map<std::deque<char>, Value>* v) {
+    explicit Value(Object* v) {
       type = OBJECT;
       data.OBJECT = v;
     }
 
-    Value(std::deque<byte>* v) {
+    explicit Value(std::deque<byte>* v) {
       type = FUNC;
       data.FUNC = v;
     }
+
+    Value(void*) = delete;
 
     void copyConstruct(const Value& other) {
       assert(other.type != INVALID);
@@ -109,9 +127,9 @@ namespace Vortex {
       if (other.type == ARRAY) {
         data.ARRAY = new std::deque<Value>(*other.data.ARRAY);
       } else if (other.type == STRING) {
-        data.STRING = new std::deque<char>(*other.data.STRING);
+        data.STRING = new String(*other.data.STRING);
       } else if (other.type == OBJECT) {
-        data.OBJECT = new std::map<std::deque<char>, Value>(*other.data.OBJECT);
+        data.OBJECT = new Object(*other.data.OBJECT);
       } else if (other.type == FUNC) {
         data.FUNC = new std::deque<byte>(*other.data.FUNC);
       } else {
@@ -219,7 +237,7 @@ namespace Vortex {
 
             Value keyHack;
             keyHack.type = STRING;
-            keyHack.data.STRING = const_cast<std::deque<char>*>(&key);
+            keyHack.data.STRING = const_cast<String*>(&key);
             os << Value(keyHack) << ": " << value;
             keyHack.type = INVALID;
 
@@ -611,12 +629,7 @@ namespace Vortex {
         }
 
         case STRING: {
-          left.data.STRING->insert(
-            left.data.STRING->end(),
-            right.data.STRING->begin(),
-            right.data.STRING->end()
-          );
-
+          *left.data.STRING = *left.data.STRING + *right.data.STRING;
           return;
         }
 
@@ -684,7 +697,10 @@ namespace Vortex {
             throw BadIndexError();
           }
 
-          left = left.data.STRING->at(right.data.INT32);
+          left = Value(new Value::String{
+            left.data.STRING->at(right.data.INT32)
+          });
+
           return;
         }
 

@@ -1,7 +1,6 @@
 #pragma once
 
 #include <deque>
-#include <map>
 #include <ostream>
 #include <string>
 
@@ -239,7 +238,7 @@ namespace Vortex {
         }
 
         case OBJECT: {
-          auto items = new std::map<std::deque<char>, Value>();
+          auto items = new Value::Object();
 
           while (true) {
             auto keyType = get();
@@ -251,7 +250,7 @@ namespace Vortex {
 
               case STRING: {
                 Value key = getValue(STRING);
-                items->insert(make_pair(*key.data.STRING, getValue(get())));
+                items->insert(std::make_pair(*key.data.STRING, getValue(get())));
                 continue;
               }
 
@@ -263,22 +262,16 @@ namespace Vortex {
         }
 
         case STRING: {
-          auto items = new std::deque<char>();
+          auto start = pos;
 
-          while (true) {
-            auto b = getByte();
-
-            switch (b) {
-              case 0: {
-                return Value(items);
-              }
-
-              default: {
-                items->push_back(b);
-                continue;
-              }
-            }
+          while (*pos != END) {
+            pos++;
           }
+
+          auto res = Value(new Value::String(start, pos));
+          pos++;
+
+          return res;
         }
 
         case UINT8:
