@@ -772,29 +772,33 @@ namespace Vortex {
     }
   }
 
+  namespace UnaryOperators {
+    void length(Value& value) {
+      switch (value.type) {
+        case ARRAY: {
+          int len = value.data.ARRAY->size();
+          delete value.data.ARRAY;
+          value.type = INT32;
+          value.data.INT32 = len;
+          return;
+        }
+
+        case STRING: {
+          int len = value.data.STRING->size();
+          delete value.data.STRING;
+          value.type = INT32;
+          value.data.INT32 = len;
+          return;
+        }
+
+        default: throw TypeError();
+      }
+    }
+  }
+
   void UnaryOperator(Value& value, Code op) {
     switch (op) {
-      case LENGTH: {
-        switch (value.type) {
-          case ARRAY: {
-            int len = value.data.ARRAY->size();
-            delete value.data.ARRAY;
-            value.type = INT32;
-            value.data.INT32 = len;
-            return;
-          }
-
-          case STRING: {
-            int len = value.data.STRING->size();
-            delete value.data.STRING;
-            value.type = INT32;
-            value.data.INT32 = len;
-            return;
-          }
-
-          default: throw TypeError();
-        }
-      }
+      case LENGTH: UnaryOperators::length(value); break;
 
       case NEGATE:
       case BIT_NEGATE:
