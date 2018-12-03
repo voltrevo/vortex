@@ -1,0 +1,20 @@
+[1, 2, 3] set 0
+get 0 20 1u64 update set 1
+
+[]
+
+{'b': {'c': {'d': 0}}} set 2
+get 2
+  dup 'b' index
+    dup 'c' index
+      1 'd' update
+    'c' update
+  'b' update
+set 3
+
+get 0 push-back
+get 1 push-back
+get 2 push-back
+get 3 push-back
+
+return

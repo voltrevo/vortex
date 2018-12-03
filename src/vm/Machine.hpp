@@ -93,6 +93,11 @@ namespace Vortex {
                 break;
               }
 
+              case DUP: {
+                calc.push_back(calc.back());
+                break;
+              }
+
               default:
                 throw InternalError();
             }
@@ -102,6 +107,20 @@ namespace Vortex {
 
           case TOP_TYPE: {
             push(pos.getValue(instr));
+            break;
+          }
+
+          case TERNARY_OPERATOR: {
+            assert(calc.size() >= 3);
+            auto iter = calc.end();
+            Value* right = &*(--iter);
+            Value* middle = &*(--iter);
+            Value* left = &*(--iter);
+
+            TernaryOperator(*left, *middle, *right, instr);
+
+            calc.pop_back();
+            calc.pop_back();
             break;
           }
 

@@ -6,6 +6,7 @@ namespace Vortex {
   enum CodeClass: byte {
     SPECIAL,
     TOP_TYPE,
+    TERNARY_OPERATOR,
     BINARY_OPERATOR,
     UNARY_OPERATOR,
     SCOPE,
@@ -18,6 +19,7 @@ namespace Vortex {
     PROGRAM,
     GFUNC,
     INVALID,
+    DUP,
 
     // TOP_TYPE
     NULL_,
@@ -75,6 +77,7 @@ namespace Vortex {
 
     INDEX,
     HAS_INDEX,
+    UPDATE,
 
     CAPTURE,
 

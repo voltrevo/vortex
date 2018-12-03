@@ -339,6 +339,46 @@ namespace Vortex {
     return oss.str();
   }
 
+  namespace TernaryOperators {
+    void update(Value& target, const Value& value, const Value& key) {
+    }
+  }
+
+  void TernaryOperator(Value& a, const Value& b, const Value& c, Code op) {
+    switch (op) {
+      case UPDATE: {
+        switch (a.type) {
+          case ARRAY: {
+            if (c.type != UINT64) {
+              throw TypeError();
+            }
+
+            if (c.data.UINT64 >= a.data.ARRAY->size()) {
+              throw BadIndexError();
+            }
+
+            *a.data.ARRAY = a.data.ARRAY->set(c.data.UINT64, b);
+            
+            break;
+          }
+
+          case OBJECT: {
+            *a.data.OBJECT = a.data.OBJECT->update(c, b);
+            break;
+          }
+
+          default:
+            throw TypeError();
+        }
+
+        break;
+      }
+
+      default:
+        throw InternalError();
+    }
+  }
+
   namespace BinaryOperators {
     void plus(Value& left, const Value& right) {
       Code type = left.type;

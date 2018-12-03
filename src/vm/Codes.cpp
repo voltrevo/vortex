@@ -7,6 +7,7 @@ namespace Vortex {
       case PROGRAM:
       case GFUNC:
       case INVALID:
+      case DUP:
         return SPECIAL;
 
       case NULL_:
@@ -33,6 +34,9 @@ namespace Vortex {
       case VSET:
       case FUNC:
         return TOP_TYPE;
+
+      case UPDATE:
+        return TERNARY_OPERATOR;
 
       case EQUAL:
       case NOT_EQUAL:

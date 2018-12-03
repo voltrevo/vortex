@@ -53,6 +53,10 @@ namespace Vortex {
             break;
           }
 
+          if (code == DUP) {
+            break;
+          }
+
           throw InternalError();
         }
 
@@ -141,6 +145,7 @@ namespace Vortex {
           }
         }
 
+        case TERNARY_OPERATOR:
         case BINARY_OPERATOR:
         case UNARY_OPERATOR: {
           return;
@@ -430,6 +435,11 @@ namespace Vortex {
             break;
           }
 
+          if (code == DUP) {
+            os << "dup" << std::endl;
+            break;
+          }
+
           throw InternalError();
         }
 
@@ -458,6 +468,16 @@ namespace Vortex {
           }
 
           return;
+        }
+
+        case TERNARY_OPERATOR: {
+          os << indent;
+
+          switch (code) {
+            case UPDATE: os << "update" << std::endl; return;
+
+            default: throw InternalError();
+          }
         }
 
         case BINARY_OPERATOR: {

@@ -13,6 +13,7 @@ namespace Vortex {
     //{"", PROGRAM},
     {"gfunc", GFUNC},
     //{"", INVALID},
+    {"dup", DUP},
 
     // TOP_TYPE
     //{"", NULL_},
@@ -38,6 +39,9 @@ namespace Vortex {
     //{"", OBJECT},
     //{"", VSET},
     {"func", FUNC},
+
+    // TERNARY_OPERATOR
+    {"update", UPDATE},
 
     // BINARY_OPERATOR
     {"==", EQUAL},
