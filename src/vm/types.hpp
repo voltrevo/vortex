@@ -1,3 +1,5 @@
+#pragma once
+
 #include <immer/box.hpp>
 #include <immer/flex_vector.hpp>
 
@@ -18,8 +20,9 @@ namespace Vortex {
   using Float64 = double;
 
   struct Value;
+  using BoxedValue = immer::box<Value>;
 
   using String = immer::flex_vector<char>;
-  using Array = immer::flex_vector<immer::box<Value>>;
+  using Array = immer::flex_vector<BoxedValue>;
   using Func = immer::flex_vector<byte>;
 }

@@ -322,19 +322,26 @@ namespace Vortex {
         }
 
         case OBJECT: {
-          auto items = new Value::Object();
+          auto items = Value(new Object());
 
           while (true) {
             auto keyType = get();
 
             switch (keyType) {
               case END: {
-                return Value(items);
+                return items;
               }
 
               case STRING: {
+                // TODO: STRING shouldn't be implicit because later keys will
+                // be any type
                 Value key = getValue(STRING);
-                items->insert(std::make_pair(*key.data.STRING, getValue(get())));
+
+                *items.data.OBJECT = items.data.OBJECT->add(
+                  key,
+                  getValue(get())
+                );
+
                 continue;
               }
 
