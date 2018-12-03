@@ -256,6 +256,17 @@ namespace Vortex {
           out.write((char*)&resd, 8);
           return;
         }
+      } else if (c == '.') {
+        in.get();
+
+        if (in.get() != '0') {
+          throw NotImplementedError();
+        }
+
+        out.put(FLOAT64);
+        double resd = res;
+        out.write((char*)&resd, 8);
+        return;
       }
 
       out.put(INT32);
