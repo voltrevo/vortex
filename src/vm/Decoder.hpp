@@ -10,24 +10,20 @@
 
 namespace Vortex {
   class Decoder {
-  public:
-    using CodeBlock = immer::flex_vector<byte>;
-    using Position = CodeBlock::iterator;
-
   private:
-    CodeBlock codeBlock;
-    Position pos;
+    Func func;
+    Func::iterator pos;
 
   public:
-    Decoder(CodeBlock init) {
-      codeBlock = init;
-      pos = codeBlock.begin();
+    Decoder(Func init) {
+      func = init;
+      pos = func.begin();
     }
 
     Code get() { return (Code)(*pos++); };
     byte getByte() { return *pos++; }
 
-    int location() { return pos - codeBlock.begin(); }
+    int location() { return pos - func.begin(); }
 
     Code peekBehind() { return (Code)(*(pos - 1)); }
 
@@ -229,14 +225,14 @@ namespace Vortex {
         }
 
         case ARRAY: {
-          auto items = Value::Array().transient();
+          auto items = Array().transient();
 
           while (true) {
             auto itemType = get();
 
             switch (itemType) {
               case END: {
-                return Value(new Value::Array(items.persistent()));
+                return Value(new Array(items.persistent()));
               }
 
               default: {
@@ -278,7 +274,7 @@ namespace Vortex {
             pos++;
           }
 
-          auto res = Value(new Value::String(start, pos));
+          auto res = Value(new String(start, pos));
           pos++;
 
           return res;
@@ -307,9 +303,9 @@ namespace Vortex {
             auto instr = get();
 
             if (instr == END) {
-              auto startIdx = start - codeBlock.begin();
+              auto startIdx = start - func.begin();
               auto len = pos - start;
-              return Value(new CodeBlock(codeBlock.drop(startIdx).take(len)));
+              return Value(new Func(func.drop(startIdx).take(len)));
             }
 
             skip(instr);

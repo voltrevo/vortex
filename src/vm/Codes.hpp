@@ -1,8 +1,8 @@
 #pragma once
 
-namespace Vortex {
-  using byte = unsigned char;
+#include "types.hpp"
 
+namespace Vortex {
   enum CodeClass: byte {
     SPECIAL,
     TOP_TYPE,

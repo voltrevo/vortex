@@ -3,7 +3,7 @@
 #include "Decoder.hpp"
 
 int main() {
-  auto bytes = Vortex::Decoder::CodeBlock().transient();
+  auto bytes = Vortex::Func().transient();
 
   while (true) {
     Vortex::byte b = std::cin.get();

@@ -7,7 +7,7 @@
 int main() {
   using namespace Vortex;
 
-  std::vector<std::pair<std::string, Decoder::CodeBlock>> programs = {
+  std::vector<std::pair<std::string, Func>> programs = {
     {"basic-arithmetic", {
       // sum := 3 * 5 + 1;
       // return sum + sum + sum;

@@ -46,7 +46,7 @@ namespace Vortex {
       }
 
       while (i + 1u < gfuncs.size()) {
-        gfuncs.push_back(Decoder(Decoder::CodeBlock()));
+        gfuncs.push_back(Decoder(Func()));
       }
 
       gfuncs.push_back(std::move(decoder));
@@ -248,7 +248,7 @@ namespace Vortex {
       }
     }
 
-    Value eval(Decoder::CodeBlock code) {
+    Value eval(Func code) {
       auto prevSize = cc.size();
 
       cc.push_back(Context());

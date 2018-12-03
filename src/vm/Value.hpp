@@ -12,13 +12,11 @@
 
 #include "Codes.hpp"
 #include "Exceptions.hpp"
+#include "types.hpp"
 
 namespace Vortex {
   struct Value {
     struct null {};
-
-    using String = immer::flex_vector<char>;
-    using Array = immer::flex_vector<immer::box<Value>>;
 
     struct StringComparator {
       bool operator()(const String& left, const String& right) const {
@@ -32,7 +30,6 @@ namespace Vortex {
     };
 
     using Object = std::map<String, Value, StringComparator>;
-    using Func = immer::flex_vector<byte>;
 
     union Data {
       bool BOOL;
@@ -690,7 +687,7 @@ namespace Vortex {
             throw BadIndexError();
           }
 
-          left = Value(new Value::String{
+          left = Value(new String{
             left.data.STRING->at(right.data.INT32)
           });
 
