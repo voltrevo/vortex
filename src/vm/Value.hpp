@@ -3,7 +3,6 @@
 #include <algorithm>
 #include <cassert>
 #include <cmath>
-#include <deque>
 #include <map>
 #include <string>
 #include <sstream>
@@ -33,6 +32,7 @@ namespace Vortex {
     };
 
     using Object = std::map<String, Value, StringComparator>;
+    using Func = immer::flex_vector<byte>;
 
     union Data {
       bool BOOL;
@@ -41,7 +41,7 @@ namespace Vortex {
       String* STRING;
       Array* ARRAY;
       Object* OBJECT;
-      std::deque<byte>* FUNC;
+      Func* FUNC;
       void* PTR;
     };
 
@@ -115,7 +115,7 @@ namespace Vortex {
       data.OBJECT = v;
     }
 
-    explicit Value(std::deque<byte>* v) {
+    explicit Value(Func* v) {
       type = FUNC;
       data.FUNC = v;
     }
@@ -133,7 +133,7 @@ namespace Vortex {
       } else if (other.type == OBJECT) {
         data.OBJECT = new Object(*other.data.OBJECT);
       } else if (other.type == FUNC) {
-        data.FUNC = new std::deque<byte>(*other.data.FUNC);
+        data.FUNC = new Func(*other.data.FUNC);
       } else {
         data = other.data;
       }

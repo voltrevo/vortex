@@ -3,7 +3,7 @@
 #include "Decoder.hpp"
 
 int main() {
-  std::deque<Vortex::byte> bytes;
+  auto bytes = Vortex::Decoder::CodeBlock().transient();
 
   while (true) {
     Vortex::byte b = std::cin.get();
@@ -15,7 +15,7 @@ int main() {
     bytes.push_back(b);
   }
 
-  auto decoder = Vortex::Decoder(bytes.begin());
+  auto decoder = Vortex::Decoder(bytes.persistent());
   decoder.disassemble(std::cout, "", Vortex::PROGRAM);
 
   return 0;

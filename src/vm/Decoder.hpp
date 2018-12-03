@@ -1,25 +1,33 @@
 #pragma once
 
-#include <deque>
 #include <ostream>
 #include <string>
 
+#include <immer/flex_vector.hpp>
 #include <immer/flex_vector_transient.hpp>
 
 #include "Value.hpp"
 
 namespace Vortex {
   class Decoder {
-    std::deque<byte>::iterator start;
-    std::deque<byte>::iterator pos;
+  public:
+    using CodeBlock = immer::flex_vector<byte>;
+    using Position = CodeBlock::iterator;
+
+  private:
+    CodeBlock codeBlock;
+    Position pos;
 
   public:
-    Decoder(std::deque<byte>::iterator init) { start = pos = init; }
+    Decoder(CodeBlock init) {
+      codeBlock = init;
+      pos = codeBlock.begin();
+    }
 
     Code get() { return (Code)(*pos++); };
     byte getByte() { return *pos++; }
 
-    int location() { return pos - start; }
+    int location() { return pos - codeBlock.begin(); }
 
     Code peekBehind() { return (Code)(*(pos - 1)); }
 
@@ -299,7 +307,9 @@ namespace Vortex {
             auto instr = get();
 
             if (instr == END) {
-              return Value(new std::deque<byte>(start, pos));
+              auto startIdx = start - codeBlock.begin();
+              auto len = pos - start;
+              return Value(new CodeBlock(codeBlock.drop(startIdx).take(len)));
             }
 
             skip(instr);

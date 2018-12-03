@@ -7,7 +7,7 @@
 int main() {
   using namespace Vortex;
 
-  std::vector<std::pair<std::string, std::deque<byte>>> programs = {
+  std::vector<std::pair<std::string, Decoder::CodeBlock>> programs = {
     {"basic-arithmetic", {
       // sum := 3 * 5 + 1;
       // return sum + sum + sum;
@@ -303,12 +303,12 @@ int main() {
     try {
       std::cout << name << ":" << std::endl;
 
-      auto decoder = Decoder(program.begin());
+      auto decoder = Decoder(program);
       decoder.disassemble(std::cout, "  ", PROGRAM);
       std::cout << std::endl;
 
       auto machine = Machine();
-      Value result = machine.eval(program.begin());
+      Value result = machine.eval(program);
       std::cout << "  output: " << result << std::endl;
     } catch (const std::exception& e) {
       std::cout << name << " threw " << e.what() << std::endl;

@@ -46,7 +46,7 @@ namespace Vortex {
       }
 
       while (i + 1u < gfuncs.size()) {
-        gfuncs.push_back(Decoder(std::deque<byte>::iterator()));
+        gfuncs.push_back(Decoder(Decoder::CodeBlock()));
       }
 
       gfuncs.push_back(std::move(decoder));
@@ -212,7 +212,7 @@ namespace Vortex {
                   throw TypeError();
                 }
 
-                auto funcDecoder = Decoder(func.data.FUNC->begin());
+                auto funcDecoder = Decoder(*func.data.FUNC);
                 // TODO: Just make context a parameter of run?
                 // TODO: Use a shared stack for locals and use an offset?
                 cc.push_back(Context());
@@ -248,7 +248,7 @@ namespace Vortex {
       }
     }
 
-    Value eval(std::deque<byte>::iterator code) {
+    Value eval(Decoder::CodeBlock code) {
       auto prevSize = cc.size();
 
       cc.push_back(Context());

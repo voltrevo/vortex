@@ -9,10 +9,10 @@ int main() {
   Vortex::assemble(std::cin, oss);
   std::string s = oss.str();
 
-  auto bytes = std::deque<Vortex::byte>(s.begin(), s.end());
+  auto codeBlock = Vortex::Decoder::CodeBlock(s.begin(), s.end());
 
   auto machine = Vortex::Machine();
-  Vortex::Value result = machine.eval(bytes.begin());
+  Vortex::Value result = machine.eval(codeBlock);
   std::cout << result << std::endl;
 
   return 0;
