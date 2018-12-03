@@ -168,9 +168,10 @@ namespace Vortex {
     }
 
     if (('0' <= c && c <= '9') || c == '-') {
+      bool negative = (c == '-');
       int res;
 
-      if (c == '-') {
+      if (negative) {
         in.get();
 
         c = in.peek();
@@ -258,13 +259,50 @@ namespace Vortex {
         }
       } else if (c == '.') {
         in.get();
+        c = in.peek();
 
-        if (in.get() != '0') {
-          throw NotImplementedError();
+        double resd = res;
+        double mul = negative ? -0.1 : 0.1;
+
+        if (!('0' <= c && c <= '9')) {
+          throw SyntaxError();
+        }
+
+        while ('0' <= c && c <= '9') {
+          resd += mul * (c - '0');
+          mul /= 10;
+          in.get();
+          c = in.peek();
+        }
+
+        if (c == 'f') {
+          in.get();
+
+          if (in.get() == '3') {
+            if (in.get() != '2') {
+              throw SyntaxError();
+            }
+
+            float resf = resd;
+            out.put(FLOAT32);
+            out.write((char*)&resf, 4);
+            return;
+          }
+
+          if (in.get() == '6') {
+            if (in.get() != '4') {
+              throw SyntaxError();
+            }
+
+            out.put(FLOAT64);
+            out.write((char*)&resd, 8);
+            return;
+          }
+
+          throw SyntaxError();
         }
 
         out.put(FLOAT64);
-        double resd = res;
         out.write((char*)&resd, 8);
         return;
       }
