@@ -526,9 +526,7 @@ namespace Vortex {
       Code type = left.type;
 
       if (right.type != type) {
-        left.dealloc();
-        left.type = BOOL;
-        left.data.BOOL = false;
+        throw TypeError();
       }
 
       switch (type) {
@@ -554,9 +552,7 @@ namespace Vortex {
       Code type = left.type;
 
       if (right.type != type) {
-        left.dealloc();
-        left.type = BOOL;
-        left.data.BOOL = true;
+        throw TypeError();
       }
 
       switch (type) {
