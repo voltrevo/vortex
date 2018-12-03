@@ -1,25 +1,26 @@
 #pragma once
 
+#include <cassert>
 #include <exception>
 
 namespace Vortex {
-  class TypeError: std::exception {
+  struct TypeError: std::exception {
     const char* what() const noexcept { return "Type error"; }
   };
 
-  class InternalError: std::exception {
+  struct InternalError: std::exception {
     const char* what() const noexcept { return "Internal error"; }
   };
 
-  class NotImplementedError: std::exception {
+  struct NotImplementedError: std::exception {
     const char* what() const noexcept { return "Not implemented"; }
   };
 
-  class BadIndexError: std::exception {
+  struct BadIndexError: std::exception {
     const char* what() const noexcept { return "Bad index"; }
   };
 
-  class SyntaxError: std::exception {
+  struct SyntaxError: std::exception {
     const char* what() const noexcept { return "Syntax error"; }
   };
 }

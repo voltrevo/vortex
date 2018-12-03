@@ -67,11 +67,27 @@ namespace Vortex {
               return;
             }
 
-            case INT32: {
+            case UINT8:
+            case INT8: {
+              pos += 1;
+              return;
+            }
+
+            case UINT16:
+            case INT16: {
+              pos += 2;
+              return;
+            }
+
+            case UINT32:
+            case INT32:
+            case FLOAT32: {
               pos += 4;
               return;
             }
 
+            case UINT64:
+            case INT64:
             case FLOAT64: {
               pos += 8;
               return;
@@ -101,18 +117,8 @@ namespace Vortex {
               }
             }
 
-            case UINT8:
-            case UINT16:
-            case UINT32:
-            case UINT64:
-
-            case INT8:
-            case INT16:
-            case INT64:
-
             case FLOAT8:
             case FLOAT16:
-            case FLOAT32:
 
             case VSET:
               throw NotImplementedError();
@@ -200,8 +206,80 @@ namespace Vortex {
           }
         }
 
+        case UINT8: {
+          return Value(getByte());
+        }
+
+        case UINT16: {
+          unsigned short v;
+          byte* vaddr = (byte*)&v;
+          *vaddr++ = *pos++;
+          *vaddr++ = *pos++;
+          return Value(v);
+        }
+
+        case UINT32: {
+          unsigned int v;
+          byte* vaddr = (byte*)&v;
+          *vaddr++ = *pos++;
+          *vaddr++ = *pos++;
+          *vaddr++ = *pos++;
+          *vaddr++ = *pos++;
+          return Value(v);
+        }
+
+        case UINT64: {
+          unsigned long v;
+          byte* vaddr = (byte*)&v;
+          *vaddr++ = *pos++;
+          *vaddr++ = *pos++;
+          *vaddr++ = *pos++;
+          *vaddr++ = *pos++;
+          *vaddr++ = *pos++;
+          *vaddr++ = *pos++;
+          *vaddr++ = *pos++;
+          *vaddr++ = *pos++;
+          return Value(v);
+        }
+
+        case INT8: {
+          return Value((char)getByte());
+        }
+
+        case INT16: {
+          short v;
+          byte* vaddr = (byte*)&v;
+          *vaddr++ = *pos++;
+          *vaddr++ = *pos++;
+          return Value(v);
+        }
+
         case INT32: {
           int v;
+          byte* vaddr = (byte*)&v;
+          *vaddr++ = *pos++;
+          *vaddr++ = *pos++;
+          *vaddr++ = *pos++;
+          *vaddr++ = *pos++;
+          return Value(v);
+        }
+
+        case INT64: {
+          long v;
+          byte* vaddr = (byte*)&v;
+          *vaddr++ = *pos++;
+          *vaddr++ = *pos++;
+          *vaddr++ = *pos++;
+          *vaddr++ = *pos++;
+          *vaddr++ = *pos++;
+          *vaddr++ = *pos++;
+          *vaddr++ = *pos++;
+          *vaddr++ = *pos++;
+          return Value(v);
+        }
+
+        case FLOAT32: {
+          float v;
           byte* vaddr = (byte*)&v;
           *vaddr++ = *pos++;
           *vaddr++ = *pos++;
@@ -280,18 +358,8 @@ namespace Vortex {
           return res;
         }
 
-        case UINT8:
-        case UINT16:
-        case UINT32:
-        case UINT64:
-
-        case INT8:
-        case INT16:
-        case INT64:
-
         case FLOAT8:
         case FLOAT16:
-        case FLOAT32:
 
         case VSET:
           throw NotImplementedError();

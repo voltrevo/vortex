@@ -185,6 +185,79 @@ namespace Vortex {
         res = parseInt(in);
       }
 
+      c = in.peek();
+
+      if (c == 'i' || c == 'u') {
+        bool isSigned = (c == 'i');
+        in.get();
+        c = in.get();
+
+        // TODO: Syntax error for out of range literals
+        if (c == '8') {
+          out.put(isSigned ? INT8 : UINT8);
+          out.write((char*)&res, 1);
+          return;
+        }
+
+        if (c == '1') {
+          if (in.get() != '6') {
+            throw SyntaxError();
+          }
+
+          out.put(isSigned ? INT16 : UINT16);
+          out.write((char*)&res, 2);
+          return;
+        }
+
+        if (c == '3') {
+          if (in.get() != '2') {
+            throw SyntaxError();
+          }
+
+          out.put(isSigned ? INT32 : UINT32);
+          out.write((char*)&res, 4);
+          return;
+        }
+
+        if (c == '6') {
+          // TODO: Currently can only handle 64 bit literals in i32 range
+          if (in.get() != '4') {
+            throw SyntaxError();
+          }
+
+          out.put(isSigned ? INT64 : UINT64);
+          long resl = res;
+          out.write((char*)&resl, 8);
+          return;
+        }
+      } else if (c == 'f') {
+        // TODO: Currently only handling float literals in i32 range
+        in.get();
+        c = in.get();
+
+        if (c == '3') {
+          if (in.get() != '2') {
+            throw SyntaxError();
+          }
+
+          out.put(FLOAT32);
+          float resf = res;
+          out.write((char*)&resf, 4);
+          return;
+        }
+
+        if (c == '6') {
+          if (in.get() != '4') {
+            throw SyntaxError();
+          }
+
+          out.put(FLOAT64);
+          double resd = res;
+          out.write((char*)&resd, 8);
+          return;
+        }
+      }
+
       out.put(INT32);
       out.write((char*)&res, 4);
       return;
