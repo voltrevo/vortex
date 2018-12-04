@@ -23,6 +23,5 @@ namespace Vortex {
   using BoxedValue = immer::box<Value>;
 
   using String = immer::flex_vector<char>;
-  using Array = immer::flex_vector<BoxedValue>;
   using Func = immer::flex_vector<byte>;
 }

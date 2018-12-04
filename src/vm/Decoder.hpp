@@ -6,6 +6,8 @@
 #include <immer/flex_vector.hpp>
 #include <immer/flex_vector_transient.hpp>
 
+#include "Array.hpp"
+#include "Object.hpp"
 #include "Value.hpp"
 
 namespace Vortex {
@@ -308,14 +310,14 @@ namespace Vortex {
         }
 
         case ARRAY: {
-          auto items = Array().transient();
+          auto items = Array().values.transient();
 
           while (true) {
             auto itemType = get();
 
             switch (itemType) {
               case END: {
-                return Value(new Array(items.persistent()));
+                return Value(new Array{.values = items.persistent()});
               }
 
               default: {

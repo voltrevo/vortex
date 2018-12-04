@@ -5,6 +5,7 @@
 #include <string>
 #include <sstream>
 
+#include "Array.hpp"
 #include "Codes.hpp"
 #include "Exceptions.hpp"
 #include "Object.hpp"
@@ -55,10 +56,10 @@ namespace Vortex {
 
   Value::~Value() { dealloc(); }
 
-  Value& Value::operator=(Value&& rhs) {
-    type = rhs.type;
-    data = rhs.data;
-    rhs.data.PTR = nullptr;
+  Value& Value::operator=(Value&& right) {
+    type = right.type;
+    data = right.data;
+    right.data.PTR = nullptr;
     return *this;
   }
 
@@ -174,11 +175,77 @@ namespace Vortex {
     other.type = INVALID;
   }
 
-  Value& Value::operator=(const Value& rhs) {
-    Value tmp(rhs);
+  Value& Value::operator=(const Value& right) {
+    Value tmp(right);
     dealloc();
     *this = std::move(tmp);
     return *this;
+  }
+
+  bool Value::operator==(const Value& right) const {
+    const Value& left = *this;
+    Code type = left.type;
+
+    if (right.type != type) {
+      throw TypeError();
+    }
+
+    switch (type) {
+      case INT8: return left.data.INT8 == right.data.INT8;
+      case INT16: return left.data.INT16 == right.data.INT16;
+      case INT32: return left.data.INT32 == right.data.INT32;
+      case INT64: return left.data.INT64 == right.data.INT64;
+
+      case UINT8: return left.data.UINT8 == right.data.UINT8;
+      case UINT16: return left.data.UINT16 == right.data.UINT16;
+      case UINT32: return left.data.UINT32 == right.data.UINT32;
+      case UINT64: return left.data.UINT64 == right.data.UINT64;
+
+      case FLOAT32: return left.data.FLOAT32 == right.data.FLOAT32;
+      case FLOAT64: return left.data.FLOAT64 == right.data.FLOAT64;
+
+      case STRING: return *left.data.STRING == *right.data.STRING;
+      case ARRAY: return *left.data.ARRAY == *right.data.ARRAY;
+      case OBJECT: return *left.data.OBJECT == *right.data.OBJECT;
+
+      case FUNC: throw TypeError();
+
+      default: throw InternalError();
+    }
+  }
+
+  bool Value::operator<(const Value& right) const {
+    const Value& left = *this;
+
+    if (right.type != type) {
+      throw TypeError();
+    }
+
+    switch (type) {
+      case INT8: return left.data.INT8 < right.data.INT8;
+      case INT16: return left.data.INT16 < right.data.INT16;
+      case INT32: return left.data.INT32 < right.data.INT32;
+      case INT64: return left.data.INT64 < right.data.INT64;
+
+      case UINT8: return left.data.UINT8 < right.data.UINT8;
+      case UINT16: return left.data.UINT16 < right.data.UINT16;
+      case UINT32: return left.data.UINT32 < right.data.UINT32;
+      case UINT64: return left.data.UINT64 < right.data.UINT64;
+
+      case FLOAT32: return left.data.FLOAT32 < right.data.FLOAT32;
+      case FLOAT64: return left.data.FLOAT64 < right.data.FLOAT64;
+
+      case STRING: {
+        return StringComparator()(*left.data.STRING, *right.data.STRING);
+      }
+
+      case ARRAY: return *left.data.ARRAY < *right.data.ARRAY;
+      case OBJECT: return *left.data.OBJECT < *right.data.OBJECT;
+
+      case FUNC: throw TypeError();
+
+      default: throw InternalError();
+    }
   }
 
   void swap(Value& left, Value& right) {
@@ -267,7 +334,7 @@ namespace Vortex {
 
         bool notFirst = false;
 
-        for (auto& v: *value.data.ARRAY) {
+        for (auto& v: (value.data.ARRAY->values)) {
           if (notFirst) {
             os << ", ";
           }
@@ -303,15 +370,15 @@ namespace Vortex {
         bool notFirst = false;
 
         const Object& obj = *value.data.OBJECT;
-        Uint64 sz = obj.keys.size();
+        Uint64 sz = obj.keys.Length();
 
         for (Uint64 pos = 0; pos < sz; pos++) {
           if (notFirst) {
             os << ", ";
           }
 
-          auto key = obj.keys[pos];
-          auto value = obj.values[pos];
+          auto key = obj.keys.index(pos);
+          auto value = obj.values.index(pos);
 
           os << key << ": " << value;
           notFirst = true;
@@ -353,12 +420,12 @@ namespace Vortex {
               throw TypeError();
             }
 
-            if (c.data.UINT64 >= a.data.ARRAY->size()) {
+            if (c.data.UINT64 >= a.data.ARRAY->Length()) {
               throw BadIndexError();
             }
 
-            *a.data.ARRAY = a.data.ARRAY->set(c.data.UINT64, b);
-            
+            *a.data.ARRAY = a.data.ARRAY->update(c.data.UINT64, b);
+
             break;
           }
 
@@ -566,7 +633,18 @@ namespace Vortex {
         case FLOAT32: left = Value(left.data.FLOAT32 < right.data.FLOAT32); return;
         case FLOAT64: left = Value(left.data.FLOAT64 < right.data.FLOAT64); return;
 
-        default: throw TypeError();
+        case STRING: {
+          left = Value(Value::StringComparator()(
+            *left.data.STRING,
+            *right.data.STRING
+          ));
+
+          return;
+        }
+
+        case FUNC: throw TypeError();
+
+        default: throw InternalError();
       }
     }
 
@@ -646,53 +724,11 @@ namespace Vortex {
     }
 
     void equal(Value& left, const Value& right) {
-      Code type = left.type;
-
-      if (right.type != type) {
-        throw TypeError();
-      }
-
-      switch (type) {
-        case INT8: left = Value(left.data.INT8 == right.data.INT8); return;
-        case INT16: left = Value(left.data.INT16 == right.data.INT16); return;
-        case INT32: left = Value(left.data.INT32 == right.data.INT32); return;
-        case INT64: left = Value(left.data.INT64 == right.data.INT64); return;
-
-        case UINT8: left = Value(left.data.UINT8 == right.data.UINT8); return;
-        case UINT16: left = Value(left.data.UINT16 == right.data.UINT16); return;
-        case UINT32: left = Value(left.data.UINT32 == right.data.UINT32); return;
-        case UINT64: left = Value(left.data.UINT64 == right.data.UINT64); return;
-
-        case FLOAT32: left = Value(left.data.FLOAT32 == right.data.FLOAT32); return;
-        case FLOAT64: left = Value(left.data.FLOAT64 == right.data.FLOAT64); return;
-
-        default: throw TypeError();
-      }
+      left = Value(left == right);
     }
 
     void notEqual(Value& left, const Value& right) {
-      Code type = left.type;
-
-      if (right.type != type) {
-        throw TypeError();
-      }
-
-      switch (type) {
-        case INT8: left = Value(left.data.INT8 != right.data.INT8); return;
-        case INT16: left = Value(left.data.INT16 != right.data.INT16); return;
-        case INT32: left = Value(left.data.INT32 != right.data.INT32); return;
-        case INT64: left = Value(left.data.INT64 != right.data.INT64); return;
-
-        case UINT8: left = Value(left.data.UINT8 != right.data.UINT8); return;
-        case UINT16: left = Value(left.data.UINT16 != right.data.UINT16); return;
-        case UINT32: left = Value(left.data.UINT32 != right.data.UINT32); return;
-        case UINT64: left = Value(left.data.UINT64 != right.data.UINT64); return;
-
-        case FLOAT32: left = Value(left.data.FLOAT32 != right.data.FLOAT32); return;
-        case FLOAT64: left = Value(left.data.FLOAT64 != right.data.FLOAT64); return;
-
-        default: throw TypeError();
-      }
+      left = Value(!(left == right));
     }
 
     void and_(Value& left, const Value& right) {
@@ -738,7 +774,7 @@ namespace Vortex {
 
       switch (type) {
         case ARRAY: {
-          *left.data.ARRAY = *left.data.ARRAY + *right.data.ARRAY;
+          *left.data.ARRAY = left.data.ARRAY->concat(*right.data.ARRAY);
           return;
         }
 
@@ -761,7 +797,7 @@ namespace Vortex {
         throw TypeError();
       }
 
-      *left.data.ARRAY = left.data.ARRAY->push_back(right);
+      *left.data.ARRAY = left.data.ARRAY->pushBack(right);
     }
 
     void pushFront(Value& left, const Value& right) {
@@ -769,7 +805,7 @@ namespace Vortex {
         throw TypeError();
       }
 
-      *left.data.ARRAY = left.data.ARRAY->push_front(right);
+      *left.data.ARRAY = left.data.ARRAY->pushFront(right);
     }
 
     void index(Value& left, const Value& right) {
@@ -779,11 +815,11 @@ namespace Vortex {
             throw TypeError();
           }
 
-          if (right.data.UINT64 >= left.data.ARRAY->size()) {
+          if (right.data.UINT64 >= left.data.ARRAY->Length()) {
             throw BadIndexError();
           }
 
-          left = left.data.ARRAY->at(right.data.UINT64);
+          left = left.data.ARRAY->index(right.data.UINT64);
           return;
         }
 
@@ -823,7 +859,7 @@ namespace Vortex {
             throw TypeError();
           }
 
-          left = Value(right.data.UINT64 < left.data.ARRAY->size());
+          left = Value(right.data.UINT64 < left.data.ARRAY->Length());
           return;
         }
 
@@ -887,7 +923,7 @@ namespace Vortex {
     void length(Value& value) {
       switch (value.type) {
         case ARRAY: {
-          int len = value.data.ARRAY->size();
+          int len = value.data.ARRAY->Length();
           delete value.data.ARRAY;
           value.type = UINT64;
           value.data.UINT64 = len;

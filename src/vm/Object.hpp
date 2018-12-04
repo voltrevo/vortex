@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Array.hpp"
 #include "Exceptions.hpp"
 #include "types.hpp"
 
@@ -8,11 +9,15 @@ namespace Vortex {
     Array keys;
     Array values;
 
+    bool operator==(const Object& right) const;
+    bool operator<(const Object& right) const;
+
     Object add(Value key, Value value) const;
-    Object update(Value key, Value value) const;
-    Value index(Value key) const;
-    bool hasIndex(Value key) const;
+    Object update(const Value& key, Value value) const;
+    Value index(const Value& key) const;
+    bool hasIndex(const Value& key) const;
     Object concat(const Object& right) const;
-    Uint64 binarySearch(Value key) const;
+
+    Uint64 binarySearch(const Value& key) const;
   };
 }

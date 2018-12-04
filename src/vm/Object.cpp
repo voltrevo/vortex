@@ -2,65 +2,80 @@
 #include "Value.hpp"
 
 namespace Vortex {
+  bool Object::operator==(const Object& right) const {
+    return (
+      keys == right.keys &&
+      values == right.values
+    );
+  }
+
+  bool Object::operator<(const Object& right) const {
+    if (!(keys == right.keys)) {
+      throw TypeError();
+    }
+
+    return values < right.values;
+  }
+
   Object Object::add(Value key, Value value) const {
     Uint64 pos = binarySearch(key);
 
-    if (pos == keys.size()) {
+    if (pos == keys.Length()) {
       return Object{
-        .keys = keys.push_back(key),
-        .values = values.push_back(value),
+        .keys = Array{keys.pushBack(std::move(key))},
+        .values = values.pushBack(std::move(value)),
       };
     }
 
-    if (*keys[pos]->data.STRING == *key.data.STRING) {
+    if (*keys.index(pos).data.STRING == *key.data.STRING) {
       throw BadIndexError(); // duplicate key
     }
 
     return Object{
-      .keys = keys.insert(pos, key),
-      .values = values.insert(pos, value),
+      .keys = Array{.values = keys.values.insert(pos, std::move(key))},
+      .values = Array{.values = values.values.insert(pos, std::move(value))},
     };
   }
 
-  Object Object::update(Value key, Value value) const {
+  Object Object::update(const Value& key, Value value) const {
     Uint64 pos = binarySearch(key);
 
-    if (pos == keys.size()) {
+    if (pos == keys.Length()) {
       throw BadIndexError();
     }
 
-    if (*keys[pos]->data.STRING != *key.data.STRING) {
+    if (*keys.index(pos).data.STRING != *key.data.STRING) {
       throw BadIndexError();
     }
 
     return Object{
       .keys = keys,
-      .values = values.set(pos, value),
+      .values = values.update(pos, std::move(value)),
     };
   }
 
-  Value Object::index(Value key) const {
+  Value Object::index(const Value& key) const {
     Uint64 pos = binarySearch(key);
 
-    if (pos == keys.size()) {
+    if (pos == keys.Length()) {
       throw BadIndexError();
     }
 
-    if (*keys[pos]->data.STRING != *key.data.STRING) {
+    if (*keys.index(pos).data.STRING != *key.data.STRING) {
       throw BadIndexError();
     }
 
-    return values[pos];
+    return values.index(pos);
   }
 
-  bool Object::hasIndex(Value key) const {
+  bool Object::hasIndex(const Value& key) const {
     Uint64 pos = binarySearch(key);
 
-    if (pos == keys.size()) {
+    if (pos == keys.Length()) {
       return false;
     }
 
-    if (*keys[pos]->data.STRING != *key.data.STRING) {
+    if (*keys.index(pos).data.STRING != *key.data.STRING) {
       return false;
     }
 
@@ -68,24 +83,24 @@ namespace Vortex {
   }
 
   Object Object::concat(const Object& right) const {
-    auto sz = right.keys.size();
+    auto sz = right.keys.Length();
     Object res = *this;
 
     // TODO: There is a more efficient way to do this.
     for (Uint64 pos = 0; pos < sz; pos++) {
-      res = res.add(right.keys[pos], right.values[pos]);
+      res = res.add(right.keys.index(pos), right.values.index(pos));
     }
 
     return res;
   }
 
-  Uint64 Object::binarySearch(Value key) const {
+  Uint64 Object::binarySearch(const Value& key) const {
     if (key.type != STRING) {
       throw NotImplementedError();
     }
 
     Uint64 left = 0u;
-    Uint64 right = keys.size();
+    Uint64 right = keys.Length();
 
     if (left == right) {
       return 0;
@@ -93,7 +108,7 @@ namespace Vortex {
 
     while (right - left > 1u) {
       Uint64 mid = left + (right - left) / 2u;
-      const Value& midValue = *keys[mid];
+      const Value& midValue = keys.index(mid);
 
       if (midValue.type != STRING) {
         throw NotImplementedError();
@@ -110,7 +125,7 @@ namespace Vortex {
     }
 
     if (Value::StringComparator()(
-      *keys[left]->data.STRING,
+      *keys.index(left).data.STRING,
       *key.data.STRING
     )) {
       left++;

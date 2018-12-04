@@ -12,10 +12,12 @@
 
 #include "Codes.hpp"
 #include "Exceptions.hpp"
-#include "Object.hpp"
 #include "types.hpp"
 
 namespace Vortex {
+  struct Array;
+  struct Object;
+
   struct Value {
     struct null {};
 
@@ -63,7 +65,9 @@ namespace Vortex {
 
     ~Value();
 
-    Value& operator=(Value&& rhs);
+    Value& operator=(Value&& right);
+    bool operator==(const Value& right) const;
+    bool operator<(const Value& right) const;
 
     Value();;
 

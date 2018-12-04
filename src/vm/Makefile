@@ -1,16 +1,22 @@
 all: bin/run bin/scratch bin/asm bin/dasm test
 
-bin/run: *.*pp
-	clang++ -I. -std=c++17 -O3 run.cpp Codes.cpp Value.cpp Object.cpp -o bin/run
+CC = clang++
+FLAGS = -I. -std=c++17 -O3
+COMMON_FILES = Codes.cpp Value.cpp Object.cpp Array.cpp
 
-bin/scratch: *.*pp
-	clang++ -I. -std=c++17 -O3 scratch.cpp Codes.cpp Value.cpp Object.cpp -o bin/scratch
+COMPILE = $(CC) $(FLAGS) $(COMMON_FILES)
 
-bin/asm: *.*pp
-	clang++ -I. -std=c++17 -O3 asm.cpp Codes.cpp Value.cpp Object.cpp -o bin/asm
+bin/run: *.hpp $(COMMON_FILES) run.cpp Makefile
+	$(COMPILE) run.cpp -o bin/run
 
-bin/dasm: *.*pp
-	clang++ -I. -std=c++17 -O3 dasm.cpp Codes.cpp Value.cpp Object.cpp -o bin/dasm
+bin/scratch: *.hpp $(COMMON_FILES) scratch.cpp Makefile
+	$(COMPILE) scratch.cpp -o bin/scratch
+
+bin/asm: *.hpp $(COMMON_FILES) asm.cpp Makefile
+	$(COMPILE) asm.cpp -o bin/asm
+
+bin/dasm: *.hpp $(COMMON_FILES) dasm.cpp Makefile
+	$(COMPILE) dasm.cpp -o bin/dasm
 
 test: bin/run
 	bash ./testFiles/test
