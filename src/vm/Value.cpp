@@ -187,10 +187,12 @@ namespace Vortex {
     Code type = left.type;
 
     if (right.type != type) {
-      throw TypeError();
+      throw TypeError("== between different types");
     }
 
     switch (type) {
+      case NULL_: return true;
+
       case INT8: return left.data.INT8 == right.data.INT8;
       case INT16: return left.data.INT16 == right.data.INT16;
       case INT32: return left.data.INT32 == right.data.INT32;
@@ -208,9 +210,9 @@ namespace Vortex {
       case ARRAY: return *left.data.ARRAY == *right.data.ARRAY;
       case OBJECT: return *left.data.OBJECT == *right.data.OBJECT;
 
-      case FUNC: throw TypeError();
+      case FUNC: throw TypeError("== between functions");
 
-      default: throw InternalError();
+      default: throw InternalError("Unrecognized value type");
     }
   }
 
@@ -218,10 +220,12 @@ namespace Vortex {
     const Value& left = *this;
 
     if (right.type != type) {
-      throw TypeError();
+      throw TypeError("< between different types");
     }
 
     switch (type) {
+      case NULL_: return false;
+
       case INT8: return left.data.INT8 < right.data.INT8;
       case INT16: return left.data.INT16 < right.data.INT16;
       case INT32: return left.data.INT32 < right.data.INT32;
@@ -242,9 +246,9 @@ namespace Vortex {
       case ARRAY: return *left.data.ARRAY < *right.data.ARRAY;
       case OBJECT: return *left.data.OBJECT < *right.data.OBJECT;
 
-      case FUNC: throw TypeError();
+      case FUNC: throw TypeError("< between functions");
 
-      default: throw InternalError();
+      default: throw InternalError("Unrecognized value type");
     }
   }
 
@@ -394,7 +398,7 @@ namespace Vortex {
       }
 
       default:
-        throw InternalError();
+        throw InternalError("Unrecognized value type");
     }
 
     return os;
@@ -417,11 +421,11 @@ namespace Vortex {
         switch (a.type) {
           case ARRAY: {
             if (c.type != UINT64) {
-              throw TypeError();
+              throw TypeError("Attempt to update array at non-u64 index");
             }
 
             if (c.data.UINT64 >= a.data.ARRAY->Length()) {
-              throw BadIndexError();
+              throw BadIndexError("Attempt to update array with non-existing index");
             }
 
             *a.data.ARRAY = a.data.ARRAY->update(c.data.UINT64, b);
@@ -435,14 +439,14 @@ namespace Vortex {
           }
 
           default:
-            throw TypeError();
+            throw TypeError("Attempt to update type that is neither array nor object");
         }
 
         break;
       }
 
       default:
-        throw InternalError();
+        throw InternalError("Unrecognized ternary operator");
     }
   }
 
@@ -451,7 +455,7 @@ namespace Vortex {
       Code type = left.type;
 
       if (right.type != type) {
-        throw TypeError();
+        throw TypeError("+ between different types");
       }
 
       switch (type) {
@@ -468,7 +472,15 @@ namespace Vortex {
         case FLOAT32: left.data.FLOAT32 += right.data.FLOAT32; return;
         case FLOAT64: left.data.FLOAT64 += right.data.FLOAT64; return;
 
-        default: throw TypeError();
+        case STRING:
+        case FUNC:
+          throw TypeError("+ between strings or funcs");
+
+        case ARRAY:
+        case OBJECT:
+          throw NotImplementedError("Possible vector operation");
+
+        default: throw InternalError("Unrecognized value type");
       }
     }
 
@@ -476,7 +488,7 @@ namespace Vortex {
       Code type = left.type;
 
       if (right.type != type) {
-        throw TypeError();
+        throw TypeError("- between different types");
       }
 
       switch (type) {
@@ -493,7 +505,15 @@ namespace Vortex {
         case FLOAT32: left.data.FLOAT32 -= right.data.FLOAT32; return;
         case FLOAT64: left.data.FLOAT64 -= right.data.FLOAT64; return;
 
-        default: throw TypeError();
+        case STRING:
+        case FUNC:
+          throw TypeError("- between strings or funcs");
+
+        case ARRAY:
+        case OBJECT:
+          throw NotImplementedError("Possible vector operation");
+
+        default: throw InternalError("Unrecognized value type");
       }
     }
 
@@ -501,7 +521,7 @@ namespace Vortex {
       Code type = left.type;
 
       if (right.type != type) {
-        throw TypeError();
+        throw NotImplementedError("Possible vector operation");
       }
 
       switch (type) {
@@ -518,7 +538,15 @@ namespace Vortex {
         case FLOAT32: left.data.FLOAT32 *= right.data.FLOAT32; return;
         case FLOAT64: left.data.FLOAT64 *= right.data.FLOAT64; return;
 
-        default: throw TypeError();
+        case STRING:
+        case FUNC:
+          throw TypeError("* between strings or funcs");
+
+        case ARRAY:
+        case OBJECT:
+          throw NotImplementedError("Possible vector operation");
+
+        default: throw InternalError("Unrecognized value type");
       }
     }
 
@@ -526,7 +554,7 @@ namespace Vortex {
       Code type = left.type;
 
       if (right.type != type) {
-        throw TypeError();
+        throw NotImplementedError("Possible vector operation");
       }
 
       switch (type) {
@@ -543,7 +571,13 @@ namespace Vortex {
         case FLOAT32: left.data.FLOAT32 /= right.data.FLOAT32; return;
         case FLOAT64: left.data.FLOAT64 /= right.data.FLOAT64; return;
 
-        default: throw TypeError();
+        case STRING:
+        case FUNC:
+        case ARRAY:
+        case OBJECT:
+          throw TypeError("/ between strings, funcs, arrays, or objects");
+
+        default: throw InternalError("Unrecognized value type");
       }
     }
 
@@ -551,7 +585,7 @@ namespace Vortex {
       Code type = left.type;
 
       if (right.type != type) {
-        throw TypeError();
+        throw TypeError("% between different types");
       }
 
       switch (type) {
@@ -575,7 +609,13 @@ namespace Vortex {
           return;
         }
 
-        default: throw TypeError();
+        case STRING:
+        case FUNC:
+        case ARRAY:
+        case OBJECT:
+          throw TypeError("% between strings, funcs, arrays, or objects");
+
+        default: throw InternalError("Unrecognized value type");
       }
     }
 
@@ -583,9 +623,8 @@ namespace Vortex {
       Code type = left.type;
 
       if (right.type != type) {
-        throw TypeError();
+        throw NotImplementedError("Possible vector operation");
       }
-
 
       switch (type) {
         case INT8: expBySq(left.data.INT8, right.data.INT8); return;
@@ -608,119 +647,30 @@ namespace Vortex {
           return;
         }
 
-        default: throw TypeError();
+        case STRING:
+        case FUNC:
+        case ARRAY:
+        case OBJECT:
+          throw TypeError("** between strings, funcs, arrays, or objects");
+
+        default: throw InternalError("Unrecognized value type");
       }
     }
 
     void less(Value& left, const Value& right) {
-      Code type = left.type;
-
-      if (right.type != type) {
-        throw TypeError();
-      }
-
-      switch (type) {
-        case INT8: left = Value(left.data.INT8 < right.data.INT8); return;
-        case INT16: left = Value(left.data.INT16 < right.data.INT16); return;
-        case INT32: left = Value(left.data.INT32 < right.data.INT32); return;
-        case INT64: left = Value(left.data.INT64 < right.data.INT64); return;
-
-        case UINT8: left = Value(left.data.UINT8 < right.data.UINT8); return;
-        case UINT16: left = Value(left.data.UINT16 < right.data.UINT16); return;
-        case UINT32: left = Value(left.data.UINT32 < right.data.UINT32); return;
-        case UINT64: left = Value(left.data.UINT64 < right.data.UINT64); return;
-
-        case FLOAT32: left = Value(left.data.FLOAT32 < right.data.FLOAT32); return;
-        case FLOAT64: left = Value(left.data.FLOAT64 < right.data.FLOAT64); return;
-
-        case STRING: {
-          left = Value(Value::StringComparator()(
-            *left.data.STRING,
-            *right.data.STRING
-          ));
-
-          return;
-        }
-
-        case FUNC: throw TypeError();
-
-        default: throw InternalError();
-      }
+      left = Value(left < right);
     }
 
     void greater(Value& left, const Value& right) {
-      Code type = left.type;
-
-      if (right.type != type) {
-        throw TypeError();
-      }
-
-      switch (type) {
-        case INT8: left = Value(left.data.INT8 > right.data.INT8); return;
-        case INT16: left = Value(left.data.INT16 > right.data.INT16); return;
-        case INT32: left = Value(left.data.INT32 > right.data.INT32); return;
-        case INT64: left = Value(left.data.INT64 > right.data.INT64); return;
-
-        case UINT8: left = Value(left.data.UINT8 > right.data.UINT8); return;
-        case UINT16: left = Value(left.data.UINT16 > right.data.UINT16); return;
-        case UINT32: left = Value(left.data.UINT32 > right.data.UINT32); return;
-        case UINT64: left = Value(left.data.UINT64 > right.data.UINT64); return;
-
-        case FLOAT32: left = Value(left.data.FLOAT32 > right.data.FLOAT32); return;
-        case FLOAT64: left = Value(left.data.FLOAT64 > right.data.FLOAT64); return;
-
-        default: throw TypeError();
-      }
+      left = Value(right < left);
     }
 
     void lessEq(Value& left, const Value& right) {
-      Code type = left.type;
-
-      if (right.type != type) {
-        throw TypeError();
-      }
-
-      switch (type) {
-        case INT8: left = Value(left.data.INT8 <= right.data.INT8); return;
-        case INT16: left = Value(left.data.INT16 <= right.data.INT16); return;
-        case INT32: left = Value(left.data.INT32 <= right.data.INT32); return;
-        case INT64: left = Value(left.data.INT64 <= right.data.INT64); return;
-
-        case UINT8: left = Value(left.data.UINT8 <= right.data.UINT8); return;
-        case UINT16: left = Value(left.data.UINT16 <= right.data.UINT16); return;
-        case UINT32: left = Value(left.data.UINT32 <= right.data.UINT32); return;
-        case UINT64: left = Value(left.data.UINT64 <= right.data.UINT64); return;
-
-        case FLOAT32: left = Value(left.data.FLOAT32 <= right.data.FLOAT32); return;
-        case FLOAT64: left = Value(left.data.FLOAT64 <= right.data.FLOAT64); return;
-
-        default: throw TypeError();
-      }
+      left = Value(!(right < left));
     }
 
     void greaterEq(Value& left, const Value& right) {
-      Code type = left.type;
-
-      if (right.type != type) {
-        throw TypeError();
-      }
-
-      switch (type) {
-        case INT8: left = Value(left.data.INT8 >= right.data.INT8); return;
-        case INT16: left = Value(left.data.INT16 >= right.data.INT16); return;
-        case INT32: left = Value(left.data.INT32 >= right.data.INT32); return;
-        case INT64: left = Value(left.data.INT64 >= right.data.INT64); return;
-
-        case UINT8: left = Value(left.data.UINT8 >= right.data.UINT8); return;
-        case UINT16: left = Value(left.data.UINT16 >= right.data.UINT16); return;
-        case UINT32: left = Value(left.data.UINT32 >= right.data.UINT32); return;
-        case UINT64: left = Value(left.data.UINT64 >= right.data.UINT64); return;
-
-        case FLOAT32: left = Value(left.data.FLOAT32 >= right.data.FLOAT32); return;
-        case FLOAT64: left = Value(left.data.FLOAT64 >= right.data.FLOAT64); return;
-
-        default: throw TypeError();
-      }
+      left = Value(!(left < right));
     }
 
     void equal(Value& left, const Value& right) {
@@ -735,7 +685,7 @@ namespace Vortex {
       Code type = left.type;
 
       if (right.type != type) {
-        throw TypeError();
+        throw TypeError("&& between different types");
       }
 
       switch (type) {
@@ -744,7 +694,7 @@ namespace Vortex {
           return;
         }
 
-        default: throw TypeError();
+        default: throw TypeError("&& between non-bool types");
       }
     }
 
@@ -752,7 +702,7 @@ namespace Vortex {
       Code type = left.type;
 
       if (right.type != type) {
-        throw TypeError();
+        throw TypeError("|| between different types");
       }
 
       switch (type) {
@@ -761,7 +711,7 @@ namespace Vortex {
           return;
         }
 
-        default: throw TypeError();
+        default: throw TypeError("|| between non-bool types");
       }
     }
 
@@ -769,7 +719,7 @@ namespace Vortex {
       Code type = left.type;
 
       if (right.type != type) {
-        throw TypeError();
+        throw TypeError("++ between different types");
       }
 
       switch (type) {
@@ -788,13 +738,13 @@ namespace Vortex {
           return;
         }
 
-        default: throw TypeError();
+        default: throw TypeError("++ between types that are not array, not string, and not object");
       }
     }
 
     void pushBack(Value& left, const Value& right) {
       if (left.type != ARRAY) {
-        throw TypeError();
+        throw TypeError("push-back on non-array");
       }
 
       *left.data.ARRAY = left.data.ARRAY->pushBack(right);
@@ -802,7 +752,7 @@ namespace Vortex {
 
     void pushFront(Value& left, const Value& right) {
       if (left.type != ARRAY) {
-        throw TypeError();
+        throw TypeError("push-front on non-array");
       }
 
       *left.data.ARRAY = left.data.ARRAY->pushFront(right);
@@ -811,25 +761,17 @@ namespace Vortex {
     void index(Value& left, const Value& right) {
       switch (left.type) {
         case ARRAY: {
-          if (right.type != UINT64) {
-            throw TypeError();
-          }
-
-          if (right.data.UINT64 >= left.data.ARRAY->Length()) {
-            throw BadIndexError();
-          }
-
           left = left.data.ARRAY->index(right.data.UINT64);
           return;
         }
 
         case STRING: {
           if (right.type != UINT64) {
-            throw TypeError();
+            throw TypeError("Attempt to index string with non-u64");
           }
 
           if (right.data.UINT64 >= left.data.STRING->size()) {
-            throw BadIndexError();
+            throw BadIndexError("Attempt to index past the end of a string");
           }
 
           left = Value(new String{
@@ -844,19 +786,17 @@ namespace Vortex {
           return;
         }
 
-        default: throw TypeError();
+        default: {
+          throw TypeError("Attempt to index type that is not array, not string, and not object");
+        }
       }
     }
 
     void hasIndex(Value& left, const Value& right) {
-      if (right.type != UINT64) {
-        throw TypeError();
-      }
-
       switch (left.type) {
         case ARRAY: {
           if (right.type != UINT64) {
-            throw TypeError();
+            throw TypeError("Tested for non-u64 index of array");
           }
 
           left = Value(right.data.UINT64 < left.data.ARRAY->Length());
@@ -865,7 +805,7 @@ namespace Vortex {
 
         case STRING: {
           if (right.type != UINT64) {
-            throw TypeError();
+            throw TypeError("Tested for non-u64 index of string");
           }
 
           left = Value(right.data.UINT64 < left.data.STRING->size());
@@ -877,7 +817,9 @@ namespace Vortex {
           return;
         }
 
-        default: throw TypeError();
+        default: {
+          throw TypeError("Tested for index of type that is not array, not string, and not object");
+        }
       }
     }
   }
@@ -896,7 +838,7 @@ namespace Vortex {
       case INTERSECT:
       case EX_UNION:
       case UNION:
-        throw NotImplementedError();
+        throw NotImplementedError("Operator not implemented");
 
       case LESS: BinaryOperators::less(left, right); break;
       case GREATER: BinaryOperators::greater(left, right); break;
@@ -915,7 +857,7 @@ namespace Vortex {
       case HAS_INDEX: BinaryOperators::hasIndex(left, right); break;
 
       default:
-        throw InternalError();
+        throw InternalError("Unrecognized binary operator");
     }
   }
 
@@ -938,7 +880,7 @@ namespace Vortex {
           return;
         }
 
-        default: throw TypeError();
+        default: throw TypeError("Attempt to get length of type that is not string and not array");
       }
     }
   }
@@ -952,10 +894,10 @@ namespace Vortex {
       case NOT:
       case INC:
       case DEC:
-        throw NotImplementedError();
+        throw NotImplementedError("Operator not implemented");
 
       default:
-        throw InternalError();
+        throw InternalError("Unrecognized unary operator");
     }
   }
 }

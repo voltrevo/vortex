@@ -2,6 +2,7 @@
 
 #include <cassert>
 #include <deque>
+#include <iostream>
 #include <vector>
 
 #include "Codes.hpp"
@@ -16,7 +17,7 @@ namespace Vortex {
 
       Value getLocal(byte i) {
         if (i >= locals.size()) {
-          throw InternalError();
+          throw InternalError("Local variable does not exist");
         }
 
         return locals[i];
@@ -36,7 +37,7 @@ namespace Vortex {
 
     Decoder getGFunc(byte i) {
       if (i >= gfuncs.size()) {
-        throw InternalError();
+        throw InternalError("Global function does not exist");
       }
 
       return gfuncs[i];
@@ -78,193 +79,200 @@ namespace Vortex {
       Context& ctx = cc.back();
 
       while (true) {
+        int location = pos.location();
         auto instr = pos.get();
 
-        switch (GetClass(instr)) {
-          case SPECIAL: {
-            switch (instr) {
-              case END:
-                return pos;
+        try {
+          switch (GetClass(instr)) {
+            case SPECIAL: {
+              switch (instr) {
+                case END:
+                  return pos;
 
-              case GFUNC: {
-                int id = pos.getByte();
-                setGFunc(id, pos);
-                pos.skip(FUNC);
-                break;
-              }
-
-              case DUP: {
-                calc.push_back(calc.back());
-                break;
-              }
-
-              default:
-                throw InternalError();
-            }
-
-            break;
-          }
-
-          case TOP_TYPE: {
-            push(pos.getValue(instr));
-            break;
-          }
-
-          case TERNARY_OPERATOR: {
-            assert(calc.size() >= 3);
-            auto iter = calc.end();
-            Value* right = &*(--iter);
-            Value* middle = &*(--iter);
-            Value* left = &*(--iter);
-
-            TernaryOperator(*left, *middle, *right, instr);
-
-            calc.pop_back();
-            calc.pop_back();
-            break;
-          }
-
-          case BINARY_OPERATOR: {
-            auto backPair = BackPair();
-            BinaryOperator(*backPair.first, *backPair.second, instr);
-            calc.pop_back();
-            break;
-          }
-
-          case UNARY_OPERATOR: {
-            UnaryOperator(calc.back(), instr);
-            break;
-          }
-
-          case SCOPE: {
-            switch (instr) {
-              case GET: {
-                push(ctx.getLocal(pos.getByte()));
-                break;
-              }
-
-              case SET: {
-                ctx.setLocal(pos.getByte(), pop());
-                break;
-              }
-
-              default:
-                throw InternalError();
-            }
-
-            break;
-          }
-
-          case CONTROL: {
-            switch (instr) {
-              case RETURN: {
-                return pos;
-              }
-
-              case IF: {
-                auto cond = pop();
-
-                if (cond.type != BOOL) {
-                  throw TypeError();
+                case GFUNC: {
+                  int id = pos.getByte();
+                  setGFunc(id, pos);
+                  pos.skip(FUNC);
+                  break;
                 }
 
-                if (cond.data.BOOL) {
-                  pos = run(pos);
+                case DUP: {
+                  calc.push_back(calc.back());
+                  break;
+                }
 
-                  switch (pos.peekBehind()) {
-                    case RETURN:
-                    case BREAK:
-                    case CONTINUE: {
-                      return pos;
-                    }
+                default:
+                  throw InternalError("Unrecognized SPECIAL instruction");
+              }
 
-                    case END: {
-                      break;
-                    }
+              break;
+            }
 
-                    default:
-                      throw InternalError();
+            case TOP_TYPE: {
+              push(pos.getValue(instr));
+              break;
+            }
+
+            case TERNARY_OPERATOR: {
+              assert(calc.size() >= 3);
+              auto iter = calc.end();
+              Value* right = &*(--iter);
+              Value* middle = &*(--iter);
+              Value* left = &*(--iter);
+
+              TernaryOperator(*left, *middle, *right, instr);
+
+              calc.pop_back();
+              calc.pop_back();
+              break;
+            }
+
+            case BINARY_OPERATOR: {
+              auto backPair = BackPair();
+              BinaryOperator(*backPair.first, *backPair.second, instr);
+              calc.pop_back();
+              break;
+            }
+
+            case UNARY_OPERATOR: {
+              UnaryOperator(calc.back(), instr);
+              break;
+            }
+
+            case SCOPE: {
+              switch (instr) {
+                case GET: {
+                  push(ctx.getLocal(pos.getByte()));
+                  break;
+                }
+
+                case SET: {
+                  ctx.setLocal(pos.getByte(), pop());
+                  break;
+                }
+
+                default:
+                  throw InternalError("Unrecognized SCOPE instruction");
+              }
+
+              break;
+            }
+
+            case CONTROL: {
+              switch (instr) {
+                case RETURN: {
+                  return pos;
+                }
+
+                case IF: {
+                  auto cond = pop();
+
+                  if (cond.type != BOOL) {
+                    throw TypeError("Non-bool condition");
                   }
-                } else {
-                  pos.skip(IF);
-                }
 
-                break;
-              }
+                  if (cond.data.BOOL) {
+                    pos = run(pos);
 
-              case LOOP: {
-                while (true) {
-                  auto nextPos = run(pos);
+                    switch (pos.peekBehind()) {
+                      case RETURN:
+                      case BREAK:
+                      case CONTINUE: {
+                        return pos;
+                      }
 
-                  switch (nextPos.peekBehind()) {
-                    case CONTINUE:
-                    case END: {
-                      continue;
+                      case END: {
+                        break;
+                      }
+
+                      default:
+                        throw InternalError("Unexpected instruction before if exit");
                     }
-
-                    case BREAK: {
-                      pos.skip(LOOP);
-                      break;
-                    }
-
-                    case RETURN: {
-                      return nextPos;
-                    }
-
-                    default:
-                      throw InternalError();
+                  } else {
+                    pos.skip(IF);
                   }
 
                   break;
                 }
 
-                break;
-              }
+                case LOOP: {
+                  while (true) {
+                    auto nextPos = run(pos);
 
-              case BREAK:
-              case CONTINUE: {
-                return pos;
-              }
+                    switch (nextPos.peekBehind()) {
+                      case CONTINUE:
+                      case END: {
+                        continue;
+                      }
 
-              case CALL: {
-                auto func = pop();
+                      case BREAK: {
+                        pos.skip(LOOP);
+                        break;
+                      }
 
-                if (func.type != FUNC) {
-                  throw TypeError();
+                      case RETURN: {
+                        return nextPos;
+                      }
+
+                      default:
+                        throw InternalError("Unexpected instruction before loop exit");
+                    }
+
+                    break;
+                  }
+
+                  break;
                 }
 
-                auto funcDecoder = Decoder(*func.data.FUNC);
-                // TODO: Just make context a parameter of run?
-                // TODO: Use a shared stack for locals and use an offset?
-                cc.push_back(Context());
-                run(funcDecoder);
-                cc.pop_back();
+                case BREAK:
+                case CONTINUE: {
+                  return pos;
+                }
 
-                break;
+                case CALL: {
+                  auto func = pop();
+
+                  if (func.type != FUNC) {
+                    throw TypeError("Attempt to call non-function");
+                  }
+
+                  auto funcDecoder = Decoder(*func.data.FUNC);
+                  // TODO: Just make context a parameter of run?
+                  // TODO: Use a shared stack for locals and use an offset?
+                  cc.push_back(Context());
+                  run(funcDecoder);
+                  cc.pop_back();
+
+                  break;
+                }
+
+                case GCALL: {
+                  int id = pos.getByte();
+
+                  auto funcDecoder = getGFunc(id);
+                  // TODO: Just make context a parameter of run?
+                  // TODO: Use a shared stack for locals and use an offset?
+                  cc.push_back(Context());
+                  run(funcDecoder);
+                  cc.pop_back();
+
+                  break;
+                }
+
+                case EMIT:
+                  throw NotImplementedError("emit instruction");
+
+                default:
+                  throw InternalError("Unrecognized CONTROL instruction");
               }
 
-              case GCALL: {
-                int id = pos.getByte();
-
-                auto funcDecoder = getGFunc(id);
-                // TODO: Just make context a parameter of run?
-                // TODO: Use a shared stack for locals and use an offset?
-                cc.push_back(Context());
-                run(funcDecoder);
-                cc.pop_back();
-
-                break;
-              }
-
-              case EMIT:
-                throw NotImplementedError();
-
-              default:
-                throw InternalError();
+              break;
             }
-
-            break;
           }
+        }
+        catch (...) {
+          std::cerr << "Threw exception at location " << location << std::endl;
+          throw;
         }
       }
     }
@@ -279,19 +287,19 @@ namespace Vortex {
       auto instr = pos.peekBehind();
 
       if (instr != RETURN) {
-        throw InternalError();
+        throw InternalError("Unexpected instruction before eval completion");
       }
 
       auto res = pop();
 
       if (calc.size() != 0) {
-        throw InternalError();
+        throw InternalError("Excess values left on stack");
       }
 
       cc.pop_back();
 
       if (cc.size() != prevSize)  {
-        throw InternalError();
+        throw InternalError("Context stack length does not match eval start");
       }
 
       return res;

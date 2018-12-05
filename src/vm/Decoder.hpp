@@ -59,7 +59,7 @@ namespace Vortex {
             break;
           }
 
-          throw InternalError();
+          throw InternalError("Unrecognized SPECIAL instruction");
         }
 
         case TOP_TYPE: {
@@ -127,7 +127,7 @@ namespace Vortex {
             case FLOAT16:
 
             case VSET:
-              throw NotImplementedError();
+              throw NotImplementedError("Unimplemented TOP_TYPE instruction");
 
             case FUNC: {
               // TODO: Deduplication
@@ -143,7 +143,7 @@ namespace Vortex {
             }
 
             default:
-              throw InternalError();
+              throw InternalError("Unrecognized TOP_TYPE instruction");
           }
         }
 
@@ -187,7 +187,7 @@ namespace Vortex {
             }
 
             default:
-              throw InternalError();
+              throw InternalError("Unrecognized CONTROL instruction");
           }
         }
       }
@@ -209,7 +209,7 @@ namespace Vortex {
               return Value(true);
             }
 
-            default: throw InternalError();
+            default: throw InternalError("Invalid byte following BOOL");
           }
         }
 
@@ -353,7 +353,7 @@ namespace Vortex {
               }
 
               default: {
-                throw TypeError();
+                throw NotImplementedError("Non-string key of object literal");
               }
             }
           }
@@ -376,7 +376,7 @@ namespace Vortex {
         case FLOAT16:
 
         case VSET:
-          throw NotImplementedError();
+          throw NotImplementedError("Unimplemented literal");
 
         case FUNC: {
           auto start = pos;
@@ -395,7 +395,7 @@ namespace Vortex {
         }
 
         default:
-          throw InternalError();
+          throw InternalError("Unrecognized TOP_TYPE");
       }
     }
 
@@ -442,7 +442,7 @@ namespace Vortex {
             break;
           }
 
-          throw InternalError();
+          throw InternalError("Unrecognized SPECIAL instruction");
         }
 
         case TOP_TYPE: {
@@ -478,7 +478,7 @@ namespace Vortex {
           switch (code) {
             case UPDATE: os << "update" << std::endl; return;
 
-            default: throw InternalError();
+            default: throw InternalError("Unrecognized TERNARY_OPERATOR");
           }
         }
 
@@ -519,7 +519,7 @@ namespace Vortex {
 
             case CAPTURE: os << "capture" << std::endl; return;
 
-            default: throw InternalError();
+            default: throw InternalError("Unrecognized BINARY_OPERATOR");
           }
         }
 
@@ -534,7 +534,7 @@ namespace Vortex {
             case DEC: os << "dec" << std::endl; return;
             case LENGTH: os << "length" << std::endl; return;
 
-            default: throw InternalError();
+            default: throw InternalError("Unrecognized UNARY_OPERATOR");
           }
         }
 
@@ -545,7 +545,7 @@ namespace Vortex {
             case GET: os << "get "; break;
             case SET: os << "set "; break;
 
-            default: throw InternalError();
+            default: throw InternalError("Unrecognized SCOPE instruction");
           }
 
           os << (int)getByte() << std::endl;
@@ -590,7 +590,7 @@ namespace Vortex {
             case CONTINUE: os << "continue" << std::endl; return;
 
             default:
-              throw InternalError();
+              throw InternalError("Unrecognized CONTROL instruction");
           }
         }
       }

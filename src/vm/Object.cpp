@@ -11,7 +11,7 @@ namespace Vortex {
 
   bool Object::operator<(const Object& right) const {
     if (!(keys == right.keys)) {
-      throw TypeError();
+      throw TypeError("Object keys mismatch during comparison");
     }
 
     return values < right.values;
@@ -28,7 +28,7 @@ namespace Vortex {
     }
 
     if (*keys.index(pos).data.STRING == *key.data.STRING) {
-      throw BadIndexError(); // duplicate key
+      throw BadIndexError("Attempt to add duplicate key");
     }
 
     return Object{
@@ -40,12 +40,11 @@ namespace Vortex {
   Object Object::update(const Value& key, Value value) const {
     Uint64 pos = binarySearch(key);
 
-    if (pos == keys.Length()) {
-      throw BadIndexError();
-    }
-
-    if (*keys.index(pos).data.STRING != *key.data.STRING) {
-      throw BadIndexError();
+    if (
+      pos == keys.Length() ||
+      *keys.index(pos).data.STRING != *key.data.STRING
+    ) {
+      throw BadIndexError("Attempt to update key that does not exist");
     }
 
     return Object{
@@ -57,12 +56,11 @@ namespace Vortex {
   Value Object::index(const Value& key) const {
     Uint64 pos = binarySearch(key);
 
-    if (pos == keys.Length()) {
-      throw BadIndexError();
-    }
-
-    if (*keys.index(pos).data.STRING != *key.data.STRING) {
-      throw BadIndexError();
+    if (
+      pos == keys.Length() ||
+      *keys.index(pos).data.STRING != *key.data.STRING
+    ) {
+      throw BadIndexError("Attempt to index with key that does not exist");
     }
 
     return values.index(pos);
@@ -96,7 +94,7 @@ namespace Vortex {
 
   Uint64 Object::binarySearch(const Value& key) const {
     if (key.type != STRING) {
-      throw NotImplementedError();
+      throw NotImplementedError("Searching for location of non-string key");
     }
 
     Uint64 left = 0u;
@@ -111,7 +109,7 @@ namespace Vortex {
       const Value& midValue = keys.index(mid);
 
       if (midValue.type != STRING) {
-        throw NotImplementedError();
+        throw InternalError("Encountered non-string key during search");
       }
 
       if (Value::StringComparator()(

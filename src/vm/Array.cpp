@@ -6,7 +6,7 @@ namespace Vortex {
     Uint64 sz = left.values.size();
 
     if (right.values.size() != sz) {
-      throw TypeError();
+      throw TypeError("== on arrays of unequal sizes");
     }
 
     bool same = true;
@@ -35,7 +35,7 @@ namespace Vortex {
     Uint64 sz = left.values.size();
 
     if (right.values.size() != sz) {
-      throw TypeError();
+      throw TypeError("< on arrays of unequal sizes");
     }
 
     int outcome = 0;

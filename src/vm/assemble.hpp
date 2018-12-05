@@ -140,7 +140,7 @@ namespace Vortex {
     int res = parseInt(in);
 
     if (res > 255) {
-      throw BadIndexError();
+      throw BadIndexError("Parsed byte greater than 255");
     }
 
     return res;
@@ -206,7 +206,7 @@ namespace Vortex {
 
         if (c == '1') {
           if (in.get() != '6') {
-            throw SyntaxError();
+            throw SyntaxError("6 expected");
           }
 
           out.put(isSigned ? INT16 : UINT16);
@@ -216,7 +216,7 @@ namespace Vortex {
 
         if (c == '3') {
           if (in.get() != '2') {
-            throw SyntaxError();
+            throw SyntaxError("2 expected");
           }
 
           out.put(isSigned ? INT32 : UINT32);
@@ -227,7 +227,7 @@ namespace Vortex {
         if (c == '6') {
           // TODO: Currently can only handle 64 bit literals in i32 range
           if (in.get() != '4') {
-            throw SyntaxError();
+            throw SyntaxError("4 expected");
           }
 
           out.put(isSigned ? INT64 : UINT64);
@@ -242,7 +242,7 @@ namespace Vortex {
 
         if (c == '3') {
           if (in.get() != '2') {
-            throw SyntaxError();
+            throw SyntaxError("2 expected");
           }
 
           out.put(FLOAT32);
@@ -253,7 +253,7 @@ namespace Vortex {
 
         if (c == '6') {
           if (in.get() != '4') {
-            throw SyntaxError();
+            throw SyntaxError("4 expected");
           }
 
           out.put(FLOAT64);
@@ -269,7 +269,7 @@ namespace Vortex {
         double mul = negative ? -0.1 : 0.1;
 
         if (!('0' <= c && c <= '9')) {
-          throw SyntaxError();
+          throw SyntaxError("0-9 expected");
         }
 
         while ('0' <= c && c <= '9') {
@@ -284,7 +284,7 @@ namespace Vortex {
 
           if (in.get() == '3') {
             if (in.get() != '2') {
-              throw SyntaxError();
+              throw SyntaxError("2 expected");
             }
 
             float resf = resd;
@@ -295,7 +295,7 @@ namespace Vortex {
 
           if (in.get() == '6') {
             if (in.get() != '4') {
-              throw SyntaxError();
+              throw SyntaxError("4 expected");
             }
 
             out.put(FLOAT64);
@@ -303,7 +303,7 @@ namespace Vortex {
             return;
           }
 
-          throw SyntaxError();
+          throw SyntaxError("3 or 6 expected");
         }
 
         out.put(FLOAT64);
@@ -344,7 +344,7 @@ namespace Vortex {
           continue;
         }
 
-        throw SyntaxError();
+        throw SyntaxError(", or ] expected");
       }
 
       out.put(END);
@@ -366,7 +366,7 @@ namespace Vortex {
           c = in.get();
 
           if (c != '\'') {
-            throw SyntaxError();
+            throw SyntaxError("' expected");
           }
         }
 
@@ -393,7 +393,7 @@ namespace Vortex {
 
         if (c != '\'') {
           // TODO: Actually, need to preferentially parse identifiers here
-          throw SyntaxError();
+          throw SyntaxError("' expected");
         }
 
         parse(in, out);
@@ -402,7 +402,7 @@ namespace Vortex {
         c = in.get();
 
         if (c != ':') {
-          throw SyntaxError();
+          throw SyntaxError(": expected");
         }
 
         parse(in, out);
@@ -418,7 +418,7 @@ namespace Vortex {
           continue;
         }
 
-        throw SyntaxError();
+        throw SyntaxError(", or } expected");
       }
 
       out.put(END);
@@ -462,7 +462,7 @@ namespace Vortex {
     auto pos = codeMap.find(word);
 
     if (pos == codeMap.end()) {
-      throw SyntaxError();
+      throw SyntaxError("Unrecognized word");
     }
 
     Code code = pos->second;
@@ -475,7 +475,7 @@ namespace Vortex {
         skipWhitespace(in);
 
         if (in.get() != '{') {
-          throw new SyntaxError();
+          throw SyntaxError("{ expected");
         }
 
         break;
@@ -490,7 +490,7 @@ namespace Vortex {
         skipWhitespace(in);
 
         if (in.get() != '{') {
-          throw new SyntaxError();
+          throw SyntaxError("{ expected");
         }
 
         break;

@@ -1,0 +1,62 @@
+gfunc 0 {
+  set 0
+
+  []
+
+  []
+    get 0 0u64 index
+    push-back
+    get 0 1u64 index
+    push-back
+  push-back
+
+  []
+    []
+      'equal:'
+      push-back
+      get 0 0u64 index
+      get 0 1u64 index
+      ==
+      push-back
+    push-back
+
+    []
+      'less than:'
+      push-back
+      get 0 0u64 index
+      get 0 1u64 index
+      <
+      push-back
+    push-back
+  push-back
+}
+
+[
+  [[], []],
+  [null, null],
+  [[1, 2], [1, 3]],
+  [{'a': 1}, {'a': 1}]
+]
+set 0
+
+get 0 length
+set 1
+
+0u64 set 2
+
+[]
+
+loop {
+  get 2 get 1 >= if {
+    break
+  }
+
+  get 0 get 2 index
+  gcall 0
+  push-back
+
+  get 2 1u64 +
+  set 2
+}
+
+return

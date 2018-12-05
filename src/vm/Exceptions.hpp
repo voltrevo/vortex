@@ -2,25 +2,45 @@
 
 #include <cassert>
 #include <exception>
+#include <sstream>
 
 namespace Vortex {
-  struct TypeError: std::exception {
-    const char* what() const noexcept { return "Type error"; }
+  struct Error: std::exception {
+    enum ErrorType {
+      Type,
+      Internal,
+      NotImplemented,
+      BadIndex,
+      Syntax,
+    };
+
+    ErrorType type;
+    std::string desc;
+
+    mutable std::string tmp;
+
+    Error(ErrorType type, std::string desc):
+      type(type),
+      desc(std::move(desc))
+    {}
+
+    const char* what() const noexcept {
+      std::ostringstream oss;
+      oss << *this;
+      tmp = oss.str();
+      return tmp.c_str();
+    }
+
+    friend std::ostream& operator<<(std::ostream& os, const Error& error) {
+      return os << error.type << ": " << error.desc;
+    }
   };
 
-  struct InternalError: std::exception {
-    const char* what() const noexcept { return "Internal error"; }
-  };
+  std::ostream& operator<<(std::ostream& os, Error::ErrorType errorType);
 
-  struct NotImplementedError: std::exception {
-    const char* what() const noexcept { return "Not implemented"; }
-  };
-
-  struct BadIndexError: std::exception {
-    const char* what() const noexcept { return "Bad index"; }
-  };
-
-  struct SyntaxError: std::exception {
-    const char* what() const noexcept { return "Syntax error"; }
-  };
+  Error TypeError(std::string desc);
+  Error InternalError(std::string desc);
+  Error NotImplementedError(std::string desc);
+  Error BadIndexError(std::string desc);
+  Error SyntaxError(std::string desc);
 }
