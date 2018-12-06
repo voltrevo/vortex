@@ -15,19 +15,26 @@ namespace Bytecode {
       }
     }
 
+    let first = true;
+
     for (const hoist of hoists) {
       if (hoist.v.name === null) {
         // Anonymous hoist is meaningless. Validation emits a warn about this.
         continue;
       }
 
-      lines.push(`gfunc $${hoist.v.name} {`);
+      if (!first) {
+        lines.push('');
+      }
+
+      lines.push(`gfunc $${hoist.v.name.v} {`);
 
       for (let i = hoist.v.args.length - 1; i >= 0; i--) {
         const arg = hoist.v.args[i];
 
         if (arg.v.t !== 'IDENTIFIER') {
-          throw new Error('Not implemented: non-identifier arguments');
+          lines.push(`  'Not implemented: non-identifier arguments' throw`);
+          continue;
         }
 
         lines.push(`  set $${arg.v.v}`);
@@ -48,9 +55,9 @@ namespace Bytecode {
       lines.push(...bodyLines.map(line => '  ' + line));
 
       lines.push(`}`);
-    }
 
-    let first = true;
+      first = false;
+    }
 
     for (const statement of statements) {
       if (!first) {
@@ -82,7 +89,7 @@ namespace Bytecode {
       case 'log.info':
       case 'log.warn':
       case 'log.error':
-        throw new Error('Not implemented');
+        return [`'Not implemented: ${statement.t} statement' throw`];
     }
   }
 
@@ -123,7 +130,7 @@ namespace Bytecode {
       }
 
       // TODO: Should this operator even exist?
-      case 'unary +': throw new Error('Not implemented');
+      case 'unary +': return [`'Not implemented: unary + expression' throw`];
 
       case '.':
       case 'functionCall':
@@ -136,7 +143,7 @@ namespace Bytecode {
       case 'class':
       case 'switch':
       case 'import':
-        throw new Error('Not implemented');
+        return [`'Not implemented: ${exp.t} expression' throw`];
 
       case '**':
       case '<<':
@@ -172,7 +179,9 @@ namespace Bytecode {
         const [leftExp, rightExp] = exp.v;
 
         if (leftExp.t !== 'IDENTIFIER') {
-          throw new Error('Not implemented: non-identifier lvalues');
+          return [
+            `'Not implemented: assign/create with non-identifier lhs' throw`
+          ];
         }
 
         return [...Expression(rightExp), `set $${leftExp.v}`];
@@ -192,7 +201,10 @@ namespace Bytecode {
         const [leftExp, rightExp] = exp.v;
 
         if (leftExp.t !== 'IDENTIFIER') {
-          throw new Error('Not implemented: non-identifier lvalues');
+          return [
+            `'Not implemented: compound assignment with non-identifier lhs' ` +
+            `throw`
+          ];
         }
 
         const opString = exp.t.substring(0, exp.t.length - 1);
