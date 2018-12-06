@@ -74,21 +74,112 @@ namespace Bytecode {
   export function Statement(statement: Syntax.Statement): string[] {
     switch (statement.t) {
       case 'e': return Expression(statement.v);
-      case 'return': return [...Expression(statement.v), 'return'];
+
+      case 'return':
+      case 'assert':
+      case 'log.info':
+      case 'log.warn':
+      case 'log.error':
+        return [...Expression(statement.v), statement.t];
 
       case 'break': return ['break'];
       case 'continue': return ['continue'];
 
-      // TODO
-      case 'if':
-      case 'for':
+      case 'if': {
+        return [
+          ...Expression(statement.v.cond),
+          'if {',
+          ...Block(statement.v.block).map(line => `  ${line}`),
+          '}',
+          ...(
+            statement.v.else_ !== null ?
+            [`'Not implemented: else clause' throw`] :
+            []
+          )
+        ];
+      }
 
-      case 'assert':
+      case 'for': {
+        if (statement.v.control === null) {
+          return [
+            'loop {',
+            ...Block(statement.v.block).map(line => '  ' + line),
+            '}',
+          ];
+        }
+
+        const forLines: string[] = [];
+
+        forLines.push(...(() => {
+          switch (statement.v.control.t) {
+            case 'range': return [`'Not implemented: range for loop' throw`];
+            case 'condition': return [];
+
+            case 'setup; condition; next': {
+              return Expression(statement.v.control.v[0]);
+            }
+          }
+        })());
+
+        forLines.push('loop {');
+
+        forLines.push(...(() => {
+          switch (statement.v.control.t) {
+            case 'range': return [];
+
+            case 'condition': {
+              return [
+                ...Expression(statement.v.control.v),
+                '! if {',
+                '  break',
+                '}',
+                '',
+              ];
+            }
+
+            case 'setup; condition; next': {
+              return [
+                ...Expression(statement.v.control.v[1]),
+                '! if {',
+                '  break',
+                '}',
+                '',
+              ];
+            }
+          }
+        })().map(line => '  ' + line));
+
+        const blockLines = Block(statement.v.block);
+
+        if (statement.v.control.t === 'setup; condition; next') {
+          for (const line of blockLines) {
+            // TODO: Matching on compiled string line here is not ideal
+            // (Also making use of indenting to avoid nested continues)
+            if (line === 'continue') {
+              forLines.push(
+                `  'Not implemented: continue statement inside iteration ` +
+                `for loop' throw`
+              );
+            } else {
+              forLines.push('  ' + line);
+            }
+          }
+
+          forLines.push(
+            '  ',
+            ...Expression(statement.v.control.v[2]).map(line => '  ' + line),
+          );
+        } else {
+          forLines.push(...blockLines.map(line => '  ' + line));
+        }
+
+        forLines.push('}');
+
+        return forLines;
+      }
+
       case 'import':
       case 'breakpoint':
-      case 'log.info':
-      case 'log.warn':
-      case 'log.error':
         return [`'Not implemented: ${statement.t} statement' throw`];
     }
   }
