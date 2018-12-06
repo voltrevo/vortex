@@ -1,0 +1,14 @@
+#!/bin/bash -e
+
+jisonStdout=$(npx jison vasm.jison)
+
+if [ ${#jisonStdout} -gt 0 ]; then
+  echo "$jisonStdout" 1>&2
+  exit 1
+fi
+
+echo "import Syntax from './Syntax';" >testProgram.ts
+echo >>testProgram.ts
+echo "export const testProgram: Syntax.Program =" >>testProgram.ts
+DEPTH=100 PRINT=1 node vasm.js input.vasm >>testProgram.ts
+echo ";" >>testProgram.ts

@@ -1,0 +1,9 @@
+[]
+
+1 1 +
+push-back
+
+'Hello'
+push-back
+
+return
