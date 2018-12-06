@@ -1,6 +1,7 @@
 import * as fs from 'fs';
 import * as minimist from 'minimist';
 
+import Bytecode from './Bytecode';
 import Compiler from './Compiler';
 import getStdin from './getStdin';
 import Note from './Note';
@@ -186,7 +187,7 @@ const inputs: { type: 'file', name: string }[] = [];
 
   const files = inputs.map(input => '@/' + input.name);
 
-  let [notes] = Compiler.compile(
+  let [notes, az] = Compiler.compile(
     files,
     readFile,
     { stepLimit: 1000000 }, // TODO: Make this configurable
@@ -241,6 +242,28 @@ const inputs: { type: 'file', name: string }[] = [];
         // TODO: Why doesn't typescript know this is impossible?
         throw new Error('Should not be possible');
     };
+  }
+
+  if (args.bytecode) {
+    console.log('--- bytecode ---');
+
+    for (const file of files) {
+      console.log(`  ${file}:`);
+      const mod = az.pack.modules[file];
+
+      if (!mod) {
+        throw new Error('Should not be possible');
+      }
+
+      if (mod.t === 'ParserNotes') {
+        console.log('(parsing failed)');
+        continue;
+      }
+
+      for (const line of Bytecode.Block(mod.program)) {
+        console.log(`    ${line}`);
+      }
+    }
   }
 })().catch(e => {
   setTimeout(() => { throw e; });
