@@ -135,6 +135,9 @@ namespace Vortex {
 
   namespace UnaryOperators {
     void length(Value& value);
+    void inc(Value& value);
+    void dec(Value& value);
+    void not_(Value& value);
   }
 
   void UnaryOperator(Value& value, Code op);

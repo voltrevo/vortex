@@ -933,6 +933,17 @@ namespace Vortex {
         default: throw InternalError("Unrecognized value type");
       }
     }
+
+    void not_(Value& value) {
+      switch (value.type) {
+        case BOOL: {
+          value.data.BOOL = !value.data.BOOL;
+          return;
+        }
+
+        default: throw TypeError("not on non-bool type");
+      }
+    }
   }
 
   void UnaryOperator(Value& value, Code op) {
@@ -941,9 +952,9 @@ namespace Vortex {
 
       case NEGATE:
       case BIT_NEGATE:
-      case NOT:
         throw NotImplementedError("Operator not implemented");
 
+      case NOT: UnaryOperators::not_(value); break;
       case INC: UnaryOperators::inc(value); break;
       case DEC: UnaryOperators::dec(value); break;
 
