@@ -1,6 +1,6 @@
 declare function require(name: string): any;
 
-const { parser: parserUntyped } = require('./vortex.js');
+const { parser: parserUntyped } = require('./vasm.js');
 
 namespace Syntax {
   export type CPos = [number, number];

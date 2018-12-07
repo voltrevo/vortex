@@ -11,14 +11,13 @@
 'set'                 return 'SET'
 'gcall'               return 'GCALL'
 \$[a-zA-Z]\w*         return 'NLABEL'
-[a-zA-Z]\w*           return 'IDENTIFIER'
 'if'                  return 'IF'
 'else'                return 'ELSE'
 'loop'                return 'LOOP'
 'func'                return 'FUNC'
 'gfunc'               return 'GFUNC'
-'true'                return 'TRUE'
 'false'               return 'FALSE'
+'true'                return 'TRUE'
 'null'                return 'NULL'
 '{'                   return '{'
 '}'                   return '}'
@@ -27,9 +26,10 @@
 ','                   return ','
 ':'                   return ':'
 [0-9]+("."[0-9]+)?\b  return 'NUMBER'
-'u'                   return 'u'
-'i'                   return 'i'
-'f'                   return 'f'
+\bu\b                 return 'u'
+\bi\b                 return 'i'
+\bf\b                 return 'f'
+[a-zA-Z]\w*           return 'IDENTIFIER'
 ['](\\.|[^'])*[']     return 'STRING'
 [^\s]+                return 'WORD'
 <<EOF>>               return 'EOF'
@@ -74,12 +74,6 @@ statements
 statement
     : labelWord NLABEL
         {$$ = { t: $1.toLowerCase(), v: $2, p: L(@$) }}
-    | IDENTIFIER
-        {$$ = { t: 'word', v: $1, p: L(@$) }}
-    | WORD
-        {$$ = { t: 'word', v: $1, p: L(@$) }}
-    | value
-        {$$ = $1}
     | func
         {$$ = $1}
     | gfunc
@@ -88,6 +82,12 @@ statement
         {$$ = $1}
     | loop
         {$$ = $1}
+    | IDENTIFIER
+        {$$ = { t: 'word', v: $1, p: L(@$) }}
+    | value
+        {$$ = $1}
+    | WORD
+        {$$ = { t: 'word', v: $1, p: L(@$) }}
     ;
 
 labelWord
@@ -133,7 +133,7 @@ gfunc
 
 number
     : NUMBER numberSuffix
-        {$$ = { t: 'number', v: $1 + $2, p: L(@$) }}
+        {$$ = { t: 'number', v: $1 + ($2 || ''), p: L(@$) }}
     ;
 
 numberSuffix
@@ -198,11 +198,17 @@ prop
     : value ':' value
         {$$ = [$1, $3]}
     | identifier ':' value
-        {$$ = [{ t: 'string', v: `'${$1.v}'`, p: $1.p }, $3]}
+        {$$ = [{ t: 'string', v: '\'' + $1.v + '\'', p: $1.p }, $3]}
     ;
 
 identifier
     : IDENTIFIER
+        {$$ = { t: 'identifier', v: $1, p: L(@$) }}
+    | 'u'
+        {$$ = { t: 'identifier', v: $1, p: L(@$) }}
+    | 'i'
+        {$$ = { t: 'identifier', v: $1, p: L(@$) }}
+    | 'f'
         {$$ = { t: 'identifier', v: $1, p: L(@$) }}
     ;
 
