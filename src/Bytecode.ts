@@ -345,10 +345,46 @@ namespace Bytecode {
         return lines;
       }
 
-      case '.':
-      case 'functionCall':
-      case 'methodLookup':
-      case 'subscript':
+      case '.': {
+        return [
+          ...Expression(exp.v[0]),
+          `'${exp.v[1].v}'`,
+          'at',
+        ];
+      }
+
+      case 'functionCall': {
+        const lines: string[] = [];
+
+        const [fn, args] = exp.v;
+
+        for (const arg of args) {
+          lines.push(...Expression(arg));
+        }
+
+        lines.push(...Expression(fn), 'call');
+
+        return lines;
+      }
+
+      case 'methodLookup': {
+        const [obj, ident] = exp.v;
+
+        return [
+          ...Expression(obj),
+          `'${ident.v}'`,
+          'method-lookup',
+        ];
+      }
+
+      case 'subscript': {
+        return [
+          ...Expression(exp.v[0]),
+          ...Expression(exp.v[1]),
+          'at',
+        ];
+      }
+
       case 'class':
       case 'switch':
       case 'import':
