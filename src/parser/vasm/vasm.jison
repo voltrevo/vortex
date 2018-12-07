@@ -9,7 +9,6 @@
 \s+                   /* skip whitespace */
 'get'                 return 'GET'
 'set'                 return 'SET'
-'call'                return 'CALL'
 'gcall'               return 'GCALL'
 \$[a-zA-Z]\w*         return 'NLABEL'
 [a-zA-Z]\w*           return 'IDENTIFIER'
@@ -81,6 +80,8 @@ statement
         {$$ = { t: 'word', v: $1, p: L(@$) }}
     | value
         {$$ = $1}
+    | func
+        {$$ = $1}
     | gfunc
         {$$ = $1}
     | if
@@ -93,8 +94,6 @@ labelWord
     : GET
         {$$ = $1}
     | SET
-        {$$ = $1}
-    | CALL
         {$$ = $1}
     | GCALL
         {$$ = $1}
@@ -109,13 +108,11 @@ value
         {$$ = { t: 'bool', v: true, p: L(@$) }}
     | number
         {$$ = $1}
-    | STRING
+    | string
         {$$ = $1}
     | array
         {$$ = $1}
     | object
-        {$$ = $1}
-    | func
         {$$ = $1}
     ;
 
@@ -130,13 +127,13 @@ func
     ;
 
 gfunc
-    : GFUNC '{' block '}'
-        {$$ = { t: 'gfunc', v: $3, p: L(@$) }}
+    : GFUNC NLABEL '{' block '}'
+        {$$ = { t: 'gfunc', v: { nlabel: $2, block: $4 }, p: L(@$) }}
     ;
 
 number
     : NUMBER numberSuffix
-        {$$ = { t: 'number', v: [$1, $2], p: L(@$) }}
+        {$$ = { t: 'number', v: $1 + $2, p: L(@$) }}
     ;
 
 numberSuffix
@@ -201,7 +198,7 @@ prop
     : value ':' value
         {$$ = [$1, $3]}
     | identifier ':' value
-        {$$ = [$1, $3]}
+        {$$ = [{ t: 'string', v: `'${$1.v}'`, p: $1.p }, $3]}
     ;
 
 identifier
