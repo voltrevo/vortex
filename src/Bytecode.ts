@@ -86,17 +86,31 @@ namespace Bytecode {
       case 'continue': return ['continue'];
 
       case 'if': {
-        return [
+        const lines = [];
+
+        lines.push(
           ...Expression(statement.v.cond),
           'if {',
           ...Block(statement.v.block).map(line => `  ${line}`),
-          '}',
-          ...(
-            statement.v.else_ !== null ?
-            [`'Not implemented: else clause' throw`] :
-            []
-          )
-        ];
+        );
+
+        if (statement.v.else_ === null) {
+          lines.push('}');
+        } else if (statement.v.else_.t === 'if') {
+          lines.push(
+            '} else {',
+            ...Statement(statement.v.else_).map(line => `  ${line}`),
+            '}',
+          );
+        } else {
+          lines.push(
+            '} else {',
+            ...Block(statement.v.else_).map(line => `  ${line}`),
+            '}',
+          );
+        }
+
+        return lines;
       }
 
       case 'for': {
