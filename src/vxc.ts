@@ -1,11 +1,13 @@
 import * as fs from 'fs';
 import * as minimist from 'minimist';
 
+import VasmSyntax from './parser/vasm/Syntax';
 import Bytecode from './Bytecode';
 import Compiler from './Compiler';
 import getStdin from './getStdin';
 import Note from './Note';
 import pretty from './pretty';
+import serializeVasmTree from './serializeVasmTree';
 
 const args = minimist(process.argv.slice(2));
 
@@ -244,24 +246,35 @@ const inputs: { type: 'file', name: string }[] = [];
     };
   }
 
-  if (args.bytecode) {
-    console.log('--- bytecode ---');
+  if (args.vasm || args.code) {
+    if (args.vasm && args.code) {
+      throw new Error('Only one of --vasm, --code should be provided');
+    }
 
-    for (const file of files) {
-      console.log(`  ${file}:`);
-      const mod = az.pack.modules[file];
+    if (files.length !== 1) {
+      throw new Error('Emitting code is only supported for one file');
+    }
 
-      if (!mod) {
-        throw new Error('Should not be possible');
-      }
+    const file = files[0];
 
-      if (mod.t === 'ParserNotes') {
-        console.log('(parsing failed)');
-        continue;
-      }
+    const mod = az.pack.modules[file];
 
-      for (const line of Bytecode.Block(mod.program)) {
-        console.log(`    ${line}`);
+    if (!mod) {
+      throw new Error('Should not be possible');
+    }
+
+    if (mod.t === 'ParserNotes') {
+      throw new Error('Can\'t emit bytecode for file that failed parsing');
+    } else {
+      const lines = Bytecode.Block(mod.program);
+
+      if (args.vasm) {
+        console.log(lines.join('\n'));
+      } else {
+        const vasmTree = VasmSyntax.Program(lines.join('\n'));
+        const codeLines = serializeVasmTree(vasmTree);
+
+        console.log(codeLines.join('\n'));
       }
     }
   }

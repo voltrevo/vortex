@@ -221,5 +221,5 @@ if
 
 loop
     : LOOP '{' block '}'
-        {$$ = { t: 'loop', v: { block: $3 }, p: L(@$) }}
+        {$$ = { t: 'loop', v: $3, p: L(@$) }}
     ;

@@ -5,7 +5,7 @@
   "main": "build/index.js",
   "author": "Andrew Morris",
   "scripts": {
-    "build": "rm -r build && jison src/parser/vortex.jison -o $(pwd)/src/parser/vortex.js && tsc",
+    "build": "rm -rf build && mkdir -p build/parser/vasm && jison src/parser/vortex.jison -o build/parser/vortex.js && jison src/parser/vasm/vasm.jison -o build/parser/vasm/vasm.js && tsc",
     "test": "node build/src/test.js"
   },
   "license": "unlicensed",
