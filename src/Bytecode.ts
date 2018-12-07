@@ -212,7 +212,10 @@ namespace Bytecode {
       }
 
       case 'Object': {
-        return exp.v.every(([key, val]) => isLiteral(key) && isLiteral(val));
+        return exp.v.every(([key, val]) => (
+          (isLiteral(key) || key.t === 'IDENTIFIER') &&
+          isLiteral(val)
+        ));
       }
 
       default:
@@ -312,11 +315,40 @@ namespace Bytecode {
         return lines;
       }
 
+      case 'Object': {
+        if (isLiteral(exp)) {
+          return [
+            '{' +
+            exp.v.map(([key, val]) => (
+              (
+                key.t === 'IDENTIFIER' ?
+                `'${key.v}'` :
+                Expression(key)
+              ) +
+              ': ' +
+              Expression(val)[0]
+            )).join(', ') +
+            '}',
+          ];
+        }
+
+        const lines: string[] = ['{}'];
+
+        for (const [key, val] of exp.v) {
+          lines.push(
+            ...Expression(key),
+            ...Expression(val),
+            'insert',
+          );
+        }
+
+        return lines;
+      }
+
       case '.':
       case 'functionCall':
       case 'methodLookup':
       case 'subscript':
-      case 'Object':
       case 'class':
       case 'switch':
       case 'import':
