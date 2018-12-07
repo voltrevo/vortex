@@ -101,6 +101,22 @@ namespace Vortex {
                   break;
                 }
 
+                case ASSERT: {
+                  const Value& back = calc.back();
+
+                  if (back.type != BOOL) {
+                    throw TypeError("Asserted non-bool");
+                  }
+
+                  if (back.data.BOOL == false) {
+                    // TODO: Should this be internal error?
+                    throw InternalError("Asserted false");
+                  }
+
+                  calc.pop_back();
+                  break;
+                }
+
                 default:
                   throw InternalError("Unrecognized SPECIAL instruction");
               }

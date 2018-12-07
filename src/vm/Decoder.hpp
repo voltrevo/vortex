@@ -51,11 +51,7 @@ namespace Vortex {
             break;
           }
 
-          if (code == END) {
-            break;
-          }
-
-          if (code == DUP) {
+          if (code == END || code == DUP || code == ASSERT) {
             break;
           }
 
@@ -439,6 +435,11 @@ namespace Vortex {
 
           if (code == DUP) {
             os << "dup" << std::endl;
+            break;
+          }
+
+          if (code == ASSERT) {
+            os << "assert" << std::endl;
             break;
           }
 

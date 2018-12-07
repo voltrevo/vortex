@@ -14,6 +14,7 @@ namespace Vortex {
     {"gfunc", GFUNC},
     //{"", INVALID},
     {"dup", DUP},
+    {"assert", ASSERT},
 
     // TOP_TYPE
     //{"", NULL_},
