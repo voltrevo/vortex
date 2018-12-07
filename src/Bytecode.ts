@@ -385,8 +385,46 @@ namespace Bytecode {
         ];
       }
 
+      case 'switch': {
+        const lines: string[] = [];
+        let indent = '';
+
+        const [testExp, cases] = exp.v;
+
+        for (const [caseLeft, caseRight] of cases) {
+          if (testExp !== null) {
+            // TODO: Use temporary variable instead
+            lines.push(...Expression(testExp).map(line => indent + line));
+          }
+
+          lines.push(...Expression(caseLeft).map(line => indent + line));
+
+          if (testExp !== null) {
+            // TODO: Use temporary variable instead
+            lines.push(indent + '==');
+          }
+
+          lines.push(indent + 'if {');
+
+          lines.push(
+            ...Expression(caseRight).map(line => '  ' + indent + line),
+            indent + '} else {',
+          );
+
+          indent += '  ';
+        }
+
+        lines.push(indent + 'false assert');
+
+        while (indent.length > 0) {
+          indent = indent.slice(0, indent.length - 2);
+          lines.push(indent + '}');
+        }
+
+        return lines;
+      }
+
       case 'class':
-      case 'switch':
       case 'import':
         return [`'Not implemented: ${exp.t} expression' throw`];
 
