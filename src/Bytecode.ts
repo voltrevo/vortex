@@ -195,7 +195,28 @@ namespace Bytecode {
       case 'breakpoint': return ['breakpoint'];
 
       case 'import':
-        return [`'Not implemented: ${statement.t} statement' throw`];
+        return [`'Not implemented: import statement' throw`];
+    }
+  }
+
+  function isLiteral(exp: Syntax.Expression): boolean {
+    switch (exp.t) {
+      case 'NUMBER':
+      case 'BOOL':
+      case 'NULL':
+      case 'STRING':
+        return true;
+
+      case 'Array': {
+        return exp.v.every(isLiteral);
+      }
+
+      case 'Object': {
+        return exp.v.every(([key, val]) => isLiteral(key) && isLiteral(val));
+      }
+
+      default:
+        return false;
     }
   }
 
@@ -273,12 +294,28 @@ namespace Bytecode {
         return lines;
       }
 
+      case 'op': {
+        return [`func { ${exp.v} }`];
+      }
+
+      case 'Array': {
+        if (isLiteral(exp)) {
+          return ['[' + exp.v.map(el => Expression(el)[0]).join(', ') + ']'];
+        }
+
+        const lines: string[] = ['[]'];
+
+        for (const el of exp.v) {
+          lines.push(...Expression(el), 'push-back');
+        }
+
+        return lines;
+      }
+
       case '.':
       case 'functionCall':
       case 'methodLookup':
       case 'subscript':
-      case 'op':
-      case 'Array':
       case 'Object':
       case 'class':
       case 'switch':
