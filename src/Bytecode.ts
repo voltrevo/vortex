@@ -178,8 +178,9 @@ namespace Bytecode {
         return forLines;
       }
 
+      case 'breakpoint': return ['breakpoint'];
+
       case 'import':
-      case 'breakpoint':
         return [`'Not implemented: ${statement.t} statement' throw`];
     }
   }
@@ -223,11 +224,45 @@ namespace Bytecode {
       // TODO: Should this operator even exist?
       case 'unary +': return [`'Not implemented: unary + expression' throw`];
 
+      case 'Func': {
+        const lines: string[] = [];
+
+        lines.push(`func {`);
+
+        for (let i = exp.v.args.length - 1; i >= 0; i--) {
+          const arg = exp.v.args[i];
+
+          if (arg.v.t !== 'IDENTIFIER') {
+            lines.push(`  'Not implemented: non-identifier arguments' throw`);
+            continue;
+          }
+
+          lines.push(`  set $${arg.v.v}`);
+        }
+
+        const bodyLines = (() => {
+          switch (exp.v.body.t) {
+            case 'block': {
+              return Block(exp.v.body);
+            }
+
+            case 'expBody': {
+              return Expression(exp.v.body.v);
+            }
+          }
+        })();
+
+        lines.push(...bodyLines.map(line => '  ' + line));
+
+        lines.push(`}`);
+
+        return lines;
+      }
+
       case '.':
       case 'functionCall':
       case 'methodLookup':
       case 'subscript':
-      case 'Func':
       case 'op':
       case 'Array':
       case 'Object':
