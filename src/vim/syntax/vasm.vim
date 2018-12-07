@@ -19,7 +19,7 @@ hi def link     vasmDirective         Statement
 hi def link     vasmDeclaration       Keyword
 
 " Keywords within functions
-syn keyword     vasmStatement         return break continue assert breakpoint log push back front dup index has negate inc dec
+syn keyword     vasmStatement         return break continue assert breakpoint log push back front dup index has negate inc dec get set
 syn keyword     vasmConditional       if else
 syn keyword     vasmRepeat            loop
 
@@ -28,12 +28,10 @@ hi def link     vasmConditional       Conditional
 hi def link     vasmRepeat            Repeat
 
 " Predefined types
-"syn keyword     vasmType              bool string
-syn keyword     vasmSignedInts        i8 i16 i32 i64
-syn keyword     vasmUnsignedInts      u8 u16 u32 u64
-syn keyword     vasmFloats            f8 f16 f32 f64
+syn match       vasmSignedInts        "i\(8\|16\|32\|64\)\>"
+syn match       vasmUnsignedInts      "u\(8\|16\|32\|64\)\>"
+syn match       vasmFloats            "f\(8\|16\|32\|64\)\>"
 
-"hi def link     vasmType              Type
 hi def link     vasmSignedInts        Type
 hi def link     vasmUnsignedInts      Type
 hi def link     vasmFloats            Type
@@ -90,10 +88,10 @@ syn match       vasmLabel             "\$[a-zA-Z]\w*"
 hi def link     vasmLabel             Define
 
 " Integers
-syn match       vasmDecimalInt        "\<\d\+\([Ee]\d\+\)\?\>"
-syn match       vasmHexadecimalInt    "\<0x\x\+\>"
-syn match       vasmOctalInt          "\<0\o\+\>"
-syn match       vasmOctalError        "\<0\o*[89]\d*\>"
+syn match       vasmDecimalInt        "\<\d\+\([Ee]\d\+\)\?"
+syn match       vasmHexadecimalInt    "\<0x\x\+"
+syn match       vasmOctalInt          "\<0\o\+"
+syn match       vasmOctalError        "\<0\o*[89]\d*"
 
 hi def link     vasmDecimalInt        Number
 hi def link     vasmHexadecimalInt    Number
