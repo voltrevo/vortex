@@ -96,6 +96,7 @@ namespace Vortex {
     {"return", RETURN},
     {"emit", EMIT},
     {"if", IF},
+    {"else", ELSE},
     {"loop", LOOP},
     {"break", BREAK},
     {"continue", CONTINUE},
@@ -472,7 +473,8 @@ namespace Vortex {
     switch (code) {
       case FUNC:
       case LOOP:
-      case IF: {
+      case IF:
+      case ELSE: {
         skipWhitespace(in);
 
         if (in.get() != '{') {

@@ -90,6 +90,7 @@ namespace Vortex {
       case RETURN:
       case EMIT:
       case IF:
+      case ELSE:
       case LOOP:
       case BREAK:
       case CONTINUE:

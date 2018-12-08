@@ -206,8 +206,37 @@ namespace Vortex {
                     }
                   } else {
                     pos.skip(IF);
+
+                    if (pos.peek() == ELSE) {
+                      pos.get();
+                      pos = run(pos);
+
+                      // TODO: Dedupe with if
+                      switch (pos.peekBehind()) {
+                        case RETURN:
+                        case BREAK:
+                        case CONTINUE: {
+                          return pos;
+                        }
+
+                        case END: {
+                          break;
+                        }
+
+                        default: {
+                          throw InternalError(
+                            "Unexpected instruction before else exit"
+                          );
+                        }
+                      }
+                    }
                   }
 
+                  break;
+                }
+
+                case ELSE: {
+                  pos.skip(ELSE);
                   break;
                 }
 

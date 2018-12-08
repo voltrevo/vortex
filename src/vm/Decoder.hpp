@@ -27,6 +27,7 @@ namespace Vortex {
 
     int location() { return pos - func.begin(); }
 
+    Code peek() { return (Code)(*pos); };
     Code peekBehind() { return (Code)(*(pos - 1)); }
 
     void prev() { pos--; }
@@ -157,7 +158,8 @@ namespace Vortex {
         case CONTROL: {
           switch (code) {
             case LOOP:
-            case IF: {
+            case IF:
+            case ELSE: {
               while (true) {
                 auto instr = get();
 
@@ -558,11 +560,14 @@ namespace Vortex {
 
           switch (code) {
             case LOOP:
-            case IF: {
+            case IF:
+            case ELSE: {
               if (code == LOOP) {
                 os << "loop {";
-              } else {
+              } else if (code == IF) {
                 os << "if {";
+              } else {
+                os << "else {";
               }
 
               os << std::endl;

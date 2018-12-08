@@ -100,6 +100,7 @@ namespace Vortex {
     RETURN,
     EMIT,
     IF,
+    ELSE,
     LOOP,
     BREAK,
     CONTINUE,
