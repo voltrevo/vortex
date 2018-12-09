@@ -127,7 +127,7 @@ namespace Vortex {
     void concat(Value& left, const Value& right);
     void pushBack(Value& left, const Value& right);
     void pushFront(Value& left, const Value& right);
-    void index(Value& left, const Value& right);
+    void at(Value& left, const Value& right);
     void hasIndex(Value& left, const Value& right);
   }
 

@@ -76,7 +76,7 @@ namespace Vortex {
     PUSH_BACK,
     PUSH_FRONT,
 
-    INDEX,
+    AT,
     HAS_INDEX,
     UPDATE,
 

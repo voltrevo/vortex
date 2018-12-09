@@ -4,9 +4,9 @@ gfunc 0 {
   []
 
   []
-    get 0 0u64 index
+    get 0 0u64 at
     push-back
-    get 0 1u64 index
+    get 0 1u64 at
     push-back
   push-back
 
@@ -14,8 +14,8 @@ gfunc 0 {
     []
       'equal:'
       push-back
-      get 0 0u64 index
-      get 0 1u64 index
+      get 0 0u64 at
+      get 0 1u64 at
       ==
       push-back
     push-back
@@ -23,8 +23,8 @@ gfunc 0 {
     []
       'less than:'
       push-back
-      get 0 0u64 index
-      get 0 1u64 index
+      get 0 0u64 at
+      get 0 1u64 at
       <
       push-back
     push-back
@@ -51,7 +51,7 @@ loop {
     break
   }
 
-  get 0 get 2 index
+  get 0 get 2 at
   gcall 0
   push-back
 

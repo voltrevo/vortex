@@ -67,7 +67,7 @@ namespace Vortex {
       case PUSH_BACK:
       case PUSH_FRONT:
 
-      case INDEX:
+      case AT:
       case HAS_INDEX:
 
       case CAPTURE:

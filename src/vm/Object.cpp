@@ -27,7 +27,7 @@ namespace Vortex {
       };
     }
 
-    if (*keys.index(pos).data.STRING == *key.data.STRING) {
+    if (*keys.at(pos).data.STRING == *key.data.STRING) {
       throw BadIndexError("Attempt to add duplicate key");
     }
 
@@ -42,7 +42,7 @@ namespace Vortex {
 
     if (
       pos == keys.Length() ||
-      *keys.index(pos).data.STRING != *key.data.STRING
+      *keys.at(pos).data.STRING != *key.data.STRING
     ) {
       throw BadIndexError("Attempt to update key that does not exist");
     }
@@ -53,17 +53,17 @@ namespace Vortex {
     };
   }
 
-  Value Object::index(const Value& key) const {
+  Value Object::at(const Value& key) const {
     Uint64 pos = binarySearch(key);
 
     if (
       pos == keys.Length() ||
-      *keys.index(pos).data.STRING != *key.data.STRING
+      *keys.at(pos).data.STRING != *key.data.STRING
     ) {
       throw BadIndexError("Attempt to index with key that does not exist");
     }
 
-    return values.index(pos);
+    return values.at(pos);
   }
 
   bool Object::hasIndex(const Value& key) const {
@@ -73,7 +73,7 @@ namespace Vortex {
       return false;
     }
 
-    if (*keys.index(pos).data.STRING != *key.data.STRING) {
+    if (*keys.at(pos).data.STRING != *key.data.STRING) {
       return false;
     }
 
@@ -86,7 +86,7 @@ namespace Vortex {
 
     // TODO: There is a more efficient way to do this.
     for (Uint64 pos = 0; pos < sz; pos++) {
-      res = res.add(right.keys.index(pos), right.values.index(pos));
+      res = res.add(right.keys.at(pos), right.values.at(pos));
     }
 
     return res;
@@ -106,7 +106,7 @@ namespace Vortex {
 
     while (right - left > 1u) {
       Uint64 mid = left + (right - left) / 2u;
-      const Value& midValue = keys.index(mid);
+      const Value& midValue = keys.at(mid);
 
       if (midValue.type != STRING) {
         throw InternalError("Encountered non-string key during search");
@@ -123,7 +123,7 @@ namespace Vortex {
     }
 
     if (Value::StringComparator()(
-      *keys.index(left).data.STRING,
+      *keys.at(left).data.STRING,
       *key.data.STRING
     )) {
       left++;

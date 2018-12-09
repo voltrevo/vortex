@@ -210,19 +210,19 @@ int main() {
       PLUS,
       RETURN,
     }},
-    {"index", {
+    {"at", {
       ARRAY,
         INT32, 3, 0, 0, 0,
         INT32, 1, 0, 0, 0,
         INT32, 4, 0, 0, 0,
       END,
       INT32, 2, 0, 0, 0,
-      INDEX,
+      AT,
       STRING,
         97, 98, 99, 100, 101,
       END,
       INT32, 3, 0, 0, 0,
-      INDEX,
+      AT,
       PLUS,
       RETURN,
     }},
@@ -284,7 +284,7 @@ int main() {
 
       GET, 0,
       STRING, END,
-      INDEX,
+      AT,
       PUSH_BACK,
 
       GET, 0,
@@ -292,7 +292,7 @@ int main() {
 
       GET, 0,
       STRING, 98, END,
-      INDEX,
+      AT,
       PUSH_BACK,
 
       RETURN,

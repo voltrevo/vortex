@@ -381,8 +381,8 @@ namespace Vortex {
             os << ", ";
           }
 
-          auto key = obj.keys.index(pos);
-          auto value = obj.values.index(pos);
+          auto key = obj.keys.at(pos);
+          auto value = obj.values.at(pos);
 
           os << key << ": " << value;
           notFirst = true;
@@ -758,10 +758,10 @@ namespace Vortex {
       *left.data.ARRAY = left.data.ARRAY->pushFront(right);
     }
 
-    void index(Value& left, const Value& right) {
+    void at(Value& left, const Value& right) {
       switch (left.type) {
         case ARRAY: {
-          left = left.data.ARRAY->index(right.data.UINT64);
+          left = left.data.ARRAY->at(right.data.UINT64);
           return;
         }
 
@@ -782,7 +782,7 @@ namespace Vortex {
         }
 
         case OBJECT: {
-          left = left.data.OBJECT->index(right);
+          left = left.data.OBJECT->at(right);
           return;
         }
 
@@ -853,7 +853,7 @@ namespace Vortex {
       case CONCAT: BinaryOperators::concat(left, right); break;
       case PUSH_BACK: BinaryOperators::pushBack(left, right); break;
       case PUSH_FRONT: BinaryOperators::pushFront(left, right); break;
-      case INDEX: BinaryOperators::index(left, right); break;
+      case AT: BinaryOperators::at(left, right); break;
       case HAS_INDEX: BinaryOperators::hasIndex(left, right); break;
 
       default:

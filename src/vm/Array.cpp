@@ -80,7 +80,7 @@ namespace Vortex {
     return Array{.values = values.set(i, std::move(value))};
   }
 
-  Value Array::index(Uint64 i) const {
+  Value Array::at(Uint64 i) const {
     return values[i];
   }
 

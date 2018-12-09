@@ -3,12 +3,12 @@
 set 0
 get 0
 ''
-index
+at
 push-back
 get 0
 push-back
 get 0
 'b'
-index
+at
 push-back
 return

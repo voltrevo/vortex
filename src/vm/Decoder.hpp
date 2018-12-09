@@ -517,7 +517,7 @@ namespace Vortex {
             case PUSH_BACK: os << "push-back" << std::endl; return;
             case PUSH_FRONT: os << "push-front" << std::endl; return;
 
-            case INDEX: os << "index" << std::endl; return;
+            case AT: os << "at" << std::endl; return;
             case HAS_INDEX: os << "has-index" << std::endl; return;
 
             case CAPTURE: os << "capture" << std::endl; return;

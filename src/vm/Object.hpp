@@ -14,7 +14,7 @@ namespace Vortex {
 
     Object add(Value key, Value value) const;
     Object update(const Value& key, Value value) const;
-    Value index(const Value& key) const;
+    Value at(const Value& key) const;
     bool hasIndex(const Value& key) const;
     Object concat(const Object& right) const;
 

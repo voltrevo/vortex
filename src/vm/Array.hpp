@@ -17,7 +17,7 @@ namespace Vortex {
     Array pushBack(Value value) const;
     Array pushFront(Value value) const;
     Array update(Uint64 i, Value value) const;
-    Value index(Uint64 i) const;
+    Value at(Uint64 i) const;
     bool hasIndex(Uint64 i) const;
     Array concat(const Array& right) const;
 

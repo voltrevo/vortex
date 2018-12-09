@@ -5,8 +5,8 @@ get 0 20 1u64 update set 1
 
 {'b': {'c': {'d': 0}}} set 2
 get 2
-  dup 'b' index
-    dup 'c' index
+  dup 'b' at
+    dup 'c' at
       1 'd' update
     'c' update
   'b' update

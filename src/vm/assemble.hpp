@@ -73,7 +73,7 @@ namespace Vortex {
     {"push-back", PUSH_BACK},
     {"push-front", PUSH_FRONT},
 
-    {"index", INDEX},
+    {"at", AT},
     {"has-index", HAS_INDEX},
 
     {"capture", CAPTURE},
