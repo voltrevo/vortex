@@ -26,11 +26,7 @@
 ']'                   return ']'
 ','                   return ','
 ':'                   return ':'
-[0-9]+("."[0-9]+)?\b  return 'NUMBER'
-\bu\b                 return 'u'
-\bi\b                 return 'i'
-\bf\b                 return 'f'
-[a-zA-Z]\w*           return 'IDENTIFIER'
+[0-9]+("."[0-9]+)?([uif][0-9]+)?\b  return 'NUMBER'
 ['](\\.|[^'])*[']     return 'STRING'
 [^\s]+                return 'WORD'
 <<EOF>>               return 'EOF'
@@ -135,19 +131,8 @@ gfunc
     ;
 
 number
-    : NUMBER numberSuffix
-        {$$ = { t: 'number', v: $1 + ($2 || ''), p: L(@$) }}
-    ;
-
-numberSuffix
-    :
-        {$$ = null}
-    | 'u' NUMBER
-        {$$ = $1 + $2}
-    | 'i' NUMBER
-        {$$ = $1 + $2}
-    | 'f' NUMBER
-        {$$ = $1 + $2}
+    : NUMBER
+        {$$ = { t: 'number', v: $1, p: L(@$) }}
     ;
 
 array
@@ -206,12 +191,6 @@ prop
 
 identifier
     : IDENTIFIER
-        {$$ = { t: 'identifier', v: $1, p: L(@$) }}
-    | 'u'
-        {$$ = { t: 'identifier', v: $1, p: L(@$) }}
-    | 'i'
-        {$$ = { t: 'identifier', v: $1, p: L(@$) }}
-    | 'f'
         {$$ = { t: 'identifier', v: $1, p: L(@$) }}
     ;
 
