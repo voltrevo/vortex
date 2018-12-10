@@ -416,39 +416,36 @@ namespace Vortex {
   }
 
   namespace TernaryOperators {
-    void update(Value& target, const Value& value, const Value& key) {
+    void update(Value& target, const Value& key, const Value& value) {
+      switch (target.type) {
+        case ARRAY: {
+          if (key.type != UINT64) {
+            throw TypeError("Attempt to update array at non-u64 index");
+          }
+
+          if (key.data.UINT64 >= target.data.ARRAY->Length()) {
+            throw BadIndexError("Attempt to update array with non-existing index");
+          }
+
+          *target.data.ARRAY = target.data.ARRAY->update(key.data.UINT64, value);
+
+          break;
+        }
+
+        case OBJECT: {
+          *target.data.OBJECT = target.data.OBJECT->update(key, value);
+          break;
+        }
+
+        default:
+          throw TypeError("Attempt to update type that is neither array nor object");
+      }
     }
   }
 
   void TernaryOperator(Value& a, const Value& b, const Value& c, Code op) {
     switch (op) {
-      case UPDATE: {
-        switch (a.type) {
-          case ARRAY: {
-            if (c.type != UINT64) {
-              throw TypeError("Attempt to update array at non-u64 index");
-            }
-
-            if (c.data.UINT64 >= a.data.ARRAY->Length()) {
-              throw BadIndexError("Attempt to update array with non-existing index");
-            }
-
-            *a.data.ARRAY = a.data.ARRAY->update(c.data.UINT64, b);
-
-            break;
-          }
-
-          case OBJECT: {
-            *a.data.OBJECT = a.data.OBJECT->update(c, b);
-            break;
-          }
-
-          default:
-            throw TypeError("Attempt to update type that is neither array nor object");
-        }
-
-        break;
-      }
+      case UPDATE: TernaryOperators::update(a, b, c); break;
 
       default:
         throw InternalError("Unrecognized ternary operator");
