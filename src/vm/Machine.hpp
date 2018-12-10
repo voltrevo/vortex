@@ -44,15 +44,15 @@ namespace Vortex {
     }
 
     void setGFunc(byte i, Decoder decoder) {
-      if (i < gfuncs.size()) {
-        gfuncs[i] = decoder;
-      }
-
-      while (i + 1u < gfuncs.size()) {
+      while (i > gfuncs.size()) {
         gfuncs.push_back(Decoder(Func()));
       }
 
-      gfuncs.push_back(std::move(decoder));
+      if (i < gfuncs.size()) {
+        gfuncs[i] = std::move(decoder);
+      } else {
+        gfuncs.push_back(std::move(decoder));
+      }
     }
 
     void push(Value v) { calc.push_back(std::move(v)); }

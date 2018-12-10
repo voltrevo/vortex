@@ -1,11 +1,20 @@
 import Syntax from './parser/vasm/Syntax';
 
 function serializeAsmTree(program: Syntax.Program): string[] {
-  return serializeAsmTree.Program({ gfuncLabels: [], varLabels: [] }, program);
+  const ctx = {
+    gfuncs: [],
+    gfuncLabels: [],
+    varLabels: [],
+  };
+
+  const entryLines = serializeAsmTree.Program(ctx, program);
+
+  return [...ctx.gfuncs, ...entryLines];
 }
 
 namespace serializeAsmTree {
   type Context = {
+    gfuncs: string[],
     gfuncLabels: string[],
     varLabels: string[],
   };
@@ -100,6 +109,7 @@ namespace serializeAsmTree {
           'func {',
           ...Program(
             {
+              gfuncs: ctx.gfuncs,
               gfuncLabels: ctx.gfuncLabels,
               varLabels: [],
             },
@@ -110,17 +120,20 @@ namespace serializeAsmTree {
       }
 
       case 'gfunc': {
-        return [
+        ctx.gfuncs.push(
           `gfunc ${getLabel(ctx.gfuncLabels, statement.v.nlabel)} {`,
           ...Program(
             {
+              gfuncs: ctx.gfuncs,
               gfuncLabels: ctx.gfuncLabels,
               varLabels: [],
             },
             statement.v.block,
           ).map(line => '  ' + line),
           '}',
-        ];
+        );
+
+        return [];
       }
 
       case 'if': {
