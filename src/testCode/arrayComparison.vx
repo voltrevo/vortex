@@ -9,8 +9,8 @@ arrs := [
   [1, 1],
 ];
 
-for (i := 0; i < 4; i++) {
-  for (j := 0; j < 4; j++) {
+for (i := 0u64; i < 4u64; i++) {
+  for (j := 0u64; j < 4u64; j++) {
     assert (arrs[i] == arrs[j]) == (i == j);
     assert (arrs[i] != arrs[j]) == (i != j);
     assert (arrs[i] < arrs[j]) == (i < j);

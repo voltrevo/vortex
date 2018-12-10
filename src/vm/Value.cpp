@@ -193,6 +193,8 @@ namespace Vortex {
     switch (type) {
       case NULL_: return true;
 
+      case BOOL: return left.data.BOOL == right.data.BOOL;
+
       case INT8: return left.data.INT8 == right.data.INT8;
       case INT16: return left.data.INT16 == right.data.INT16;
       case INT32: return left.data.INT32 == right.data.INT32;
@@ -225,6 +227,8 @@ namespace Vortex {
 
     switch (type) {
       case NULL_: return false;
+
+      case BOOL: return left.data.BOOL < right.data.BOOL;
 
       case INT8: return left.data.INT8 < right.data.INT8;
       case INT16: return left.data.INT16 < right.data.INT16;
@@ -472,9 +476,11 @@ namespace Vortex {
         case FLOAT32: left.data.FLOAT32 += right.data.FLOAT32; return;
         case FLOAT64: left.data.FLOAT64 += right.data.FLOAT64; return;
 
+        case NULL_:
+        case BOOL:
         case STRING:
         case FUNC:
-          throw TypeError("+ between strings or funcs");
+          throw TypeError("+ between nulls, bools, strings, or funcs");
 
         case ARRAY:
         case OBJECT:
@@ -505,9 +511,11 @@ namespace Vortex {
         case FLOAT32: left.data.FLOAT32 -= right.data.FLOAT32; return;
         case FLOAT64: left.data.FLOAT64 -= right.data.FLOAT64; return;
 
+        case NULL_:
+        case BOOL:
         case STRING:
         case FUNC:
-          throw TypeError("- between strings or funcs");
+          throw TypeError("- between nulls, bools, strings, or funcs");
 
         case ARRAY:
         case OBJECT:
@@ -538,9 +546,11 @@ namespace Vortex {
         case FLOAT32: left.data.FLOAT32 *= right.data.FLOAT32; return;
         case FLOAT64: left.data.FLOAT64 *= right.data.FLOAT64; return;
 
+        case NULL_:
+        case BOOL:
         case STRING:
         case FUNC:
-          throw TypeError("* between strings or funcs");
+          throw TypeError("* between nulls, bools, strings, or funcs");
 
         case ARRAY:
         case OBJECT:
@@ -571,11 +581,16 @@ namespace Vortex {
         case FLOAT32: left.data.FLOAT32 /= right.data.FLOAT32; return;
         case FLOAT64: left.data.FLOAT64 /= right.data.FLOAT64; return;
 
+        case NULL_:
+        case BOOL:
         case STRING:
         case FUNC:
         case ARRAY:
-        case OBJECT:
-          throw TypeError("/ between strings, funcs, arrays, or objects");
+        case OBJECT: {
+          throw TypeError(
+            "/ between nulls, bools, strings, funcs, arrays, or objects"
+          );
+        }
 
         default: throw InternalError("Unrecognized value type");
       }
@@ -609,11 +624,16 @@ namespace Vortex {
           return;
         }
 
+        case NULL_:
+        case BOOL:
         case STRING:
         case FUNC:
         case ARRAY:
-        case OBJECT:
-          throw TypeError("% between strings, funcs, arrays, or objects");
+        case OBJECT: {
+          throw TypeError(
+            "% between nulls, bools, strings, funcs, arrays, or objects"
+          );
+        }
 
         default: throw InternalError("Unrecognized value type");
       }
@@ -647,11 +667,16 @@ namespace Vortex {
           return;
         }
 
+        case NULL_:
+        case BOOL:
         case STRING:
         case FUNC:
         case ARRAY:
-        case OBJECT:
-          throw TypeError("** between strings, funcs, arrays, or objects");
+        case OBJECT: {
+          throw TypeError(
+            "** between nulls, bools, strings, funcs, arrays, or objects"
+          );
+        }
 
         default: throw InternalError("Unrecognized value type");
       }
@@ -904,11 +929,16 @@ namespace Vortex {
         case FLOAT32: value.data.FLOAT32 = -value.data.FLOAT32; return;
         case FLOAT64: value.data.FLOAT64 = -value.data.FLOAT64; return;
 
+        case NULL_:
+        case BOOL:
         case STRING:
         case FUNC:
         case ARRAY:
-        case OBJECT:
-          throw TypeError("negate on string, func, array, or object");
+        case OBJECT: {
+          throw TypeError(
+            "negate on null, bool, string, func, array, or object"
+          );
+        }
 
         default: throw InternalError("Unrecognized value type");
       }
@@ -929,11 +959,13 @@ namespace Vortex {
         case FLOAT32: value.data.FLOAT32++; return;
         case FLOAT64: value.data.FLOAT64++; return;
 
+        case NULL_:
+        case BOOL:
         case STRING:
         case FUNC:
         case ARRAY:
         case OBJECT:
-          throw TypeError("inc on string, func, array, or object");
+          throw TypeError("inc on null, bool, string, func, array, or object");
 
         default: throw InternalError("Unrecognized value type");
       }
@@ -954,11 +986,13 @@ namespace Vortex {
         case FLOAT32: value.data.FLOAT32--; return;
         case FLOAT64: value.data.FLOAT64--; return;
 
+        case NULL_:
+        case BOOL:
         case STRING:
         case FUNC:
         case ARRAY:
         case OBJECT:
-          throw TypeError("inc on string, func, array, or object");
+          throw TypeError("inc on null, bool, string, func, array, or object");
 
         default: throw InternalError("Unrecognized value type");
       }
