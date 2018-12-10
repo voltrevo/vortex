@@ -2,7 +2,7 @@ import * as fs from 'fs';
 import * as minimist from 'minimist';
 
 import VasmSyntax from './parser/vasm/Syntax';
-import Bytecode from './Bytecode';
+import ByteCoder from './ByteCoder';
 import Compiler from './Compiler';
 import getStdin from './getStdin';
 import Note from './Note';
@@ -266,7 +266,8 @@ const inputs: { type: 'file', name: string }[] = [];
     if (mod.t === 'ParserNotes') {
       throw new Error('Can\'t emit bytecode for file that failed parsing');
     } else {
-      const lines = Bytecode.Block(mod.program);
+      const coder = ByteCoder();
+      const lines = ByteCoder.Block(coder, mod.program);
 
       if (args.vasm) {
         console.log(lines.join('\n'));

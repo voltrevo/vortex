@@ -1,7 +1,25 @@
 import Syntax from './parser/Syntax';
 
-namespace Bytecode {
-  export function Block(program: Syntax.Program): string[] {
+type ByteCoder = {
+  codePath: [],
+  names: {
+    [name: string]: (
+      { t: 'local', v: null } |
+      { t: 'gfunc', v: string } |
+      undefined
+    )
+  },
+};
+
+function ByteCoder(): ByteCoder {
+  return {
+    codePath: [],
+    names: {},
+  };
+}
+
+namespace ByteCoder {
+  export function Block(coder: ByteCoder, program: Syntax.Program): string[] {
     const lines: string[] = [];
 
     const hoists: Syntax.FunctionExpression[] = [];
@@ -43,11 +61,12 @@ namespace Bytecode {
       const bodyLines = (() => {
         switch (hoist.v.body.t) {
           case 'block': {
-            return Block(hoist.v.body);
+            return Block(coder, hoist.v.body);
           }
 
           case 'expBody': {
-            return Expression(hoist.v.body.v);
+            const [exp] = Expression(coder, hoist.v.body.v);
+            return exp;
           }
         }
       })();
@@ -64,65 +83,87 @@ namespace Bytecode {
         lines.push('');
       }
 
-      lines.push(...Statement(statement));
+      let slines: string[];
+      [slines, coder] = Statement(coder, statement);
+
+      lines.push(...slines);
+
       first = false;
     }
 
     return lines;
   }
 
-  export function Statement(statement: Syntax.Statement): string[] {
+  export function Statement(
+    coder: ByteCoder,
+    statement: Syntax.Statement,
+  ): [string[], ByteCoder] {
     switch (statement.t) {
-      case 'e': return Expression(statement.v);
+      case 'e': return Expression(coder, statement.v);
 
       case 'return':
       case 'assert':
       case 'log.info':
       case 'log.warn':
-      case 'log.error':
-        return [...Expression(statement.v), statement.t];
+      case 'log.error': {
+        let slines: string[];
+        [slines, coder] = Expression(coder, statement.v);
+        slines.push(statement.t);
 
-      case 'break': return ['break'];
-      case 'continue': return ['continue'];
+        return [slines, coder];
+      }
+
+      case 'break': return [['break'], coder];
+      case 'continue': return [['continue'], coder];
 
       case 'if': {
         const lines = [];
 
+        let ll: string[];
+        [ll, coder] = Expression(coder, statement.v.cond);
+
+        lines.push(...ll);
+
         lines.push(
-          ...Expression(statement.v.cond),
           'if {',
-          ...Block(statement.v.block).map(line => `  ${line}`),
+          ...Block(coder, statement.v.block).map(line => `  ${line}`),
         );
 
         if (statement.v.else_ === null) {
           lines.push('}');
         } else if (statement.v.else_.t === 'if') {
+          [ll, coder] = Statement(coder, statement.v.else_);
+
           lines.push(
             '} else {',
-            ...Statement(statement.v.else_).map(line => `  ${line}`),
+            ...ll.map(line => `  ${line}`),
             '}',
           );
         } else {
           lines.push(
             '} else {',
-            ...Block(statement.v.else_).map(line => `  ${line}`),
+            ...Block(coder, statement.v.else_).map(line => `  ${line}`),
             '}',
           );
         }
 
-        return lines;
+        return [lines, coder];
       }
 
       case 'for': {
         if (statement.v.control === null) {
           return [
-            'loop {',
-            ...Block(statement.v.block).map(line => '  ' + line),
-            '}',
+            [
+              'loop {',
+              ...Block(coder, statement.v.block).map(line => '  ' + line),
+              '}',
+            ],
+            coder,
           ];
         }
 
         const forLines: string[] = [];
+        let ll: string[];
 
         forLines.push(...(() => {
           switch (statement.v.control.t) {
@@ -130,7 +171,8 @@ namespace Bytecode {
             case 'condition': return [];
 
             case 'setup; condition; next': {
-              return Expression(statement.v.control.v[0]);
+              [ll, coder] = Expression(coder, statement.v.control.v[0]);
+              return ll;
             }
           }
         })());
@@ -142,8 +184,10 @@ namespace Bytecode {
             case 'range': return [];
 
             case 'condition': {
+              [ll, coder] = Expression(coder, statement.v.control.v);
+
               return [
-                ...Expression(statement.v.control.v),
+                ...ll,
                 '! if {',
                 '  break',
                 '}',
@@ -152,8 +196,10 @@ namespace Bytecode {
             }
 
             case 'setup; condition; next': {
+              [ll, coder] = Expression(coder, statement.v.control.v[1]);
+
               return [
-                ...Expression(statement.v.control.v[1]),
+                ...ll,
                 '! if {',
                 '  break',
                 '}',
@@ -163,7 +209,7 @@ namespace Bytecode {
           }
         })().map(line => '  ' + line));
 
-        const blockLines = Block(statement.v.block);
+        const blockLines = Block(coder, statement.v.block);
 
         if (statement.v.control.t === 'setup; condition; next') {
           for (const line of blockLines) {
@@ -179,23 +225,22 @@ namespace Bytecode {
             }
           }
 
-          forLines.push(
-            '  ',
-            ...Expression(statement.v.control.v[2]).map(line => '  ' + line),
-          );
+          [ll, coder] = Expression(coder, statement.v.control.v[2]);
+
+          forLines.push('  ', ...ll.map(line => '  ' + line));
         } else {
           forLines.push(...blockLines.map(line => '  ' + line));
         }
 
         forLines.push('}');
 
-        return forLines;
+        return [forLines, coder];
       }
 
-      case 'breakpoint': return ['breakpoint'];
+      case 'breakpoint': return [['breakpoint'], coder];
 
       case 'import':
-        return [`'Not implemented: import statement' throw`];
+        return [[`'Not implemented: import statement' throw`], coder];
     }
   }
 
@@ -223,13 +268,13 @@ namespace Bytecode {
     }
   }
 
-  export function Expression(exp: Syntax.Expression): string[] {
+  export function Expression(coder: ByteCoder, exp: Syntax.Expression): [string[], ByteCoder] {
     switch (exp.t) {
-      case 'IDENTIFIER': return [`get $${exp.v}`];
-      case 'NUMBER': return [exp.v];
-      case 'BOOL': return [exp.v.toString()];
-      case 'NULL': return ['null'];
-      case 'STRING': return [`${exp.v}`];
+      case 'IDENTIFIER': return [[`get $${exp.v}`], coder];
+      case 'NUMBER': return [[exp.v], coder];
+      case 'BOOL': return [[exp.v.toString()], coder];
+      case 'NULL': return [['null'], coder];
+      case 'STRING': return [[`${exp.v}`], coder];
 
       case 'unary --':
       case 'unary ++': {
@@ -238,11 +283,14 @@ namespace Bytecode {
           throw new Error('Should have been caught during validation');
         }
 
-        return [[
-          `get $${exp.v.v}`,
-          `${exp.t === 'unary ++' ? 'inc' : 'dec'}`,
-          `set $${exp.v.v}`,
-        ].join(' ')];
+        return [
+          [[
+            `get $${exp.v.v}`,
+            `${exp.t === 'unary ++' ? 'inc' : 'dec'}`,
+            `set $${exp.v.v}`,
+          ].join(' ')],
+          coder,
+        ];
       }
 
       case 'unary -':
@@ -256,11 +304,15 @@ namespace Bytecode {
           }
         })();
 
-        return [...Expression(exp.v), opString];
+        let ll;
+        [ll] = Expression(coder, exp.v);
+        return [[...ll, opString], coder];
       }
 
       // TODO: Should this operator even exist?
-      case 'unary +': return [`'Not implemented: unary + expression' throw`];
+      case 'unary +': {
+        return [[`'Not implemented: unary + expression' throw`], coder];
+      }
 
       case 'Func': {
         const lines: string[] = [];
@@ -281,11 +333,13 @@ namespace Bytecode {
         const bodyLines = (() => {
           switch (exp.v.body.t) {
             case 'block': {
-              return Block(exp.v.body);
+              return Block(coder, exp.v.body);
             }
 
             case 'expBody': {
-              return Expression(exp.v.body.v);
+              let ll: string[];
+              [ll, coder] = Expression(coder, exp.v.body.v);
+              return ll;
             }
           }
         })();
@@ -294,41 +348,51 @@ namespace Bytecode {
 
         lines.push(`}`);
 
-        return lines;
+        return [lines, coder];
       }
 
       case 'op': {
-        return [`func { ${exp.v} }`];
+        return [[`func { ${exp.v} }`], coder];
       }
 
       case 'Array': {
         if (isLiteral(exp)) {
-          return ['[' + exp.v.map(el => Expression(el)[0]).join(', ') + ']'];
+          return [
+            [
+              '[' +
+              exp.v.map(el => SubExpression(coder, el)[-1]).join(', ') +
+              ']'
+            ],
+            coder,
+          ];
         }
 
         const lines: string[] = ['[]'];
 
         for (const el of exp.v) {
-          lines.push(...Expression(el), 'push-back');
+          lines.push(...SubExpression(coder, el), 'push-back');
         }
 
-        return lines;
+        return [lines, coder];
       }
 
       case 'Object': {
         if (isLiteral(exp)) {
           return [
-            '{' +
-            exp.v.map(([key, val]) => (
-              (
-                key.t === 'IDENTIFIER' ?
-                `'${key.v}'` :
-                Expression(key)
-              ) +
-              ': ' +
-              Expression(val)[0]
-            )).join(', ') +
-            '}',
+            [
+              '{' +
+              exp.v.map(([key, val]) => (
+                (
+                  key.t === 'IDENTIFIER' ?
+                  `'${key.v}'` :
+                  SubExpression(coder, key)
+                ) +
+                ': ' +
+                SubExpression(coder, val)[0]
+              )).join(', ') +
+              '}',
+            ],
+            coder,
           ];
         }
 
@@ -336,20 +400,23 @@ namespace Bytecode {
 
         for (const [key, val] of exp.v) {
           lines.push(
-            ...Expression(key),
-            ...Expression(val),
+            ...SubExpression(coder, key),
+            ...SubExpression(coder, val),
             'insert',
           );
         }
 
-        return lines;
+        return [lines, coder];
       }
 
       case '.': {
         return [
-          ...Expression(exp.v[0]),
-          `'${exp.v[1].v}'`,
-          'at',
+          [
+            ...SubExpression(coder, exp.v[0]),
+            `'${exp.v[1].v}'`,
+            'at',
+          ],
+          coder,
         ];
       }
 
@@ -359,29 +426,35 @@ namespace Bytecode {
         const [fn, args] = exp.v;
 
         for (const arg of args) {
-          lines.push(...Expression(arg));
+          lines.push(...SubExpression(coder, arg));
         }
 
-        lines.push(...Expression(fn), 'call');
+        lines.push(...SubExpression(coder, fn), 'call');
 
-        return lines;
+        return [lines, coder];
       }
 
       case 'methodLookup': {
         const [obj, ident] = exp.v;
 
         return [
-          ...Expression(obj),
-          `'${ident.v}'`,
-          'method-lookup',
+          [
+            ...SubExpression(coder, obj),
+            `'${ident.v}'`,
+            'method-lookup',
+          ],
+          coder,
         ];
       }
 
       case 'subscript': {
         return [
-          ...Expression(exp.v[0]),
-          ...Expression(exp.v[1]),
-          'at',
+          [
+            ...SubExpression(coder, exp.v[0]),
+            ...SubExpression(coder, exp.v[1]),
+            'at',
+          ],
+          coder,
         ];
       }
 
@@ -394,10 +467,14 @@ namespace Bytecode {
         for (const [caseLeft, caseRight] of cases) {
           if (testExp !== null) {
             // TODO: Use temporary variable instead
-            lines.push(...Expression(testExp).map(line => indent + line));
+            lines.push(
+              ...SubExpression(coder, testExp).map(line => indent + line)
+            );
           }
 
-          lines.push(...Expression(caseLeft).map(line => indent + line));
+          lines.push(
+            ...SubExpression(coder, caseLeft).map(line => indent + line)
+          );
 
           if (testExp !== null) {
             // TODO: Use temporary variable instead
@@ -407,7 +484,9 @@ namespace Bytecode {
           lines.push(indent + 'if {');
 
           lines.push(
-            ...Expression(caseRight).map(line => '  ' + indent + line),
+            ...(SubExpression(coder, caseRight)
+              .map(line => '  ' + indent + line)
+            ),
             indent + '} else {',
           );
 
@@ -421,12 +500,12 @@ namespace Bytecode {
           lines.push(indent + '}');
         }
 
-        return lines;
+        return [lines, coder];
       }
 
       case 'class':
       case 'import':
-        return [`'Not implemented: ${exp.t} expression' throw`];
+        return [[`'Not implemented: ${exp.t} expression' throw`], coder];
 
       case '**':
       case '<<':
@@ -451,9 +530,12 @@ namespace Bytecode {
         const [leftExp, rightExp] = exp.v;
 
         return [
-          ...Expression(leftExp),
-          ...Expression(rightExp),
-          exp.t,
+          [
+            ...SubExpression(coder, leftExp),
+            ...SubExpression(coder, rightExp),
+            exp.t,
+          ],
+          coder,
         ];
       }
 
@@ -463,11 +545,15 @@ namespace Bytecode {
 
         if (leftExp.t !== 'IDENTIFIER') {
           return [
-            `'Not implemented: assign/create with non-identifier lhs' throw`
+            [`'Not implemented: assign/create with non-identifier lhs' throw`],
+            coder,
           ];
         }
 
-        return [...Expression(rightExp), `set $${leftExp.v}`];
+        return [
+          [...SubExpression(coder, rightExp), `set $${leftExp.v}`],
+          coder,
+        ];
       }
 
       case '+=':
@@ -485,22 +571,33 @@ namespace Bytecode {
 
         if (leftExp.t !== 'IDENTIFIER') {
           return [
-            `'Not implemented: compound assignment with non-identifier lhs' ` +
-            `throw`
+            [
+              `'Not implemented: compound assignment with non-identifier ` +
+              `lhs' throw`
+            ],
+            coder,
           ];
         }
 
         const opString = exp.t.substring(0, exp.t.length - 1);
 
         return [
-          `get $${leftExp.v}`,
-          ...Expression(rightExp),
-          opString,
-          `set $${leftExp.v}`,
+          [
+            `get $${leftExp.v}`,
+            ...SubExpression(coder, rightExp),
+            opString,
+            `set $${leftExp.v}`,
+          ],
+          coder,
         ];
       }
     }
   }
+
+  function SubExpression(coder: ByteCoder, exp: Syntax.Expression): string[] {
+    const [ll] = Expression(coder, exp);
+    return ll;
+  }
 }
 
-export default Bytecode;
+export default ByteCoder;
