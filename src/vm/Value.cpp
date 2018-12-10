@@ -761,6 +761,10 @@ namespace Vortex {
     void at(Value& left, const Value& right) {
       switch (left.type) {
         case ARRAY: {
+          if (right.type != UINT64) {
+            throw TypeError("Attempt to index array with non-u64");
+          }
+
           left = left.data.ARRAY->at(right.data.UINT64);
           return;
         }
@@ -884,6 +888,32 @@ namespace Vortex {
       }
     }
 
+    void negate(Value& value) {
+      switch (value.type) {
+        case UINT8:
+        case UINT16:
+        case UINT32:
+        case UINT64:
+          throw TypeError("negate on unsigned number");
+
+        case INT8: value.data.INT8 = -value.data.INT8; return;
+        case INT16: value.data.INT16 = -value.data.INT16; return;
+        case INT32: value.data.INT32 = -value.data.INT32; return;
+        case INT64: value.data.INT64 = -value.data.INT64; return;
+
+        case FLOAT32: value.data.FLOAT32 = -value.data.FLOAT32; return;
+        case FLOAT64: value.data.FLOAT64 = -value.data.FLOAT64; return;
+
+        case STRING:
+        case FUNC:
+        case ARRAY:
+        case OBJECT:
+          throw TypeError("negate on string, func, array, or object");
+
+        default: throw InternalError("Unrecognized value type");
+      }
+    }
+
     void inc(Value& value) {
       switch (value.type) {
         case UINT8: value.data.UINT8++; return;
@@ -950,7 +980,8 @@ namespace Vortex {
     switch (op) {
       case LENGTH: UnaryOperators::length(value); break;
 
-      case NEGATE:
+      case NEGATE: UnaryOperators::negate(value); break;
+
       case BIT_NEGATE:
         throw NotImplementedError("Operator not implemented");
 
