@@ -20,6 +20,7 @@ namespace Vortex {
     GFUNC,
     INVALID,
     DUP,
+    SWAP,
     ASSERT,
 
     // TOP_TYPE

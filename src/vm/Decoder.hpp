@@ -52,7 +52,7 @@ namespace Vortex {
             break;
           }
 
-          if (code == END || code == DUP || code == ASSERT) {
+          if (code == END || code == DUP || code == SWAP || code == ASSERT) {
             break;
           }
 
@@ -435,15 +435,9 @@ namespace Vortex {
             break;
           }
 
-          if (code == DUP) {
-            os << "dup" << std::endl;
-            break;
-          }
-
-          if (code == ASSERT) {
-            os << "assert" << std::endl;
-            break;
-          }
+          if (code == DUP) { os << "dup" << std::endl; break; }
+          if (code == SWAP) { os << "swap" << std::endl; break; }
+          if (code == ASSERT) { os << "assert" << std::endl; break; }
 
           throw InternalError("Unrecognized SPECIAL instruction");
         }

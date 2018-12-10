@@ -101,6 +101,12 @@ namespace Vortex {
                   break;
                 }
 
+                case SWAP: {
+                  auto backPair = BackPair();
+                  swap(*backPair.first, *backPair.second);
+                  break;
+                }
+
                 case ASSERT: {
                   const Value& back = calc.back();
 

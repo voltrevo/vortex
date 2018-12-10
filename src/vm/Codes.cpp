@@ -8,6 +8,7 @@ namespace Vortex {
       case GFUNC:
       case INVALID:
       case DUP:
+      case SWAP:
       case ASSERT:
         return SPECIAL;
 
