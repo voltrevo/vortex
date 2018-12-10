@@ -399,6 +399,7 @@ namespace Vortex {
 
       case FUNC: {
         os << "<func>";
+        break;
       }
 
       default:
