@@ -445,7 +445,11 @@ namespace ByteCoder {
 
         for (const [key, val] of exp.v) {
           lines.push(
-            ...SubExpression(coder, key),
+            ...(
+              key.t === 'IDENTIFIER' ?
+              [`'${key.v}'`] :
+              SubExpression(coder, key)
+            ),
             ...SubExpression(coder, val),
             'insert',
           );
