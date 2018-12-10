@@ -1,7 +1,7 @@
 func findLargest(arr, len, lessThan) {
-  largest := arr[0];
+  largest := arr[0u64];
 
-  for (i := 1; i < len; i++) {
+  for (i := 1u64; i < len; i++) {
     el := arr[i];
 
     if (lessThan(largest, el)) {
@@ -14,7 +14,7 @@ func findLargest(arr, len, lessThan) {
 
 absLargest := findLargest(
   [8, 1, 17, -34, 10],
-  5,
+  5u64,
   func(a, b) => abs(a) < abs(b),
 );
 
