@@ -58,6 +58,7 @@ namespace ByteCoder {
         continue;
       }
 
+      coder = setGFunc(coder, hoist.v.name.v);
       lines.push(`hoist $${hoist.v.name.v}`);
     }
 
