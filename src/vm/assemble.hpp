@@ -197,16 +197,19 @@ namespace Vortex {
       if (c == 'i' || c == 'u') {
         bool isSigned = (c == 'i');
         in.get();
-        c = in.get();
+        c = in.peek();
 
         // TODO: Syntax error for out of range literals
         if (c == '8') {
+          in.get();
           out.put(isSigned ? INT8 : UINT8);
           out.write((char*)&res, 1);
           return;
         }
 
         if (c == '1') {
+          in.get();
+
           if (in.get() != '6') {
             throw SyntaxError("6 expected");
           }
@@ -217,6 +220,8 @@ namespace Vortex {
         }
 
         if (c == '3') {
+          in.get();
+
           if (in.get() != '2') {
             throw SyntaxError("2 expected");
           }
@@ -227,6 +232,8 @@ namespace Vortex {
         }
 
         if (c == '6') {
+          in.get();
+
           // TODO: Currently can only handle 64 bit literals in i32 range
           if (in.get() != '4') {
             throw SyntaxError("4 expected");
@@ -237,6 +244,14 @@ namespace Vortex {
           out.write((char*)&resl, 8);
           return;
         }
+
+        if (isSigned) {
+          throw SyntaxError("8, 3, or 6 expected");
+        }
+
+        out.put(UINT32);
+        out.write((char*)&res, 4);
+        return;
       } else if (c == 'f') {
         // TODO: Currently only handling float literals in i32 range
         in.get();
