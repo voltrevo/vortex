@@ -26,7 +26,7 @@
 ']'                   return ']'
 ','                   return ','
 ':'                   return ':'
-[!%^&*-+<>=]+         return 'OPERATOR'
+[!%^&*\-+<>=]+        return 'OPERATOR'
 [0-9]+("."[0-9]+)?([uif][0-9]+)?\b  return 'NUMBER'
 [a-zA-Z]\w*           return 'IDENTIFIER'
 ['](\\.|[^'])*[']     return 'STRING'
