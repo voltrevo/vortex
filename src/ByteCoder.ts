@@ -405,7 +405,7 @@ namespace ByteCoder {
           return [
             [
               '[' +
-              exp.v.map(el => SubExpression(coder, el)[-1]).join(', ') +
+              exp.v.map(el => SubExpression(coder, el)[0]).join(', ') +
               ']'
             ],
             coder,
