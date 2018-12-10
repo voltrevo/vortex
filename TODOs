@@ -1,4 +1,4 @@
-TODO: index -> at, implement insert for arrays and objects
+TODO: index -> at, implement insert for arrays and objects (fix objShorthand.vx)
 TODO: TODO tagging, group based on tags
 TODO: More unused warnings via return value dependency analysis (see cirumventUnused.vx)
 TODO: _ for implicit ignore
