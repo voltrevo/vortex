@@ -12,9 +12,9 @@ get 2
   'b' update
 set 3
 
-get 0 push-back
-get 1 push-back
-get 2 push-back
-get 3 push-back
+get 0 pushBack
+get 1 pushBack
+get 2 pushBack
+get 3 pushBack
 
 return

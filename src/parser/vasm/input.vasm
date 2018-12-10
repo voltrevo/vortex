@@ -1,9 +1,9 @@
 []
 
 1 1 +
-push-back
+pushBack
 
 'Hello'
-push-back
+pushBack
 
 return

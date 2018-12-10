@@ -70,11 +70,11 @@ namespace Vortex {
     {"|", UNION},
 
     {"++", CONCAT},
-    {"push-back", PUSH_BACK},
-    {"push-front", PUSH_FRONT},
+    {"pushBack", PUSH_BACK},
+    {"pushFront", PUSH_FRONT},
 
     {"at", AT},
-    {"has-index", HAS_INDEX},
+    {"hasIndex", HAS_INDEX},
 
     {"capture", CAPTURE},
 

@@ -26,9 +26,10 @@
 ']'                   return ']'
 ','                   return ','
 ':'                   return ':'
+[!%^&*-+<>=]+         return 'OPERATOR'
 [0-9]+("."[0-9]+)?([uif][0-9]+)?\b  return 'NUMBER'
+[a-zA-Z]\w*           return 'IDENTIFIER'
 ['](\\.|[^'])*[']     return 'STRING'
-[^\s]+                return 'WORD'
 <<EOF>>               return 'EOF'
 .                     return 'INVALID'
 
@@ -81,10 +82,12 @@ statement
         {$$ = $1}
     | IDENTIFIER
         {$$ = { t: 'word', v: $1, p: L(@$) }}
+    | OPERATOR
+        {$$ = { t: 'word', v: $1, p: L(@$) }}
+    | ':'
+        {$$ = { t: 'word', v: $1, p: L(@$) }}
     | value
         {$$ = $1}
-    | WORD
-        {$$ = { t: 'word', v: $1, p: L(@$) }}
     ;
 
 labelWord

@@ -135,7 +135,16 @@ namespace ByteCoder {
       case 'log.error': {
         let slines: string[];
         [slines, coder] = Expression(coder, statement.v);
-        slines.push(statement.t);
+
+        if (statement.t.indexOf('log.') === 0) {
+          slines.push(
+            'log.' +
+            statement.t[4].toUpperCase() +
+            statement.t.slice(5)
+          );
+        } else {
+          slines.push(statement.t);
+        }
 
         return [slines, coder];
       }
@@ -405,7 +414,7 @@ namespace ByteCoder {
         const lines: string[] = ['[]'];
 
         for (const el of exp.v) {
-          lines.push(...SubExpression(coder, el), 'push-back');
+          lines.push(...SubExpression(coder, el), 'pushBack');
         }
 
         return [lines, coder];
@@ -476,7 +485,7 @@ namespace ByteCoder {
           [
             ...SubExpression(coder, obj),
             `'${ident.v}'`,
-            'method-lookup',
+            'methodLookup',
           ],
           coder,
         ];

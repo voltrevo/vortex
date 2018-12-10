@@ -2,19 +2,19 @@
 
 []
 
-get 0 0u64 has-index
-push-back
+get 0 0u64 hasIndex
+pushBack
 
-get 0 1u64 has-index
-push-back
+get 0 1u64 hasIndex
+pushBack
 
-get 0 2u64 has-index
-push-back
+get 0 2u64 hasIndex
+pushBack
 
-get 0 3u64 has-index
-push-back
+get 0 3u64 hasIndex
+pushBack
 
-get 0 4u64 has-index
-push-back
+get 0 4u64 hasIndex
+pushBack
 
 return

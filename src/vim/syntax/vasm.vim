@@ -19,7 +19,7 @@ hi def link     vasmDirective         Statement
 hi def link     vasmDeclaration       Keyword
 
 " Keywords within functions
-syn keyword     vasmStatement         return break continue assert breakpoint log push back front dup index has negate inc dec get set
+syn keyword     vasmStatement         return break continue assert breakpoint log pushBack pushFront dup at hasIndex negate inc dec get set
 syn keyword     vasmConditional       if else
 syn keyword     vasmRepeat            loop
 

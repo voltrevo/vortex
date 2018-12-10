@@ -37,9 +37,9 @@ loop {
 
   get 2 get 1 >= if {
     []
-    get 0 push-back
-    get 2 push-back
-    push-back
+    get 0 pushBack
+    get 2 pushBack
+    pushBack
 
     get 2 set 1
   }

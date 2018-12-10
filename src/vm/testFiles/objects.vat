@@ -4,11 +4,11 @@ set 0
 get 0
 ''
 at
-push-back
+pushBack
 get 0
-push-back
+pushBack
 get 0
 'b'
 at
-push-back
+pushBack
 return
