@@ -1501,7 +1501,10 @@ namespace Analyzer {
       az = { ...az, steps: az.steps + 1 };
 
       switch (exp.t) {
-        case 'NUMBER': { return [Outcome.Number(Number(exp.v)), az]; }
+        case 'NUMBER': {
+          return [Outcome.Number(Number(exp.v.replace(/[uif].*/, ''))), az];
+        }
+
         case 'BOOL': { return [Outcome.Bool(exp.v), az]; }
         case 'NULL': { return [Outcome.Null(), az]; }
 

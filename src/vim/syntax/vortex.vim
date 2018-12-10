@@ -29,9 +29,9 @@ hi def link     vxRepeat            Repeat
 
 " Predefined types
 syn keyword     vxType              bool string
-syn keyword     vxSignedInts        i32 i64
-syn keyword     vxUnsignedInts      byte u32 u64
-syn keyword     vxFloats            f32 f64
+syn match       vxSignedInts        "\([0-9]\)\@<=i\(8\|16\|32\|64\)\>"
+syn match       vxUnsignedInts      "\([0-9]\)\@<=u\(\|8\|16\|32\|64\)\>"
+syn match       vxFloats            "\([0-9]\)\@<=f\(8\|16\|32\|64\)\>"
 
 hi def link     vxType              Type
 hi def link     vxSignedInts        Type
@@ -96,10 +96,10 @@ syn match       vxNameCreation      "\<[a-zA-Z]\w*\>\(: \)\@="
 hi def link     vxNameCreation      Define
 
 " Integers
-syn match       vxDecimalInt        "\<\d\+\([Ee]\d\+\)\?\>"
-syn match       vxHexadecimalInt    "\<0x\x\+\>"
-syn match       vxOctalInt          "\<0\o\+\>"
-syn match       vxOctalError        "\<0\o*[89]\d*\>"
+syn match       vxDecimalInt        "\<\d\+\([Ee]\d\+\)\?"
+syn match       vxHexadecimalInt    "\<0x\x\+"
+syn match       vxOctalInt          "\<0\o\+"
+syn match       vxOctalError        "\<0\o*[89]\d*"
 
 hi def link     vxDecimalInt        Number
 hi def link     vxHexadecimalInt    Number

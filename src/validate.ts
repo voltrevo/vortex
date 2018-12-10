@@ -965,7 +965,34 @@ function validateExpression(exp: Syntax.Expression): Note[] {
         return null;
       }
 
-      case 'NUMBER':
+      case 'NUMBER': {
+        if (
+          (exp.v.indexOf('u') !== -1 || exp.v.indexOf('i') !== -1) &&
+          !/^[0-9]+(u|([ui](8|16|32|64)))$/.test(exp.v)
+        ) {
+          notes.push(Note(
+            exp.p,
+            'error',
+            ['validation', 'number'],
+            'Invalid number literal',
+          ));
+        }
+
+        if (
+          exp.v.indexOf('f') !== -1 &&
+          !/^[0-9]+(\.[0-9]+)?f(8|16|32|64)$/.test(exp.v)
+        ) {
+          notes.push(Note(
+            exp.p,
+            'error',
+            ['validation', 'number'],
+            'Invalid number literal',
+          ));
+        }
+
+        return null;
+      }
+
       case 'BOOL':
       case 'NULL':
       case 'STRING':

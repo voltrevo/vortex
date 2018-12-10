@@ -32,7 +32,7 @@
 'log.error'           return 'LOGERROR'
 [a-zA-Z]\w*           return 'IDENTIFIER'
 ";"                   return ';'
-[0-9]+("."[0-9]+)?\b  return 'NUMBER'
+[0-9]+("."[0-9]+)?([uif][0-9]*)?\b  return 'NUMBER'
 ['](\\.|[^'])*[']     return 'STRING'
 '=>'                  return '=>'
 "**"                  return '**'
