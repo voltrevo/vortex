@@ -34,6 +34,16 @@ namespace serializeAsmTree {
     return index;
   }
 
+  function clearLabel(labels: string[], name: string) {
+    let index = labels.indexOf(name);
+
+    if (index === -1) {
+      return;
+    }
+
+    labels[index] = '';
+  }
+
   export function Value(value: Syntax.Value): string {
     switch (value.t) {
       case 'null':
@@ -65,6 +75,11 @@ namespace serializeAsmTree {
 
       case 'gcall': {
         return [`${statement.t} ${getLabel(ctx.gfuncLabels, statement.v)}`];
+      }
+
+      case 'hoist': {
+        clearLabel(ctx.gfuncLabels, statement.v);
+        return [];
       }
 
       case 'word': {

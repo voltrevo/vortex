@@ -1,11 +1,9 @@
 import Syntax from './parser/Syntax';
 
 type ByteCoder = {
-  codePath: [],
   names: {
     [name: string]: (
-      { t: 'local', v: null } |
-      { t: 'gfunc', v: string } |
+      'gfunc' |
       undefined
     )
   },
@@ -13,12 +11,31 @@ type ByteCoder = {
 
 function ByteCoder(): ByteCoder {
   return {
-    codePath: [],
     names: {},
   };
 }
 
 namespace ByteCoder {
+  function setGFunc(coder: ByteCoder, name: string): ByteCoder {
+    return { ...coder,
+      names: { ...coder.names,
+        [name]: 'gfunc',
+      },
+    };
+  }
+
+  function getName(coder: ByteCoder, name: string): string {
+    const entry = coder.names[name];
+
+    if (entry === undefined) {
+      return `get $${name}`;
+    }
+
+    switch (entry) {
+      case 'gfunc': return `func { gcall $${name} }`;
+    }
+  }
+
   export function Block(coder: ByteCoder, program: Syntax.Program): string[] {
     const lines: string[] = [];
 
@@ -41,11 +58,21 @@ namespace ByteCoder {
         continue;
       }
 
+      lines.push(`hoist $${hoist.v.name.v}`);
+    }
+
+    for (const hoist of hoists) {
+      if (hoist.v.name === null) {
+        // Anonymous hoist is meaningless. Validation emits a warn about this.
+        continue;
+      }
+
       if (!first) {
         lines.push('');
       }
 
       lines.push(`gfunc $${hoist.v.name.v} {`);
+      coder = setGFunc(coder, hoist.v.name.v);
 
       for (let i = hoist.v.args.length - 1; i >= 0; i--) {
         const arg = hoist.v.args[i];
@@ -270,7 +297,7 @@ namespace ByteCoder {
 
   export function Expression(coder: ByteCoder, exp: Syntax.Expression): [string[], ByteCoder] {
     switch (exp.t) {
-      case 'IDENTIFIER': return [[`get $${exp.v}`], coder];
+      case 'IDENTIFIER': return [[getName(coder, exp.v)], coder];
       case 'NUMBER': return [[exp.v], coder];
       case 'BOOL': return [[exp.v.toString()], coder];
       case 'NULL': return [['null'], coder];
@@ -317,7 +344,11 @@ namespace ByteCoder {
       case 'Func': {
         const lines: string[] = [];
 
-        lines.push(`func {`);
+        if (exp.v.name !== null) {
+          lines.push(`gfunc $${exp.v.name} {`);
+        } else {
+          lines.push(`func {`);
+        }
 
         for (let i = exp.v.args.length - 1; i >= 0; i--) {
           const arg = exp.v.args[i];
@@ -347,6 +378,10 @@ namespace ByteCoder {
         lines.push(...bodyLines.map(line => '  ' + line));
 
         lines.push(`}`);
+
+        if (exp.v.name !== null) {
+          lines.push(`func { gcall $${exp.v.name} }`);
+        }
 
         return [lines, coder];
       }

@@ -40,6 +40,7 @@ namespace Syntax {
     { t: 'get', v: string, p: Pos } |
     { t: 'set', v: string, p: Pos } |
     { t: 'gcall', v: string, p: Pos } |
+    { t: 'hoist', v: string, p: Pos } |
     never
   );
 

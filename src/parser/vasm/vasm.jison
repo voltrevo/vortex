@@ -10,6 +10,7 @@
 'get'                 return 'GET'
 'set'                 return 'SET'
 'gcall'               return 'GCALL'
+'hoist'               return 'HOIST'
 \$[a-zA-Z]\w*         return 'NLABEL'
 'if'                  return 'IF'
 'else'                return 'ELSE'
@@ -96,6 +97,8 @@ labelWord
     | SET
         {$$ = $1}
     | GCALL
+        {$$ = $1}
+    | HOIST
         {$$ = $1}
     ;
 
