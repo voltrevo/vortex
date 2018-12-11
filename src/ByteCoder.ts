@@ -7,11 +7,16 @@ type ByteCoder = {
       undefined
     )
   },
+
+  internalNames: {
+    [name: string]: number | undefined,
+  },
 };
 
 function ByteCoder(): ByteCoder {
   return {
     names: {},
+    internalNames: {},
   };
 }
 
@@ -34,6 +39,35 @@ namespace ByteCoder {
     switch (entry) {
       case 'gfunc': return `func { gcall $${name} }`;
     }
+  }
+
+  function getInternalName(
+    coder: ByteCoder,
+    name: string
+  ): [string, ByteCoder] {
+    let entry = coder.internalNames[name];
+
+    if (entry === undefined) {
+      return [
+        `.${name}`,
+        { ...coder,
+          internalNames: { ...coder.internalNames,
+            [name]: 1,
+          },
+        }
+      ];
+    }
+
+    entry++;
+
+    return [
+      `.${name}.${entry}`,
+      { ...coder,
+        internalNames: { ...coder.internalNames,
+          [name]: entry,
+        },
+      },
+    ];
   }
 
   export function Block(coder: ByteCoder, program: Syntax.Program): string[] {
@@ -507,12 +541,18 @@ namespace ByteCoder {
 
         const [testExp, cases] = exp.v;
 
+        let switchValN: string | null;
+
+        if (testExp === null) {
+          switchValN = null;
+        } else {
+          [switchValN, coder] = getInternalName(coder, 'switchVal');
+          lines.push(...SubExpression(coder, testExp), `set $${switchValN}`);
+        }
+
         for (const [caseLeft, caseRight] of cases) {
           if (testExp !== null) {
-            // TODO: Use temporary variable instead
-            lines.push(
-              ...SubExpression(coder, testExp).map(line => indent + line)
-            );
+            lines.push(`${indent}get $${switchValN}`);
           }
 
           lines.push(
@@ -520,7 +560,6 @@ namespace ByteCoder {
           );
 
           if (testExp !== null) {
-            // TODO: Use temporary variable instead
             lines.push(indent + '==');
           }
 
