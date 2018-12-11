@@ -106,12 +106,9 @@ namespace ByteCoder {
       for (let i = hoist.v.args.length - 1; i >= 0; i--) {
         const arg = hoist.v.args[i];
 
-        if (arg.v.t !== 'IDENTIFIER') {
-          lines.push(`  'Not implemented: non-identifier arguments' throw`);
-          continue;
-        }
-
-        lines.push(`  set $${arg.v.v}`);
+        lines.push(
+          ...Destructure(coder, arg.v, 'insert').map(line => '  ' + line)
+        );
       }
 
       const bodyLines = (() => {
@@ -282,19 +279,13 @@ namespace ByteCoder {
 
               const [elExp] = statement.v.control.v;
 
-              if (elExp.t !== 'IDENTIFIER') {
-                res.push(
-                  `'Not implemented: destructuring range target' throw`
-                );
-              }
-
               res.push(
                 `get $${rangeNames.i} get $${rangeNames.len} == if {`,
                 `  break`,
                 `}`,
                 ``,
                 `get $${rangeNames.range} get $${rangeNames.i} at`,
-                `set $${elExp.v}`,
+                ...Destructure(coder, elExp, 'insert'),
                 ``,
               );
 
@@ -467,12 +458,9 @@ namespace ByteCoder {
         for (let i = exp.v.args.length - 1; i >= 0; i--) {
           const arg = exp.v.args[i];
 
-          if (arg.v.t !== 'IDENTIFIER') {
-            lines.push(`  'Not implemented: non-identifier arguments' throw`);
-            continue;
-          }
-
-          lines.push(`  set $${arg.v.v}`);
+          lines.push(
+            ...Destructure(coder, arg.v, 'insert').map(line => '  ' + line)
+          );
         }
 
         const bodyLines = (() => {
