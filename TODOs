@@ -1,4 +1,8 @@
-TODO: index -> at, implement insert for arrays and objects (fix objShorthand.vx)
+TODO: Vector operations in VM
+TODO: bind in analyzer
+TODO: bind in VM
+TODO: Compile closures
+TODO: Compile imports
 TODO: TODO tagging, group based on tags
 TODO: More unused warnings via return value dependency analysis (see cirumventUnused.vx)
 TODO: _ for implicit ignore
