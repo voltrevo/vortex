@@ -333,6 +333,19 @@ namespace ByteCoder {
     }
   }
 
+  function shouldUseTemporary(exp: Syntax.Expression): boolean {
+    switch (exp.t) {
+      case 'IDENTIFIER':
+      case 'NULL':
+      case 'BOOL':
+      case 'NUMBER':
+        return false;
+
+      default:
+        return true;
+    }
+  }
+
   export function Expression(coder: ByteCoder, exp: Syntax.Expression): [string[], ByteCoder] {
     switch (exp.t) {
       case 'IDENTIFIER': return [[getName(coder, exp.v)], coder];
@@ -541,25 +554,29 @@ namespace ByteCoder {
 
         const [testExp, cases] = exp.v;
 
-        let switchValN: string | null;
+        let switchValCode: string | null;
 
         if (testExp === null) {
-          switchValN = null;
-        } else {
+          switchValCode = null;
+        } else if (shouldUseTemporary(testExp)) {
+          let switchValN: string;
           [switchValN, coder] = getInternalName(coder, 'switchVal');
           lines.push(...SubExpression(coder, testExp), `set $${switchValN}`);
+          switchValCode = `get $${switchValN}`;
+        } else {
+          switchValCode = SubExpression(coder, testExp).join(' ');
         }
 
         for (const [caseLeft, caseRight] of cases) {
-          if (testExp !== null) {
-            lines.push(`${indent}get $${switchValN}`);
+          if (switchValCode !== null) {
+            lines.push(indent + switchValCode);
           }
 
           lines.push(
             ...SubExpression(coder, caseLeft).map(line => indent + line)
           );
 
-          if (testExp !== null) {
+          if (switchValCode !== null) {
             lines.push(indent + '==');
           }
 
