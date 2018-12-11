@@ -562,9 +562,21 @@ namespace ByteCoder {
       }
 
       case 'functionCall': {
-        const lines: string[] = [];
-
         const [fn, args] = exp.v;
+
+        // Temporary special case below for :Length(). TODO: Methods.
+        if (args.length === 0 && fn.t === 'methodLookup') {
+          const [base, method] = fn.v;
+
+          if (method.v === 'Length') {
+            return [
+              [...SubExpression(coder, base), 'length'],
+              coder,
+            ];
+          }
+        }
+
+        const lines: string[] = [];
 
         for (const arg of args) {
           lines.push(...SubExpression(coder, arg));
