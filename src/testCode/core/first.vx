@@ -1,9 +1,7 @@
-return func first(arr, len, before) { // #warn #unused TODO: not unused
-  result := arr[0];
+func first(arr, before) { // #warn #unused TODO: not unused
+  result := arr[0u64];
 
-  for (i := 1; i < len; i++) {
-    el := arr[i];
-
+  for (el of arr) {
     if (before(el, result)) {
       result = el;
     }
@@ -11,3 +9,10 @@ return func first(arr, len, before) { // #warn #unused TODO: not unused
 
   return result;
 };
+
+nums := [3, 1, 1, 2, 4, -7];
+
+assert -7 == first(nums, <);
+assert 4 == first(nums, >);
+
+return first;

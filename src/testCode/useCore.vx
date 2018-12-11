@@ -10,7 +10,6 @@ func abs(x) {
 
 assert -34 == first(
   [8, 1, 17, -34, 10],
-  5,
   func(a, b) => abs(a) > abs(b),
 );
 
