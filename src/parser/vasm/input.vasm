@@ -6,4 +6,11 @@ pushBack
 'Hello'
 pushBack
 
+123 set $.foo
+get $.foo
+pushBack
+
+set $bar
+get $bar
+
 return

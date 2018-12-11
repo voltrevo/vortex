@@ -50,8 +50,6 @@ namespace ByteCoder {
       }
     }
 
-    let first = true;
-
     for (const hoist of hoists) {
       if (hoist.v.name === null) {
         // Anonymous hoist is meaningless. Validation emits a warn about this.
@@ -68,11 +66,7 @@ namespace ByteCoder {
         continue;
       }
 
-      if (!first) {
-        lines.push('');
-      }
-
-      lines.push(`gfunc $${hoist.v.name.v} {`);
+      lines.push('', `gfunc $${hoist.v.name.v} {`);
       coder = setGFunc(coder, hoist.v.name.v);
 
       for (let i = hoist.v.args.length - 1; i >= 0; i--) {
@@ -102,9 +96,9 @@ namespace ByteCoder {
       lines.push(...bodyLines.map(line => '  ' + line));
 
       lines.push(`}`);
-
-      first = false;
     }
+
+    let first = (hoists.length === 0);
 
     for (const statement of statements) {
       if (!first) {
