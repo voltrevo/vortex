@@ -588,7 +588,8 @@ namespace ByteCoder {
         ];
       }
 
-      case '=': {
+      case '=':
+      case ':=': {
         const [leftExp, rightExp] = exp.v;
 
         if (leftExp.t === 'IDENTIFIER') {
@@ -635,7 +636,7 @@ namespace ByteCoder {
                   `get $${nextTarget.v}`,
                   ...prefix,
                   ...SubExpression(coder, rightExp),
-                  'update',
+                  exp.t === '=' ? 'update' : 'insert',
                   ...suffix,
                   `set $${nextTarget.v}`,
                 ],
@@ -653,22 +654,6 @@ namespace ByteCoder {
 
         return [
           [`'Not implemented: possible destructuring assignment' throw`],
-          coder,
-        ];
-      }
-
-      case ':=': {
-        const [leftExp, rightExp] = exp.v;
-
-        if (leftExp.t !== 'IDENTIFIER') {
-          return [
-            [`'Not implemented: assign/create with non-identifier lhs' throw`],
-            coder,
-          ];
-        }
-
-        return [
-          [...SubExpression(coder, rightExp), `set $${leftExp.v}`],
           coder,
         ];
       }
