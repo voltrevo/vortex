@@ -1,9 +1,10 @@
-n := 600851475143;
-i := 2;
-p := 1;
+// TODO: Support large u64 literals
+n := 600851u64 * 1000000u64 + 475143u64;
+i := 2u64;
+p := 1u64;
 
 for {
-  for (n % i == 0) {
+  for (n % i == 0u64) {
     n /= i;
     p = i;
   }
@@ -16,7 +17,7 @@ for {
       return p;
     }
 
-    assert n == 6857;
+    assert n == 6857u64;
     return n;
   }
 }
