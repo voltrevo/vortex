@@ -588,7 +588,75 @@ namespace ByteCoder {
         ];
       }
 
-      case '=':
+      case '=': {
+        const [leftExp, rightExp] = exp.v;
+
+        if (leftExp.t === 'IDENTIFIER') {
+          return [
+            [...SubExpression(coder, rightExp), `set $${leftExp.v}`],
+            coder,
+          ];
+        }
+
+        let target = leftExp;
+        const prefix: string[] = [];
+        const suffix: string[] = [];
+        let first = true;
+
+        while (true) {
+          if (target.t === 'subscript' || target.t === '.') {
+            const [nextTarget, key] = target.v;
+
+            if (first) {
+              first = false;
+
+              if (target.t === 'subscript') {
+                prefix.unshift(...SubExpression(coder, key));
+              } else {
+                prefix.unshift(`'${key.v}'`);
+              }
+            } else {
+              if (target.t === 'subscript') {
+                const keyLines = SubExpression(coder, key);
+
+                // TODO: Use a temporary when appropriate rather than duplicating
+                // the key calculation
+                prefix.unshift('dup', ...keyLines, 'at');
+                suffix.push(...keyLines, 'swap update');
+              } else {
+                prefix.unshift(`dup '${key.v}' at`);
+                suffix.push(`'${key.v}' swap update`);
+              }
+            }
+
+            if (nextTarget.t === 'IDENTIFIER') {
+              return [
+                [
+                  `get $${nextTarget.v}`,
+                  ...prefix,
+                  ...SubExpression(coder, rightExp),
+                  'update',
+                  ...suffix,
+                  `set $${nextTarget.v}`,
+                ],
+                coder,
+              ];
+            }
+
+            target = nextTarget;
+
+            continue;
+          }
+
+          break;
+        }
+
+        return [
+          [`'Not implemented: possible destructuring assignment' throw`],
+          coder,
+        ];
+      }
+
       case ':=': {
         const [leftExp, rightExp] = exp.v;
 
