@@ -668,12 +668,17 @@ namespace ByteCoder {
               }
             } else {
               if (target.t === 'subscript') {
-                const keyLines = SubExpression(coder, key);
-
-                // TODO: Use a temporary when appropriate rather than duplicating
-                // the key calculation
-                prefix.unshift('dup', ...keyLines, 'at');
-                suffix.push(...keyLines, 'swap update');
+                if (shouldUseTemporary(key)) {
+                  let tempName: string;
+                  [tempName, coder] = getInternalName(coder, 'key');
+                  prefix.unshift(`dup get $${tempName} at`);
+                  prefix.unshift(...SubExpression(coder, key), `set $${tempName}`);
+                  suffix.push(`get $${tempName} swap update`);
+                } else {
+                  const keyCode = SubExpression(coder, key).join(' ');
+                  prefix.unshift(`dup ${keyCode} at`);
+                  suffix.push(`${keyCode} swap update`);
+                }
               } else {
                 prefix.unshift(`dup '${key.v}' at`);
                 suffix.push(`'${key.v}' swap update`);
