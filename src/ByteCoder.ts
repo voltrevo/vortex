@@ -712,66 +712,25 @@ namespace ByteCoder {
           ];
         }
 
-        let target = leftExp;
-        const prefix: string[] = [];
-        const suffix: string[] = [];
-        let first = true;
+        const kind = exp.t === '=' ? 'update' : 'insert';
 
-        while (true) {
-          if (target.t === 'subscript' || target.t === '.') {
-            const [nextTarget, key] = target.v;
-
-            if (first) {
-              first = false;
-
-              if (target.t === 'subscript') {
-                prefix.unshift(...SubExpression(coder, key));
-              } else {
-                prefix.unshift(`'${key.v}'`);
-              }
-            } else {
-              if (target.t === 'subscript') {
-                if (shouldUseTemporary(key)) {
-                  let tempName: string;
-                  [tempName, coder] = getInternalName(coder, 'key');
-                  prefix.unshift(`dup get $${tempName} at`);
-                  prefix.unshift(...SubExpression(coder, key), `set $${tempName}`);
-                  suffix.push(`get $${tempName} swap update`);
-                } else {
-                  const keyCode = SubExpression(coder, key).join(' ');
-                  prefix.unshift(`dup ${keyCode} at`);
-                  suffix.push(`${keyCode} swap update`);
-                }
-              } else {
-                prefix.unshift(`dup '${key.v}' at`);
-                suffix.push(`'${key.v}' swap update`);
-              }
-            }
-
-            if (nextTarget.t === 'IDENTIFIER') {
-              return [
-                [
-                  `get $${nextTarget.v}`,
-                  ...prefix,
-                  ...SubExpression(coder, rightExp),
-                  exp.t === '=' ? 'update' : 'insert',
-                  ...suffix,
-                  `set $${nextTarget.v}`,
-                ],
-                coder,
-              ];
-            }
-
-            target = nextTarget;
-
-            continue;
-          }
-
-          break;
+        if (leftExp.t === 'subscript' || leftExp.t === '.') {
+          return [
+            UpdateInsert(
+              coder,
+              leftExp,
+              SubExpression(coder, rightExp),
+              kind,
+            ),
+            coder,
+          ];
         }
 
         return [
-          [`'Not implemented: possible destructuring assignment' throw`],
+          [
+            ...SubExpression(coder, rightExp),
+            ...Destructure(coder, leftExp, kind),
+          ],
           coder,
         ];
       }
@@ -818,6 +777,140 @@ namespace ByteCoder {
     const [ll] = Expression(coder, exp);
     return ll;
   }
+
+  function Destructure(
+    coder: ByteCoder,
+    exp: Syntax.Expression,
+    kind: 'update' | 'insert',
+  ): string[] {
+    if (exp.t === 'IDENTIFIER') {
+      return [`set $${exp.v}`];
+    }
+
+    if (exp.t === 'Array') {
+      if (exp.v.length === 0) {
+        return ['length 0u64 == assert'];
+      }
+
+      const res: string[] = [];
+
+      res.push(`dup length ${exp.v.length}u64 == assert`);
+
+      let i = 0;
+
+      for (; i < exp.v.length - 1; i++) {
+        res.push(`dup ${i}u64 at`, ...Destructure(coder, exp.v[i], kind));
+      }
+
+      res.push(`${i}u64 at`, ...Destructure(coder, exp.v[i], kind));
+
+      return res;
+    }
+
+    if (exp.t === 'Object') {
+      const res: string[] = [];
+
+      // TODO: Assert no extraneous keys
+
+      for (const [ident, elExp] of exp.v) {
+        if (ident.t === 'IDENTIFIER') {
+          res.push(`dup '${ident.v}' at`, ...Destructure(coder, elExp, kind));
+        } else if (ident.t === 'STRING') {
+          res.push(`dup ${ident.v} at`, ...Destructure(coder, elExp, kind));
+        } else {
+          checkNever(ident);
+        }
+      }
+
+      return res;
+    }
+
+    let destrName: string;
+    [destrName, coder] = getInternalName(coder, 'destr');
+
+    return [
+      `set $${destrName}`,
+      ...UpdateInsert(
+        coder,
+        exp,
+        [`get $${destrName}`],
+        kind,
+      ),
+    ];
+  }
+
+  function UpdateInsert(
+    coder: ByteCoder,
+    target: Syntax.Expression,
+    rhsCode: string[],
+    kind: 'update' | 'insert',
+  ): string[] {
+    if (target.t === 'IDENTIFIER') {
+      if (rhsCode.length === 1) {
+        return [`${rhsCode} set $${target.v}`];
+      }
+
+      return [...rhsCode, `set $${target.v}`];
+    }
+
+    const prefix: string[] = [];
+    const suffix: string[] = [];
+    let first = true;
+
+    while (true) {
+      if (target.t === 'subscript' || target.t === '.') {
+        const [nextTarget, key]: [Syntax.Expression, Syntax.Expression] = target.v;
+
+        if (first) {
+          first = false;
+
+          if (target.t === 'subscript') {
+            prefix.unshift(...SubExpression(coder, key));
+          } else {
+            prefix.unshift(`'${key.v}'`);
+          }
+        } else {
+          if (target.t === 'subscript') {
+            if (shouldUseTemporary(key)) {
+              let tempName: string;
+              [tempName, coder] = getInternalName(coder, 'key');
+              prefix.unshift(`dup get $${tempName} at`);
+              prefix.unshift(...SubExpression(coder, key), `set $${tempName}`);
+              suffix.push(`get $${tempName} swap update`);
+            } else {
+              const keyCode = SubExpression(coder, key).join(' ');
+              prefix.unshift(`dup ${keyCode} at`);
+              suffix.push(`${keyCode} swap update`);
+            }
+          } else {
+            prefix.unshift(`dup '${key.v}' at`);
+            suffix.push(`'${key.v}' swap update`);
+          }
+        }
+
+        if (nextTarget.t === 'IDENTIFIER') {
+          return [
+            `get $${nextTarget.v}`,
+            ...prefix,
+            ...rhsCode,
+            kind,
+            ...suffix,
+            `set $${nextTarget.v}`,
+          ];
+        }
+
+        target = nextTarget;
+
+        continue;
+      }
+
+      break;
+    }
+
+    return [`'Invalid update/insert target' throw`];
+  }
 }
+
+function checkNever(x: never) {}
 
 export default ByteCoder;
