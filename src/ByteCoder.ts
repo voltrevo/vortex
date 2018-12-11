@@ -230,9 +230,40 @@ namespace ByteCoder {
         const forLines: string[] = [];
         let ll: string[];
 
+        const rangeNames = {
+          range: '',
+          i: '',
+          len: '',
+        };
+
         forLines.push(...(() => {
           switch (statement.v.control.t) {
-            case 'range': return [`'Not implemented: range for loop' throw`];
+            case 'range': {
+              const res = [];
+
+              // Note: If the range is a variable (which is likely), the
+              // internal name is still needed unless we know that it won't be
+              // modified during the loop (TODO).
+              [rangeNames.range, coder] = getInternalName(coder, 'range');
+
+              res.push(
+                ...SubExpression(coder, statement.v.control.v[1]),
+                `set $${rangeNames.range}`,
+              );
+
+              [rangeNames.i, coder] = getInternalName(coder, 'i');
+
+              res.push(`0u64 set $${rangeNames.i}`);
+
+              [rangeNames.len, coder] = getInternalName(coder, 'len');
+
+              res.push(
+                `get $${rangeNames.range} length set $${rangeNames.len}`
+              );
+
+              return res;
+            }
+
             case 'condition': return [];
 
             case 'setup; condition; next': {
@@ -246,7 +277,29 @@ namespace ByteCoder {
 
         forLines.push(...(() => {
           switch (statement.v.control.t) {
-            case 'range': return [];
+            case 'range': {
+              const res = [];
+
+              const [elExp] = statement.v.control.v;
+
+              if (elExp.t !== 'IDENTIFIER') {
+                res.push(
+                  `'Not implemented: destructuring range target' throw`
+                );
+              }
+
+              res.push(
+                `get $${rangeNames.i} get $${rangeNames.len} == if {`,
+                `  break`,
+                `}`,
+                ``,
+                `get $${rangeNames.range} get $${rangeNames.i} at`,
+                `set $${elExp.v}`,
+                ``,
+              );
+
+              return res;
+            };
 
             case 'condition': {
               [ll, coder] = Expression(coder, statement.v.control.v);
@@ -276,7 +329,10 @@ namespace ByteCoder {
 
         const blockLines = Block(coder, statement.v.block);
 
-        if (statement.v.control.t === 'setup; condition; next') {
+        if (
+          statement.v.control.t === 'setup; condition; next' ||
+          statement.v.control.t === 'range'
+        ) {
           for (const line of blockLines) {
             // TODO: Matching on compiled string line here is not ideal
             // (Also making use of indenting to avoid nested continues)
@@ -290,9 +346,16 @@ namespace ByteCoder {
             }
           }
 
-          [ll, coder] = Expression(coder, statement.v.control.v[2]);
-
-          forLines.push('  ', ...ll.map(line => '  ' + line));
+          if (statement.v.control.t === 'setup; condition; next') {
+            forLines.push(
+              '  ',
+              ...(SubExpression(coder, statement.v.control.v[2])
+                .map(line => '  ' + line)
+              ),
+            );
+          } else {
+            forLines.push(`  get $${rangeNames.i} inc set $${rangeNames.i}`);
+          }
         } else {
           forLines.push(...blockLines.map(line => '  ' + line));
         }
