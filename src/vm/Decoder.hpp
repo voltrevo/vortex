@@ -342,7 +342,7 @@ namespace Vortex {
                 // be any type
                 Value key = getValue(STRING);
 
-                *items.data.OBJECT = items.data.OBJECT->add(
+                *items.data.OBJECT = items.data.OBJECT->insert(
                   key,
                   getValue(get())
                 );
@@ -474,6 +474,7 @@ namespace Vortex {
 
           switch (code) {
             case UPDATE: os << "update" << std::endl; return;
+            case INSERT: os << "insert" << std::endl; return;
 
             default: throw InternalError("Unrecognized TERNARY_OPERATOR");
           }

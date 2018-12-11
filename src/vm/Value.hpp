@@ -105,6 +105,7 @@ namespace Vortex {
 
   namespace TernaryOperators {
     void update(Value& target, const Value& value, const Value& key);
+    void insert(Value& target, const Value& value, const Value& key);
   }
 
   void TernaryOperator(Value& a, const Value& b, const Value& c, Code op);

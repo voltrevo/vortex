@@ -441,11 +441,29 @@ namespace Vortex {
           throw TypeError("Attempt to update type that is neither array nor object");
       }
     }
+
+    void insert(Value& target, const Value& key, const Value& value) {
+      switch (target.type) {
+        case ARRAY: {
+          throw NotImplementedError("array insertion not implemented");
+          break;
+        }
+
+        case OBJECT: {
+          *target.data.OBJECT = target.data.OBJECT->insert(key, value);
+          break;
+        }
+
+        default:
+          throw TypeError("Attempt to update type that is neither array nor object");
+      }
+    }
   }
 
   void TernaryOperator(Value& a, const Value& b, const Value& c, Code op) {
     switch (op) {
       case UPDATE: TernaryOperators::update(a, b, c); break;
+      case INSERT: TernaryOperators::insert(a, b, c); break;
 
       default:
         throw InternalError("Unrecognized ternary operator");

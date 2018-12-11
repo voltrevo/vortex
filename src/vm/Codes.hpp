@@ -48,6 +48,10 @@ namespace Vortex {
     VSET,
     FUNC,
 
+    // TERNARY_OPERATOR
+    UPDATE,
+    INSERT,
+
     // BINARY_OPERATOR
     EQUAL,
     NOT_EQUAL,
@@ -79,7 +83,6 @@ namespace Vortex {
 
     AT,
     HAS_INDEX,
-    UPDATE,
 
     CAPTURE,
 

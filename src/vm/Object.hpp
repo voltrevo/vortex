@@ -12,7 +12,7 @@ namespace Vortex {
     bool operator==(const Object& right) const;
     bool operator<(const Object& right) const;
 
-    Object add(Value key, Value value) const;
+    Object insert(Value key, Value value) const;
     Object update(const Value& key, Value value) const;
     Value at(const Value& key) const;
     bool hasIndex(const Value& key) const;

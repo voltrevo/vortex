@@ -17,7 +17,7 @@ namespace Vortex {
     return values < right.values;
   }
 
-  Object Object::add(Value key, Value value) const {
+  Object Object::insert(Value key, Value value) const {
     Uint64 pos = binarySearch(key);
 
     if (pos == keys.Length()) {
@@ -28,7 +28,7 @@ namespace Vortex {
     }
 
     if (*keys.at(pos).data.STRING == *key.data.STRING) {
-      throw BadIndexError("Attempt to add duplicate key");
+      throw BadIndexError("Attempt to insert duplicate key");
     }
 
     return Object{
@@ -86,7 +86,7 @@ namespace Vortex {
 
     // TODO: There is a more efficient way to do this.
     for (Uint64 pos = 0; pos < sz; pos++) {
-      res = res.add(right.keys.at(pos), right.values.at(pos));
+      res = res.insert(right.keys.at(pos), right.values.at(pos));
     }
 
     return res;

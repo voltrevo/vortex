@@ -44,6 +44,7 @@ namespace Vortex {
 
     // TERNARY_OPERATOR
     {"update", UPDATE},
+    {"insert", INSERT},
 
     // BINARY_OPERATOR
     {"==", EQUAL},

@@ -38,6 +38,7 @@ namespace Vortex {
         return TOP_TYPE;
 
       case UPDATE:
+      case INSERT:
         return TERNARY_OPERATOR;
 
       case EQUAL:
