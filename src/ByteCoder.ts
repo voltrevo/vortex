@@ -812,11 +812,18 @@ namespace ByteCoder {
 
       // TODO: Assert no extraneous keys
 
-      for (const [ident, elExp] of exp.v) {
+      for (let i = 0; i < exp.v.length; i++) {
+        const mdup = i === exp.v.length - 1 ? '' : 'dup ';
+        const [ident, elExp] = exp.v[i];
+
         if (ident.t === 'IDENTIFIER') {
-          res.push(`dup '${ident.v}' at`, ...Destructure(coder, elExp, kind));
+          res.push(
+            `${mdup}'${ident.v}' at`, ...Destructure(coder, elExp, kind)
+          );
         } else if (ident.t === 'STRING') {
-          res.push(`dup ${ident.v} at`, ...Destructure(coder, elExp, kind));
+          res.push(
+            `${mdup}${ident.v} at`, ...Destructure(coder, elExp, kind)
+          );
         } else {
           checkNever(ident);
         }
