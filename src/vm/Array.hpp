@@ -14,14 +14,15 @@ namespace Vortex {
     bool operator==(const Array& right) const;
     bool operator<(const Array& right) const;
 
-    Array pushBack(Value value) const;
-    Array pushFront(Value value) const;
-    Array update(Uint64 i, Value value) const;
+    Array pushBack(Value&& value) const;
+    Array pushFront(Value&& value) const;
+    Array update(Uint64 i, Value&& value) const;
     Value at(Uint64 i) const;
     bool hasIndex(Uint64 i) const;
-    Array concat(const Array& right) const;
+    Array concat(Array&& right) const;
     void plus(const Array& right);
     void minus(const Array& right);
+    void multiply(const Value& right);
 
     Uint64 Length() const;
   };

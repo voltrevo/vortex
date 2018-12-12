@@ -142,7 +142,12 @@ namespace Vortex {
               Value* middle = &*(--iter);
               Value* left = &*(--iter);
 
-              TernaryOperator(*left, *middle, *right, instr);
+              TernaryOperator(
+                *left,
+                std::move(*middle),
+                std::move(*right),
+                instr
+              );
 
               calc.pop_back();
               calc.pop_back();
@@ -151,7 +156,7 @@ namespace Vortex {
 
             case BINARY_OPERATOR: {
               auto backPair = BackPair();
-              BinaryOperator(*backPair.first, *backPair.second, instr);
+              BinaryOperator(*backPair.first, std::move(*backPair.second), instr);
               calc.pop_back();
               break;
             }

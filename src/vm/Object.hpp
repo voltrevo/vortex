@@ -19,6 +19,7 @@ namespace Vortex {
     Object concat(const Object& right) const;
     void plus(const Object& right);
     void minus(const Object& right);
+    void multiply(const Value& right);
 
     Uint64 binarySearch(const Value& key) const;
   };

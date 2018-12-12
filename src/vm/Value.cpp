@@ -14,10 +14,10 @@
 
 namespace Vortex {
   template <typename T>
-  void expBySq(T& left, const T& right) {
+  void expBySq(T& left, T&& right) {
     // Exponentiation by squaring
     T base = left;
-    T exponent = right;
+    T exponent = std::move(right);
 
     left = 1;
 
@@ -416,7 +416,7 @@ namespace Vortex {
   }
 
   namespace TernaryOperators {
-    void update(Value& target, const Value& key, const Value& value) {
+    void update(Value& target, const Value& key, Value&& value) {
       switch (target.type) {
         case ARRAY: {
           if (key.type != UINT64) {
@@ -427,7 +427,7 @@ namespace Vortex {
             throw BadIndexError("Attempt to update array with non-existing index");
           }
 
-          *target.data.ARRAY = target.data.ARRAY->update(key.data.UINT64, value);
+          *target.data.ARRAY = target.data.ARRAY->update(key.data.UINT64, std::move(value));
 
           break;
         }
@@ -442,7 +442,7 @@ namespace Vortex {
       }
     }
 
-    void insert(Value& target, const Value& key, const Value& value) {
+    void insert(Value& target, const Value& key, Value&& value) {
       switch (target.type) {
         case ARRAY: {
           throw NotImplementedError("array insertion not implemented");
@@ -460,10 +460,10 @@ namespace Vortex {
     }
   }
 
-  void TernaryOperator(Value& a, const Value& b, const Value& c, Code op) {
+  void TernaryOperator(Value& a, Value&& b, Value&& c, Code op) {
     switch (op) {
-      case UPDATE: TernaryOperators::update(a, b, c); break;
-      case INSERT: TernaryOperators::insert(a, b, c); break;
+      case UPDATE: TernaryOperators::update(a, b, std::move(c)); break;
+      case INSERT: TernaryOperators::insert(a, b, std::move(c)); break;
 
       default:
         throw InternalError("Unrecognized ternary operator");
@@ -498,8 +498,8 @@ namespace Vortex {
         case FUNC:
           throw TypeError("+ between nulls, bools, strings, or funcs");
 
-        case ARRAY: left.data.ARRAY->plus(*right.data.ARRAY); return;
-        case OBJECT: left.data.OBJECT->plus(*right.data.OBJECT); return;
+        case ARRAY: left.data.ARRAY->plus(std::move(*right.data.ARRAY)); return;
+        case OBJECT: left.data.OBJECT->plus(std::move(*right.data.OBJECT)); return;
 
         default: throw InternalError("Unrecognized value type");
       }
@@ -539,7 +539,29 @@ namespace Vortex {
       }
     }
 
-    void multiply(Value& left, const Value& right) {
+    void multiply(Value& left, Value&& right) {
+      if (left.type == ARRAY) {
+        left.data.ARRAY->multiply(right);
+        return;
+      }
+
+      if (left.type == OBJECT) {
+        left.data.OBJECT->multiply(right);
+        return;
+      }
+
+      if (right.type == ARRAY) {
+        swap(left, right);
+        left.data.ARRAY->multiply(right);
+        return;
+      }
+
+      if (right.type == OBJECT) {
+        swap(left, right);
+        left.data.OBJECT->multiply(right);
+        return;
+      }
+
       Code type = left.type;
 
       if (right.type != type) {
@@ -568,7 +590,50 @@ namespace Vortex {
 
         case ARRAY:
         case OBJECT:
-          throw NotImplementedError("Possible vector operation");
+          throw InternalError("This should be unreachable");
+
+        default: throw InternalError("Unrecognized value type");
+      }
+    }
+
+    void scalarMultiply(Value& left, const Value& right) {
+      if (left.type == ARRAY) {
+        left.data.ARRAY->multiply(right);
+        return;
+      }
+
+      if (left.type == OBJECT) {
+        left.data.OBJECT->multiply(right);
+        return;
+      }
+
+      Code type = left.type;
+
+      if (right.type != type) {
+        throw TypeError("Non-vector + between different types");
+      }
+
+      switch (type) {
+        case UINT8: left.data.UINT8 *= right.data.UINT8; return;
+        case UINT16: left.data.UINT16 *= right.data.UINT16; return;
+        case UINT32: left.data.UINT32 *= right.data.UINT32; return;
+        case UINT64: left.data.UINT64 *= right.data.UINT64; return;
+
+        case INT8: left.data.INT8 *= right.data.INT8; return;
+        case INT16: left.data.INT16 *= right.data.INT16; return;
+        case INT32: left.data.INT32 *= right.data.INT32; return;
+        case INT64: left.data.INT64 *= right.data.INT64; return;
+
+        case FLOAT32: left.data.FLOAT32 *= right.data.FLOAT32; return;
+        case FLOAT64: left.data.FLOAT64 *= right.data.FLOAT64; return;
+
+        case NULL_:
+        case BOOL:
+        case STRING:
+        case FUNC:
+        case ARRAY:
+        case OBJECT:
+          throw TypeError("scalarMultiply with non-scalar");
 
         default: throw InternalError("Unrecognized value type");
       }
@@ -653,7 +718,7 @@ namespace Vortex {
       }
     }
 
-    void power(Value& left, const Value& right) {
+    void power(Value& left, Value&& right) {
       Code type = left.type;
 
       if (right.type != type) {
@@ -661,15 +726,15 @@ namespace Vortex {
       }
 
       switch (type) {
-        case INT8: expBySq(left.data.INT8, right.data.INT8); return;
-        case INT16: expBySq(left.data.INT16, right.data.INT16); return;
-        case INT32: expBySq(left.data.INT32, right.data.INT32); return;
-        case INT64: expBySq(left.data.INT64, right.data.INT64); return;
+        case INT8: expBySq(left.data.INT8, std::move(right.data.INT8)); return;
+        case INT16: expBySq(left.data.INT16, std::move(right.data.INT16)); return;
+        case INT32: expBySq(left.data.INT32, std::move(right.data.INT32)); return;
+        case INT64: expBySq(left.data.INT64, std::move(right.data.INT64)); return;
 
-        case UINT8: expBySq(left.data.UINT8, right.data.UINT8); return;
-        case UINT16: expBySq(left.data.UINT16, right.data.UINT16); return;
-        case UINT32: expBySq(left.data.UINT32, right.data.UINT32); return;
-        case UINT64: expBySq(left.data.UINT64, right.data.UINT64); return;
+        case UINT8: expBySq(left.data.UINT8, std::move(right.data.UINT8)); return;
+        case UINT16: expBySq(left.data.UINT16, std::move(right.data.UINT16)); return;
+        case UINT32: expBySq(left.data.UINT32, std::move(right.data.UINT32)); return;
+        case UINT64: expBySq(left.data.UINT64, std::move(right.data.UINT64)); return;
 
         case FLOAT32: {
           left.data.FLOAT32 = pow(left.data.FLOAT32, right.data.FLOAT32);
@@ -696,31 +761,31 @@ namespace Vortex {
       }
     }
 
-    void less(Value& left, const Value& right) {
+    void less(Value& left, Value&& right) {
       left = Value(left < right);
     }
 
-    void greater(Value& left, const Value& right) {
+    void greater(Value& left, Value&& right) {
       left = Value(right < left);
     }
 
-    void lessEq(Value& left, const Value& right) {
+    void lessEq(Value& left, Value&& right) {
       left = Value(!(right < left));
     }
 
-    void greaterEq(Value& left, const Value& right) {
+    void greaterEq(Value& left, Value&& right) {
       left = Value(!(left < right));
     }
 
-    void equal(Value& left, const Value& right) {
+    void equal(Value& left, Value&& right) {
       left = Value(left == right);
     }
 
-    void notEqual(Value& left, const Value& right) {
+    void notEqual(Value& left, Value&& right) {
       left = Value(!(left == right));
     }
 
-    void and_(Value& left, const Value& right) {
+    void and_(Value& left, Value&& right) {
       Code type = left.type;
 
       if (right.type != type) {
@@ -737,7 +802,7 @@ namespace Vortex {
       }
     }
 
-    void or_(Value& left, const Value& right) {
+    void or_(Value& left, Value&& right) {
       Code type = left.type;
 
       if (right.type != type) {
@@ -754,7 +819,7 @@ namespace Vortex {
       }
     }
 
-    void concat(Value& left, const Value& right) {
+    void concat(Value& left, Value&& right) {
       Code type = left.type;
 
       if (right.type != type) {
@@ -763,17 +828,17 @@ namespace Vortex {
 
       switch (type) {
         case ARRAY: {
-          *left.data.ARRAY = left.data.ARRAY->concat(*right.data.ARRAY);
+          *left.data.ARRAY = left.data.ARRAY->concat(std::move(*right.data.ARRAY));
           return;
         }
 
         case STRING: {
-          *left.data.STRING = *left.data.STRING + *right.data.STRING;
+          *left.data.STRING = *left.data.STRING + std::move(*right.data.STRING);
           return;
         }
 
         case OBJECT: {
-          *left.data.OBJECT = left.data.OBJECT->concat(*right.data.OBJECT);
+          *left.data.OBJECT = left.data.OBJECT->concat(std::move(*right.data.OBJECT));
           return;
         }
 
@@ -781,23 +846,23 @@ namespace Vortex {
       }
     }
 
-    void pushBack(Value& left, const Value& right) {
+    void pushBack(Value& left, Value&& right) {
       if (left.type != ARRAY) {
         throw TypeError("push-back on non-array");
       }
 
-      *left.data.ARRAY = left.data.ARRAY->pushBack(right);
+      *left.data.ARRAY = left.data.ARRAY->pushBack(std::move(right));
     }
 
-    void pushFront(Value& left, const Value& right) {
+    void pushFront(Value& left, Value&& right) {
       if (left.type != ARRAY) {
         throw TypeError("push-front on non-array");
       }
 
-      *left.data.ARRAY = left.data.ARRAY->pushFront(right);
+      *left.data.ARRAY = left.data.ARRAY->pushFront(std::move(right));
     }
 
-    void at(Value& left, const Value& right) {
+    void at(Value& left, Value&& right) {
       switch (left.type) {
         case ARRAY: {
           if (right.type != UINT64) {
@@ -835,7 +900,7 @@ namespace Vortex {
       }
     }
 
-    void hasIndex(Value& left, const Value& right) {
+    void hasIndex(Value& left, Value&& right) {
       switch (left.type) {
         case ARRAY: {
           if (right.type != UINT64) {
@@ -867,14 +932,14 @@ namespace Vortex {
     }
   }
 
-  void BinaryOperator(Value& left, const Value& right, Code op) {
+  void BinaryOperator(Value& left, Value&& right, Code op) {
     switch (op) {
-      case PLUS: BinaryOperators::plus(left, right); break;
-      case MINUS: BinaryOperators::minus(left, right); break;
-      case MULTIPLY: BinaryOperators::multiply(left, right); break;
-      case DIVIDE: BinaryOperators::divide(left, right); break;
-      case MODULUS: BinaryOperators::modulus(left, right); break;
-      case POWER: BinaryOperators::power(left, right); break;
+      case PLUS: BinaryOperators::plus(left, std::move(right)); break;
+      case MINUS: BinaryOperators::minus(left, std::move(right)); break;
+      case MULTIPLY: BinaryOperators::multiply(left, std::move(right)); break;
+      case DIVIDE: BinaryOperators::divide(left, std::move(right)); break;
+      case MODULUS: BinaryOperators::modulus(left, std::move(right)); break;
+      case POWER: BinaryOperators::power(left, std::move(right)); break;
 
       case LEFT_SHIFT:
       case RIGHT_SHIFT:
@@ -883,21 +948,21 @@ namespace Vortex {
       case UNION:
         throw NotImplementedError("Operator not implemented");
 
-      case LESS: BinaryOperators::less(left, right); break;
-      case GREATER: BinaryOperators::greater(left, right); break;
-      case LESS_EQ: BinaryOperators::lessEq(left, right); break;
-      case GREATER_EQ: BinaryOperators::greaterEq(left, right); break;
-      case EQUAL: BinaryOperators::equal(left, right); break;
-      case NOT_EQUAL: BinaryOperators::notEqual(left, right); break;
+      case LESS: BinaryOperators::less(left, std::move(right)); break;
+      case GREATER: BinaryOperators::greater(left, std::move(right)); break;
+      case LESS_EQ: BinaryOperators::lessEq(left, std::move(right)); break;
+      case GREATER_EQ: BinaryOperators::greaterEq(left, std::move(right)); break;
+      case EQUAL: BinaryOperators::equal(left, std::move(right)); break;
+      case NOT_EQUAL: BinaryOperators::notEqual(left, std::move(right)); break;
 
-      case AND: BinaryOperators::and_(left, right); break;
-      case OR: BinaryOperators::or_(left, right); break;
+      case AND: BinaryOperators::and_(left, std::move(right)); break;
+      case OR: BinaryOperators::or_(left, std::move(right)); break;
 
-      case CONCAT: BinaryOperators::concat(left, right); break;
-      case PUSH_BACK: BinaryOperators::pushBack(left, right); break;
-      case PUSH_FRONT: BinaryOperators::pushFront(left, right); break;
-      case AT: BinaryOperators::at(left, right); break;
-      case HAS_INDEX: BinaryOperators::hasIndex(left, right); break;
+      case CONCAT: BinaryOperators::concat(left, std::move(right)); break;
+      case PUSH_BACK: BinaryOperators::pushBack(left, std::move(right)); break;
+      case PUSH_FRONT: BinaryOperators::pushFront(left, std::move(right)); break;
+      case AT: BinaryOperators::at(left, std::move(right)); break;
+      case HAS_INDEX: BinaryOperators::hasIndex(left, std::move(right)); break;
 
       default:
         throw InternalError("Unrecognized binary operator");
@@ -1039,6 +1104,38 @@ namespace Vortex {
 
       default:
         throw InternalError("Unrecognized unary operator");
+    }
+  }
+
+  bool isNumeric(Code type) {
+    switch (type) {
+      case UINT8:
+      case UINT16:
+      case UINT32:
+      case UINT64:
+
+      case INT8:
+      case INT16:
+      case INT32:
+      case INT64:
+
+      case FLOAT32:
+      case FLOAT64:
+        return true;
+
+      default:
+        return false;
+    }
+  }
+
+  bool isVector(Code type) {
+    switch (type) {
+      case ARRAY:
+      case OBJECT:
+        return true;
+
+      default:
+        return false;
     }
   }
 }

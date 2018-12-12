@@ -108,6 +108,18 @@ namespace Vortex {
     values.minus(right.values);
   }
 
+  void Object::multiply(const Value& right) {
+    if (right.type == OBJECT) {
+      throw NotImplementedError("Possible matrix multiplication");
+    }
+
+    if (!isNumeric(right.type)) {
+      throw TypeError("Attempt to multiply Object by invalid type");
+    }
+
+    values.multiply(right);
+  }
+
   Uint64 Object::binarySearch(const Value& key) const {
     if (key.type != STRING) {
       throw NotImplementedError("Searching for location of non-string key");

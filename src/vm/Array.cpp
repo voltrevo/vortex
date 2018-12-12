@@ -71,15 +71,15 @@ namespace Vortex {
     return outcome < 0;
   }
 
-  Array Array::pushBack(Value value) const {
+  Array Array::pushBack(Value&& value) const {
     return Array{.values = values.push_back(std::move(value))};
   }
 
-  Array Array::pushFront(Value value) const {
+  Array Array::pushFront(Value&& value) const {
     return Array{.values = values.push_front(std::move(value))};
   }
 
-  Array Array::update(Uint64 i, Value value) const {
+  Array Array::update(Uint64 i, Value&& value) const {
     return Array{.values = values.set(i, std::move(value))};
   }
 
@@ -91,8 +91,8 @@ namespace Vortex {
     return i < values.size();
   }
 
-  Array Array::concat(const Array& right) const {
-    return Array{.values = values + right.values};
+  Array Array::concat(Array&& right) const {
+    return Array{.values = values + std::move(right.values)};
   }
 
   void Array::plus(const Array& right) {
@@ -139,6 +139,32 @@ namespace Vortex {
     }
 
     values = newItems.persistent();
+  }
+
+  void Array::multiply(const Value& right) {
+    if (right.type == ARRAY) {
+      throw NotImplementedError("Possible matrix multiplication");
+    }
+
+    if (!isNumeric(right.type)) {
+      throw TypeError("Attempt to multiply Array by invalid type");
+    }
+
+    auto items = std::move(values).transient();
+
+    auto len = items.size();
+
+    for (auto i = 0ul; i < len; i++) {
+      items.update(
+        i,
+        [&](Value&& v) {
+          BinaryOperators::scalarMultiply(v, right);
+          return v;
+        }
+      );
+    }
+
+    values = std::move(items).persistent();
   }
 
   Uint64 Array::Length() const { return values.size(); }
