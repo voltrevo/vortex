@@ -971,24 +971,27 @@ namespace Outcome {
   export type Func = {
     cat: 'concrete';
     t: 'Func';
-    v: (
-      {
-        t: 'plain';
-        v: {
-          exp: Syntax.FunctionExpression;
-          az: Analyzer;
-        };
-      } |
-      {
-        t: 'method';
-        v: MethodTypeMap[keyof MethodTypeMap];
-      } |
-      {
-        t: 'op';
-        v: Syntax.VanillaOperator;
-      } |
-      never
-    );
+    v: {
+      def: (
+        {
+          t: 'plain';
+          v: {
+            exp: Syntax.FunctionExpression;
+            az: Analyzer;
+          };
+        } |
+        {
+          t: 'method';
+          v: MethodTypeMap[keyof MethodTypeMap];
+        } |
+        {
+          t: 'op';
+          v: Syntax.VanillaOperator;
+        } |
+        never
+      );
+      binds: Value[];
+    };
   };
 
   export type MethodTypeMap = {
@@ -1018,8 +1021,8 @@ namespace Outcome {
     Object: Object.methodArgLengths,
   };
 
-  export type FuncMethod = Func & { v: { t: 'method' } };
-  export type FuncOp = Func & { v: { t: 'op' } };
+  export type FuncMethod = Func & { v: { def: { t: 'method' } } };
+  export type FuncOp = Func & { v: { def: { t: 'op' } } };
 
   export function FuncOp(v: Syntax.VanillaOperator) {
     return Func({ t: 'op', v });
@@ -1037,41 +1040,48 @@ namespace Outcome {
       cat: 'concrete',
       t: 'Func',
       v: {
-        t: 'method',
-        v: {
-          t: base.t,
-          base,
-          name,
-          argLength: methodArgLengths[base.t][name],
-        } as any,
-        // Not sure if there's a way to avoid {any} above. Trying to push
-        // typescript's type system very far already here.
+        def: {
+          t: 'method',
+          v: {
+            t: base.t,
+            base,
+            name,
+            argLength: methodArgLengths[base.t][name],
+          } as any,
+          // Not sure if there's a way to avoid {any} above. Trying to push
+          // typescript's type system very far already here.
+        },
+        binds: [] as Value[],
       },
     };
   }
 
-  export type FuncPlain = Func & { v: { t: 'plain' } };
+  export type FuncPlain = Func & { v: { def: { t: 'plain' } } };
 
-  export function Func(v: Func['v']): Func {
-    return { cat: 'concrete', t: 'Func', v };
+  export function Func(def: Func['v']['def']): Func {
+    return { cat: 'concrete', t: 'Func', v: { def, binds: [] } };
   }
 
   export function FuncPlain(v: {
     exp: Syntax.FunctionExpression,
     az: Analyzer
   }): FuncPlain {
-    return { cat: 'concrete', t: 'Func', v: { t: 'plain', v } };
+    return { cat: 'concrete', t: 'Func', v: { def: { t: 'plain', v }, binds: [] } };
   }
 
   export namespace Func {
     export function ArgLength(f: Func): number {
-      switch (f.v.t) {
+      return DefArgLength(f.v.def) - f.v.binds.length;
+    }
+
+    function DefArgLength(def: Func['v']['def']): number {
+      switch (def.t) {
         case 'plain': {
-          return f.v.v.exp.v.args.length;
+          return def.v.exp.v.args.length;
         }
 
         case 'method': {
-          return f.v.v.argLength;
+          return def.v.argLength;
         }
 
         case 'op': {
@@ -1100,24 +1110,24 @@ namespace Outcome {
         const funcv = v.v;
 
         return (() => {
-          switch (funcv.t) {
+          switch (funcv.def.t) {
             case 'plain': {
               // TODO: include argument names
               return (
                 `<func ${
-                  funcv.v.exp.v.name ?
-                  funcv.v.exp.v.name.v :
+                  funcv.def.v.exp.v.name ?
+                  funcv.def.v.exp.v.name.v :
                   '(anonymous)'
                 }>`
               );
             }
 
             case 'method': {
-              return `<method ${funcv.v.base.t}:${funcv.v.name}>`;
+              return `<method ${funcv.def.v.base.t}:${funcv.def.v.name}>`;
             }
 
             case 'op': {
-              return `<operator ${funcv.v}>`;
+              return `<operator ${funcv.def.v}>`;
             }
           }
         })();
@@ -1230,7 +1240,7 @@ namespace Outcome {
 
         // TODO: Types of arguments?
         return (
-          left.v.t === right.v.t &&
+          left.v.def.t === right.v.def.t &&
           Func.ArgLength(left) === Func.ArgLength(right)
         );
       }
