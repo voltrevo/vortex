@@ -22,8 +22,14 @@ namespace Vortex {
     Array concat(Array&& right) const;
     void plus(const Array& right);
     void minus(const Array& right);
+
     void multiply(const Value& right);
+    void multiplyArray(const Array& right);
+    void multiplyObject(const Object& right);
 
     Uint64 Length() const;
+
+    Uint64 InnerLength() const;
+    Array InnerKeys() const;
   };
 }

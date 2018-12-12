@@ -22,5 +22,8 @@ namespace Vortex {
     void multiply(const Value& right);
 
     Uint64 binarySearch(const Value& key) const;
+
+    Uint64 InnerLength() const;
+    Array InnerKeys() const;
   };
 }

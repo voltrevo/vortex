@@ -1,6 +1,7 @@
 #include <immer/flex_vector_transient.hpp>
 
 #include "Array.hpp"
+#include "Object.hpp"
 #include "Value.hpp"
 
 namespace Vortex {
@@ -143,7 +144,13 @@ namespace Vortex {
 
   void Array::multiply(const Value& right) {
     if (right.type == ARRAY) {
-      throw NotImplementedError("Possible matrix multiplication");
+      multiplyArray(*right.data.ARRAY);
+      return;
+    }
+
+    if (right.type == OBJECT) {
+      multiplyObject(*right.data.OBJECT);
+      return;
     }
 
     if (!isNumeric(right.type)) {
@@ -167,5 +174,128 @@ namespace Vortex {
     values = std::move(items).persistent();
   }
 
+  void Array::multiplyArray(const Array& right) {
+    // TODO: What if we have inner keys?
+    Uint64 innerLength = InnerLength();
+
+    if (innerLength != right.Length()) {
+      throw TypeError("Incompatible dimensions for matrix multiplication");
+    }
+
+    auto rightIter = right.values.begin();
+    auto rightEnd = right.values.end();
+
+    if (rightIter == rightEnd) {
+      throw TypeError("Can't multiply by empty array");
+    }
+
+    immer::flex_vector_transient<Value> matrix;
+
+    if (rightIter->type == ARRAY) {
+      Uint64 rightInnerLength = right.InnerLength();
+
+      Uint64 len = Length();
+      for (auto i = 0ul; i < len; ++i) {
+        const Value& v = values[i];
+        Array& leftRow = *v.data.ARRAY;
+        immer::flex_vector_transient<Value> row;
+
+        for (auto j = 0ul; j < rightInnerLength; ++j) {
+          Value sum = leftRow.values[0];
+          BinaryOperators::multiply(sum, Value(right.values[0].data.ARRAY->values[j]));
+
+          for (auto inner = 1ul; inner < innerLength; ++inner) {
+            Value product = leftRow.values[inner];
+            BinaryOperators::multiply(product, Value(right.values[inner].data.ARRAY->values[j]));
+            BinaryOperators::plus(sum, std::move(product));
+          }
+
+          row.push_back(std::move(sum));
+        }
+
+        matrix.push_back(Value(new Array{.values = row.persistent()}));
+      }
+
+      values = matrix.persistent();
+      return;
+    }
+
+    if (rightIter->type == OBJECT) {
+      Array rightInnerKeys = right.InnerKeys();
+
+      for (const Value& v: values) {
+        immer::flex_vector_transient<Value> row;
+
+        throw NotImplementedError("blah");
+
+        matrix.push_back(Value(new Array{.values = row.persistent()}));
+      }
+
+      values = matrix.persistent();
+      return;
+    }
+
+    throw TypeError("Can't matrix multiply with rhs without an inner dimension");
+  }
+
+  void Array::multiplyObject(const Object& right) {
+  }
+
   Uint64 Array::Length() const { return values.size(); }
+
+  Uint64 Array::InnerLength() const {
+    auto iter = values.begin();
+    auto end = values.end();
+
+    if (iter == end) {
+      throw TypeError("Assumed inner length of empty array");
+    }
+
+    if (iter->type != ARRAY) {
+      throw TypeError("Assumed inner length of array with non-array content");
+    }
+
+    Uint64 result = iter->data.ARRAY->Length();
+    ++iter;
+
+    for (; iter != end; ++iter) {
+      if (iter->type != ARRAY) {
+        throw TypeError("Assumed inner length of array with non-array content");
+      }
+
+      if (iter->data.ARRAY->Length() != result) {
+        throw TypeError("Inconsistent inner length");
+      }
+    }
+
+    return result;
+  }
+
+  Array Array::InnerKeys() const {
+    auto iter = values.begin();
+    auto end = values.end();
+
+    if (iter == end) {
+      throw TypeError("Assumed inner keys of empty array");
+    }
+
+    if (iter->type != OBJECT) {
+      throw TypeError("Assumed inner keys of array with non-object content");
+    }
+
+    Array result = iter->data.OBJECT->keys;
+    ++iter;
+
+    for (; iter != end; ++iter) {
+      if (iter->type != OBJECT) {
+        throw TypeError("Assumed inner keys of array with non-object content");
+      }
+
+      if (!(iter->data.OBJECT->keys == result)) {
+        throw TypeError("Inconsistent inner keys");
+      }
+    }
+
+    return result;
+  }
 }

@@ -159,4 +159,7 @@ namespace Vortex {
 
     return left;
   }
+
+  Uint64 Object::InnerLength() const { return values.InnerLength(); }
+  Array Object::InnerKeys() const { return values.InnerKeys(); }
 }
