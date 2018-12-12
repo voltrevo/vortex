@@ -118,5 +118,28 @@ namespace Vortex {
     values = newItems.persistent();
   }
 
+  void Array::minus(const Array& right) {
+    auto len = Length();
+
+    if (len != right.Length()) {
+      throw TypeError("Length mismatch in Array - Array");
+    }
+
+    auto newItems = decltype(values)().transient();
+
+    auto leftIter = values.begin();
+    auto rightIter = right.values.begin();
+
+    for (auto i = 0ul; i < len; ++i) {
+      Value v = *leftIter;
+      BinaryOperators::minus(v, *rightIter);
+      newItems.push_back(std::move(v));
+      ++leftIter;
+      ++rightIter;
+    }
+
+    values = newItems.persistent();
+  }
+
   Uint64 Array::Length() const { return values.size(); }
 }

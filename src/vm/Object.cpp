@@ -100,6 +100,14 @@ namespace Vortex {
     values.plus(right.values);
   }
 
+  void Object::minus(const Object& right) {
+    if (!(keys == right.keys)) {
+      throw TypeError("Keys mismatch in Object - Object");
+    }
+
+    values.minus(right.values);
+  }
+
   Uint64 Object::binarySearch(const Value& key) const {
     if (key.type != STRING) {
       throw NotImplementedError("Searching for location of non-string key");

@@ -532,9 +532,8 @@ namespace Vortex {
         case FUNC:
           throw TypeError("- between nulls, bools, strings, or funcs");
 
-        case ARRAY:
-        case OBJECT:
-          throw NotImplementedError("Possible vector operation");
+        case ARRAY: left.data.ARRAY->minus(*right.data.ARRAY); return;
+        case OBJECT: left.data.OBJECT->minus(*right.data.OBJECT); return;
 
         default: throw InternalError("Unrecognized value type");
       }
