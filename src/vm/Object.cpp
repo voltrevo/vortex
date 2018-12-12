@@ -109,8 +109,9 @@ namespace Vortex {
   }
 
   void Object::multiply(const Value& right) {
-    if (right.type == OBJECT) {
-      throw NotImplementedError("Possible matrix multiplication");
+    if (right.type == ARRAY || right.type == OBJECT) {
+      values.multiply(right);
+      return;
     }
 
     if (!isNumeric(right.type)) {

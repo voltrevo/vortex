@@ -175,7 +175,6 @@ namespace Vortex {
   }
 
   void Array::multiplyArray(const Array& right) {
-    // TODO: What if we have inner keys?
     Uint64 innerLength = InnerLength();
 
     if (innerLength != right.Length()) {
@@ -222,11 +221,88 @@ namespace Vortex {
 
     if (rightIter->type == OBJECT) {
       Array rightInnerKeys = right.InnerKeys();
+      Uint64 rightInnerKeyLen = rightInnerKeys.Length();
 
-      for (const Value& v: values) {
+      Uint64 len = Length();
+      for (auto i = 0ul; i < len; ++i) {
+        const Value& v = values[i];
+        Array& leftRow = *v.data.ARRAY;
         immer::flex_vector_transient<Value> row;
 
-        throw NotImplementedError("blah");
+        for (auto j = 0ul; j < rightInnerKeyLen; ++j) {
+          Value sum = leftRow.values[0];
+          BinaryOperators::multiply(sum, Value(right.values[0].data.OBJECT->values.values[j]));
+
+          for (auto inner = 1ul; inner < innerLength; ++inner) {
+            Value product = leftRow.values[inner];
+
+            BinaryOperators::multiply(
+              product,
+              Value(right.values[inner].data.OBJECT->values.values[j])
+            );
+
+            BinaryOperators::plus(sum, std::move(product));
+          }
+
+          row.push_back(std::move(sum));
+        }
+
+        matrix.push_back(Value(new Object{
+          .keys = rightInnerKeys,
+          .values = Array{.values = row.persistent()}
+        }));
+      }
+
+      values = matrix.persistent();
+      return;
+    }
+
+    throw TypeError("Can't matrix multiply with rhs that lacks inner dimension");
+  }
+
+  void Array::multiplyObject(const Object& right) {
+    Array innerKeys = InnerKeys();
+
+    if (!(innerKeys == right.keys)) {
+      throw TypeError("Incompatible dimensions for matrix multiplication");
+    }
+
+    auto rightIter = right.values.values.begin();
+    auto rightEnd = right.values.values.end();
+
+    if (rightIter == rightEnd) {
+      throw TypeError("Can't multiply by empty object");
+    }
+
+    auto innerKeyLen = innerKeys.Length();
+    immer::flex_vector_transient<Value> matrix;
+
+    if (rightIter->type == ARRAY) {
+      Uint64 rightInnerLength = right.InnerLength();
+
+      Uint64 len = Length();
+      for (auto i = 0ul; i < len; ++i) {
+        const Value& v = values[i];
+        Object& leftRow = *v.data.OBJECT;
+        immer::flex_vector_transient<Value> row;
+
+        for (auto j = 0ul; j < rightInnerLength; ++j) {
+          Value sum = leftRow.values.values[0];
+          BinaryOperators::multiply(sum, Value(right.values.values[0].data.ARRAY->values[j]));
+
+          for (auto inner = 1ul; inner < innerKeyLen; ++inner) {
+            Value product = leftRow.values.values[inner];
+
+            BinaryOperators::multiply(
+              product,
+              Value(right.values.values[inner].data.ARRAY->values[j])
+            );
+
+            BinaryOperators::plus(sum, std::move(product));
+          }
+
+          row.push_back(std::move(sum));
+        }
 
         matrix.push_back(Value(new Array{.values = row.persistent()}));
       }
@@ -235,10 +311,49 @@ namespace Vortex {
       return;
     }
 
-    throw TypeError("Can't matrix multiply with rhs without an inner dimension");
-  }
+    if (rightIter->type == OBJECT) {
+      Array rightInnerKeys = right.InnerKeys();
+      Uint64 rightInnerKeyLen = rightInnerKeys.Length();
 
-  void Array::multiplyObject(const Object& right) {
+      Uint64 len = Length();
+      for (auto i = 0ul; i < len; ++i) {
+        const Value& v = values[i];
+        Object& leftRow = *v.data.OBJECT;
+        immer::flex_vector_transient<Value> row;
+
+        for (auto j = 0ul; j < rightInnerKeyLen; ++j) {
+          Value sum = leftRow.values.values[0];
+
+          BinaryOperators::multiply(
+            sum,
+            Value(right.values.values[0].data.OBJECT->values.values[j])
+          );
+
+          for (auto inner = 1ul; inner < innerKeyLen; ++inner) {
+            Value product = leftRow.values.values[inner];
+
+            BinaryOperators::multiply(
+              product,
+              Value(right.values.values[inner].data.OBJECT->values.values[j])
+            );
+
+            BinaryOperators::plus(sum, std::move(product));
+          }
+
+          row.push_back(std::move(sum));
+        }
+
+        matrix.push_back(Value(new Object{
+          .keys = rightInnerKeys,
+          .values = Array{.values = row.persistent()}
+        }));
+      }
+
+      values = matrix.persistent();
+      return;
+    }
+
+    throw TypeError("Can't matrix multiply with rhs that lacks inner dimension");
   }
 
   Uint64 Array::Length() const { return values.size(); }
