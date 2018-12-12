@@ -17,6 +17,7 @@ namespace Vortex {
     Value at(const Value& key) const;
     bool hasIndex(const Value& key) const;
     Object concat(const Object& right) const;
+    void plus(const Object& right);
 
     Uint64 binarySearch(const Value& key) const;
   };
