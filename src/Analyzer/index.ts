@@ -2157,22 +2157,24 @@ namespace Analyzer {
     export function TailCall(
       funcExp: Syntax.Expression | null,
       func: Outcome.Func,
-      args: Outcome.Value[],
+      lastArgs: Outcome.Value[],
     ): TailCall | Outcome.Exception {
       // This is here because typescript forgets the narrowed type of func
       // inside the lambdas below.
-      const def = func.v.def;
+      const funcDef = func.v.def;
+
+      const args = [...func.v.binds, ...lastArgs];
 
       // TODO: For non-recursive functions it's probably simpler not to create
       // a tail call.
 
-      if (def.t === 'method') {
+      if (funcDef.t === 'method') {
         return (az: Analyzer) => {
-          const base = def.v.base;
+          const base = funcDef.v.base;
 
           // TODO: These special methods should be defined in the core library
           // instead. Also could do with moving elsewhere at least.
-          if (base.t === 'Array' && def.v.name === 'map') {
+          if (base.t === 'Array' && funcDef.v.name === 'map') {
             const mapper = args[0];
 
             if (mapper.t !== 'Func') {
@@ -2205,7 +2207,7 @@ namespace Analyzer {
           }
 
           // TODO: Reduce duplication with reduce
-          if (base.t === 'Array' && def.v.name === 'filter') {
+          if (base.t === 'Array' && funcDef.v.name === 'filter') {
             const filterFn = args[0];
 
             if (filterFn.t !== 'Func') {
@@ -2255,7 +2257,7 @@ namespace Analyzer {
           }
 
           // TODO: Reduce duplication with reduceFrom
-          if (base.t === 'Array' && def.v.name === 'reduce') {
+          if (base.t === 'Array' && funcDef.v.name === 'reduce') {
             const reducer = args[0];
 
             if (reducer.t !== 'Func') {
@@ -2291,7 +2293,7 @@ namespace Analyzer {
             return [value, az];
           }
 
-          if (base.t === 'Array' && def.v.name === 'reduceFrom') {
+          if (base.t === 'Array' && funcDef.v.name === 'reduceFrom') {
             let [value, reducer] = args;
 
             if (reducer.t !== 'Func') {
@@ -2326,7 +2328,7 @@ namespace Analyzer {
 
           if (
             (base.t === 'Array' || base.t === 'Object') &&
-            def.v.name === 'Transpose'
+            funcDef.v.name === 'Transpose'
           ) {
             const dims = Outcome.MatrixDimensions(base);
 
@@ -2357,25 +2359,25 @@ namespace Analyzer {
             return [value, az];
           }
 
-          const impl = Outcome.methodImpls[base.t][def.v.name];
+          const impl = Outcome.methodImpls[base.t][funcDef.v.name];
 
           const out = impl(
             base,
             // TODO: Should be getting this from argEntries but the
             // special case of zero arguments works fine like this
-            [],
+            args,
           );
 
           return [out, az];
         };
       }
 
-      if (def.t === 'op') {
+      if (funcDef.t === 'op') {
         const [left, right] = args;
 
         const out = Outcome.EvalVanillaOperator(
           funcExp,
-          def.v,
+          funcDef.v,
           [left, right]
         );
 
@@ -2383,17 +2385,17 @@ namespace Analyzer {
       }
 
       return (az: Analyzer) => {
-        let funcAz = { ...def.v.az,
+        let funcAz = { ...funcDef.v.az,
           modules: az.modules,
           steps: az.steps,
           // TODO: Not doing this should break in an interesting way
           // fileStack: az.fileStack,
         };
 
-        if (def.v.exp.v.name !== null) {
+        if (funcDef.v.exp.v.name !== null) {
           funcAz = Analyzer.add(
             funcAz,
-            def.v.exp.v.name.v,
+            funcDef.v.exp.v.name.v,
             func,
           );
         }
@@ -2401,7 +2403,7 @@ namespace Analyzer {
         for (let i = 0; i < args.length; i++) {
           // TODO: Argument destructuring
           const arg = args[i];
-          const argExp = def.v.exp.v.args[i].v;
+          const argExp = funcDef.v.exp.v.args[i].v;
 
           let mex: Outcome.Exception | null;
           [mex, funcAz] = createOrAssign(
@@ -2418,7 +2420,7 @@ namespace Analyzer {
           }
         }
 
-        const body = def.v.exp.v.body;
+        const body = funcDef.v.exp.v.body;
 
         // TODO: Do some processing with the notes so that they have
         // subnotes for stack levels.

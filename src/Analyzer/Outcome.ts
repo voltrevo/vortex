@@ -965,6 +965,9 @@ namespace Outcome {
 
   type MethodImpl<M extends MethodBase, MC extends MethodCallBase> = (
     base: M['base'],
+
+    // TODO: args typing is broken, methods need to verify they are getting the
+    // correct argument types
     args: MC['args'],
   ) => MC['result'];
 
@@ -994,6 +997,86 @@ namespace Outcome {
     };
   };
 
+  export function Func(def: Func['v']['def']): Func {
+    return { cat: 'concrete', t: 'Func', v: { def, binds: [] } };
+  }
+
+  export namespace Func {
+    export function ArgLength(f: Func): number {
+      return DefArgLength(f.v.def) - f.v.binds.length;
+    }
+
+    function DefArgLength(def: Func['v']['def']): number {
+      switch (def.t) {
+        case 'plain': {
+          return def.v.exp.v.args.length;
+        }
+
+        case 'method': {
+          return def.v.argLength;
+        }
+
+        case 'op': {
+          return 2;
+        }
+      }
+    }
+
+    export type MethodMap = {
+      bind: {
+        base: Func;
+        name: 'bind';
+        argLength: 1;
+      };
+    };
+
+    export type Method = MethodMap[keyof MethodMap];
+
+    export type MethodCallMap = {
+      bind: {
+        args: [Value];
+        result: Func | Outcome.Exception;
+      };
+    };
+
+    export const methodImpls: {
+      [name in keyof MethodMap]: MethodImpl<
+        MethodMap[name],
+        MethodCallMap[name]
+      >;
+    } = {
+      bind: (base, [bindVal]) => {
+        if (base.v.binds.length >= DefArgLength(base.v.def)) {
+          return Exception(
+            null,
+            ['type-error', 'bind-excess'],
+            (
+              'Can\'t bind argument to ' +
+              Outcome.JsString(base) +
+              ' because it doesn\'t take any arguments'
+            ),
+          );
+        }
+
+        const res = (JsObject.assign({}, base, {
+          v: JsObject.assign({}, base.v, {
+            binds: [...base.v.binds,
+              bindVal,
+            ],
+          }),
+        }));
+
+        return res;
+      },
+    };
+
+    export const methodArgLengths: {
+      [name in keyof MethodMap]: MethodMap[name]['argLength'];
+    } = {
+      bind: 1,
+    };
+  }
+
   export type MethodTypeMap = {
     Null: Null.Method;
     Bool: Bool.Method;
@@ -1001,6 +1084,7 @@ namespace Outcome {
     String: String.Method;
     Array: Array.Method;
     Object: Object.Method;
+    Func: Func.Method;
   };
 
   export const methodImpls = {
@@ -1010,6 +1094,7 @@ namespace Outcome {
     String: String.methodImpls,
     Array: Array.methodImpls,
     Object: Object.methodImpls,
+    Func: Func.methodImpls,
   };
 
   export const methodArgLengths = {
@@ -1019,6 +1104,7 @@ namespace Outcome {
     String: String.methodArgLengths,
     Array: Array.methodArgLengths,
     Object: Object.methodArgLengths,
+    Func: Func.methodArgLengths,
   };
 
   export type FuncMethod = Func & { v: { def: { t: 'method' } } };
@@ -1058,37 +1144,11 @@ namespace Outcome {
 
   export type FuncPlain = Func & { v: { def: { t: 'plain' } } };
 
-  export function Func(def: Func['v']['def']): Func {
-    return { cat: 'concrete', t: 'Func', v: { def, binds: [] } };
-  }
-
   export function FuncPlain(v: {
     exp: Syntax.FunctionExpression,
     az: Analyzer
   }): FuncPlain {
     return { cat: 'concrete', t: 'Func', v: { def: { t: 'plain', v }, binds: [] } };
-  }
-
-  export namespace Func {
-    export function ArgLength(f: Func): number {
-      return DefArgLength(f.v.def) - f.v.binds.length;
-    }
-
-    function DefArgLength(def: Func['v']['def']): number {
-      switch (def.t) {
-        case 'plain': {
-          return def.v.exp.v.args.length;
-        }
-
-        case 'method': {
-          return def.v.argLength;
-        }
-
-        case 'op': {
-          return 2;
-        }
-      }
-    }
   }
 
   export function ObjectKeyString(key: string) {
@@ -1107,30 +1167,36 @@ namespace Outcome {
       case 'Null': return 'null';
 
       case 'Func': {
-        const funcv = v.v;
+        const def = v.v.def;
 
-        return (() => {
-          switch (funcv.def.t) {
+        const defString = (() => {
+          switch (def.t) {
             case 'plain': {
               // TODO: include argument names
               return (
-                `<func ${
-                  funcv.def.v.exp.v.name ?
-                  funcv.def.v.exp.v.name.v :
+                `func ${
+                  def.v.exp.v.name ?
+                  def.v.exp.v.name.v :
                   '(anonymous)'
-                }>`
+                }`
               );
             }
 
             case 'method': {
-              return `<method ${funcv.def.v.base.t}:${funcv.def.v.name}>`;
+              return `method ${def.v.base.t}:${def.v.name}`;
             }
 
             case 'op': {
-              return `<operator ${funcv.def.v}>`;
+              return `operator ${def.v}`;
             }
           }
         })();
+
+        if (v.v.binds.length === 0) {
+          return `<${defString}>`;
+        }
+
+        return `<${defString}, binds: ${v.v.binds.length}>`;
       }
 
       case 'Array': {
