@@ -498,7 +498,8 @@ namespace Vortex {
         case FUNC:
           throw TypeError("+ between nulls, bools, strings, or funcs");
 
-        case ARRAY:
+        case ARRAY: left.data.ARRAY->plus(*right.data.ARRAY); return;
+
         case OBJECT:
           throw NotImplementedError("Possible vector operation");
 

@@ -20,6 +20,7 @@ namespace Vortex {
     Value at(Uint64 i) const;
     bool hasIndex(Uint64 i) const;
     Array concat(const Array& right) const;
+    void plus(const Array& right);
 
     Uint64 Length() const;
   };

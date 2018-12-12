@@ -1,4 +1,7 @@
+#include <immer/flex_vector_transient.hpp>
+
 #include "Array.hpp"
+#include "Value.hpp"
 
 namespace Vortex {
   bool Array::operator==(const Array& right) const {
@@ -90,6 +93,29 @@ namespace Vortex {
 
   Array Array::concat(const Array& right) const {
     return Array{.values = values + right.values};
+  }
+
+  void Array::plus(const Array& right) {
+    auto len = Length();
+
+    if (len != right.Length()) {
+      throw TypeError("Length mismatch in Array + Array");
+    }
+
+    auto newItems = decltype(values)().transient();
+
+    auto leftIter = values.begin();
+    auto rightIter = right.values.begin();
+
+    for (auto i = 0ul; i < len; ++i) {
+      Value v = *leftIter;
+      BinaryOperators::plus(v, *rightIter);
+      newItems.push_back(std::move(v));
+      ++leftIter;
+      ++rightIter;
+    }
+
+    values = newItems.persistent();
   }
 
   Uint64 Array::Length() const { return values.size(); }
