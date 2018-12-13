@@ -564,13 +564,24 @@ namespace ByteCoder {
       case 'functionCall': {
         const [fn, args] = exp.v;
 
-        // Temporary special case below for :Length(). TODO: Methods.
-        if (args.length === 0 && fn.t === 'methodLookup') {
+        // Temporary special cases below for :Length(), :bind(). TODO: Methods.
+        if (fn.t === 'methodLookup') {
           const [base, method] = fn.v;
 
-          if (method.v === 'Length') {
+          if (method.v === 'Length' && args.length === 0) {
             return [
               [...SubExpression(coder, base), 'length'],
+              coder,
+            ];
+          }
+
+          if (method.v === 'bind' && args.length === 1) {
+            return [
+              [
+                ...SubExpression(coder, base),
+                ...SubExpression(coder, args[0]),
+                'bind'
+              ],
               coder,
             ];
           }
