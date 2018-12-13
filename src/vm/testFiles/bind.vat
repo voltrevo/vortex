@@ -1,0 +1,12 @@
+[]
+
+func { + } 3 bind
+set 0
+
+5 get 0 call
+pushBack
+
+6 get 0 call
+pushBack
+
+return
