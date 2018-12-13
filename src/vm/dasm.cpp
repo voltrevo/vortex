@@ -3,7 +3,7 @@
 #include "Decoder.hpp"
 
 int main() {
-  auto bytes = Vortex::Func().transient();
+  auto bytes = immer::flex_vector_transient<Vortex::byte>();
 
   while (true) {
     Vortex::byte b = std::cin.get();
@@ -15,7 +15,7 @@ int main() {
     bytes.push_back(b);
   }
 
-  auto decoder = Vortex::Decoder(bytes.persistent());
+  auto decoder = Vortex::Decoder(Vortex::Func{ .def = bytes.persistent() });
   decoder.disassemble(std::cout, "", Vortex::PROGRAM);
 
   return 0;

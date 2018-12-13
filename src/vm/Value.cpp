@@ -8,6 +8,7 @@
 #include "Array.hpp"
 #include "Codes.hpp"
 #include "Exceptions.hpp"
+#include "Func.hpp"
 #include "Object.hpp"
 #include "types.hpp"
 #include "Value.hpp"
@@ -930,6 +931,14 @@ namespace Vortex {
         }
       }
     }
+
+    void bind(Value& left, Value&& right) {
+      if (left.type != FUNC) {
+        throw TypeError("Attempt to bind argument to non-function");
+      }
+
+      left.data.FUNC->bind(std::move(right));
+    }
   }
 
   void BinaryOperator(Value& left, Value&& right, Code op) {
@@ -963,6 +972,8 @@ namespace Vortex {
       case PUSH_FRONT: BinaryOperators::pushFront(left, std::move(right)); break;
       case AT: BinaryOperators::at(left, std::move(right)); break;
       case HAS_INDEX: BinaryOperators::hasIndex(left, std::move(right)); break;
+
+      case BIND: BinaryOperators::bind(left, std::move(right)); break;
 
       default:
         throw InternalError("Unrecognized binary operator");

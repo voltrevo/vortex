@@ -17,6 +17,7 @@
 namespace Vortex {
   struct Array;
   struct Object;
+  struct Func;
 
   struct Value {
     struct null {};
@@ -69,7 +70,7 @@ namespace Vortex {
     bool operator==(const Value& right) const;
     bool operator<(const Value& right) const;
 
-    Value();;
+    Value();
 
     explicit Value(null v);
     explicit Value(bool v);
@@ -133,6 +134,7 @@ namespace Vortex {
     void pushFront(Value& left, Value&& right);
     void at(Value& left, Value&& right);
     void hasIndex(Value& left, Value&& right);
+    void bind(Value& left, Value&& right);
   }
 
   void BinaryOperator(Value& left, Value&& right, Code op);

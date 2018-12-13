@@ -7,6 +7,7 @@
 #include <immer/flex_vector_transient.hpp>
 
 #include "Array.hpp"
+#include "Func.hpp"
 #include "Object.hpp"
 #include "Value.hpp"
 
@@ -19,13 +20,13 @@ namespace Vortex {
   public:
     Decoder(Func init) {
       func = init;
-      pos = func.begin();
+      pos = func.def.begin();
     }
 
     Code get() { return (Code)(*pos++); };
     byte getByte() { return *pos++; }
 
-    int location() { return pos - func.begin(); }
+    int location() { return pos - func.def.begin(); }
 
     Code peek() { return (Code)(*pos); };
     Code peekBehind() { return (Code)(*(pos - 1)); }
@@ -383,9 +384,9 @@ namespace Vortex {
             auto instr = get();
 
             if (instr == END) {
-              auto startIdx = start - func.begin();
+              auto startIdx = start - func.def.begin();
               auto len = pos - start;
-              return Value(new Func(func.drop(startIdx).take(len)));
+              return Value(new Func{ .def = func.def.drop(startIdx).take(len) });
             }
 
             skip(instr);
@@ -515,7 +516,7 @@ namespace Vortex {
             case AT: os << "at" << std::endl; return;
             case HAS_INDEX: os << "has-index" << std::endl; return;
 
-            case CAPTURE: os << "capture" << std::endl; return;
+            case BIND: os << "bind" << std::endl; return;
 
             default: throw InternalError("Unrecognized BINARY_OPERATOR");
           }

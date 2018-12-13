@@ -9,7 +9,9 @@ int main() {
   Vortex::assemble(std::cin, oss);
   std::string s = oss.str();
 
-  auto codeBlock = Vortex::Func(s.begin(), s.end());
+  auto codeBlock = Vortex::Func{
+    .def = decltype(Vortex::Func().def)(s.begin(), s.end())
+  };
 
   auto machine = Vortex::Machine();
   Vortex::Value result = machine.eval(codeBlock);

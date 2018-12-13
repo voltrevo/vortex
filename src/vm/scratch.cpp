@@ -8,7 +8,7 @@ int main() {
   using namespace Vortex;
 
   std::vector<std::pair<std::string, Func>> programs = {
-    {"basic-arithmetic", {
+    {"basic-arithmetic", { .def = {
       // sum := 3 * 5 + 1;
       // return sum + sum + sum;
       INT32, 3, 0, 0, 0,
@@ -23,8 +23,8 @@ int main() {
       PLUS,
       PLUS,
       RETURN, // 48
-    }},
-    {"if-test", {
+    }}},
+    {"if-test", { .def = {
       // x := 30;
       // if (7 < 10) {
       //   x = x + 20;
@@ -45,8 +45,8 @@ int main() {
 
       GET, 0,
       RETURN, // 50
-    }},
-    {"sum-1-to-4", {
+    }}},
+    {"sum-1-to-4", { .def = {
       // sum := 0;
       // i := 1;
       // for {
@@ -84,8 +84,8 @@ int main() {
 
       GET, 0,
       RETURN,
-    }},
-    {"project-euler-1", {
+    }}},
+    {"project-euler-1", { .def = {
       //sum := 0;
       //for (i := 1; i < 1000; i++) {
       //  if (i % 3 == 0 || i % 5 == 0) {
@@ -132,8 +132,8 @@ int main() {
           RETURN,
         END,
       END,
-    }},
-    {"array-literal", {
+    }}},
+    {"array-literal", { .def = {
       // return [null];
       ARRAY,
         NULL_,
@@ -142,8 +142,8 @@ int main() {
         INT32, 0, 1, 0, 0,
       END,
       RETURN,
-    }},
-    {"array-of-arrays", {
+    }}},
+    {"array-of-arrays", { .def = {
       // return [[1, 2], [3, 4]];
       ARRAY,
         ARRAY,
@@ -156,8 +156,8 @@ int main() {
         END,
       END,
       RETURN,
-    }},
-    {"concat", {
+    }}},
+    {"concat", { .def = {
       // return [1, 2] ++ [3, 4];
       ARRAY,
         INT32, 1, 0, 0, 0,
@@ -174,8 +174,8 @@ int main() {
       CONCAT,
       CONCAT,
       RETURN,
-    }},
-    {"more-array-stuff", {
+    }}},
+    {"more-array-stuff", { .def = {
       ARRAY,
       END,
       BOOL, 0,
@@ -185,8 +185,8 @@ int main() {
       INT32, 0, 1, 0, 0,
       PUSH_FRONT,
       RETURN,
-    }},
-    {"hello-world", {
+    }}},
+    {"hello-world", { .def = {
       STRING,
         72, 101, 108, 108, 111, 32, // 'Hello '
       END,
@@ -195,8 +195,8 @@ int main() {
       END,
       CONCAT,
       RETURN,
-    }},
-    {"length", {
+    }}},
+    {"length", { .def = {
       ARRAY,
         INT32, 3, 0, 0, 0,
         INT32, 1, 0, 0, 0,
@@ -209,8 +209,8 @@ int main() {
       LENGTH,
       PLUS,
       RETURN,
-    }},
-    {"at", {
+    }}},
+    {"at", { .def = {
       ARRAY,
         INT32, 3, 0, 0, 0,
         INT32, 1, 0, 0, 0,
@@ -225,8 +225,8 @@ int main() {
       AT,
       PLUS,
       RETURN,
-    }},
-    {"has-index", {
+    }}},
+    {"has-index", { .def = {
       ARRAY,
         INT32, 3, 0, 0, 0,
         INT32, 1, 0, 0, 0,
@@ -267,8 +267,8 @@ int main() {
       PUSH_BACK,
 
       RETURN,
-    }},
-    {"objects", {
+    }}},
+    {"objects", { .def = {
       ARRAY, END,
 
       OBJECT,
@@ -296,7 +296,7 @@ int main() {
       PUSH_BACK,
 
       RETURN,
-    }},
+    }}},
   };
 
   for (auto& [name, program]: programs) {

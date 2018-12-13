@@ -292,6 +292,10 @@ namespace Vortex {
                     throw TypeError("Attempt to call non-function");
                   }
 
+                  for (const Value& v: func.data.FUNC->binds) {
+                    calc.push_back(v);
+                  }
+
                   auto funcDecoder = Decoder(*func.data.FUNC);
                   // TODO: Just make context a parameter of run?
                   // TODO: Use a shared stack for locals and use an offset?

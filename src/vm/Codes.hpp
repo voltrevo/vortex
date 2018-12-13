@@ -84,7 +84,7 @@ namespace Vortex {
     AT,
     HAS_INDEX,
 
-    CAPTURE,
+    BIND,
 
     // UNARY_OPERATOR
     NEGATE,

@@ -78,7 +78,7 @@ namespace Vortex {
     {"at", AT},
     {"hasIndex", HAS_INDEX},
 
-    {"capture", CAPTURE},
+    {"bind", BIND},
 
     // UNARY_OPERATOR
     {"negate", NEGATE},
