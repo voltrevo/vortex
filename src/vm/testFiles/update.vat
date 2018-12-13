@@ -1,5 +1,5 @@
 [1, 2, 3] set 0
-get 0 20 1u64 update set 1
+get 0 20 1u64 swap update set 1
 
 []
 
@@ -7,9 +7,9 @@ get 0 20 1u64 update set 1
 get 2
   dup 'b' at
     dup 'c' at
-      1 'd' update
-    'c' update
-  'b' update
+      1 'd' swap update
+    'c' swap update
+  'b' swap update
 set 3
 
 get 0 pushBack
