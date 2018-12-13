@@ -1,0 +1,16 @@
+func foo() {
+  x := 3;
+  return bar(x);
+};
+
+x := 7;
+
+func bar(input) {
+  if (input == 3) {
+    return x + input;
+  }
+
+  return foo();
+};
+
+return bar(1000); // Should return 10

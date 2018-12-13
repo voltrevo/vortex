@@ -1,3 +1,4 @@
+TODO: Fix captureTransitiveNameCollision.vx
 TODO: Compile closures
 TODO: Update import syntax e.g. `import ./sibling.vx;`, `import ./sibling.vx as otherName;`
 TODO: Compile imports
