@@ -1,0 +1,9 @@
+a := 37;
+
+func foo() {
+  return a + 5;
+};
+
+assert foo() == 42;
+
+return foo();
