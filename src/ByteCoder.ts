@@ -1,3 +1,4 @@
+import CapturedNames from './CapturedNames';
 import Syntax from './parser/Syntax';
 
 type ByteCoder = {
@@ -449,10 +450,27 @@ namespace ByteCoder {
       case 'Func': {
         const lines: string[] = [];
 
+        const captures = (CapturedNames(exp)
+          .filter(cap => Object.keys(coder.names).indexOf(cap) === -1)
+        );
+
         if (exp.v.name !== null) {
           lines.push(`gfunc $${exp.v.name} {`);
+
+          const hoisted = (Object
+            .keys(coder.names)
+            .indexOf(exp.v.name.v)
+          ) !== -1;
+
+          if (hoisted && captures.length > 0) {
+            lines.push(`  'Not implemented: hoisted gfunc captures' throw`);
+          }
         } else {
           lines.push(`func {`);
+        }
+
+        for (let i = captures.length - 1; i >= 0; i--) {
+          lines.push(`  set $${captures[i]}`);
         }
 
         for (let i = exp.v.args.length - 1; i >= 0; i--) {
@@ -483,6 +501,10 @@ namespace ByteCoder {
 
         if (exp.v.name !== null) {
           lines.push(`func { gcall $${exp.v.name} }`);
+        }
+
+        for (const capture of captures) {
+          lines.push(`get $${capture} bind`);
         }
 
         return [lines, coder];

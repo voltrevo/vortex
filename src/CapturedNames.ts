@@ -1,30 +1,16 @@
-import checkNull from './checkNull';
-import formatLocation from './formatLocation';
-import identifiersEqual from './identifiersEqual';
-import Note from './Note';
 import Scope from './Scope';
 import Syntax from './parser/Syntax';
 import traverse from './traverse';
 
-type Closure = {
-  identifier: Syntax.Identifier;
-  origin: Syntax.Identifier;
-}[];
+export default function CapturedNames(func: Syntax.FunctionExpression) {
+  return ProcessScope({ root: {} }, func).closure;
+}
+
+type Closure = string[];
 
 type VInfo = {
   origin: Syntax.Identifier;
-  data: {
-    uses: Syntax.Identifier[];
-    mutations: null | Syntax.Identifier[];
-    captures: Syntax.Identifier[];
-    hoistInfo: null | {
-      uses: {
-        origin: Syntax.Identifier;
-        scope: Scope<ST>;
-      }[];
-      closure: null | Closure;
-    };
-  };
+  data: {};
 };
 
 type ST = {
@@ -65,15 +51,13 @@ type ScopeItem = (
   never
 );
 
-export default function CapturedNames(
+function ProcessScope(
   outerScope: Scope<ST>,
   func: Syntax.FunctionExpression,
 ): {
-  notes: Note[];
   closure: Closure;
   scope: Scope<ST>,
 } {
-  const notes: Note[] = [];
   let scope: Scope<ST> | Scope.Root<ST> = Scope.push<ST>(outerScope);
   const closure: Closure = [];
 
@@ -317,95 +301,6 @@ export default function CapturedNames(
     } else if (item.t === 'Push') {
       scope = Scope.push(scope);
     } else if (item.t === 'Pop') {
-      for (const varName of Object.keys(scope.entries)) {
-        const variable = scope.entries[varName];
-
-        const { hoistInfo } = variable.data;
-
-        if (hoistInfo !== null) {
-          for (const use of hoistInfo.uses) {
-            if (hoistInfo.closure === null) {
-              throw new Error('Shouldn\'t be possible');
-            }
-
-            const closuresToProcess = [hoistInfo.closure];
-
-            for (let i = 0; i < closuresToProcess.length; i++) {
-              const closure = closuresToProcess[i];
-
-              for (const clItem of closure) {
-                const tags: Note.Tag[] = ['validation', 'incomplete-closure'];
-                let match = Scope.get(use.scope, clItem.identifier.v);
-
-                // Vortex's strict scoping rules generally make it unnecessary
-                // to look beyond the name of a variable to find out whether
-                // it's a match, but hoisting functions breaks the rules a
-                // little bit, making it necessary to find out whether the same
-                // name is actually the same variable here.
-                if (match && !identifiersEqual(match.origin, clItem.origin)) {
-                  match = null;
-                  tags.push('variable-disambiguation');
-                }
-
-                if (!match) {
-                  if (i > 0) {
-                    tags.push('transitive-closure');
-                  }
-
-                  notes.push(Note(
-                    use.origin.p,
-                    'error',
-                    tags,
-                    (
-                      `Function {${use.origin.v}} is not available here ` +
-                      `because it captures {${clItem.identifier.v}} which ` +
-                      `doesn't exist until after ` +
-                      formatLocation(clItem.origin.p)
-                    ),
-                    [
-                      Note(
-                        clItem.identifier.p,
-                        'info',
-                        tags,
-                        (
-                          `Captured variable {${clItem.identifier.v}} ` +
-                          `doesn't exist when {${use.origin.v}} is accessed ` +
-                          `at ${formatLocation(use.origin.p)}`
-                        ),
-                      ),
-                      Note(
-                        clItem.origin.p,
-                        'info',
-                        tags,
-                        (
-                          'There is an attempt to indirectly access ' +
-                          `variable {${clItem.origin.v}} when it doesn't ` +
-                          `exist at ${formatLocation(use.origin.p)}`
-                        ),
-                      ),
-                    ],
-                  ));
-                }
-
-                const captureEntry = Scope.get(scope, clItem.identifier.v);
-
-                if (captureEntry && captureEntry.data.hoistInfo) {
-                  const extraClosure = captureEntry.data.hoistInfo.closure;
-
-                  if (extraClosure === null) {
-                    throw new Error('Shouldn\'t be possible');
-                  }
-
-                  if (closuresToProcess.indexOf(extraClosure) === -1) {
-                    closuresToProcess.push(extraClosure);
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-
       scope = scope.parent;
     } else if (
       item.t === 'IDENTIFIER' ||
@@ -414,83 +309,19 @@ export default function CapturedNames(
       const scopeEntry = Scope.get<ST>(scope, item.v);
 
       if (!scopeEntry) {
-        const tags: Note.Tag[] = ['validation', 'scope', 'not-found'];
-
-        if (item.t === 'IDENTIFIER-mutationTarget') {
-          tags.push('mutation-target');
-        }
-
-        // TODO: Look for typos
-        notes.push(Note(
-          item.p,
-          'error',
-          tags,
-          `Variable ${item.v} does not exist`
-        ));
-      } else {
         const ident: Syntax.Identifier = {
           t: 'IDENTIFIER',
           v: item.v,
           p: item.p
         };
 
-        const mods: Partial<VInfo['data']> = {};
+        closure.push(ident.v);
 
-        checkNull((() => {
-          switch (item.t) {
-            case 'IDENTIFIER': {
-              mods.uses = [...scopeEntry.data.uses, ident];
-
-              if (scopeEntry.data.hoistInfo !== null) {
-                // Functions need more detailed usage information
-                mods.hoistInfo = { ...scopeEntry.data.hoistInfo,
-                  uses: [...scopeEntry.data.hoistInfo.uses,
-                    {
-                      origin: ident,
-                      scope,
-                    },
-                  ],
-                };
-              }
-
-              return null;
-            }
-
-            case 'IDENTIFIER-mutationTarget': {
-              if (scopeEntry.data.mutations === null) {
-                notes.push(Note(
-                  item.p,
-                  'error',
-                  ['validation', 'mutation'],
-                  // TODO: include reason it's not allowed
-                  `Mutating {${scopeEntry.origin.v}} is not allowed`,
-                ));
-
-                return null;
-              }
-
-              mods.mutations = [...scopeEntry.data.mutations, ident];
-              return null;
-            }
-          }
-        })());
-
-        const outerEntry = Scope.get(outerScope, ident.v);
-
-        if (outerEntry) {
-          mods.captures = [...scopeEntry.data.captures, ident];
-          closure.push({
-            origin: outerEntry.origin,
-            identifier: ident,
-          });
-        }
-
-        scope = Scope.set(scope, ident.v, mods);
+        scope = Scope.add(scope, ident.v, { origin: ident, data: {} });
       }
     } else if (item.t === 'Func') {
-      const funcValidation = CapturedNames(scope, item);
+      const funcValidation = ProcessScope(scope, item);
 
-      notes.push(...funcValidation.notes);
       scope = funcValidation.scope;
 
       if (scope === null) {
@@ -499,44 +330,11 @@ export default function CapturedNames(
         throw new Error('Shouldn\'t be possible');
       }
 
-      for (const clItem of funcValidation.closure) {
-        if (Scope.get(outerScope, clItem.identifier.v)) {
-          closure.push(clItem);
-        }
-      }
-
-      if (item.topExp && item.v.name !== null) {
-        const scopeEntry = Scope.get(scope, item.v.name.v);
-
-        if (!scopeEntry) {
-          throw new Error('Should not be possible');
-        }
-
-        const hoistInfo = scopeEntry.data.hoistInfo;
-
-        if (!hoistInfo) {
-          throw new Error('Should not be possible');
-        }
-
-        if (hoistInfo.closure !== null) {
-          // TODO: Do function duplicates need to be handled here?
-          continue;
-        }
-
-        if ('root' in scope) {
-          throw new Error('Attempt to process item without a scope');
-        }
-
-        scope = Scope.set(scope, item.v.name.v, { ...scopeEntry.data,
-          hoistInfo: { ...hoistInfo,
-            closure: funcValidation.closure,
-          },
-        });
-      }
+      closure.push(...funcValidation.closure);
     }
   }
 
-  return { notes, closure, scope };
+  return { closure, scope };
 }
 
 function concat<T>(arr: T[][]): T[] {
