@@ -63,13 +63,6 @@ function ProcessScope(
 
   const items: ScopeItem[] = [];
 
-  if (!func.topExp && func.v.name) {
-    items.push({
-      t: 'CreateVariable',
-      v: func,
-    });
-  }
-
   for (const arg of func.v.args) {
     function DestructuredArguments(
       target: Syntax.Expression

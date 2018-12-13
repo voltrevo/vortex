@@ -4,7 +4,7 @@ import Syntax from './parser/Syntax';
 type ByteCoder = {
   names: {
     [name: string]: (
-      'gfunc' |
+      { t: 'gfunc', captures: string[] } |
       undefined
     )
   },
@@ -22,23 +22,42 @@ function ByteCoder(): ByteCoder {
 }
 
 namespace ByteCoder {
-  function setGFunc(coder: ByteCoder, name: string): ByteCoder {
+  function setGFunc(coder: ByteCoder, name: string, captures: string[]): ByteCoder {
     return { ...coder,
       names: { ...coder.names,
-        [name]: 'gfunc',
+        [name]: { t: 'gfunc', captures },
       },
     };
   }
 
-  function getName(coder: ByteCoder, name: string): string {
+  function getName(coder: ByteCoder, name: string): string[] {
     const entry = coder.names[name];
 
     if (entry === undefined) {
-      return `get $${name}`;
+      return [`get $${name}`];
     }
 
-    switch (entry) {
-      case 'gfunc': return `func { gcall $${name} }`;
+    switch (entry.t) {
+      case 'gfunc': {
+        if (entry.captures.length === 0) {
+          return [`func { gcall $${name} }`];
+        }
+
+        const lines = [`func { gcall $.captureless.${name} }`];
+
+        // TODO: test recursive non-hoisted functions e.g:
+        // foo := func(n) { if (n == 0) { return 0; } return foo(n - 1); };
+
+        for (const capture of entry.captures) {
+          if (capture !== name) {
+            lines.push(`get $${capture} bind`);
+          }
+        }
+
+        lines.push('dup bind');
+
+        return lines;
+      }
     }
   }
 
@@ -91,8 +110,18 @@ namespace ByteCoder {
         continue;
       }
 
-      coder = setGFunc(coder, hoist.v.name.v);
-      lines.push(`hoist $${hoist.v.name.v}`);
+      const captures = CapturedNames(hoist);
+
+      if (
+        captures.length === 0 ||
+        (captures.length === 1 && captures[0] === hoist.v.name.v)
+      ) {
+        coder = setGFunc(coder, hoist.v.name.v, []);
+        lines.push(`hoist $${hoist.v.name.v}`);
+      } else {
+        coder = setGFunc(coder, hoist.v.name.v, captures);
+        lines.push(`hoist $.captureless.${hoist.v.name.v}`);
+      }
     }
 
     for (const hoist of hoists) {
@@ -101,8 +130,43 @@ namespace ByteCoder {
         continue;
       }
 
-      lines.push('', `gfunc $${hoist.v.name.v} {`);
-      coder = setGFunc(coder, hoist.v.name.v);
+      let selfCapture = false;
+
+      const entry = coder.names[hoist.v.name.v];
+
+      if (entry === undefined) {
+        throw new Error('Shouldn\'t be possible');
+      }
+
+      const captures = entry.captures;
+
+      lines.push('');
+
+      if (
+        captures.length === 0 ||
+        (captures.length === 1 && captures[0] === hoist.v.name.v)
+      ) {
+        lines.push(`gfunc $${hoist.v.name.v} {`);
+      } else {
+        lines.push(`gfunc $.captureless.${hoist.v.name.v} {`);
+      }
+
+      const captureLines: string[] = [];
+
+      for (const capture of captures) {
+        if (capture === hoist.v.name.v) {
+          selfCapture = true;
+        } else {
+          captureLines.push(`  set $${capture}`);
+        }
+      }
+
+      if (selfCapture) {
+        captureLines.push(`  dup bind set $${hoist.v.name.v}`);
+      }
+
+      captureLines.reverse();
+      lines.push(...captureLines);
 
       for (let i = hoist.v.args.length - 1; i >= 0; i--) {
         const arg = hoist.v.args[i];
@@ -403,7 +467,7 @@ namespace ByteCoder {
 
   export function Expression(coder: ByteCoder, exp: Syntax.Expression): [string[], ByteCoder] {
     switch (exp.t) {
-      case 'IDENTIFIER': return [[getName(coder, exp.v)], coder];
+      case 'IDENTIFIER': return [getName(coder, exp.v), coder];
       case 'NUMBER': return [[exp.v], coder];
       case 'BOOL': return [[exp.v.toString()], coder];
       case 'NULL': return [['null'], coder];
@@ -469,9 +533,27 @@ namespace ByteCoder {
           lines.push(`func {`);
         }
 
+        let selfCapture = false;
+
+        const captureLines: string[] = [];
+
         for (let i = captures.length - 1; i >= 0; i--) {
-          lines.push(`  set $${captures[i]}`);
+          if (exp.v.name !== null && exp.v.name.v === captures[i]) {
+            selfCapture = true;
+          } else {
+            captureLines.push(`  set $${captures[i]}`);
+          }
         }
+
+        if (selfCapture) {
+          if (exp.v.name === null) {
+            throw new Error('Should not be possible');
+          }
+
+          captureLines.unshift(`  dup bind set $${exp.v.name.v}`);
+        }
+
+        lines.push(...captureLines);
 
         for (let i = exp.v.args.length - 1; i >= 0; i--) {
           const arg = exp.v.args[i];
@@ -501,10 +583,22 @@ namespace ByteCoder {
 
         if (exp.v.name !== null) {
           lines.push(`func { gcall $${exp.v.name} }`);
-        }
 
-        for (const capture of captures) {
-          lines.push(`get $${capture} bind`);
+          for (const capture of captures) {
+            if (capture === exp.v.name.v) {
+              selfCapture = true;
+            } else {
+              lines.push(`get $${capture} bind`);
+            }
+          }
+
+          if (selfCapture) {
+            lines.push('dup bind');
+          }
+        } else {
+          for (const capture of captures) {
+            lines.push(`get $${capture} bind`);
+          }
         }
 
         return [lines, coder];
