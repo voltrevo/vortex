@@ -48,13 +48,19 @@ namespace ByteCoder {
         // TODO: test recursive non-hoisted functions e.g:
         // foo := func(n) { if (n == 0) { return 0; } return foo(n - 1); };
 
+        let selfCapture = false;
+
         for (const capture of entry.captures) {
-          if (capture !== name) {
+          if (capture === name) {
+            selfCapture = true;
+          } else {
             lines.push(`get $${capture} bind`);
           }
         }
 
-        lines.push('dup bind');
+        if (selfCapture) {
+          lines.push('dup bind');
+        }
 
         return lines;
       }
