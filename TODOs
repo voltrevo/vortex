@@ -1,4 +1,5 @@
 TODO: Compile closures
+TODO: Update import syntax e.g. `import ./sibling.vx;`, `import ./sibling.vx as otherName;`
 TODO: Compile imports
 TODO: TODO tagging, group based on tags
 TODO: More unused warnings via return value dependency analysis (see cirumventUnused.vx)
