@@ -1,0 +1,27 @@
+three := 3;
+
+func collatz(n) {
+  if (n == 1) {
+    return 1;
+  }
+
+  if (n % 2 == 0) {
+    return collatzEven(n);
+  }
+
+  return collatzOdd(n);
+};
+
+func collatzEven(n) {
+  assert n % 2 == 0;
+  return collatz(n / 2);
+};
+
+func collatzOdd(n) {
+  assert n % 2 == 1;
+  return collatz(three * n + 1);
+};
+
+assert collatz(20) == 1;
+
+return 'done';

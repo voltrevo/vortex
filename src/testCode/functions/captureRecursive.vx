@@ -1,0 +1,17 @@
+foo := 3;
+
+func fooFactorial(n) {
+  if (n == 0) {
+    return 1;
+  }
+
+  return n * fooFactorial(n - 1) + foo;
+};
+
+assert fooFactorial(0) == 1;
+assert fooFactorial(1) == 4;
+assert fooFactorial(2) == 11;
+assert fooFactorial(3) == 36;
+assert fooFactorial(4) == 147;
+
+return 'done';
