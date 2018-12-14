@@ -544,9 +544,30 @@ namespace ByteCoder {
       case 'Func': {
         const lines: string[] = [];
 
-        const captures = (CapturedNames(exp)
-          .filter(cap => Object.keys(coder.names).indexOf(cap) === -1)
-        );
+        const captures: string[] = [];
+        const gfuncCaptures: string[] = [];
+
+        for (const capture of CapturedNames(exp)) {
+          const entry = coder.names[capture];
+
+          if (entry === undefined) {
+            captures.push(capture);
+            continue;
+          }
+
+          switch (entry.t) {
+            case 'gfunc': {
+              if (entry.captures.length > 0) {
+                gfuncCaptures.push(capture);
+              }
+
+              break;
+            }
+
+            default:
+              checkNever(entry.t);
+          }
+        }
 
         if (exp.v.name !== null) {
           lines.push(`gfunc $${exp.v.name} {`);
@@ -565,7 +586,7 @@ namespace ByteCoder {
 
         const captureLines: string[] = [];
 
-        for (const capture of captures) {
+        for (const capture of [...captures, gfuncCaptures]) {
           captureLines.push(`  set $${capture}`);
         }
 
@@ -580,15 +601,25 @@ namespace ByteCoder {
           );
         }
 
+        let innerCoder = coder;
+
+        for (const capture of gfuncCaptures) {
+          innerCoder = { ...innerCoder,
+            names: { ...innerCoder.names,
+              [capture]: undefined,
+            },
+          };
+        }
+
         const bodyLines = (() => {
           switch (exp.v.body.t) {
             case 'block': {
-              return Block(coder, exp.v.body);
+              return Block(innerCoder, exp.v.body);
             }
 
             case 'expBody': {
               let ll: string[];
-              [ll, coder] = Expression(coder, exp.v.body.v);
+              [ll, innerCoder] = Expression(innerCoder, exp.v.body.v);
               return ll;
             }
           }
@@ -600,6 +631,10 @@ namespace ByteCoder {
 
         if (exp.v.name !== null) {
           lines.push(`func { gcall $${exp.v.name} }`);
+        }
+
+        for (const capture of gfuncCaptures) {
+          lines.push(...getName(coder, capture), 'bind');
         }
 
         for (const capture of captures) {
