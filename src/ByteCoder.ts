@@ -177,6 +177,7 @@ namespace ByteCoder {
       }
 
       const captures = entry.captures;
+      const directCaptures = hoistCaptureMap[hoist.v.name.v];
 
       lines.push('');
 
@@ -192,7 +193,14 @@ namespace ByteCoder {
       const captureLines: string[] = [];
 
       for (const capture of captures) {
-        captureLines.push(`  set $${capture}`);
+        if (directCaptures.indexOf(capture) !== -1) {
+          captureLines.push(`  set $${capture}`);
+        } else {
+          // It turns out that scope validation prevents constructing a case
+          // that requires this .indirect.* relabelling. However, it makes the
+          // generated vasm more readable, so I'm leaving it in for now.
+          captureLines.push(`  set $.indirect.${capture}`);
+        }
       }
 
       captureLines.reverse();
@@ -206,14 +214,38 @@ namespace ByteCoder {
         );
       }
 
+      let innerCoder = coder;
+
+      for (const hoistName of hoistNames) {
+        if (hoistName === hoist.v.name.v) {
+          continue;
+        }
+
+        const otherCaptures = (hoistCaptureMapExt[hoistName]
+          .map(otherCapture => {
+            if (directCaptures.indexOf(otherCapture) === -1) {
+              return '.indirect.' + otherCapture;
+            }
+
+            return otherCapture;
+          })
+        );
+
+        innerCoder = { ...innerCoder,
+          names: { ...innerCoder.names,
+            [hoistName]: { t: 'gfunc', captures: otherCaptures },
+          },
+        };
+      }
+
       const bodyLines = (() => {
         switch (hoist.v.body.t) {
           case 'block': {
-            return Block(coder, hoist.v.body);
+            return Block(innerCoder, hoist.v.body);
           }
 
           case 'expBody': {
-            const [exp] = Expression(coder, hoist.v.body.v);
+            const [exp] = Expression(innerCoder, hoist.v.body.v);
             return exp;
           }
         }
