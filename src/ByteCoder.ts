@@ -49,7 +49,13 @@ namespace ByteCoder {
         // foo := func(n) { if (n == 0) { return 0; } return foo(n - 1); };
 
         for (const capture of entry.captures) {
-          lines.push(`get $${capture} bind`);
+          const getNameLines = getName(coder, capture);
+
+          if (getNameLines.length === 1) {
+            lines.push(getNameLines[0] + ' bind');
+          } else {
+            lines.push(...getNameLines, 'bind');
+          }
         }
 
         return lines;
@@ -236,6 +242,35 @@ namespace ByteCoder {
             [hoistName]: { t: 'gfunc', captures: otherCaptures },
           },
         };
+      }
+
+      for (const directCapture of directCaptures) {
+        const entry = coder.names[directCapture];
+
+        if (!entry) {
+          continue;
+        }
+
+        if (directCapture === hoist.v.name.v) {
+          continue;
+        }
+
+        switch (entry.t) {
+          case 'gfunc': {
+            if (entry.captures.length > 0) {
+              innerCoder = { ...innerCoder,
+                names: { ...innerCoder.names,
+                  [directCapture]: undefined,
+                },
+              };
+            }
+
+            break;
+          }
+
+          default:
+            checkNever(entry.t);
+        }
       }
 
       const bodyLines = (() => {
