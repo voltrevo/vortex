@@ -134,7 +134,9 @@ namespace ByteCoder {
               deps.push(capture);
             }
           } else {
-            capturesExt.push(capture);
+            if (capturesExt.indexOf(capture) === -1) {
+              capturesExt.push(capture);
+            }
           }
         }
       }

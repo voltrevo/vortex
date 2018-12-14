@@ -14,6 +14,7 @@ func collatz(n) {
 
 func collatzEven(n) {
   assert n % 2 == 0;
+  assert three == 3;
   return collatz(n / 2);
 };
 
