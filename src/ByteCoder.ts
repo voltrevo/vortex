@@ -48,18 +48,8 @@ namespace ByteCoder {
         // TODO: test recursive non-hoisted functions e.g:
         // foo := func(n) { if (n == 0) { return 0; } return foo(n - 1); };
 
-        let selfCapture = false;
-
         for (const capture of entry.captures) {
-          if (capture === name) {
-            selfCapture = true;
-          } else {
-            lines.push(`get $${capture} bind`);
-          }
-        }
-
-        if (selfCapture) {
-          lines.push('dup bind');
+          lines.push(`get $${capture} bind`);
         }
 
         return lines;
@@ -110,13 +100,55 @@ namespace ByteCoder {
       }
     }
 
+    const hoistCaptureMap: { [name: string]: string[]; } = {};
+    const hoistCaptureMapExt: { [name: string]: string[]; } = {};
+
     for (const hoist of hoists) {
       if (hoist.v.name === null) {
         // Anonymous hoist is meaningless. Validation emits a warn about this.
         continue;
       }
 
-      const captures = CapturedNames(hoist);
+      hoistCaptureMap[hoist.v.name.v] = CapturedNames(hoist);
+    }
+
+    const hoistNames = Object.keys(hoistCaptureMap)
+
+    for (const hoistName of hoistNames) {
+      const deps: string[] = [hoistName];
+      const seen: string[] = [];
+      const capturesExt: string[] = [];
+
+      while (true) {
+        const dep = deps.shift();
+
+        if (dep === undefined) {
+          break;
+        }
+
+        seen.push(dep);
+
+        for (const capture of hoistCaptureMap[dep]) {
+          if (hoistNames.indexOf(capture) !== -1) {
+            if (seen.indexOf(capture) === -1) {
+              deps.push(capture);
+            }
+          } else {
+            capturesExt.push(capture);
+          }
+        }
+      }
+
+      hoistCaptureMapExt[hoistName] = capturesExt;
+    }
+
+    for (const hoist of hoists) {
+      if (hoist.v.name === null) {
+        // Anonymous hoist is meaningless. Validation emits a warn about this.
+        continue;
+      }
+
+      const captures = hoistCaptureMapExt[hoist.v.name.v];
 
       if (
         captures.length === 0 ||
@@ -135,8 +167,6 @@ namespace ByteCoder {
         // Anonymous hoist is meaningless. Validation emits a warn about this.
         continue;
       }
-
-      let selfCapture = false;
 
       const entry = coder.names[hoist.v.name.v];
 
@@ -160,15 +190,7 @@ namespace ByteCoder {
       const captureLines: string[] = [];
 
       for (const capture of captures) {
-        if (capture === hoist.v.name.v) {
-          selfCapture = true;
-        } else {
-          captureLines.push(`  set $${capture}`);
-        }
-      }
-
-      if (selfCapture) {
-        captureLines.push(`  dup bind set $${hoist.v.name.v}`);
+        captureLines.push(`  set $${capture}`);
       }
 
       captureLines.reverse();
@@ -539,26 +561,13 @@ namespace ByteCoder {
           lines.push(`func {`);
         }
 
-        let selfCapture = false;
-
         const captureLines: string[] = [];
 
-        for (let i = captures.length - 1; i >= 0; i--) {
-          if (exp.v.name !== null && exp.v.name.v === captures[i]) {
-            selfCapture = true;
-          } else {
-            captureLines.push(`  set $${captures[i]}`);
-          }
+        for (const capture of captures) {
+          captureLines.push(`  set $${capture}`);
         }
 
-        if (selfCapture) {
-          if (exp.v.name === null) {
-            throw new Error('Should not be possible');
-          }
-
-          captureLines.unshift(`  dup bind set $${exp.v.name.v}`);
-        }
-
+        captureLines.reverse();
         lines.push(...captureLines);
 
         for (let i = exp.v.args.length - 1; i >= 0; i--) {
@@ -589,22 +598,10 @@ namespace ByteCoder {
 
         if (exp.v.name !== null) {
           lines.push(`func { gcall $${exp.v.name} }`);
+        }
 
-          for (const capture of captures) {
-            if (capture === exp.v.name.v) {
-              selfCapture = true;
-            } else {
-              lines.push(`get $${capture} bind`);
-            }
-          }
-
-          if (selfCapture) {
-            lines.push('dup bind');
-          }
-        } else {
-          for (const capture of captures) {
-            lines.push(`get $${capture} bind`);
-          }
+        for (const capture of captures) {
+          lines.push(`get $${capture} bind`);
         }
 
         return [lines, coder];
