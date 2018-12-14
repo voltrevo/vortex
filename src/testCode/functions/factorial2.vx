@@ -1,0 +1,13 @@
+one := 1;
+
+x := func factorial(n) {
+  if (n == 0) {
+    return 1;
+  }
+
+  return n * factorial(n - one);
+};
+
+assert x(5) == 120;
+
+return 'done';

@@ -1,0 +1,12 @@
+x := 37;
+
+func foo() {
+  return x;
+};
+
+bar := func baz(recurse) => switch (recurse) {
+  true => [foo(), baz(false)];
+  false => [foo(), baz];
+};
+
+return bar(true);
