@@ -1,0 +1,9 @@
+x := 37;
+
+func foo() {
+  return x;
+};
+
+bar := func() { return foo(); };
+
+return bar();
