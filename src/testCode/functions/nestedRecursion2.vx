@@ -1,0 +1,13 @@
+func foo(flag) {
+  if (flag) {
+    return 3;
+  }
+
+  func bar() {
+    return foo(true);
+  };
+
+  return bar();
+};
+
+return foo(false);

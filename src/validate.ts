@@ -9,6 +9,10 @@ import traverse from './traverse';
 export type Importer = (importExp: Syntax.Import) => Note[];
 
 export function validate(program: Syntax.Program): Note[] {
+  if (process.argv.indexOf('--no-validation') !== -1) {
+    return [];
+  }
+
   const notes: Note[] = [];
 
   notes.push(...validateBody(program));
