@@ -602,10 +602,33 @@ function validateFunctionScope(
                   const extraClosure = captureEntry.data.hoistInfo.closure;
 
                   if (extraClosure === null) {
-                    throw new Error('Shouldn\'t be possible');
-                  }
+                    // Having hoistInfo but no closure usually does not occur
+                    // because the hoistInfo has been populated for all
+                    // hoisted functions in the scope currently being
+                    // validated.
+                    //
+                    // However, we can hit this case when capturing a function
+                    // further up the scope chain whose closure depends on the
+                    // current validation completing. E.g.:
+                    // func foo() { func bar() => foo(); };
+                    //
+                    // Since foo captures everything that bar captures, foo's
+                    // validation ensures it won't be called before all its
+                    // captures are defined, and therefore bar can't be called
+                    // too early due to foo's captures.
+                    //
+                    // So this case is ok, we just need to ensure that clItem
+                    // really does come from further up the scope chain.
 
-                  if (closuresToProcess.indexOf(extraClosure) === -1) {
+                    const deepEntry = (
+                      'parent' in scope.parent &&
+                      Scope.get(scope.parent.parent, clItem.identifier.v)
+                    );
+
+                    if (deepEntry === null) {
+                      throw new Error('Shouldn\'t be possible');
+                    }
+                  } else if (closuresToProcess.indexOf(extraClosure) === -1) {
                     closuresToProcess.push(extraClosure);
                   }
                 }
