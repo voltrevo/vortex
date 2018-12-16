@@ -251,7 +251,7 @@ namespace ByteCoder {
           continue;
         }
 
-        if (directCapture === hoist.v.name.v) {
+        if (hoistNames.indexOf(directCapture) !== -1) {
           continue;
         }
 
