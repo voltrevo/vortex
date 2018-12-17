@@ -363,15 +363,15 @@ namespace Outcome {
         argLength: 0;
       };
 
-      First: {
+      Front: {
         base: Array;
-        name: 'First';
+        name: 'Front';
         argLength: 0;
       };
 
-      Last: {
+      Back: {
         base: Array;
-        name: 'First';
+        name: 'Back';
         argLength: 0;
       };
 
@@ -431,8 +431,8 @@ namespace Outcome {
     };
 
     export const nonEmptyMethods: string[] = [
-      'First',
-      'Last',
+      'Front',
+      'Back',
       'Head',
       'Tail',
       'reduce',
@@ -466,12 +466,12 @@ namespace Outcome {
         result: String;
       };
 
-      First: {
+      Front: {
         args: [];
         result: Value;
       };
 
-      Last: {
+      Back: {
         args: [];
         result: Value;
       };
@@ -539,8 +539,8 @@ namespace Outcome {
       )),
       Values: (base, []) => base,
       String: (base, []) => String(JsString(base)),
-      First: (base, []) => base.v[0],
-      Last: (base, []) => base.v[base.v.length - 1],
+      Front: (base, []) => base.v[0],
+      Back: (base, []) => base.v[base.v.length - 1],
       Head: (base, []) => Array(base.v.slice(0, base.v.length - 1)),
       Tail: (base, []) => Array(base.v.slice(1, base.v.length)),
       filter: () => { throw new Error('Needs special implementation'); },
@@ -563,8 +563,8 @@ namespace Outcome {
       Keys: 0,
       Values: 0,
       String: 0,
-      First: 0,
-      Last: 0,
+      Front: 0,
+      Back: 0,
       Head: 0,
       Tail: 0,
       map: 1,
@@ -729,8 +729,6 @@ namespace Outcome {
         result: Array | Object;
       };
     };
-
-    // TODO: First, Last, Head, Tail, map, reduce
 
     export const methodImpls: {
       [name in keyof MethodMap]: MethodImpl<

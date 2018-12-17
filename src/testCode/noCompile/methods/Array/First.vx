@@ -1,4 +1,0 @@
-assert ['foo']:First() == 'foo';
-assert ['foo', 'bar', 'baz']:First() == 'foo';
-
-return 'done';

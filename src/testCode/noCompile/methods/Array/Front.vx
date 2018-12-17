@@ -1,0 +1,4 @@
+assert ['foo']:Front() == 'foo';
+assert ['foo', 'bar', 'baz']:Front() == 'foo';
+
+return 'done';

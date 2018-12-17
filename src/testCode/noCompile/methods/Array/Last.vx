@@ -1,4 +1,0 @@
-assert ['foo']:Last() == 'foo';
-assert ['foo', 'bar', 'baz']:Last() == 'baz';
-
-return 'done';

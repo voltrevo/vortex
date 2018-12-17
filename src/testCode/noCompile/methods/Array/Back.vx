@@ -1,0 +1,4 @@
+assert ['foo']:Back() == 'foo';
+assert ['foo', 'bar', 'baz']:Back() == 'baz';
+
+return 'done';
