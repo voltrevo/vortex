@@ -18,6 +18,7 @@ namespace Vortex {
     END,
     PROGRAM,
     GFUNC,
+    MFUNC,
     INVALID,
     DUP,
     SWAP,
@@ -102,6 +103,7 @@ namespace Vortex {
 
     // CONTROL
     GCALL,
+    MCALL,
     CALL,
     RETURN,
     EMIT,

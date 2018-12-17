@@ -12,16 +12,18 @@
 #include "Value.hpp"
 
 namespace Vortex {
-  class Decoder {
-  private:
+  struct Decoder {
+    // TODO: Func is now too heavy for Decoder because it has binds, use the
+    // immer vector instead
     Func func;
     Func::iterator pos;
 
-  public:
     Decoder(Func init) {
       func = init;
       pos = func.def.begin();
     }
+
+    Decoder() {}
 
     Code get() { return (Code)(*pos++); };
     byte getByte() { return *pos++; }
@@ -36,7 +38,7 @@ namespace Vortex {
     void skip(Code code) {
       switch (GetClass(code)) {
         case SPECIAL: {
-          if (code == GFUNC) {
+          if (code == GFUNC || code == MFUNC) {
             get();
 
             // TODO: Deduplication
@@ -178,7 +180,8 @@ namespace Vortex {
               }
             }
 
-            case GCALL: {
+            case GCALL:
+            case MCALL: {
               get();
               return;
             }
@@ -407,10 +410,11 @@ namespace Vortex {
     void disassemble(std::ostream& os, std::string indent, Code code) {
       switch (GetClass(code)) {
         case SPECIAL: {
-          if (code == GFUNC) {
+          if (code == GFUNC || code == MFUNC) {
             // TODO: Deduplicate with loop, if
             // TODO: Move disassemble to its own file
-            os << "gfunc " << (int)get() << " {" << std::endl;
+            os << (code == GFUNC ? "gfunc " : "mfunc ");
+            os << (int)get() << " {" << std::endl;
 
             std::string nextIndent = indent + "  ";
 
@@ -593,6 +597,7 @@ namespace Vortex {
             }
 
             case GCALL: os << "gcall" << std::endl; return;
+            case MCALL: os << "mcall" << std::endl; return;
             case CALL: os << "call" << std::endl; return;
             case RETURN: os << "return" << std::endl; return;
             case EMIT: os << "emit" << std::endl; return;

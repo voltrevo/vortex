@@ -1,13 +1,14 @@
 #include "Exceptions.hpp"
 
 namespace Vortex {
-  std::ostream& operator<<(std::ostream& os, Error::ErrorType errorType) {
+  std::string toString(Error::ErrorType errorType) {
     switch (errorType) {
-      case Error::Type: return os << "TypeError";
-      case Error::Internal: return os << "InternalError";
-      case Error::NotImplemented: return os << "NotImplementedError";
-      case Error::BadIndex: return os << "BadIndexError";
-      case Error::Syntax: return os << "SyntaxError";
+      case Error::Type: return "TypeError";
+      case Error::Internal: return "InternalError";
+      case Error::NotImplemented: return "NotImplementedError";
+      case Error::BadIndex: return "BadIndexError";
+      case Error::Syntax: return "SyntaxError";
+      case Error::Module: return "ModuleError";
     }
   }
 
@@ -16,4 +17,5 @@ namespace Vortex {
   Error NotImplementedError(std::string desc) { return Error(Error::NotImplemented, std::move(desc)); }
   Error BadIndexError(std::string desc) { return Error(Error::BadIndex, std::move(desc)); }
   Error SyntaxError(std::string desc) { return Error(Error::Syntax, std::move(desc)); }
+  Error ModuleError(std::string desc) { return Error(Error::Module, std::move(desc)); }
 }

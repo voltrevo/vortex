@@ -33,8 +33,16 @@ namespace Vortex {
       }
     };
 
+    struct MFunc {
+      Decoder code;
+      bool entered = false;
+      bool completed = false;
+      Value result;
+    };
+
     std::deque<Value> calc;
     std::vector<Decoder> gfuncs;
+    std::vector<MFunc> mfuncs;
 
     Decoder getGFunc(byte i) {
       if (i >= gfuncs.size()) {
@@ -53,6 +61,42 @@ namespace Vortex {
         gfuncs[i] = std::move(decoder);
       } else {
         gfuncs.push_back(std::move(decoder));
+      }
+    }
+
+    void getMFuncValue(byte i) {
+      if (i >= mfuncs.size()) {
+        throw InternalError("Global function does not exist");
+      }
+
+      MFunc& mfunc = mfuncs[i];
+      assert(mfunc.code.func.def.size() > 0ul);
+
+      if (mfunc.entered && !mfunc.completed) {
+        throw ModuleError("Infinite mfunc loop");
+      }
+
+      if (mfunc.completed) {
+        calc.push_back(mfunc.result);
+        return;
+      }
+
+      mfunc.entered = true;
+      callDecoder(mfunc.code);
+      mfunc.completed = true;
+
+      mfunc.result = calc.back();
+    }
+
+    void setMFunc(byte i, Decoder decoder) {
+      while (i > mfuncs.size()) {
+        mfuncs.emplace_back();
+      }
+
+      if (i < mfuncs.size()) {
+        mfuncs[i] = MFunc{.code = std::move(decoder)};
+      } else {
+        mfuncs.push_back(MFunc{.code = std::move(decoder)});
       }
     }
 
@@ -92,6 +136,13 @@ namespace Vortex {
                 case GFUNC: {
                   int id = pos.getByte();
                   setGFunc(id, pos);
+                  pos.skip(FUNC);
+                  break;
+                }
+
+                case MFUNC: {
+                  int id = pos.getByte();
+                  setMFunc(id, pos);
                   pos.skip(FUNC);
                   break;
                 }
@@ -312,6 +363,12 @@ namespace Vortex {
                   break;
                 }
 
+                case MCALL: {
+                  int id = pos.getByte();
+                  getMFuncValue(id);
+                  break;
+                }
+
                 case EMIT:
                   throw NotImplementedError("emit instruction");
 
@@ -331,25 +388,36 @@ namespace Vortex {
     }
 
     void call(const Value& func) {
+      callValue(func);
+    }
+
+    void callValue(const Value& func) {
       if (func.type != FUNC) {
         throw TypeError("Attempt to call non-function");
       }
 
-      for (const Value& v: func.data.FUNC->binds) {
+      callFunc(*func.data.FUNC);
+    }
+
+    void callFunc(const Func& func) {
+      for (const Value& v: func.binds) {
         calc.push_back(v);
       }
 
-      if (func.data.FUNC->method != BuiltInMethod::NONE) {
-        runBuiltInMethod(*this, func.data.FUNC->method);
+      if (func.method != BuiltInMethod::NONE) {
+        runBuiltInMethod(*this, func.method);
         return;
       }
 
-      auto funcDecoder = Decoder(*func.data.FUNC);
+      callDecoder(Decoder(func));
+    }
+
+    void callDecoder(Decoder decoder) {
       // TODO: Just make context a parameter of run?
       // TODO: Use a shared stack for locals and use an offset?
       // TODO: Check number of arguments?
       cc.push_back(Context());
-      run(funcDecoder);
+      run(decoder); // TODO: Why can't I use std::move here?
       cc.pop_back();
     }
 

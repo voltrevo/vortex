@@ -12,7 +12,10 @@ namespace Vortex {
       NotImplemented,
       BadIndex,
       Syntax,
+      Module,
     };
+
+    friend std::string toString(ErrorType);
 
     ErrorType type;
     std::string desc;
@@ -32,15 +35,14 @@ namespace Vortex {
     }
 
     friend std::ostream& operator<<(std::ostream& os, const Error& error) {
-      return os << error.type << ": " << error.desc;
+      return os << toString(error.type) << ": " << error.desc;
     }
   };
-
-  std::ostream& operator<<(std::ostream& os, Error::ErrorType errorType);
 
   Error TypeError(std::string desc);
   Error InternalError(std::string desc);
   Error NotImplementedError(std::string desc);
   Error BadIndexError(std::string desc);
   Error SyntaxError(std::string desc);
+  Error ModuleError(std::string desc);
 }

@@ -12,6 +12,7 @@ namespace Vortex {
     {"}", END},
     //{"", PROGRAM},
     {"gfunc", GFUNC},
+    {"mfunc", MFUNC},
     //{"", INVALID},
     {"dup", DUP},
     {"swap", SWAP},
@@ -96,6 +97,7 @@ namespace Vortex {
 
     // CONTROL
     {"gcall", GCALL},
+    {"mcall", MCALL},
     {"call", CALL},
     {"return", RETURN},
     {"emit", EMIT},
@@ -503,7 +505,8 @@ namespace Vortex {
         break;
       }
 
-      case GFUNC: {
+      case GFUNC:
+      case MFUNC: {
         skipWhitespace(in);
 
         byte b = parseByteNumber(in);
@@ -519,6 +522,7 @@ namespace Vortex {
       }
 
       case GCALL:
+      case MCALL:
       case GET:
       case SET: {
         skipWhitespace(in);

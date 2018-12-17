@@ -6,6 +6,7 @@ namespace Vortex {
       case END:
       case PROGRAM:
       case GFUNC:
+      case MFUNC:
       case INVALID:
       case DUP:
       case SWAP:
@@ -90,6 +91,7 @@ namespace Vortex {
         return SCOPE;
 
       case GCALL:
+      case MCALL:
       case CALL:
       case RETURN:
       case EMIT:
