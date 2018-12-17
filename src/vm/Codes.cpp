@@ -10,6 +10,7 @@ namespace Vortex {
       case DUP:
       case SWAP:
       case ASSERT:
+      case LOG_INFO:
         return SPECIAL;
 
       case NULL_:

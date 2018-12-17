@@ -16,6 +16,7 @@ namespace Vortex {
     {"dup", DUP},
     {"swap", SWAP},
     {"assert", ASSERT},
+    {"logInfo", LOG_INFO},
 
     // TOP_TYPE
     //{"", NULL_},

@@ -22,6 +22,7 @@ namespace Vortex {
     DUP,
     SWAP,
     ASSERT,
+    LOG_INFO,
 
     // TOP_TYPE
     NULL_,

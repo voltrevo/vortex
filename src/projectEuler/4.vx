@@ -14,8 +14,8 @@ func Digits(n) {
 func isPalindrome(n) {
   digits := Digits(n);
 
-  left := 0;
-  right := digits:Length() - 1;
+  left := 0u64;
+  right := digits:Length() - 1u64;
 
   for (left < right) {
     if (digits[left] != digits[right]) {
@@ -98,5 +98,5 @@ func fast() {
   return largest;
 };
 
-log.info fast(); // #info #custom
+log.info slow(); // #info #custom
 return 'done';

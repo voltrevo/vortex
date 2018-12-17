@@ -123,6 +123,15 @@ namespace Vortex {
                   break;
                 }
 
+                case LOG_INFO: {
+                  const Value& back = calc.back();
+
+                  std::cerr << "INFO: " << back << std::endl;
+
+                  calc.pop_back();
+                  break;
+                }
+
                 default:
                   throw InternalError("Unrecognized SPECIAL instruction");
               }

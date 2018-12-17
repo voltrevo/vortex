@@ -336,7 +336,7 @@ namespace ByteCoder {
 
         if (statement.t.indexOf('log.') === 0) {
           slines.push(
-            'log.' +
+            'log' +
             statement.t[4].toUpperCase() +
             statement.t.slice(5)
           );
