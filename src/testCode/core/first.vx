@@ -1,4 +1,4 @@
-func first(arr, before) { // #warn #unused TODO: not unused
+func first(arr, before) {
   result := arr[0u64];
 
   for (el of arr) {

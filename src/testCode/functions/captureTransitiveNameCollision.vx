@@ -1,13 +1,13 @@
 func foo() {
   x := 3;
-  return bar(x);
+  return bar(x); // #error #incomplete-closure
 };
 
-x := 7;
+x := 7; // #info #incomplete-closure
 
 func bar(input) {
   if (input == 3) {
-    return x + input;
+    return x + input; // #info #incomplete-closure
   }
 
   return foo();
