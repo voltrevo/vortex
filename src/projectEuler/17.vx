@@ -40,35 +40,35 @@ hundredLen := 'hundred':Length();
 andLen := 'and':Length();
 
 func WordLen(n) {
-  if (n < 20) {
+  if (n < 20u64) {
     return smallLens[n];
   }
 
-  if (n < 100) {
-    digit := n % 10;
-    tenGroup := (n - digit) / 10;
+  if (n < 100u64) {
+    digit := n % 10u64;
+    tenGroup := (n - digit) / 10u64;
 
     len := tenGroupLens[tenGroup];
 
-    if (digit != 0) {
+    if (digit != 0u64) {
       len += smallLens[digit];
     }
 
     return len;
   }
 
-  if (n < 1000) {
-    rem := n % 100;
-    hundredGroup := (n - rem) / 100;
+  if (n < 1000u64) {
+    rem := n % 100u64;
+    hundredGroup := (n - rem) / 100u64;
 
-    if (rem == 0) {
+    if (rem == 0u64) {
       return smallLens[hundredGroup] + hundredLen;
     }
 
     return smallLens[hundredGroup] + hundredLen + andLen + WordLen(rem);
   }
 
-  if (n == 1000) {
+  if (n == 1000u64) {
     return 'onethousand':Length();
   }
 
@@ -76,7 +76,7 @@ func WordLen(n) {
   return null; // TODO-1: Should be unreachable error
 };
 
-log.info (Range(1000)
+log.info (Range(1000u64)
   :map(func(i) => WordLen(i + 1))
   :reduce(+)
 );

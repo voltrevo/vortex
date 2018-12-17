@@ -24,8 +24,8 @@ grid := [
 len := grid:Length();
 
 func reverse(a) {
-  left := 0;
-  right := a:Length() - 1;
+  left := 0u64;
+  right := a:Length() - 1u64;
 
   for (left < right) {
     [a[left], a[right]] = [a[right], a[left]];
@@ -40,16 +40,16 @@ grids := [grid, reverse(grid)];
 tGrid := grid:Transpose();
 grids ++= [tGrid, reverse(tGrid)];
 
-smallLen := 4;
+smallLen := 4u64;
 reducedLen := len - smallLen;
 largest := 0;
 
-for (i := 0; i < reducedLen; i++) {
+for (i := 0u64; i < reducedLen; i++) {
   for (g of grids) {
-    for (j := 0; j < len; j++) {
+    for (j := 0u64; j < len; j++) {
       product := 1;
 
-      for (k := 0; k < smallLen; k++) {
+      for (k := 0u64; k < smallLen; k++) {
         product *= g[i + k][j];
       }
 
@@ -58,10 +58,10 @@ for (i := 0; i < reducedLen; i++) {
       }
     }
 
-    for (j := 0; j < reducedLen; j++) {
+    for (j := 0u64; j < reducedLen; j++) {
       product := 1;
 
-      for (k := 0; k < smallLen; k++) {
+      for (k := 0u64; k < smallLen; k++) {
         product *= g[i + k][j + k];
       }
 

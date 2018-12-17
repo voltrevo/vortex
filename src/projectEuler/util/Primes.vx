@@ -2,7 +2,7 @@ func Wheel(primes) {
   wheel := {};
   wheel.primes := primes;
   wheel.size := wheel.primes:reduce(*);
-  wheel.start := wheel.primes:Last() + 1;
+  wheel.start := wheel.primes:Back() + 1;
 
   for {
     startGood := true;
@@ -57,7 +57,7 @@ func Wheel(primes) {
 func Primes(limit) {
   initPrimes := [2, 3, 5, 7];
 
-  if (limit < initPrimes:Last()) {
+  if (limit < initPrimes:Back()) {
     primes := [];
 
     for (p of initPrimes) {

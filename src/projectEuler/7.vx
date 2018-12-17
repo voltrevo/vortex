@@ -30,7 +30,7 @@ func basic(N) { // #warn #unused
     }
   }
 
-  log.info oddPrimes:Last();
+  log.info oddPrimes:Back();
 
   return 'done';
 };
@@ -83,7 +83,7 @@ func Wheel(primes) {
   wheel := {};
   wheel.primes := primes;
   wheel.size := wheel.primes:reduce(*);
-  wheel.start := wheel.primes:Last() + 1;
+  wheel.start := wheel.primes:Back() + 1;
 
   for {
     startGood := true;

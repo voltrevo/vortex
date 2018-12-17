@@ -41,14 +41,14 @@ digits := [
   3, 6, 0, 0, 8, 2, 3, 2, 5, 7, 5, 3, 0, 4, 2, 0, 7, 5, 2, 9, 6, 3, 4, 5, 0,
 ];
 
-window := 13;
+window := 13u64;
 len := digits:Length() - window;
 largest := 0;
 
-for (i := 0; i < len; i++) {
+for (i := 0u64; i < len; i++) {
   product := 1;
 
-  for (j := 0; j < window; j++) {
+  for (j := 0u64; j < window; j++) {
     product *= digits[i + j];
   }
 
