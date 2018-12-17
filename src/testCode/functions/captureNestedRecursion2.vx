@@ -1,0 +1,18 @@
+x := 3;
+y := 4;
+
+func foo(flag) {
+  if (flag) {
+    return x;
+  }
+
+  func bar() {
+    return foo(true) + x + baz();
+  };
+
+  return bar();
+};
+
+func baz() => y;
+
+return foo(false);

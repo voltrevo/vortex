@@ -1,0 +1,13 @@
+res := null;
+flag := true;
+
+x := 7;
+
+if (flag) {
+  func bar() => baz();
+  res = bar();
+}
+
+func baz() => x;
+
+return res;

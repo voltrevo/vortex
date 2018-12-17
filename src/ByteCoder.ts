@@ -197,17 +197,29 @@ namespace ByteCoder {
       }
 
       const captureLines: string[] = [];
+      const relabelledCaptures: string[] = [];
 
       for (const capture of captures) {
         if (directCaptures.indexOf(capture) !== -1) {
           captureLines.push(`  set $${capture}`);
+          relabelledCaptures.push(capture);
         } else {
           // It turns out that scope validation prevents constructing a case
           // that requires this .indirect.* relabelling. However, it makes the
           // generated vasm more readable, so I'm leaving it in for now.
-          captureLines.push(`  set $.indirect.${capture}`);
+          const relabel = `.indirect.${capture}`;
+          captureLines.push(`  set $${relabel}`);
+          relabelledCaptures.push(relabel);
         }
       }
+
+      let innerCoder = coder;
+
+      innerCoder = { ...innerCoder,
+        names: { ...innerCoder.names,
+          [hoist.v.name.v]: { t: 'gfunc', captures: relabelledCaptures },
+        },
+      };
 
       captureLines.reverse();
       lines.push(...captureLines);
@@ -219,8 +231,6 @@ namespace ByteCoder {
           ...Destructure(coder, arg.v, 'insert').map(line => '  ' + line)
         );
       }
-
-      let innerCoder = coder;
 
       for (const hoistName of hoistNames) {
         if (hoistName === hoist.v.name.v) {

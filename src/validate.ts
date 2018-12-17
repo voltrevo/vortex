@@ -608,24 +608,77 @@ function validateFunctionScope(
                     // validated.
                     //
                     // However, we can hit this case when capturing a function
-                    // further up the scope chain whose closure depends on the
-                    // current validation completing. E.g.:
-                    // func foo() { func bar() => foo(); };
+                    // further up the scope chain
                     //
-                    // Since foo captures everything that bar captures, foo's
-                    // validation ensures it won't be called before all its
-                    // captures are defined, and therefore bar can't be called
-                    // too early due to foo's captures.
+                    // Eg#1: (passes)
+                    //   x := 7;
                     //
-                    // So this case is ok, we just need to ensure that clItem
-                    // really does come from further up the scope chain.
+                    //   func foo() {
+                    //     func bar() => x + foo();
+                    //     return bar();
+                    //   };
+                    //
+                    //   return foo();
+                    //
+                    // Eg#2: (passes)
+                    //   res := null;
+                    //   x := 7;
+                    //
+                    //   if (true) {
+                    //     func bar() => foo();
+                    //     res = bar();
+                    //   }
+                    //
+                    //   func foo() => x;
+                    //
+                    //   return res;
+                    //
+                    // Eg#3: (fails)
+                    //   res := null;
+                    //
+                    //   if (true) {
+                    //     res = bar();
+                    //     func bar() => foo(); // foo not available here
+                    //   }
+                    //
+                    //   x := 7;
+                    //   func foo() => x;
+                    //
+                    //   return res;
+                    //
+                    // Eg#4: (fails)
+                    //   res := null;
+                    //
+                    //   if (true) {
+                    //     res = bar();
+                    //
+                    //     // Hoisting bar above foo's x here would be
+                    //     // something we would miss, however it's impossible
+                    //     // for foo's x to be defined here since it is not in
+                    //     // scope when foo tries to reference it.
+                    //     x := 7;
+                    //
+                    //     func bar() => foo();
+                    //   }
+                    //
+                    //   func foo() => x; // x does not exist
+                    //
+                    //   return res;
+                    //
+                    // Since foo's validation occurs after bar's validation,
+                    // bar is unable to reference foo before it is valid, and
+                    // foo cannot have captures that are defined between bar's
+                    // hoist location and bar's definition, bar cannot be
+                    // referenced too early as a consequence of foo's captures.
+                    //
+                    // So these cases are ok, we just need to ensure that
+                    // clItem really does come from further up the scope chain.
 
-                    const deepEntry = (
-                      'parent' in scope.parent &&
-                      Scope.get(scope.parent.parent, clItem.identifier.v)
+                    const outerEntry = (
+                      Scope.get(scope.parent, clItem.identifier.v)
                     );
 
-                    if (deepEntry === null) {
+                    if (outerEntry === null) {
                       throw new Error('Shouldn\'t be possible');
                     }
                   } else if (closuresToProcess.indexOf(extraClosure) === -1) {
