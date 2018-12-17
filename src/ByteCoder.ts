@@ -498,10 +498,9 @@ namespace ByteCoder {
         ) {
           for (const line of blockLines) {
             // TODO: Matching on compiled string line here is not ideal
-            // (Also making use of indenting to avoid nested continues)
-            if (line === 'continue') {
+            if (line.trim() === 'continue') {
               forLines.push(
-                `  'Not implemented: continue statement inside iteration ` +
+                `'Not implemented: continue statement inside iteration ` +
                 `for loop' throw`
               );
             } else {

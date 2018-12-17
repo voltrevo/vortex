@@ -8,7 +8,7 @@ assert x == {a: 2};
 
 a := {b: [{c: [{d: {e: 'hi'}}]}]};
 z := a;
-a.b[0].c[0].d.e = 'hello';
+a.b[0u64].c[0u64].d.e = 'hello';
 
 assert a == {b: [{c: [{d: {e: 'hello'}}]}]};
 assert z == {b: [{c: [{d: {e: 'hi'}}]}]};

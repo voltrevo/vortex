@@ -1,0 +1,11 @@
+#!/bin/bash -e
+
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
+
+find $DIR/../src/testCode -type f | grep '\.vx$' | grep -v 'noCompile' | while read -r filename; do
+  echo -n '.'
+  vxc "$filename" 2>/dev/null --code | run >/dev/null
+done
+
+echo
+echo 'Success'

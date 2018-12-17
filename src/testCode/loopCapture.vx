@@ -4,6 +4,6 @@ for (i of [0, 1, 2, 3, 4]) {
   funs ++= [func() => i];
 }
 
-assert funs[2]() == 2;
+assert funs[2u64]() == 2;
 
 return 'done';
