@@ -9,7 +9,7 @@ players := [
 msgs := [];
 
 for ([i, p] of players:Entries()) {
-  msgs ++= [['Player ' ++ (i + 1):String() ++ ' plays ' ++ p.sport]];
+  msgs ++= [['Player ' ++ (i + 1u64):String() ++ ' plays ' ++ p.sport]];
 }
 
 assert msgs == [
