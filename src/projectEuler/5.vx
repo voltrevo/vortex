@@ -27,9 +27,9 @@ func unfactorize(factors) {
   return res;
 };
 
-func max(pair) => switch (pair[0] > pair[1]) {
-  true => pair[0];
-  false => pair[1];
+func max(pair) => switch (pair[0u64] > pair[1u64]) {
+  true => pair[0u64];
+  false => pair[1u64];
 };
 
 func lcm(a, b) => [a, b]:Transpose():map(max);
