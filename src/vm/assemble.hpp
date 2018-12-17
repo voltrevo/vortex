@@ -79,6 +79,7 @@ namespace Vortex {
     {"hasIndex", HAS_INDEX},
 
     {"bind", BIND},
+    {"methodLookup", METHOD_LOOKUP},
 
     // UNARY_OPERATOR
     {"negate", NEGATE},

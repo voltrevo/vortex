@@ -8,6 +8,7 @@
 #include "Codes.hpp"
 #include "Decoder.hpp"
 #include "Exceptions.hpp"
+#include "runBuiltInMethod.hpp"
 #include "Value.hpp"
 
 namespace Vortex {
@@ -294,6 +295,11 @@ namespace Vortex {
 
                   for (const Value& v: func.data.FUNC->binds) {
                     calc.push_back(v);
+                  }
+
+                  if (func.data.FUNC->method != BuiltInMethod::NONE) {
+                    runBuiltInMethod(calc, func.data.FUNC->method);
+                    break;
                   }
 
                   auto funcDecoder = Decoder(*func.data.FUNC);

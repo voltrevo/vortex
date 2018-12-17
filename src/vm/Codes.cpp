@@ -73,6 +73,7 @@ namespace Vortex {
       case HAS_INDEX:
 
       case BIND:
+      case METHOD_LOOKUP:
         return BINARY_OPERATOR;
 
       case NEGATE:

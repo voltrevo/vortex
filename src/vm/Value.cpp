@@ -471,6 +471,64 @@ namespace Vortex {
     }
   }
 
+  BuiltInMethod MethodEnum(Code type, const std::string& methodName) {
+    if (type != FUNC && methodName == "String") {
+      return BuiltInMethod::STRING;
+    }
+
+    if (type == ARRAY || type == OBJECT) {
+      if (methodName == "Keys") {
+        return BuiltInMethod::KEYS;
+      }
+
+      if (methodName == "Values") {
+        return BuiltInMethod::VALUES;
+      }
+
+      if (methodName == "Entries") {
+        return BuiltInMethod::ENTRIES;
+      }
+
+      if (methodName == "Row") {
+        return BuiltInMethod::ROW;
+      }
+
+      if (methodName == "Column") {
+        return BuiltInMethod::COLUMN;
+      }
+
+      if (methodName == "Transpose") {
+        return BuiltInMethod::TRANSPOSE;
+      }
+    }
+
+    if (type == ARRAY || type == STRING) {
+      if (methodName == "Length") {
+        return BuiltInMethod::LENGTH;
+      }
+    }
+
+    if (type == ARRAY) {
+      if (methodName == "Map") {
+        return BuiltInMethod::MAP;
+      }
+
+      if (methodName == "Reduce") {
+        return BuiltInMethod::REDUCE;
+      }
+
+      if (methodName == "Front") {
+        return BuiltInMethod::FRONT;
+      }
+
+      if (methodName == "Back") {
+        return BuiltInMethod::BACK;
+      }
+    }
+
+    throw TypeError("Method not found");
+  }
+
   namespace BinaryOperators {
     void plus(Value& left, const Value& right) {
       Code type = left.type;
@@ -939,6 +997,27 @@ namespace Vortex {
 
       left.data.FUNC->bind(std::move(right));
     }
+
+    void methodLookup(Value& left, Value&& right) {
+      if (right.type != STRING) {
+        throw TypeError("Method names can only be strings");
+      }
+
+      auto methodName = std::string(
+        right.data.STRING->begin(),
+        right.data.STRING->end()
+      );
+
+      auto method = MethodEnum(left.type, methodName);
+
+      Value base;
+      swap(base, left);
+
+      left.type = FUNC;
+      left.data.FUNC = new Func();
+      left.data.FUNC->method = method;
+      left.data.FUNC->binds.push_back(std::move(base));
+    }
   }
 
   void BinaryOperator(Value& left, Value&& right, Code op) {
@@ -974,6 +1053,7 @@ namespace Vortex {
       case HAS_INDEX: BinaryOperators::hasIndex(left, std::move(right)); break;
 
       case BIND: BinaryOperators::bind(left, std::move(right)); break;
+      case METHOD_LOOKUP: BinaryOperators::methodLookup(left, std::move(right)); break;
 
       default:
         throw InternalError("Unrecognized binary operator");

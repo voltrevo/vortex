@@ -104,6 +104,22 @@ namespace Vortex {
     std::string LongString();
   };
 
+  enum class BuiltInMethod: byte {
+    NONE,
+    LENGTH,
+    STRING,
+    KEYS,
+    VALUES,
+    ENTRIES,
+    MAP,
+    REDUCE,
+    FRONT,
+    BACK,
+    ROW,
+    COLUMN,
+    TRANSPOSE,
+  };
+
   namespace TernaryOperators {
     void update(Value& target, Value&& value, Value&& key);
     void insert(Value& target, Value&& value, Value&& key);
@@ -135,6 +151,7 @@ namespace Vortex {
     void at(Value& left, Value&& right);
     void hasIndex(Value& left, Value&& right);
     void bind(Value& left, Value&& right);
+    void methodLookup(Value& left, Value&& right);
   }
 
   void BinaryOperator(Value& left, Value&& right, Code op);

@@ -517,6 +517,7 @@ namespace Vortex {
             case HAS_INDEX: os << "has-index" << std::endl; return;
 
             case BIND: os << "bind" << std::endl; return;
+            case METHOD_LOOKUP: os << "methodLookup" << std::endl; return;
 
             default: throw InternalError("Unrecognized BINARY_OPERATOR");
           }
