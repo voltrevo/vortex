@@ -1,4 +1,0 @@
-assert []:Keys() == [];
-assert ['foo', 'bar', 'baz']:Keys() == [0, 1, 2];
-
-return 'done';

@@ -1,0 +1,5 @@
+assert '':Length() == 0u64;
+assert 'foo':Length() == 3u64;
+assert '\'':Length() == 1u64;
+
+return 'done';

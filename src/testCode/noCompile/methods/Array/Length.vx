@@ -1,4 +1,0 @@
-assert []:Length() == 0;
-assert [1, 2, 3]:Length() == 3;
-
-return 'done';

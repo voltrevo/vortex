@@ -1,5 +1,0 @@
-assert '':Length() == 0;
-assert 'foo':Length() == 3;
-assert '\'':Length() == 1;
-
-return 'done';

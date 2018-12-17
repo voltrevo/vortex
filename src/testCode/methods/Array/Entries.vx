@@ -1,9 +1,9 @@
 assert []:Entries() == [];
 
 assert ['foo', 'bar', 'baz']:Entries() == [
-  [0, 'foo'],
-  [1, 'bar'],
-  [2, 'baz'],
+  [0u64, 'foo'],
+  [1u64, 'bar'],
+  [2u64, 'baz'],
 ];
 
 return 'done';

@@ -5,5 +5,6 @@
 #include "Value.hpp"
 
 namespace Vortex {
-  void runBuiltInMethod(std::deque<Value>& stack, BuiltInMethod method);
+  struct Machine;
+  void runBuiltInMethod(Machine& machine, BuiltInMethod method);
 }

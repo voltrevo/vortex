@@ -1,4 +1,10 @@
+return [
+  []:String(),
+  [1, 2, 3]:String(),
+];
+/*
 assert []:String() == '[]';
 assert [1, 2, 3]:String() == '[1,2,3]';
 
 return 'done';
+*/

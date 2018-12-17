@@ -509,11 +509,11 @@ namespace Vortex {
     }
 
     if (type == ARRAY) {
-      if (methodName == "Map") {
+      if (methodName == "map") {
         return BuiltInMethod::MAP;
       }
 
-      if (methodName == "Reduce") {
+      if (methodName == "reduce") {
         return BuiltInMethod::REDUCE;
       }
 

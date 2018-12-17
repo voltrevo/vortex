@@ -12,7 +12,7 @@
 #include "Value.hpp"
 
 namespace Vortex {
-  class Machine {
+  struct Machine {
     struct Context {
       std::vector<Value> locals;
 
@@ -75,7 +75,6 @@ namespace Vortex {
 
     std::deque<Context> cc;
 
-  public:
     Decoder run(Decoder pos) {
       Context& ctx = cc.back();
 
@@ -287,28 +286,7 @@ namespace Vortex {
                 }
 
                 case CALL: {
-                  auto func = pop();
-
-                  if (func.type != FUNC) {
-                    throw TypeError("Attempt to call non-function");
-                  }
-
-                  for (const Value& v: func.data.FUNC->binds) {
-                    calc.push_back(v);
-                  }
-
-                  if (func.data.FUNC->method != BuiltInMethod::NONE) {
-                    runBuiltInMethod(calc, func.data.FUNC->method);
-                    break;
-                  }
-
-                  auto funcDecoder = Decoder(*func.data.FUNC);
-                  // TODO: Just make context a parameter of run?
-                  // TODO: Use a shared stack for locals and use an offset?
-                  cc.push_back(Context());
-                  run(funcDecoder);
-                  cc.pop_back();
-
+                  call(pop());
                   break;
                 }
 
@@ -341,6 +319,29 @@ namespace Vortex {
           throw;
         }
       }
+    }
+
+    void call(const Value& func) {
+      if (func.type != FUNC) {
+        throw TypeError("Attempt to call non-function");
+      }
+
+      for (const Value& v: func.data.FUNC->binds) {
+        calc.push_back(v);
+      }
+
+      if (func.data.FUNC->method != BuiltInMethod::NONE) {
+        runBuiltInMethod(*this, func.data.FUNC->method);
+        return;
+      }
+
+      auto funcDecoder = Decoder(*func.data.FUNC);
+      // TODO: Just make context a parameter of run?
+      // TODO: Use a shared stack for locals and use an offset?
+      // TODO: Check number of arguments?
+      cc.push_back(Context());
+      run(funcDecoder);
+      cc.pop_back();
     }
 
     Value eval(Func code) {

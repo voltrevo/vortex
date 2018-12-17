@@ -1,0 +1,4 @@
+assert []:Length() == 0u64;
+assert [1, 2, 3]:Length() == 3u64;
+
+return 'done';
