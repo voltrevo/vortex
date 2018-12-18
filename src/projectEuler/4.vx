@@ -98,5 +98,5 @@ func fast() {
   return largest;
 };
 
-log.info slow(); // #info #custom
+log.info fast(); // #info #custom
 return 'done';
