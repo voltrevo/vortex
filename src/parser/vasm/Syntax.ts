@@ -34,12 +34,19 @@ namespace Syntax {
     p: Pos,
   };
 
+  export type MFunc = {
+    t: 'mfunc',
+    v: { nlabel: string, block: Block },
+    p: Pos,
+  };
+
   export type Word = { t: 'word', v: string, p: Pos };
 
   export type LabelledWord = (
     { t: 'get', v: string, p: Pos } |
     { t: 'set', v: string, p: Pos } |
     { t: 'gcall', v: string, p: Pos } |
+    { t: 'mcall', v: string, p: Pos } |
     { t: 'hoist', v: string, p: Pos } |
     never
   );
@@ -50,6 +57,7 @@ namespace Syntax {
     Value |
     Func |
     GFunc |
+    MFunc |
     If |
     Loop |
     never

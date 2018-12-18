@@ -10,6 +10,7 @@
 'get'                 return 'GET'
 'set'                 return 'SET'
 'gcall'               return 'GCALL'
+'mcall'               return 'MCALL'
 'hoist'               return 'HOIST'
 \$[^\s]+              return 'NLABEL'
 'if'                  return 'IF'
@@ -17,6 +18,7 @@
 'loop'                return 'LOOP'
 'func'                return 'FUNC'
 'gfunc'               return 'GFUNC'
+'mfunc'               return 'MFUNC'
 'false'               return 'FALSE'
 'true'                return 'TRUE'
 'null'                return 'NULL'
@@ -76,6 +78,8 @@ statement
         {$$ = $1}
     | gfunc
         {$$ = $1}
+    | mfunc
+        {$$ = $1}
     | if
         {$$ = $1}
     | loop
@@ -96,6 +100,8 @@ labelWord
     | SET
         {$$ = $1}
     | GCALL
+        {$$ = $1}
+    | MCALL
         {$$ = $1}
     | HOIST
         {$$ = $1}
@@ -131,6 +137,11 @@ func
 gfunc
     : GFUNC NLABEL '{' block '}'
         {$$ = { t: 'gfunc', v: { nlabel: $2, block: $4 }, p: L(@$) }}
+    ;
+
+mfunc
+    : MFUNC NLABEL '{' block '}'
+        {$$ = { t: 'mfunc', v: { nlabel: $2, block: $4 }, p: L(@$) }}
     ;
 
 number

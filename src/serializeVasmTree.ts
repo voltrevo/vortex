@@ -4,18 +4,22 @@ function serializeAsmTree(program: Syntax.Program): string[] {
   const ctx = {
     gfuncs: [],
     gfuncLabels: [],
+    mfuncs: [],
+    mfuncLabels: [],
     varLabels: [],
   };
 
   const entryLines = serializeAsmTree.Program(ctx, program);
 
-  return [...ctx.gfuncs, ...entryLines];
+  return [...ctx.mfuncs, ...ctx.gfuncs, ...entryLines];
 }
 
 namespace serializeAsmTree {
   type Context = {
     gfuncs: string[],
     gfuncLabels: string[],
+    mfuncs: string[],
+    mfuncLabels: string[],
     varLabels: string[],
   };
 
@@ -86,6 +90,10 @@ namespace serializeAsmTree {
         return [`${statement.t} ${getLabel(ctx.gfuncLabels, statement.v)}`];
       }
 
+      case 'mcall': {
+        return [`${statement.t} ${getLabel(ctx.mfuncLabels, statement.v)}`];
+      }
+
       case 'hoist': {
         clearLabel(ctx.gfuncLabels, statement.v);
         return [];
@@ -111,6 +119,8 @@ namespace serializeAsmTree {
             {
               gfuncs: ctx.gfuncs,
               gfuncLabels: ctx.gfuncLabels,
+              mfuncs: ctx.mfuncs,
+              mfuncLabels: ctx.mfuncLabels,
               varLabels: [],
             },
             statement.v,
@@ -126,6 +136,27 @@ namespace serializeAsmTree {
             {
               gfuncs: ctx.gfuncs,
               gfuncLabels: ctx.gfuncLabels,
+              mfuncs: ctx.mfuncs,
+              mfuncLabels: ctx.mfuncLabels,
+              varLabels: [],
+            },
+            statement.v.block,
+          ).map(line => '  ' + line),
+          '}',
+        );
+
+        return [];
+      }
+
+      case 'mfunc': {
+        ctx.mfuncs.push(
+          `mfunc ${getLabel(ctx.mfuncLabels, statement.v.nlabel)} {`,
+          ...Program(
+            {
+              gfuncs: ctx.gfuncs,
+              gfuncLabels: ctx.gfuncLabels,
+              mfuncs: ctx.mfuncs,
+              mfuncLabels: ctx.mfuncLabels,
               varLabels: [],
             },
             statement.v.block,
