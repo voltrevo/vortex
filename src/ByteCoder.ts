@@ -309,12 +309,16 @@ namespace ByteCoder {
     let first = (hoists.length === 0);
 
     for (const statement of statements) {
+      let slines: string[];
+      [slines, coder] = Statement(coder, statement);
+
+      if (slines.length === 0) {
+        continue;
+      }
+
       if (!first) {
         lines.push('');
       }
-
-      let slines: string[];
-      [slines, coder] = Statement(coder, statement);
 
       lines.push(...slines);
 
