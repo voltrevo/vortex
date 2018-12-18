@@ -1,6 +1,6 @@
 import Repeat from './util';
 
-size := 21;
+size := 21u64;
 
 func countPaths(cache, pos) {
   [i, j] := pos;
@@ -10,19 +10,19 @@ func countPaths(cache, pos) {
   }
 
   if (i >= size || j >= size) {
-    return [0, cache];
+    return [0u64, cache];
   }
 
   cached := cache[i][j];
 
-  if (cached != -1) {
+  if (cached:String() != 'null') {
     return [cached, cache];
   }
 
-  [path1, path2] := [0, 0];
+  [path1, path2] := [0u64, 0u64];
 
-  [path1, cache] = countPaths(cache, [i + 1, j]);
-  [path2, cache] = countPaths(cache, [i, j + 1]);
+  [path1, cache] = countPaths(cache, [i + 1u64, j]);
+  [path2, cache] = countPaths(cache, [i, j + 1u64]);
 
   res := path1 + path2;
 
@@ -30,11 +30,11 @@ func countPaths(cache, pos) {
   return [res, cache];
 };
 
-cache := Repeat(Repeat(-1, size), size);
-cache[size - 1][size - 1] = 1;
+cache := Repeat(Repeat(null, size), size);
+cache[size - 1u64][size - 1u64] = 1u64;
 
-paths := 0;
-[paths, cache] = countPaths(cache, [0, 0]);
+paths := 0u64;
+[paths, cache] = countPaths(cache, [0u64, 0u64]);
 
 log.info paths;
 

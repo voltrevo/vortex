@@ -77,7 +77,7 @@ func WordLen(n) {
 };
 
 log.info (Range(1000u64)
-  :map(func(i) => WordLen(i + 1))
+  :map(func(i) => WordLen(i + 1u64))
   :reduce(+)
 );
 
