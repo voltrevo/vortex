@@ -1050,22 +1050,19 @@ namespace Analyzer {
               return null;
             }
 
-            if (subExp.t !== 'IDENTIFIER') {
-              mex = Outcome.Exception(
-                exp,
-                ['not-implemented', 'non-identifier-assignment-target'],
-                `Not implemented: non-identifier lvalues`,
-              );
-
-              return null;
-            }
-
             const newValue = {
+              cat: 'concrete' as 'concrete',
               t: 'Number' as 'Number',
               v: out.v + (exp.t === 'unary ++' ? 1 : -1)
             };
 
-            az = Analyzer.set(az, subExp.v, newValue);
+            [mex, az] = createOrAssign(
+              az,
+              exp,
+              subExp,
+              '=',
+              newValue,
+            );
 
             return null;
           }
