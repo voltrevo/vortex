@@ -1,7 +1,6 @@
-TODO: Fix captureTransitiveNameCollision.vx
-TODO: Compile closures
+TODO: Implement compiling expressions like `foo.bar++;`, `foo.bar += 1;`
 TODO: Update import syntax e.g. `import ./sibling.vx;`, `import ./sibling.vx as otherName;`
-TODO: Compile imports
+TODO: Memory leak analysis
 TODO: TODO tagging, group based on tags
 TODO: More unused warnings via return value dependency analysis (see cirumventUnused.vx)
 TODO: _ for implicit ignore
