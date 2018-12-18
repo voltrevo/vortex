@@ -1,4 +1,5 @@
-TODO: Implement compiling expressions like `foo.bar++;`, `foo.bar += 1;`
+TODO: Add test code for compounds and inc/dec with non-identifier targets
+TODO: Implement expressions like `[a[0]] += [1]` (combine destructure with accessor mutation)
 TODO: Update import syntax e.g. `import ./sibling.vx;`, `import ./sibling.vx as otherName;`
 TODO: Memory leak analysis
 TODO: TODO tagging, group based on tags

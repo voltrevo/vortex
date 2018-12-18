@@ -58,9 +58,6 @@ namespace ByteCoder {
 
         const lines = [`func { gcall $.captureless.${name} }`];
 
-        // TODO: test recursive non-hoisted functions e.g:
-        // foo := func(n) { if (n == 0) { return 0; } return foo(n - 1); };
-
         for (const capture of entry.captures) {
           const getNameLines = getName(coder, capture);
 
@@ -598,17 +595,16 @@ namespace ByteCoder {
 
       case 'unary --':
       case 'unary ++': {
-        if (exp.v.t !== 'IDENTIFIER') {
-          // TODO: Check this is actually caught during validation
-          throw new Error('Should have been caught during validation');
-        }
-
         return [
-          [[
-            `get $${exp.v.v}`,
-            `${exp.t === 'unary ++' ? 'inc' : 'dec'}`,
-            `set $${exp.v.v}`,
-          ].join(' ')],
+          UpdateInsert(
+            coder,
+            exp.v,
+            [
+              ...SubExpression(coder, exp.v),
+              exp.t === 'unary ++' ? 'inc' : 'dec',
+            ],
+            'update',
+          ),
           coder,
         ];
       }
@@ -1030,24 +1026,28 @@ namespace ByteCoder {
       case '|=': {
         const [leftExp, rightExp] = exp.v;
 
-        if (leftExp.t !== 'IDENTIFIER') {
+        const compoundRightLines = [
+          ...SubExpression(coder, leftExp),
+          ...SubExpression(coder, rightExp),
+          exp.t.substring(0, exp.t.length - 1),
+        ];
+
+        if (leftExp.t === 'subscript' || leftExp.t === '.') {
           return [
-            [
-              `'Not implemented: compound assignment with non-identifier ` +
-              `lhs' throw`
-            ],
+            UpdateInsert(
+              coder,
+              leftExp,
+              compoundRightLines,
+              'update',
+            ),
             coder,
           ];
         }
 
-        const opString = exp.t.substring(0, exp.t.length - 1);
-
         return [
           [
-            `get $${leftExp.v}`,
-            ...SubExpression(coder, rightExp),
-            opString,
-            `set $${leftExp.v}`,
+            ...compoundRightLines,
+            ...Destructure(coder, leftExp, 'update'),
           ],
           coder,
         ];
