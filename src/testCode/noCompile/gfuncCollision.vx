@@ -1,0 +1,13 @@
+funcs := [];
+
+if (true) {
+  funcs ++= [func foo() { if (false) { return foo(); } return 37; }];
+}
+
+if (true) {
+  funcs ++= [func foo() { if (false) { return foo(); } return 42; }];
+}
+
+assert funcs:map(func(f) => f()) == [37, 42];
+
+return 'done';

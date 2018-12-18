@@ -1,10 +1,14 @@
 import CapturedNames from './CapturedNames';
+import Package from './Package';
 import Syntax from './parser/Syntax';
 
 type ByteCoder = {
+  file: string,
+
   names: {
     [name: string]: (
       { t: 'gfunc', captures: string[] } |
+      { t: 'mfunc', fullName: string } |
       undefined
     )
   },
@@ -14,8 +18,9 @@ type ByteCoder = {
   },
 };
 
-function ByteCoder(): ByteCoder {
+function ByteCoder(file: string): ByteCoder {
   return {
+    file,
     names: {},
     internalNames: {},
   };
@@ -26,6 +31,14 @@ namespace ByteCoder {
     return { ...coder,
       names: { ...coder.names,
         [name]: { t: 'gfunc', captures },
+      },
+    };
+  }
+
+  function setMFunc(coder: ByteCoder, name: string, fullName: string): ByteCoder {
+    return { ...coder,
+      names: { ...coder.names,
+        [name]: { t: 'mfunc', fullName },
       },
     };
   }
@@ -59,6 +72,10 @@ namespace ByteCoder {
         }
 
         return lines;
+      }
+
+      case 'mfunc': {
+        return [`mcall $${entry.fullName}`];
       }
     }
   }
@@ -178,7 +195,7 @@ namespace ByteCoder {
 
       const entry = coder.names[hoist.v.name.v];
 
-      if (entry === undefined) {
+      if (entry === undefined || entry.t !== 'gfunc') {
         throw new Error('Shouldn\'t be possible');
       }
 
@@ -257,7 +274,7 @@ namespace ByteCoder {
       for (const directCapture of directCaptures) {
         const entry = coder.names[directCapture];
 
-        if (!entry) {
+        if (!entry || entry.t === 'mfunc') {
           continue;
         }
 
@@ -265,21 +282,12 @@ namespace ByteCoder {
           continue;
         }
 
-        switch (entry.t) {
-          case 'gfunc': {
-            if (entry.captures.length > 0) {
-              innerCoder = { ...innerCoder,
-                names: { ...innerCoder.names,
-                  [directCapture]: undefined,
-                },
-              };
-            }
-
-            break;
-          }
-
-          default:
-            checkNever(entry.t);
+        if (entry.captures.length > 0) {
+          innerCoder = { ...innerCoder,
+            names: { ...innerCoder.names,
+              [directCapture]: undefined,
+            },
+          };
         }
       }
 
@@ -529,8 +537,17 @@ namespace ByteCoder {
 
       case 'breakpoint': return [['breakpoint'], coder];
 
-      case 'import':
-        return [[`'Not implemented: import statement' throw`], coder];
+      case 'import': {
+        const resolved = Package.resolveImport(coder.file, statement);
+
+        if (typeof resolved !== 'string') {
+          return [[`'Failed to resolve import' throw`], coder];
+        }
+
+        const [ident] = statement.v;
+
+        return [[], setMFunc(coder, ident.v, resolved)];
+      }
     }
   }
 
@@ -644,8 +661,14 @@ namespace ByteCoder {
               break;
             }
 
+            case 'mfunc': {
+              // Don't need to register this capture because mfuncs are tracked
+              // globally
+              break;
+            }
+
             default:
-              checkNever(entry.t);
+              checkNever(entry);
           }
         }
 
@@ -915,8 +938,17 @@ namespace ByteCoder {
         return [lines, coder];
       }
 
+      case 'import': {
+        const resolved = Package.resolveImport(coder.file, exp);
+
+        if (typeof resolved !== 'string') {
+          return [[`'Failed to resolve import' throw`], coder];
+        }
+
+        return [[`mcall $${resolved}`], coder];
+      }
+
       case 'class':
-      case 'import':
         return [[`'Not implemented: ${exp.t} expression' throw`], coder];
 
       case '**':

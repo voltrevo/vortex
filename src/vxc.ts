@@ -266,7 +266,7 @@ const inputs: { type: 'file', name: string }[] = [];
     if (mod.t === 'ParserNotes') {
       throw new Error('Can\'t emit bytecode for file that failed parsing');
     } else {
-      const coder = ByteCoder();
+      const coder = ByteCoder(file);
       const lines = ByteCoder.Block(coder, mod.program);
 
       if (args.vasm) {
