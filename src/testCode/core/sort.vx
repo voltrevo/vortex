@@ -1,16 +1,16 @@
 func sort(arr, before) {
-  if (arr:Length() == 0) {
+  if (arr:Length() == 0u64) {
     return arr;
   }
 
   func sortRange(a, start, end) {
     n := end - start;
 
-    if (n == 1) {
+    if (n == 1u64) {
       return [a, start, end];
     }
 
-    mid := start + (n - (n % 2)) / 2;
+    mid := start + (n - (n % 2u64)) / 2u64;
 
     return merge(
       sortRange(a, start, mid),
@@ -40,7 +40,7 @@ func sort(arr, before) {
             rightPos++;
           }
 
-          return [result, 0, resultLen];
+          return [result, 0u64, resultLen];
         }
       }
 
@@ -54,13 +54,13 @@ func sort(arr, before) {
             leftPos++;
           }
 
-          return [result, 0, resultLen];
+          return [result, 0u64, resultLen];
         }
       }
     }
   };
 
-  return sortRange(arr, 0, arr:Length())[0];
+  return sortRange(arr, 0u64, arr:Length())[0u64];
 };
 
 nums := [3, 1, 1, 2, 4, -7];
