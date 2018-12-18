@@ -6,6 +6,7 @@ import ByteCoder from './ByteCoder';
 import Compiler from './Compiler';
 import getStdin from './getStdin';
 import Note from './Note';
+import Package from './Package';
 import pretty from './pretty';
 import serializeVasmTree from './serializeVasmTree';
 
@@ -255,30 +256,59 @@ const inputs: { type: 'file', name: string }[] = [];
       throw new Error('Emitting code is only supported for one file');
     }
 
-    const file = files[0];
+    const entryFile = files[0];
 
-    const mod = az.pack.modules[file];
+    const modules = goodModules(az.pack);
 
-    if (!mod) {
-      throw new Error('Should not be possible');
+    if (modules === null) {
+      throw new Error('Can\'t emit bytecode for package that failed parsing');
     }
 
-    if (mod.t === 'ParserNotes') {
-      throw new Error('Can\'t emit bytecode for file that failed parsing');
+    const lines: string[] = [];
+
+    for (const file of Object.keys(modules)) {
+      const mod = modules[file];
+
+      lines.push(
+        `mfunc $${file} {`,
+        ...ByteCoder.Block(
+          ByteCoder(file),
+          mod.program
+        ).map(line => '  ' + line),
+        `}`,
+        ``,
+      );
+    }
+
+    lines.push(`mcall $${entryFile} return`);
+
+    if (args.vasm) {
+      console.log(lines.join('\n'));
     } else {
-      const coder = ByteCoder(file);
-      const lines = ByteCoder.Block(coder, mod.program);
+      const vasmTree = VasmSyntax.Program(lines.join('\n'));
+      const codeLines = serializeVasmTree(vasmTree);
 
-      if (args.vasm) {
-        console.log(lines.join('\n'));
-      } else {
-        const vasmTree = VasmSyntax.Program(lines.join('\n'));
-        const codeLines = serializeVasmTree(vasmTree);
-
-        console.log(codeLines.join('\n'));
-      }
+      console.log(codeLines.join('\n'));
     }
   }
 })().catch(e => {
   setTimeout(() => { throw e; });
 });
+
+function goodModules(
+  pack: Package,
+): { [file: string]: Package.Module } | null {
+  const res: { [file: string]: Package.Module } = {};
+
+  for (const file of Object.keys(pack.modules)) {
+    const entry = pack.modules[file];
+
+    if (entry === undefined || entry.t === 'ParserNotes') {
+      return null;
+    }
+
+    res[file] = entry;
+  }
+
+  return res;
+}

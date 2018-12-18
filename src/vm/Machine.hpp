@@ -37,7 +37,10 @@ namespace Vortex {
       Decoder code;
       bool entered = false;
       bool completed = false;
-      Value result;
+
+      // TODO: Should be able to default construct Value, but this is a
+      // workaround because MFunc gets copied and I don't know why yet
+      Value result = Value(Value::null());
     };
 
     std::deque<Value> calc;
@@ -90,7 +93,7 @@ namespace Vortex {
 
     void setMFunc(byte i, Decoder decoder) {
       while (i > mfuncs.size()) {
-        mfuncs.emplace_back();
+        mfuncs.push_back(MFunc()); // TODO: Why does this use MFunc copy?
       }
 
       if (i < mfuncs.size()) {
