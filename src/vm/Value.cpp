@@ -58,6 +58,7 @@ namespace Vortex {
   Value::~Value() { dealloc(); }
 
   Value& Value::operator=(Value&& right) {
+    dealloc();
     type = right.type;
     data = right.data;
     right.data.PTR = nullptr;
@@ -177,9 +178,8 @@ namespace Vortex {
   }
 
   Value& Value::operator=(const Value& right) {
-    Value tmp(right);
     dealloc();
-    *this = std::move(tmp);
+    copyConstruct(right);
     return *this;
   }
 
