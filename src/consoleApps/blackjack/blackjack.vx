@@ -92,10 +92,10 @@ func Init(seed) {
   dealerHand := [];
 
   for (i := 0; i < 2; i++) {
-    playerHand ++= [deck:First()];
+    playerHand ++= [deck:Front()];
     deck = deck:Tail();
 
-    dealerHand ++= [deck:First()];
+    dealerHand ++= [deck:Front()];
     deck = deck:Tail();
   }
 
@@ -112,7 +112,7 @@ func Init(seed) {
 
 func apply(action) => switch (action) {
   'hit' => func(state) {
-    state.playerHand ++= [state.deck:First()];
+    state.playerHand ++= [state.deck:Front()];
     state.deck = state.deck:Tail();
 
     state.options = switch {
@@ -125,7 +125,7 @@ func apply(action) => switch (action) {
 
   'stand' => func(state) {
     for (scoreHand(state.dealerHand) < 16) {
-      state.dealerHand ++= [state.deck:First()];
+      state.dealerHand ++= [state.deck:Front()];
       state.deck = state.deck:Tail();
     }
 
@@ -163,7 +163,7 @@ func apply(action) => switch (action) {
 func findOption(options, input) {
   if (input == '') {
     if (options:Length() > 0) {
-      return options:First();
+      return options:Front();
     }
 
     return null;
@@ -185,7 +185,7 @@ func findOption(options, input) {
 
   return switch {
     (exactMatch:String() != 'null') => exactMatch;
-    (firstCharMatches:Length() > 0) => firstCharMatches:First();
+    (firstCharMatches:Length() > 0) => firstCharMatches:Front();
     true => null;
   };
 };
