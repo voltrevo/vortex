@@ -1,0 +1,157 @@
+func lex(lines) {
+  lexers := [
+    ['number', lexNumber],
+    ['whitespace', lexWhitespace],
+  ];
+
+  tokens := [];
+  pos := [0u64, 0u64];
+
+  for (pos[0u64] < lines:Length()) {
+    found := false;
+
+    for ([type, lexer] of lexers) {
+      out := lexer(lines, pos);
+
+      if (!isNull(out)) {
+        [value, newPos] := out;
+        tokens ++= [{data: [type, value], pos: [pos, newPos]}];
+        pos = newPos;
+        found = true;
+        break;
+      }
+    }
+
+    if (!found) {
+      tokens ++= [{data: ['failure', null], pos: [pos, pos]}];
+      break;
+    }
+  }
+
+  return tokens;
+};
+
+func Digit(s) => switch {
+  (s == '0') => 0u64;
+  (s == '1') => 1u64;
+  (s == '2') => 2u64;
+  (s == '3') => 3u64;
+  (s == '4') => 4u64;
+  (s == '5') => 5u64;
+  (s == '6') => 6u64;
+  (s == '7') => 7u64;
+  (s == '8') => 8u64;
+  (s == '9') => 9u64;
+
+  true => null;
+};
+
+func lexNumber(lines, [i, j]) {
+  line := NonEmptyLine(lines, [i, j]);
+
+  if (isNull(line)) {
+    return null;
+  }
+
+  res := null;
+
+  for {
+    digit := Digit(line[j]);
+
+    if (isNull(digit)) {
+      break;
+    }
+
+    if (isNull(res)) {
+      res = digit;
+    } else {
+      res *= 10u64;
+      res += digit;
+    }
+
+    j++;
+
+    if (j >= line:Length()) {
+      break;
+    }
+  }
+
+  if (isNull(res)) {
+    return null;
+  }
+
+  return [res, [i, j]];
+};
+
+func lexWhitespace(lines, [i, j]) {
+  empty := true;
+
+  if (i >= lines:Length()) {
+    return null;
+  }
+
+  line := lines[i];
+
+  for {
+    for (j >= line:Length()) {
+      empty = false;
+      i++;
+      j = 0u64;
+
+      if (i >= lines:Length()) {
+        return [null, [i, j]];
+      }
+
+      line = lines[i];
+    }
+
+    if (!isWhitespace(line[j])) {
+      return switch (empty) {
+        true => null;
+        false => [null, [i, j]];
+      };
+    }
+
+    empty = false;
+    j++;
+  }
+};
+
+func isWhitespace(s) => switch {
+  (s == ' ') => true;
+  (s == '	') => true;
+
+  true => false;
+};
+
+func NonEmptyLine(lines, [i, j]) {
+  if (i >= lines:Length()) {
+    return null;
+  }
+
+  line := lines[i];
+
+  if (j >= line:Length()) {
+    return null;
+  }
+
+  return line;
+};
+
+func isNull(x) => x:String() == 'null';
+
+sampleLines := [
+  '123 ',
+  '',
+  ' ',
+  '  321 ',
+];
+
+assert lex(sampleLines) == [
+  {data: ['number', 123u64], pos: [[0u64, 0u64], [0u64, 3u64]]},
+  {data: ['whitespace', null], pos: [[0u64, 3u64], [3u64, 2u64]]},
+  {data: ['number', 321u64], pos: [[3u64, 2u64], [3u64, 5u64]]},
+  {data: ['whitespace', null], pos: [[3u64, 5u64], [4u64, 0u64]]},
+];
+
+return lex;
