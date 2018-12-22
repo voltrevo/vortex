@@ -2,13 +2,13 @@ func Wheel(primes) {
   wheel := {};
   wheel.primes := primes;
   wheel.size := wheel.primes:reduce(*);
-  wheel.start := wheel.primes:Back() + 1;
+  wheel.start := wheel.primes:Back() + 1u64;
 
   for {
     startGood := true;
 
     for (p of wheel.primes) {
-      if (wheel.start % p == 0) {
+      if (wheel.start % p == 0u64) {
         startGood = false;
         break;
       }
@@ -18,20 +18,20 @@ func Wheel(primes) {
       break;
     }
 
-    wheel.start += 1;
+    wheel.start += 1u64;
   }
 
   wheel.end := wheel.start + wheel.size;
   wheel.jumps := [];
 
-  i := wheel.start + 1;
-  j := 1;
+  i := wheel.start + 1u64;
+  j := 1u64;
 
   for {
     jGood := true;
 
     for (p of wheel.primes) {
-      if (i % p == 0) {
+      if (i % p == 0u64) {
         jGood = false;
         break;
       }
@@ -39,7 +39,7 @@ func Wheel(primes) {
 
     if (jGood) {
       wheel.jumps ++= [j];
-      j = 0;
+      j = 0u64;
     }
 
     i++;
@@ -55,7 +55,7 @@ func Wheel(primes) {
 };
 
 func Primes(limit) {
-  initPrimes := [2, 3, 5, 7];
+  initPrimes := [2u64, 3u64, 5u64, 7u64];
 
   if (limit < initPrimes:Back()) {
     primes := [];
@@ -95,7 +95,7 @@ func Primes(limit) {
           break;
         }
 
-        if (i % p == 0) {
+        if (i % p == 0u64) {
           break;
         }
       }

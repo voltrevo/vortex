@@ -26,7 +26,7 @@ namespace Vortex {
 
       void setLocal(byte i, Value v) {
         while (i >= locals.size()) {
-          locals.push_back(Value());
+          locals.emplace_back();
         }
 
         locals[i] = std::move(v);
@@ -57,7 +57,7 @@ namespace Vortex {
 
     void setGFunc(byte i, Decoder decoder) {
       while (i > gfuncs.size()) {
-        gfuncs.push_back(Decoder(Func()));
+        gfuncs.emplace_back(Func());
       }
 
       if (i < gfuncs.size()) {
@@ -93,7 +93,9 @@ namespace Vortex {
 
     void setMFunc(byte i, Decoder decoder) {
       while (i > mfuncs.size()) {
-        mfuncs.push_back(MFunc()); // TODO: Why does this use MFunc copy?
+        // TODO: Why does this use MFunc copy?
+        // TODO: Does emplace_back() help?
+        mfuncs.push_back(MFunc());
       }
 
       if (i < mfuncs.size()) {
@@ -359,7 +361,7 @@ namespace Vortex {
                   auto funcDecoder = getGFunc(id);
                   // TODO: Just make context a parameter of run?
                   // TODO: Use a shared stack for locals and use an offset?
-                  cc.push_back(Context());
+                  cc.emplace_back();
                   run(funcDecoder);
                   cc.pop_back();
 
@@ -419,7 +421,7 @@ namespace Vortex {
       // TODO: Just make context a parameter of run?
       // TODO: Use a shared stack for locals and use an offset?
       // TODO: Check number of arguments?
-      cc.push_back(Context());
+      cc.emplace_back();
       run(decoder); // TODO: Why can't I use std::move here?
       cc.pop_back();
     }
@@ -427,7 +429,7 @@ namespace Vortex {
     Value eval(Func code) {
       auto prevSize = cc.size();
 
-      cc.push_back(Context());
+      cc.emplace_back();
       auto pos = Decoder(code);
       pos = run(pos);
 

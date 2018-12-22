@@ -57,7 +57,7 @@ namespace Vortex {
 
   Value::~Value() { dealloc(); }
 
-  Value& Value::operator=(Value&& right) {
+  Value& Value::operator=(Value&& right) noexcept {
     dealloc();
     type = right.type;
     data = right.data;
@@ -171,7 +171,7 @@ namespace Vortex {
     copyConstruct(other);
   }
 
-  Value::Value(Value&& other) {
+  Value::Value(Value&& other) noexcept {
     type = other.type;
     data = other.data;
     other.type = INVALID;
@@ -179,6 +179,11 @@ namespace Vortex {
 
   Value& Value::operator=(const Value& right) {
     dealloc();
+
+    #ifndef NDEBUG
+      type = NULL_;
+    #endif
+
     copyConstruct(right);
     return *this;
   }
@@ -257,7 +262,7 @@ namespace Vortex {
     }
   }
 
-  void swap(Value& left, Value& right) {
+  void swap(Value& left, Value& right) noexcept {
     Code tmpType = left.type;
     Value::Data tmpData = left.data;
 
@@ -417,7 +422,7 @@ namespace Vortex {
   }
 
   namespace TernaryOperators {
-    void update(Value& target, const Value& key, Value&& value) {
+    void update(Value& target, Value&& key, Value&& value) {
       switch (target.type) {
         case ARRAY: {
           if (key.type != UINT64) {
@@ -434,7 +439,7 @@ namespace Vortex {
         }
 
         case OBJECT: {
-          *target.data.OBJECT = target.data.OBJECT->update(key, value);
+          *target.data.OBJECT = target.data.OBJECT->update(key, std::move(value));
           break;
         }
 
@@ -443,7 +448,7 @@ namespace Vortex {
       }
     }
 
-    void insert(Value& target, const Value& key, Value&& value) {
+    void insert(Value& target, Value&& key, Value&& value) {
       switch (target.type) {
         case ARRAY: {
           throw NotImplementedError("array insertion not implemented");
@@ -451,7 +456,7 @@ namespace Vortex {
         }
 
         case OBJECT: {
-          *target.data.OBJECT = target.data.OBJECT->insert(key, value);
+          *target.data.OBJECT = target.data.OBJECT->insert(std::move(key), std::move(value));
           break;
         }
 
@@ -463,8 +468,8 @@ namespace Vortex {
 
   void TernaryOperator(Value& a, Value&& b, Value&& c, Code op) {
     switch (op) {
-      case UPDATE: TernaryOperators::update(a, b, std::move(c)); break;
-      case INSERT: TernaryOperators::insert(a, b, std::move(c)); break;
+      case UPDATE: TernaryOperators::update(a, std::move(b), std::move(c)); break;
+      case INSERT: TernaryOperators::insert(a, std::move(b), std::move(c)); break;
 
       default:
         throw InternalError("Unrecognized ternary operator");

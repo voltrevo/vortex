@@ -1,8 +1,6 @@
 import Primes from './util';
 
-// Supposed to be going up to 2,000,000 but 20,000 is already maxing out on
-// processing limit.
-sum := Primes(20000):reduce(+);
+sum := Primes(2000000u64):reduce(+);
 
 log.info sum;
 

@@ -17,4 +17,3 @@ namespace Vortex {
     void bind(Value&& arg);
   };
 }
-

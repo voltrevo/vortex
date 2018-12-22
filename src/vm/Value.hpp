@@ -66,7 +66,7 @@ namespace Vortex {
 
     ~Value();
 
-    Value& operator=(Value&& right);
+    Value& operator=(Value&& right) noexcept;
     bool operator==(const Value& right) const;
     bool operator<(const Value& right) const;
 
@@ -94,10 +94,10 @@ namespace Vortex {
     void copyConstruct(const Value& other);
 
     Value(const Value& other);
-    Value(Value&& other);
+    Value(Value&& other) noexcept;
     Value& operator=(const Value& rhs);
 
-    friend void swap(Value& left, Value& right);
+    friend void swap(Value& left, Value& right) noexcept;
 
     friend std::ostream& operator<<(std::ostream& os, const Value& value);
 
