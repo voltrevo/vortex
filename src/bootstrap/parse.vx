@@ -29,7 +29,7 @@ func ExactChar(c) => func(lines, [i, j]) {
     return null;
   }
 
-  return c;
+  return [c, [i, j + 1]];
 };
 
 return {
@@ -128,7 +128,7 @@ return {
         }
       }
 
-      return str;
+      return [str, [i, j + str:Length()]];
     };
   },
 

@@ -1,0 +1,50 @@
+func tryConvertFromU64(src, suffix) {
+  dst0 := switch (suffix) {
+    'u8' => 0u8;
+    'u16' => 0u16;
+    'u32' => 0u32;
+    'u64' => 0u64;
+
+    'i8' => 0i8;
+    'i16' => 0i16;
+    'i32' => 0i32;
+    'i64' => 0i64;
+  };
+
+  dst16 := dst0;
+  table := [];
+
+  for (i := 0u64; i < 16u64; i++) {
+    table ++= [dst16];
+    dst16++;
+  }
+
+  res := dst0;
+  mul := table[1u64];
+
+  for (src > 0u64) {
+    srcMod16 := src % 16u64;
+
+    if (srcMod16 == 0u64) {
+      mul *= dst16;
+      src /= 16u64;
+      continue;
+    }
+
+    before := res;
+    res += mul * table[srcMod16];
+
+    if (res <= before) {
+      return null;
+    }
+
+    mul *= dst16;
+
+    src -= srcMod16; // Only necessary in ts analyzer
+    src /= 16u64;
+  }
+
+  return res;
+};
+
+return tryConvertFromU64;

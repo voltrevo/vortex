@@ -1,3 +1,6 @@
+import parse;
+import tryConvertFromU64;
+
 func NonEmptyLine(lines, [i, j]) {
   if (i >= lines:Length()) {
     return null;
@@ -29,7 +32,7 @@ func Digit(s) => switch {
 
 func isNull(x) => x:String() == 'null';
 
-func Number(lines, [i, j]) {
+func RawU64(lines, [i, j]) {
   line := NonEmptyLine(lines, [i, j]);
 
   if (isNull(line)) {
@@ -48,8 +51,14 @@ func Number(lines, [i, j]) {
     if (isNull(res)) {
       res = digit;
     } else {
+      before := res;
+
       res *= 10u64;
       res += digit;
+
+      if (res < before) {
+        return [['overflow'], [i, j]];
+      }
     }
 
     j++;
@@ -66,4 +75,60 @@ func Number(lines, [i, j]) {
   return [['literal', res], [i, j]];
 };
 
-return Number;
+func NumberU64(lines, [i, j]) {
+  output := RawU64(lines, [i, j]);
+
+  if (isNull(output)) {
+    return null;
+  }
+
+  literal := null;
+  [literal, [i, j]] = output;
+
+  suffix := parse.Exact('u64')(lines, [i, j]);
+
+  if (isNull(suffix)) {
+    return null;
+  }
+
+  [i, j] = suffix:Back();
+
+  return [literal, [i, j]];
+};
+
+func NumberConvertedUnsigned(suffix) => func(lines, [i, j]) {
+  output := RawU64(lines, [i, j]);
+
+  if (isNull(output)) {
+    return null;
+  }
+
+  literal := null;
+  [literal, [i, j]] = output;
+
+  suffixParsed := parse.Exact(suffix)(lines, [i, j]);
+
+  if (isNull(suffixParsed)) {
+    return null;
+  }
+
+  [i, j] = suffixParsed:Back();
+
+  value := literal[1u64];
+  value = tryConvertFromU64(value, suffix);
+
+  if (isNull(value)) {
+    return [['overflow'], [i, j]];
+  }
+
+  literal[1u64] = value;
+
+  return [literal, [i, j]];
+};
+
+return parse.Select([
+  NumberConvertedUnsigned('u8'),
+  NumberConvertedUnsigned('u16'),
+  NumberConvertedUnsigned('u32'),
+  NumberU64,
+]);

@@ -60,13 +60,13 @@ func Fail(lines, [i, j]) {
       j = 0u64;
     }
 
-    return ['fail', [i, j]];
+    return [['fail'], [i, j]];
   }
 
   i++;
   j = 0u64;
 
-  return ['fail', [i, j]];
+  return [['fail'], [i, j]];
 };
 
 func isWhitespace(s) => switch {
@@ -77,17 +77,24 @@ func isWhitespace(s) => switch {
 };
 
 sampleLines := [
-  '123 ',
+  '123u64 ',
   '',
+  '500u8',
   ' ',
-  '  321 ',
+  '  321u64 ',
 ];
 
-assert Program(sampleLines, [0u64, 0u64]):Front() == [
-  {data: ['literal', 123u64], pos: [[0u64, 0u64], [0u64, 3u64]]},
-  {data: ['whitespace'], pos: [[0u64, 3u64], [3u64, 2u64]]},
-  {data: ['literal', 321u64], pos: [[3u64, 2u64], [3u64, 5u64]]},
-  {data: ['whitespace'], pos: [[3u64, 5u64], [4u64, 0u64]]},
-];
+program := Program(sampleLines, [0u64, 0u64]):Front();
+
+if (0u8:String() == '0u8') {
+  assert program == [
+    {data: ['literal', 123u64], pos: [[0u64, 0u64], [0u64, 6u64]]},
+    {data: ['whitespace'], pos: [[0u64, 6u64], [2u64, 0u64]]},
+    {data: ['overflow'], pos: [[2u64, 0u64], [2u64, 5u64]]},
+    {data: ['whitespace'], pos: [[2u64, 5u64], [4u64, 2u64]]},
+    {data: ['literal', 321u64], pos: [[4u64, 2u64], [4u64, 8u64]]},
+    {data: ['whitespace'], pos: [[4u64, 8u64], [5u64, 0u64]]},
+  ];
+}
 
 return Program;
