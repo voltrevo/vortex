@@ -69,17 +69,20 @@ return {
       output := parser(lines, [i, j]);
 
       if (isNull(output)) {
-        return null;
+        break;
       }
 
-      value := null;
-      [value, [i, j]] = output;
+      [value, ijNext] := output;
 
-      res ++= [value];
+      res ++= [{data: value, pos: [[i, j], ijNext]}];
+      [i, j] = ijNext;
       count++;
 
-      if (!isNull(max) && count == max) {
-        break;
+      // TODO: Short-circuit boolean operators
+      if (!isNull(max)) {
+        if (count == max) {
+          break;
+        }
       }
     }
 
@@ -91,7 +94,7 @@ return {
   },
 
   Optional: func(parser) => parse.Repeat(parser, 0u64, 1u64),
-  Many: func(parser) => parse.Repeat(parser, 0u64, null),
+  Many: func(parser) => parse.Repeat(parser, [0u64, null]),
 
   Select: func(parsers) => func(lines, [i, j]) {
     for (parser of parsers) {
@@ -127,5 +130,17 @@ return {
 
       return str;
     };
+  },
+
+  DataPos: func(parser) => func(lines, [i, j]) {
+    output := parser(lines, [i, j]);
+
+    if (isNull(output)) {
+      return null;
+    }
+
+    [data, ijNext] := output;
+
+    return [{data, pos: [[i, j], ijNext]}, ijNext];
   },
 };

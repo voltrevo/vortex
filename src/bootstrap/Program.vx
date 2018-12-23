@@ -1,35 +1,14 @@
-func lex(lines) {
-  lexers := [
-    ['number', lexNumber],
-    ['whitespace', lexWhitespace],
-  ];
+import parse;
 
-  tokens := [];
-  pos := [0u64, 0u64];
+// TODO: {a, b, ...} := rhs
+Many := parse.Many;
+Select := parse.Select;
 
-  for (pos[0u64] < lines:Length()) {
-    found := false;
-
-    for ([type, lexer] of lexers) {
-      out := lexer(lines, pos);
-
-      if (!isNull(out)) {
-        [value, newPos] := out;
-        tokens ++= [{data: [type, value], pos: [pos, newPos]}];
-        pos = newPos;
-        found = true;
-        break;
-      }
-    }
-
-    if (!found) {
-      tokens ++= [{data: ['failure', null], pos: [pos, pos]}];
-      break;
-    }
-  }
-
-  return tokens;
-};
+Program := Many(Select([
+  Number,
+  Whitespace,
+  Fail,
+]));
 
 func Digit(s) => switch {
   (s == '0') => 0u64;
@@ -46,7 +25,7 @@ func Digit(s) => switch {
   true => null;
 };
 
-func lexNumber(lines, [i, j]) {
+func Number(lines, [i, j]) {
   line := NonEmptyLine(lines, [i, j]);
 
   if (isNull(line)) {
@@ -80,10 +59,10 @@ func lexNumber(lines, [i, j]) {
     return null;
   }
 
-  return [res, [i, j]];
+  return [['literal', res], [i, j]];
 };
 
-func lexWhitespace(lines, [i, j]) {
+func Whitespace(lines, [i, j]) {
   empty := true;
 
   if (i >= lines:Length()) {
@@ -99,7 +78,7 @@ func lexWhitespace(lines, [i, j]) {
       j = 0u64;
 
       if (i >= lines:Length()) {
-        return [null, [i, j]];
+        return [['whitespace'], [i, j]];
       }
 
       line = lines[i];
@@ -108,7 +87,7 @@ func lexWhitespace(lines, [i, j]) {
     if (!isWhitespace(line[j])) {
       return switch (empty) {
         true => null;
-        false => [null, [i, j]];
+        false => [['whitespace'], [i, j]];
       };
     }
 
@@ -117,9 +96,33 @@ func lexWhitespace(lines, [i, j]) {
   }
 };
 
+func Fail(lines, [i, j]) {
+  if (i >= lines:Length()) {
+    return null;
+  }
+
+  line := lines[i];
+
+  if (j < line:Length()) {
+    j++;
+
+    if (j == line:Length()) {
+      i++;
+      j = 0u64;
+    }
+
+    return ['fail', [i, j]];
+  }
+
+  i++;
+  j = 0u64;
+
+  return ['fail', [i, j]];
+};
+
 func isWhitespace(s) => switch {
   (s == ' ') => true;
-  (s == '	') => true;
+  (s == '	') => true; // TODO: \t escape sequence (and others)
 
   true => false;
 };
@@ -147,11 +150,11 @@ sampleLines := [
   '  321 ',
 ];
 
-assert lex(sampleLines) == [
-  {data: ['number', 123u64], pos: [[0u64, 0u64], [0u64, 3u64]]},
-  {data: ['whitespace', null], pos: [[0u64, 3u64], [3u64, 2u64]]},
-  {data: ['number', 321u64], pos: [[3u64, 2u64], [3u64, 5u64]]},
-  {data: ['whitespace', null], pos: [[3u64, 5u64], [4u64, 0u64]]},
+assert Program(sampleLines, [0u64, 0u64]):Front() == [
+  {data: ['literal', 123u64], pos: [[0u64, 0u64], [0u64, 3u64]]},
+  {data: ['whitespace'], pos: [[0u64, 3u64], [3u64, 2u64]]},
+  {data: ['literal', 321u64], pos: [[3u64, 2u64], [3u64, 5u64]]},
+  {data: ['whitespace'], pos: [[3u64, 5u64], [4u64, 0u64]]},
 ];
 
-return lex;
+return Program;
