@@ -2,6 +2,36 @@ import parse;
 
 func isNull(x) => x:String() == 'null';
 
+func NonEmptyLine(lines, [i, j]) {
+  if (i >= lines:Length()) {
+    return null;
+  }
+
+  line := lines[i];
+
+  if (j >= line:Length()) {
+    return null;
+  }
+
+  return line;
+};
+
+func ExactChar(c) => func(lines, [i, j]) {
+  line := NonEmptyLine(lines, [i, j]);
+
+  // TODO: Short-circuit || so that the following two conditions can be
+  // combined.
+  if (isNull(line)) {
+    return null;
+  }
+
+  if (line[j] != c) {
+    return null;
+  }
+
+  return c;
+};
+
 return {
   Sequence: func(parsers) => func(lines, [i, j]) {
     res := [];
@@ -73,5 +103,29 @@ return {
     }
 
     return null;
+  },
+
+  Exact: func(str) => switch {
+    (str:Length() == 1u64) => ExactChar(str);
+
+    true => func(lines, [i, j]) {
+      if (i >= lines:Length()) {
+        return null;
+      }
+
+      line := lines[i];
+
+      for (strPos := 0u64; strPos < str:Length(); strPos++) {
+        if (j + strPos >= line:Length()) {
+          return null;
+        }
+
+        if (line[j + strPos] != str[strPos]) {
+          return null;
+        }
+      }
+
+      return str;
+    };
   },
 };
