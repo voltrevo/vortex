@@ -1,0 +1,77 @@
+import parse;
+
+func isNull(x) => x:String() == 'null';
+
+return {
+  Sequence: func(parsers) => func(lines, [i, j]) {
+    res := [];
+
+    for (parser of parsers) {
+      output := parser(lines, [i, j]);
+
+      if (isNull(output)) {
+        return null;
+      }
+
+      value := null;
+      [value, [i, j]] = output;
+
+      res ++= [value];
+    }
+
+    return [res, [i, j]];
+  },
+
+  Repeat: func(parser, range) => func(lines, [i, j]) {
+    res := [];
+
+    min := range:Front();
+    max := null;
+
+    if (range:Length() > 1u64) {
+      max = range[1u64];
+      assert range:Length() == 2u64;
+    }
+
+    count := 0u64;
+
+    for {
+      output := parser(lines, [i, j]);
+
+      if (isNull(output)) {
+        return null;
+      }
+
+      value := null;
+      [value, [i, j]] = output;
+
+      res ++= [value];
+      count++;
+
+      if (!isNull(max) && count == max) {
+        break;
+      }
+    }
+
+    if (count < min) {
+      return null;
+    }
+
+    return [res, [i, j]];
+  },
+
+  Optional: func(parser) => parse.Repeat(parser, 0u64, 1u64),
+  Many: func(parser) => parse.Repeat(parser, 0u64, null),
+
+  Select: func(parsers) => func(lines, [i, j]) {
+    for (parser of parsers) {
+      output := parser(lines, [i, j]);
+
+      if (!isNull(output)) {
+        return output;
+      }
+    }
+
+    return null;
+  },
+};
