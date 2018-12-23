@@ -1,4 +1,5 @@
 import parse;
+import Number;
 
 // TODO: {a, b, ...} := rhs
 Many := parse.Many;
@@ -9,58 +10,6 @@ Program := Many(Select([
   Whitespace,
   Fail,
 ]));
-
-func Digit(s) => switch {
-  (s == '0') => 0u64;
-  (s == '1') => 1u64;
-  (s == '2') => 2u64;
-  (s == '3') => 3u64;
-  (s == '4') => 4u64;
-  (s == '5') => 5u64;
-  (s == '6') => 6u64;
-  (s == '7') => 7u64;
-  (s == '8') => 8u64;
-  (s == '9') => 9u64;
-
-  true => null;
-};
-
-func Number(lines, [i, j]) {
-  line := NonEmptyLine(lines, [i, j]);
-
-  if (isNull(line)) {
-    return null;
-  }
-
-  res := null;
-
-  for {
-    digit := Digit(line[j]);
-
-    if (isNull(digit)) {
-      break;
-    }
-
-    if (isNull(res)) {
-      res = digit;
-    } else {
-      res *= 10u64;
-      res += digit;
-    }
-
-    j++;
-
-    if (j >= line:Length()) {
-      break;
-    }
-  }
-
-  if (isNull(res)) {
-    return null;
-  }
-
-  return [['literal', res], [i, j]];
-};
 
 func Whitespace(lines, [i, j]) {
   empty := true;
@@ -126,22 +75,6 @@ func isWhitespace(s) => switch {
 
   true => false;
 };
-
-func NonEmptyLine(lines, [i, j]) {
-  if (i >= lines:Length()) {
-    return null;
-  }
-
-  line := lines[i];
-
-  if (j >= line:Length()) {
-    return null;
-  }
-
-  return line;
-};
-
-func isNull(x) => x:String() == 'null';
 
 sampleLines := [
   '123 ',
