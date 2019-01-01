@@ -87,6 +87,14 @@ sampleLines := [
 program := Program(sampleLines, [0u64, 0u64]):Front();
 
 if (0u8:String() == '0u8') {
+  assert Program(['13i8'], [0u64, 0u64]) == [
+    [
+      {data: ['literal', 13i8], pos: [[0u64, 0u64], [0u64, 4u64]]},
+      {data: ['whitespace'], pos: [[0u64, 4u64], [1u64, 0u64]]},
+    ],
+    [1u64, 0u64],
+  ];
+
   assert program == [
     {data: ['literal', 123u64], pos: [[0u64, 0u64], [0u64, 6u64]]},
     {data: ['whitespace'], pos: [[0u64, 6u64], [2u64, 0u64]]},
