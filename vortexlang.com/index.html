@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <style>
+      body {
+        background-color: black;
+        color: white;
+        font-family: monospace;
+        font-size: 1.2em;
+        margin: 0;
+        overflow: hidden;
+        position: fixed;
+      }
+
+      h1, h3 {
+        text-align: center;
+      }
+
+      #main {
+        background-color: hsl(166, 88%, 7%);
+        position: relative;
+        width: 100vw;
+        height: 100vh;
+        overflow-y: auto;
+      }
+
+      #heading {
+        font-size: 4em;
+        margin: 0;
+      }
+
+      #content {
+        position: absolute;
+        left: 50vw;
+        vertical-align: middle;
+        top: 50vh;
+        width: 90vw;
+        transform: translate(-50%, -50%);
+        text-align: center;
+        font-size: 1.5em;
+      }
+
+      a, a:visited {
+        color: hsl(227, 83%, 69%);
+        text-decoration: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="main">
+      <div id="content">
+        <p id='heading'>Vortex</p>
+        <p>A work-in-progress general purpose programming language.</p>
+        <p>&nbsp;</p>
+        <p>Try the <a href="playground">playground</a>.</p>
+      </div>
+    </div>
+  </body>
+</html>
