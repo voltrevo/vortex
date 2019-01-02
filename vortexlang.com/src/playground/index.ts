@@ -98,7 +98,7 @@ monaco.languages.setMonarchTokensProvider('vortex', <any>{
 const editorEl = <HTMLElement | null>document.querySelector('#editor');
 
 if (editorEl === null) {
-  throw new Error('trap');
+  throw new Error();
 }
 
 const editor = monaco.editor.create(editorEl, {
@@ -106,6 +106,99 @@ const editor = monaco.editor.create(editorEl, {
 	value: 'return [\'Hello\', \' \', \'world!\']:reduce(++);',
 	language: 'vortex',
 });
+
+const maybeModel = editor.getModel();
+
+if (maybeModel === null) {
+  throw new Error();
+}
+
+const model = maybeModel;
+
+let timerId: undefined | number = undefined;
+
+model.onDidChangeContent(() => {
+  clearTimeout(timerId);
+
+  timerId = setTimeout(() => {
+    compile();
+  }, 200) as any as number;
+});
+
+function compile() {
+  const docs = [
+    {
+      uri: 'monaco://default',
+      text: model.getValue(),
+    },
+  ];
+
+  const firstDoc = docs[0];
+
+  const baseMatch = firstDoc.uri.match(/^[^\/]*\/\/[^/]*/);
+
+  if (baseMatch === null) {
+    throw new Error('Shouldn\'t be possible');
+  }
+
+  const base = baseMatch[0];
+
+  const paths = docs.map(doc => doc.uri.replace(base, '@'));
+
+  function readFile(f: string): string | Error {
+    const uri = f.replace('@', base);
+    const doc = docs.find(d => d.uri === uri);
+
+    if (!doc) {
+      return new Error('Document not open: ' + uri);
+    }
+
+    return doc.text;
+  }
+
+  const notes = (vortex
+    .Note
+    .flatten(
+      vortex.Compiler.compile(paths, readFile, { stepLimit: 100000 })[0]
+    )
+  );
+
+  const markers: monaco.editor.IMarkerData[] = [];
+
+  for (const note of notes) {
+    const [, range] = note.pos;
+
+    if (range === null) {
+      continue;
+    }
+
+    const startLineNumber = range[0][0];
+    const startColumn = range[0][1];
+    const endLineNumber = range[1][0];
+    const endColumn = range[1][1];
+
+    const severity = (() => {
+      switch (note.level) {
+        case 'info': return monaco.MarkerSeverity.Info;
+        case 'warn': return monaco.MarkerSeverity.Warning;
+        case 'error': return monaco.MarkerSeverity.Error;
+      }
+    })();
+
+    const message = note.message;
+
+    markers.push({
+      severity,
+      message,
+      startLineNumber,
+      startColumn,
+      endLineNumber,
+      endColumn,
+    });
+  }
+
+  monaco.editor.setModelMarkers(model, 'default', markers);
+}
 
 console.log(vortex, editor);
 

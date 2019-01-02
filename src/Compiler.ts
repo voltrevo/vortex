@@ -5,12 +5,28 @@ import SecondsDiff from './SecondsDiff';
 import { validate } from './validate';
 
 namespace Compiler {
+  function Time() {
+    if ('hrtime' in process) {
+      return process.hrtime();
+    }
+
+    return Date.now();
+  }
+
+  function TimeDiff(before: any, after: any) {
+    if ('hrtime' in process) {
+      return SecondsDiff(before, after);
+    }
+
+    return (after - before) / 1000;
+  }
+
   export function compile(
     files: string[],
     readFile: (f: string) => string | Error,
     opt: { stepLimit?: number } = {},
   ): [Note[], Analyzer] {
-    const before = process.hrtime();
+    const before = Time();
 
     let pack = Package();
 
@@ -80,7 +96,8 @@ namespace Compiler {
       }
     }
 
-    const after = process.hrtime();
+    const after = Time();
+    const timeDiff = TimeDiff(before, after);
 
     notes.push(Note(
       ['(compiler)', null],
@@ -90,8 +107,8 @@ namespace Compiler {
         // TODO: plural
         `Compiled ${files.length} file(s), ` +
         `${az.steps} steps, ` +
-        `${(1000 * SecondsDiff(before, after)).toFixed(3)}ms, ` +
-        `${(1e6 * SecondsDiff(before, after) / az.steps).toFixed(3)}μs/step`
+        `${(1000 * timeDiff).toFixed(3)}ms, ` +
+        `${(1e6 * timeDiff / az.steps).toFixed(3)}μs/step`
       )
     ));
 
