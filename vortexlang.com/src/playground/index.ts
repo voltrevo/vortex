@@ -175,7 +175,7 @@ function compile() {
     const startLineNumber = range[0][0];
     const startColumn = range[0][1];
     const endLineNumber = range[1][0];
-    const endColumn = range[1][1];
+    const endColumn = range[1][1] + 1;
 
     const severity = (() => {
       switch (note.level) {
