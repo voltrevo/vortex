@@ -106,6 +106,8 @@ function notNull<T>(value: T | null): T {
 const editorEl = <HTMLElement>notNull(document.querySelector('#editor'));
 const displayEl = notNull(document.querySelector('#display'));
 
+editorEl.innerHTML = '';
+
 const editor = monaco.editor.create(editorEl, {
   theme: 'vs-dark',
   value: [
@@ -196,6 +198,8 @@ const editor = monaco.editor.create(editorEl, {
   ].join('\n'),
 	language: 'vortex',
 });
+
+window.addEventListener('resize', () => editor.layout());
 
 const model = notNull(editor.getModel());
 

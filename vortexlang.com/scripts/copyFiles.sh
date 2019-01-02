@@ -1,13 +1,11 @@
-#!/bin/bash -e
+#!/bin/bash
 
-rm -rf build
-npx webpack
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+cd "$DIR/.."
 
+rm -rf build/website
 cp -a src build/website
 
 cp build/webpack/* build/website/playground/.
 rm build/website/playground/*.ts
 mv build/website/playground/playground.bundle.js build/website/playground/index.js
-
-cd build/website
-npx live-server . --no-browser --host 0.0.0.0
