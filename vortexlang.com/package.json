@@ -1,0 +1,24 @@
+{
+  "name": "vortexlang.com",
+  "version": "0.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Andrew Morris",
+  "license": "MIT",
+  "dependencies": {
+    "monaco-editor": "^0.15.6",
+    "vortex": "file:.."
+  },
+  "devDependencies": {
+    "css-loader": "^2.1.0",
+    "node-static": "^0.7.11",
+    "style-loader": "^0.23.1",
+    "ts-loader": "^5.3.2",
+    "typescript": "^3.2.2",
+    "webpack": "^4.28.3",
+    "webpack-cli": "^3.1.2"
+  }
+}

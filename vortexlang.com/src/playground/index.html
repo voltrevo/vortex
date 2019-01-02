@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <style>
+      body {
+        background-color: black;
+        color: white;
+        font-family: monospace;
+        font-size: 1.2em;
+        margin: 0;
+        overflow: hidden;
+        position: fixed;
+      }
+
+      #editor {
+        position: absolute;
+        left: 0;
+        top: 0;
+        height: 100vh;
+        width: 50vw;
+      }
+
+      #display {
+        position: absolute;
+        left: 50vw;
+        top: 0;
+        height: 100vh;
+        width: 50vw;
+      }
+
+      a, a:visited {
+        color: hsl(227, 83%, 69%);
+        text-decoration: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="editor"></div>
+    <div id="display"></div>
+
+    <script src="index.js"></script>
+  </body>
+</html>

@@ -1,13 +1,12 @@
 {
   "compilerOptions": {
-    "outDir": "build",
-    "module": "commonjs",
+    "outDir": "build/typescript",
+    "module": "esnext",
     "target": "es2017",
     "lib": ["es6", "dom"],
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
-    "jsx": "react",
     "moduleResolution": "node",
     "rootDir": "src",
     "forceConsistentCasingInFileNames": true,
@@ -19,13 +18,6 @@
   },
   "exclude": [
     "node_modules",
-    "build",
-    "scripts",
-    "acceptance-tests",
-    "webpack",
-    "jest",
-    "src/setupTests.ts",
-    "vsCodeExtension",
-    "vortexlang.com"
+    "build"
   ]
 }
