@@ -95,25 +95,109 @@ monaco.languages.setMonarchTokensProvider('vortex', <any>{
   },
 });
 
-const editorEl = <HTMLElement | null>document.querySelector('#editor');
+function notNull<T>(value: T | null): T {
+  if (value === null) {
+    throw new Error();
+  }
 
-if (editorEl === null) {
-  throw new Error();
+  return value;
 }
+
+const editorEl = <HTMLElement>notNull(document.querySelector('#editor'));
+const displayEl = notNull(document.querySelector('#display'));
 
 const editor = monaco.editor.create(editorEl, {
   theme: 'vs-dark',
-	value: 'return [\'Hello\', \' \', \'world!\']:reduce(++);',
+  value: [
+    `func intro() => spaceJoin(['Welcome', 'to', 'the', 'vortex', 'playground']);`,
+    ``,
+    `func sums() {`,
+    `  func sumSimple() => (`,
+    `    'A simple sum: ' ++`,
+    `    [1, 2, 3, 4]:reduce(+):String()`,
+    `  );`,
+    ``,
+    `  func sumLoop() {`,
+    `    sum := 0;`,
+    ``,
+    `    for (i := 1; i <= 4; i++) {`,
+    `      sum += i;`,
+    `    }`,
+    ``,
+    `    return 'You can also use a loop: ' ++ sum:String();`,
+    `  };`,
+    ``,
+    `  return [[sumSimple()], [sumLoop()]];`,
+    `};`,
+    ``,
+    `captureMe := 3;`,
+    ``,
+    `func getCapture() {`,
+    `  return captureMe:String() ++ ' was referenced by capture';`,
+    `};`,
+    ``,
+    `func mutate() {`,
+    `  x := 0;`,
+    `  x++;`,
+    ``,
+    `  // This fails, try it!`,
+    `  // captureMe++;`,
+    ``,
+    `  return 'Non-captured variables can be mutated: ' ++ x:String();`,
+    `};`,
+    ``,
+    `func vectorAddition() {`,
+    `  return [`,
+    `    'Add apples to apples and oranges to oranges:',`,
+    `    (`,
+    `      {apples: 3, oranges: 1} +`,
+    `      {apples: 5, oranges: 2}`,
+    `    ),`,
+    `  ];`,
+    `};`,
+    ``,
+    `func matrixMultiplication() {`,
+    `  mat := [[1, 2], [3, 4]];`,
+    `  return 'And even do matrix multiplication: ' ++ (mat * mat):String();`,
+    `};`,
+    ``,
+    `func valueSemantics() {`,
+    `  x := [0, 0, 0];`,
+    `  y := x;`,
+    ``,
+    `  msg := 'y is unaffected when x is mutated';`,
+    `  x[1u64] += 123;`,
+    ``,
+    `  return {msg, x, y};`,
+    `};`,
+    ``,
+    `func factorial(n) {`,
+    `  if (n <= 0) {`,
+    `    return 1;`,
+    `  }`,
+    ``,
+    `  return n * factorial(n - 1);`,
+    `};`,
+    ``,
+    `log.info [`,
+    `  intro,`,
+    `  sums,`,
+    `  getCapture,`,
+    `  mutate,`,
+    `  vectorAddition,`,
+    `  matrixMultiplication,`,
+    `  valueSemantics,`,
+    `  func() => '5! is ' ++ factorial(5):String(),`,
+    `]:map(func(f) => f());`,
+    ``,
+    `func spaceJoin(values) => values:reduce(func(acc, v) => acc ++ ' ' ++ v);`,
+    ``,
+    `return 'done';`,
+  ].join('\n'),
 	language: 'vortex',
 });
 
-const maybeModel = editor.getModel();
-
-if (maybeModel === null) {
-  throw new Error();
-}
-
-const model = maybeModel;
+const model = notNull(editor.getModel());
 
 let timerId: undefined | number = undefined;
 
@@ -128,7 +212,7 @@ model.onDidChangeContent(() => {
 function compile() {
   const docs = [
     {
-      uri: 'monaco://default',
+      uri: 'monaco:///playground.vx',
       text: model.getValue(),
     },
   ];
@@ -156,12 +240,13 @@ function compile() {
     return doc.text;
   }
 
-  const notes = (vortex
-    .Note
-    .flatten(
-      vortex.Compiler.compile(paths, readFile, { stepLimit: 100000 })[0]
-    )
+  const [rawNotes, az] = vortex.Compiler.compile(
+    paths,
+    readFile,
+    { stepLimit: 100000 },
   );
+
+  const notes = vortex.Note.flatten(rawNotes);
 
   const markers: monaco.editor.IMarkerData[] = [];
 
@@ -198,10 +283,51 @@ function compile() {
   }
 
   monaco.editor.setModelMarkers(model, 'default', markers);
+
+  // TODO: dedupe with vxc cli tool
+  const modules = goodModules(az.pack);
+
+  if (modules === null) {
+    throw new Error('Can\'t emit bytecode for package that failed parsing');
+  }
+
+  const lines: string[] = [];
+
+  for (const file of Object.keys(modules)) {
+    const mod = modules[file];
+
+    lines.push(
+      `mfunc $${file} {`,
+      ...vortex.ByteCoder.Block(
+        vortex.ByteCoder(file),
+        mod.program
+      ).map(line => '  ' + line),
+      `}`,
+      ``,
+    );
+  }
+
+  lines.push(`mcall $@/playground.vx return`);
+
+  displayEl.textContent = lines.join('\n');
 }
 
-console.log(vortex, editor);
+compile();
 
-(window as any).vortex = vortex;
-(window as any).editor = editor;
-(window as any).monaco = monaco;
+function goodModules(
+  pack: vortex.Package,
+): { [file: string]: vortex.Package.Module } | null {
+  const res: { [file: string]: vortex.Package.Module } = {};
+
+  for (const file of Object.keys(pack.modules)) {
+    const entry = pack.modules[file];
+
+    if (entry === undefined || entry.t === 'ParserNotes') {
+      return null;
+    }
+
+    res[file] = entry;
+  }
+
+  return res;
+}
