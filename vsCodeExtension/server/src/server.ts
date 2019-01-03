@@ -17,7 +17,7 @@ import {
   TextDocumentPositionParams
 } from 'vscode-languageserver';
 
-import * as vortex from 'vortex';
+import * as vortex from 'vortexlang';
 
 // Create a connection for the server. The connection uses Node's IPC as a transport.
 // Also include all preview / proposed LSP features.

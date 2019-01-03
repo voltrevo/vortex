@@ -1,9 +1,14 @@
 {
   "name": "vortexlang",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "A work-in-progress general purpose programming language.",
   "main": "build/index.js",
   "author": "Andrew Morris",
+  "homepage": "https://vortexlang.com",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/voltrevo/vortex.git"
+  },
   "scripts": {
     "build": "rm -rf build && mkdir -p build/parser/vasm && jison src/parser/vortex.jison -o build/parser/vortex.js && jison src/parser/vasm/vasm.jison -o build/parser/vasm/vasm.js && tsc",
     "test": "node build/src/test.js"

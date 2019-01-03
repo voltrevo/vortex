@@ -1,4 +1,4 @@
-import * as vortex from 'vortex';
+import * as vortex from 'vortexlang';
 import * as monaco from './monaco';
 
 monaco.languages.register({

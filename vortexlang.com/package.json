@@ -10,7 +10,7 @@
   "license": "MIT",
   "dependencies": {
     "monaco-editor": "^0.15.6",
-    "vortex": "file:.."
+    "vortexlang": "file:.."
   },
   "devDependencies": {
     "css-loader": "^2.1.0",
