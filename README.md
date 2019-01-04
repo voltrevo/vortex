@@ -32,7 +32,7 @@ Failing to return is an error, so an empty program is invalid:
 // Error: failed to return
 ```
 
-Variables:
+**Variables**
 ```js
 // Create variables with :=
 x := 0;
@@ -55,8 +55,12 @@ x := 0; // Error: x already exists
 ```js
 x = 0; // Error: x does not exist
 ```
+```js
+x := 0;
+x = x++; // Error: subexpression mutation
+```
 
-Data structures:
+**Data structures**
 ```js
 x := [1, 2, 3];
 return 2 * x == [2, 4, 6]; // true
@@ -87,10 +91,317 @@ return [
   {x, y}, // {x: [1, 2, 3, 4], y: [1, 2, 3]}
 ];
 ```
+```js
+x := 1;
+y := 2;
 
-TODO: More examples.
+return {x} ++ {y}; // {x: 1, y: 2}
+```
+```js
+return {x: 1} ++ {x: 2}; // Error: duplicate key (use + to get {x: 3})
+```
+```js
+return [5, [6], [[7]], [[[8]]]] * 2; // [10, [12], [[14]], [[[16]]]]
+```
+```js
+return 10 * {apples: 3, oranges: 2} + {oranges: 4, apples: 7}; // {apples: 37, oranges: 24}
+```
+```js
+return [[1, 2], [3, 4]] * [[1, 2], [3, 4]]; // [[7, 10], [15, 22]]
+```
 
-For now, there are lots of examples in [testCode](src/testCode), exploring all sorts of complex cases, but they don't come with proper commentary. The [playground](https://vortexlang.com/playground/) also demonstrates a lot of cases.
+Matrices can also be represented with objects. See [poker.vx](src/testCode/poker.vx) and [flatPoker.vx](src/testCode/flatPoker.vx).
+
+Sets are also probably coming as an inbuilt data structure. Also objects will be able to contain non-string keys.
+
+**If/Else**
+```js
+x := 0;
+
+if (true) {
+  x++;
+}
+
+return x; // 1
+```
+```js
+if ('true') {} // Error: non-bool condition
+```
+```js
+x := 0;
+if (true) x++; // Syntax error (always use braces {})
+return x;
+```
+```js
+x := null;
+
+if (false) {
+  x = 'if';
+} else if (false) {
+  x = 'else if';
+} else {
+  x = 'else';
+}
+
+return x; // 'else'
+```
+
+**Switch**
+```js
+x := 3;
+
+return switch {
+  (x == 2) => 'foo';
+  (x == 3) => 'bar'; // 'bar'
+  (x == 4) => 'baz';
+};
+```
+```js
+x := 10;
+
+return switch {
+  (x == 2) => 'foo';
+  (x == 3) => 'bar';
+  (x == 4) => 'baz';
+}; // Error: reached end of switch
+```
+```js
+x := 3;
+
+return switch (x) {
+  2 => 'foo';
+  3 => 'bar'; // 'bar'
+  4 => 'baz';
+};
+```
+
+**Loops**
+```js
+i := 0;
+
+for { // infinite loop
+  i++;
+
+  if (i == 100) {
+    return i; // 100
+  }
+}
+
+// The unbroken infinite loop removes the requirement to return here.
+```
+```js
+for (true) { // also infinite loop
+  return 'hi';
+}
+
+// Error: might fail to return (for now, vortex's return analysis can't handle this case)
+```
+```js
+sum := 0;
+
+for (i := 1; i <= 4; i++) {
+  sum += i;
+}
+
+return sum; // 10
+```
+```js
+sum := 0;
+
+for (i of [1, 2, 3, 4]) {
+  sum += i;
+}
+
+return sum; // 10
+```
+```js
+for {
+  break; // Warn: Break statement prevents return
+}
+
+// Error: Might fail to return
+```
+```js
+for {
+  continue; // Program loops forever, or step limit error
+  return 'done'; // Should be unreachable error, currently not implemented
+}
+```
+(Similar to [golang](https://golang.org/), `for` is the only loop construct.)
+
+**Destructuring**
+```js
+[a, b] := [1, 2];
+return a + b; // 3
+```
+```js
+[[a, b], [[c]]] := [[1, 2], [[3]]];
+return [a, b, c]; // [1, 2, 3]
+```
+```js
+[a] := [1, 2]; // Error: destructuring mismatch
+```
+```js
+[a, _, _] := [1, 2, 3]; // Unimplemented, currently syntax error
+return a; // 1
+```
+```js
+[a, ...] := [1, 2, 3]; // Also unimplemented, currently syntax error
+return a; // 1
+```
+```js
+[a, ...rest] := [1, 2, 3]; // Also unimplemented, currently syntax error
+return [a, rest]; // [1, [2, 3]]
+// (Equivalents for objects are also planned but unimplemented)
+```
+```js
+a := 'foo';
+b := 'bar';
+
+[a, b] = [b, a];
+
+return [a, b]; // ['bar', 'foo']
+```
+```js
+{a, b: [c, d]} := {a: 1, b: [2, 3]};
+return [a, c, d]; // [1, 2, 3] // (b does not exist)
+```
+
+**Functions**
+```js
+func add3(a, b, c) => a + b + c;
+return add3(1, 2, 3); // 6
+```
+```js
+func add3(a, b, c) {
+  return a + b + c;
+}; // Semicolon is currently required, but this might change.
+
+return [
+  add3(1, 2, 3), // 6
+  add3([1, 2], [3, 4], [5, 6]), // [9, 12]
+  // Explicit typing is probably coming to Vortex, but this should continue to work too
+];
+```
+```js
+func factorial(n) => switch {
+  (n > 0) => n * factorial(n - 1);
+  true => 1;
+};
+
+return factorial(5); // 120
+```
+```js
+x := func() => 3;
+y := func() => 7;
+return x() + y(); // 10
+```
+```js
+x := func(a) => func(b) => a + b;
+return x(1)(2); // 3
+```
+```js
+func call2(f, a, b) => f(a, b);
+return call2(func(a, b) => a + b, 1, 2); // 3
+```
+
+**Scope**
+
+In a nutshell, Vortex has strict block scoping, no shadowing, and only non-subexpression functions are hoisted. Closures work.
+
+```js
+x := y; // Error: y does not exist
+y := 3;
+
+return x;
+```
+```js
+if (true) {
+  x := 3; // Warn: x is unused
+}
+
+return x; // Error: x does not exist
+```
+```js
+x := 0;
+
+if (true) {
+  x++; // Ok: x is in scope
+}
+
+return x; // 1
+```
+```js
+for (i := 0; i < 3; i++) {}
+return i; // Error: i does not exist
+```
+```js
+// Mutual recursion is a complex example, but it's also the motivating example for hoisting.
+// Hoisting adds significant complexity to the language, and it wouldn't be implemented if it
+// were not for this case.
+
+func foo(x, depth) {
+  if (x == 0) {
+    return ['stopping at 0', {depth}];
+  }
+
+  return bar((x + 5) % 13, depth + 1); // Ok: bar is hoisted
+};
+
+func bar(x, depth) {
+  if (x == 1) {
+    return ['stopping at 1', {depth}];
+  }
+
+  return foo((x + 5) % 13, depth + 1);
+};
+
+return foo(7, 0); // ['stopping at 1', {depth: 17}]
+
+// By the way, tail call optimization is applicable here. This is implemented in js, but not yet
+// in the VM.
+```
+```js
+x := 3;
+func foo() => x; // Ok: x is in scope, it gets captured
+return foo(); // 3
+```
+```js
+y := foo();
+// Error: Although foo is hoisted, it captures x, so it is only hoisted up to where it is ok to
+// call it.
+
+x := 3;
+// foo is hoisted up to here.
+
+func foo() => x;
+return y;
+```
+```js
+func Counter() {
+  i := 0;
+
+  return counter() {
+    i++; // Error: can't mutate captured variable
+    return i;
+  };
+}
+
+counter := Counter();
+
+// Returning different values [1, 2] was prevented by disallowing mutation of a captured
+// variable.
+return [counter(), counter()];
+```
+
+TODO:
+- Methods
+- Modules
+- Logging
+- Testing
+- Classes
+
+There are lots more examples in [testCode](src/testCode) and [projectEuler](src/projectEuler) ([about](https://projecteuler.net)), exploring all sorts of complex cases.
 
 ### Local Install
 
