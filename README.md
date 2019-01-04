@@ -12,7 +12,7 @@ You can try Vortex without any installs, straight from your browser at: https://
 | Name | Description |
 |---|---|
 | Familiarity | Vortex should feel familiar coming from JavaScript and other C family languages. |
-| Strict Semantics | Interpreting an unusual program as invalid is prefererred over guessing intent. `1 == '1'` is neither true nor false - it's invalid. |
+| Strict Semantics | Interpreting an unusual constructs as errors is prefererred over guessing intent. `1 == '1'` is neither true nor false - it's an error. |
 | Fast Feedback | The compiler should analyze local correctness to deliver instant feedback during editing, even for very large projects. |
 | Pure Functions | You will never get a different result when calling the same function with the same arguments (except for resource constraints and implementation bugs). |
 | Local Mutation | Although tail recursion (implemented in js, coming soon to the VM) means you *can* write efficient recursive code, you don't have to. Functions are still pure, so you can safely mix and match these styles. |
@@ -302,7 +302,7 @@ return x(1)(2); // 3
 ```
 ```go
 func call2(f, a, b) => f(a, b);
-return call2(func(a, b) => a + b, 1, 2); // 3
+return call2(*, 3, 5); // 15
 ```
 
 **Scope**
@@ -377,11 +377,12 @@ x := 3;
 func foo() => x;
 return y;
 ```
+Vortex also limits hoisting based on [transitive captures](src/testCode/functions/noCompile/transitiveClosure.vx).
 ```go
 func Counter() {
   i := 0;
 
-  return counter() {
+  return func counter() {
     i++; // Error: can't mutate captured variable
     return i;
   };
@@ -393,9 +394,95 @@ counter := Counter();
 // variable.
 return [counter(), counter()];
 ```
+```go
+x := 3;
+
+func foo(x) { // Error: x already exists (shadowing is not allowed)
+  return 2 * x;
+};
+```
+```go
+x := 3;
+
+if (true) {
+  x := 5; // Error: x already exists
+}
+```
+```go
+sum := 0;
+
+if (true) {
+  x := 1;
+  sum += 2 * x;
+}
+
+if (true) {
+  x := 2; // Ok: previous x is not in scope
+  sum += 2 * x;
+}
+
+x := 3; // Also ok
+sum += 2 * x;
+
+return sum; // 12
+```
+```go
+funcs := [];
+
+for (x := 1; x <= 3; x++) { // Error: can't mutate x because it is captured
+  funcs ++= [func() => x];
+}
+```
+```go
+funcs := [];
+
+for (x of [1, 2, 3]) {
+  funcs ++= [func() => x]; // Ok: it's a different x each time
+}
+
+[a, b, c] := funcs;
+
+return [a(), b(), c()]; // [1, 2, 3]
+```
+
+**Methods**
+Methods are functions based on values accessed by `:`, i.e. the method lookup operator. This removes the restrictions and complications of object keys caused by overloading the `.` operator in other languages. Methods are fixed and not assignable.
+
+These are the currently available methods:
+
+| null   | bool   | Number types | string | array     | object    |
+|--------|--------|--------------|--------|-----------|-----------|
+| String | String | String       | String | String    | String    |
+|        |        |              | Length | Length    |           |
+|        |        |              |        | Keys      | Keys      |
+|        |        |              |        | Values    | Values    |
+|        |        |              |        | Entries   | Entries   |
+|        |        |              |        | Row       | Row       |
+|        |        |              |        | Column    | Column    |
+|        |        |              |        | Transpose | Transpose |
+|        |        |              |        | Front     |           |
+|        |        |              |        | Back      |           |
+|        |        |              |        | map       |           |
+|        |        |              |        | reduce    |           |
+
+Usually the function obtained from method lookup is called immediately, e.g.:
+
+```go
+return [1, 2, 3, 4]:reduce(+); // 10
+```
+
+But they are also regular functions, so you can also do things like this:
+
+```go
+reduceNums := [1, 2, 3, 4]:reduce;
+
+return {
+  sum: reduceNums(+), // 10
+  product: reduceNums(*), // 24
+};
+```
 
 TODO:
-- Methods
 - Modules
 - Logging
 - Testing
