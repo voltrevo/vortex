@@ -20,6 +20,7 @@
       }
 
       #main {
+        background-image: linear-gradient(125deg, hsla(278, 100%, 5%, 1) 0%, hsla(278, 100%, 10%, 1) 100%);
         position: relative;
         width: 100vw;
         height: 100vh;
@@ -46,15 +47,32 @@
         color: #ff5252;
         text-decoration: none;
       }
+
+      #content a {
+        border: 1.5px solid #e73030;
+        border-radius: 0.4em;
+        background-color: hsl(341, 89%, 32%);
+        padding: 0.5em;
+        box-sizing: border-box;
+        display: inline-block;
+        margin-top: 1.5em;
+        color: white;
+        user-select: none;
+        transition: background-color 100ms;
+      }
+
+      #content a:hover {
+        background-color: hsl(341, 89%, 37%);
+      }
     </style>
   </head>
   <body>
     <div id="main">
       <div id="content">
-        <p id='heading'>Vortex</p>
+        <p id="heading">Vortex</p>
         <p>A work-in-progress general purpose programming language.</p>
-        <p>&nbsp;</p>
-        <p>Try the <a href="playground/">playground</a>.</p>
+        <div><a href="playground/">Try the playground</a></div>
+        <div><a href="https://github.com/voltrevo/vortex">Learn more</a></div>
       </div>
     </div>
   </body>

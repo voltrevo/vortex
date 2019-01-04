@@ -6,4 +6,4 @@ cd "$DIR/.."
 rm -rf build
 npx webpack
 
-./copyFiles.sh
+$DIR/copyFiles.sh
