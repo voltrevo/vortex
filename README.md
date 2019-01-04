@@ -23,17 +23,17 @@ You can try Vortex without any installs, straight from your browser at: https://
 ### Examples
 
 Hello world:
-```js
+```go
 return 'Hello world!';
 ```
 
 Failing to return is an error, so an empty program is invalid:
-```js
+```go
 // Error: failed to return
 ```
 
 **Variables**
-```js
+```go
 // Create variables with :=
 x := 0;
 
@@ -48,39 +48,39 @@ x **= 2;
 
 return x; // 100
 ```
-```js
+```go
 x := 0;
 x := 0; // Error: x already exists
 ```
-```js
+```go
 x = 0; // Error: x does not exist
 ```
-```js
+```go
 x := 0;
 x = x++; // Error: subexpression mutation
 ```
 
 **Data structures**
-```js
+```go
 x := [1, 2, 3];
 return 2 * x == [2, 4, 6]; // true
 ```
-```js
+```go
 return [
   [1, 2, 3] + [4, 5, 6], // [5, 7, 9]
   [1, 2, 3] ++ [4, 5, 6], // [1, 2, 3, 4, 5, 6]
 ];
 ```
-```js
+```go
 return {a: 1, b: 2} == {b: 2, a: 1}; // true // keys are unordered
 ```
-```js
+```go
 x := {};
 x.foo := 'bar'; // Add properties with :=
 x.foo = 'baz'; // Mutate properties with =
 return x;
 ```
-```js
+```go
 x := [1, 2, 3];
 y := x;
 
@@ -91,22 +91,22 @@ return [
   {x, y}, // {x: [1, 2, 3, 4], y: [1, 2, 3]}
 ];
 ```
-```js
+```go
 x := 1;
 y := 2;
 
 return {x} ++ {y}; // {x: 1, y: 2}
 ```
-```js
+```go
 return {x: 1} ++ {x: 2}; // Error: duplicate key (use + to get {x: 3})
 ```
-```js
+```go
 return [5, [6], [[7]], [[[8]]]] * 2; // [10, [12], [[14]], [[[16]]]]
 ```
-```js
+```go
 return 10 * {apples: 3, oranges: 2} + {oranges: 4, apples: 7}; // {apples: 37, oranges: 24}
 ```
-```js
+```go
 return [[1, 2], [3, 4]] * [[1, 2], [3, 4]]; // [[7, 10], [15, 22]]
 ```
 
@@ -115,7 +115,7 @@ Matrices can also be represented with objects. See [poker.vx](src/testCode/poker
 Sets are also probably coming as an inbuilt data structure. Also objects will be able to contain non-string keys.
 
 **If/Else**
-```js
+```go
 x := 0;
 
 if (true) {
@@ -124,15 +124,15 @@ if (true) {
 
 return x; // 1
 ```
-```js
+```go
 if ('true') {} // Error: non-bool condition
 ```
-```js
+```go
 x := 0;
 if (true) x++; // Syntax error (always use braces {})
 return x;
 ```
-```js
+```go
 x := null;
 
 if (false) {
@@ -147,7 +147,7 @@ return x; // 'else'
 ```
 
 **Switch**
-```js
+```go
 x := 3;
 
 return switch {
@@ -156,7 +156,7 @@ return switch {
   (x == 4) => 'baz';
 };
 ```
-```js
+```go
 x := 10;
 
 return switch {
@@ -165,7 +165,7 @@ return switch {
   (x == 4) => 'baz';
 }; // Error: reached end of switch
 ```
-```js
+```go
 x := 3;
 
 return switch (x) {
@@ -176,7 +176,7 @@ return switch (x) {
 ```
 
 **Loops**
-```js
+```go
 i := 0;
 
 for { // infinite loop
@@ -189,14 +189,14 @@ for { // infinite loop
 
 // The unbroken infinite loop removes the requirement to return here.
 ```
-```js
+```go
 for (true) { // also infinite loop
   return 'hi';
 }
 
 // Error: might fail to return (for now, vortex's return analysis can't handle this case)
 ```
-```js
+```go
 sum := 0;
 
 for (i := 1; i <= 4; i++) {
@@ -205,7 +205,7 @@ for (i := 1; i <= 4; i++) {
 
 return sum; // 10
 ```
-```js
+```go
 sum := 0;
 
 for (i of [1, 2, 3, 4]) {
@@ -214,14 +214,14 @@ for (i of [1, 2, 3, 4]) {
 
 return sum; // 10
 ```
-```js
+```go
 for {
   break; // Warn: Break statement prevents return
 }
 
 // Error: Might fail to return
 ```
-```js
+```go
 for {
   continue; // Program loops forever, or step limit error
   return 'done'; // Should be unreachable error, currently not implemented
@@ -230,31 +230,31 @@ for {
 (Similar to [golang](https://golang.org/), `for` is the only loop construct.)
 
 **Destructuring**
-```js
+```go
 [a, b] := [1, 2];
 return a + b; // 3
 ```
-```js
+```go
 [[a, b], [[c]]] := [[1, 2], [[3]]];
 return [a, b, c]; // [1, 2, 3]
 ```
-```js
+```go
 [a] := [1, 2]; // Error: destructuring mismatch
 ```
-```js
+```go
 [a, _, _] := [1, 2, 3]; // Unimplemented, currently syntax error
 return a; // 1
 ```
-```js
+```go
 [a, ...] := [1, 2, 3]; // Also unimplemented, currently syntax error
 return a; // 1
 ```
-```js
+```go
 [a, ...rest] := [1, 2, 3]; // Also unimplemented, currently syntax error
 return [a, rest]; // [1, [2, 3]]
 // (Equivalents for objects are also planned but unimplemented)
 ```
-```js
+```go
 a := 'foo';
 b := 'bar';
 
@@ -262,17 +262,17 @@ b := 'bar';
 
 return [a, b]; // ['bar', 'foo']
 ```
-```js
+```go
 {a, b: [c, d]} := {a: 1, b: [2, 3]};
 return [a, c, d]; // [1, 2, 3] // (b does not exist)
 ```
 
 **Functions**
-```js
+```go
 func add3(a, b, c) => a + b + c;
 return add3(1, 2, 3); // 6
 ```
-```js
+```go
 func add3(a, b, c) {
   return a + b + c;
 }; // Semicolon is currently required, but this might change.
@@ -283,7 +283,7 @@ return [
   // Explicit typing is probably coming to Vortex, but this should continue to work too
 ];
 ```
-```js
+```go
 func factorial(n) => switch {
   (n > 0) => n * factorial(n - 1);
   true => 1;
@@ -291,16 +291,16 @@ func factorial(n) => switch {
 
 return factorial(5); // 120
 ```
-```js
+```go
 x := func() => 3;
 y := func() => 7;
 return x() + y(); // 10
 ```
-```js
+```go
 x := func(a) => func(b) => a + b;
 return x(1)(2); // 3
 ```
-```js
+```go
 func call2(f, a, b) => f(a, b);
 return call2(func(a, b) => a + b, 1, 2); // 3
 ```
@@ -309,20 +309,20 @@ return call2(func(a, b) => a + b, 1, 2); // 3
 
 In a nutshell, Vortex has strict block scoping, no shadowing, and only non-subexpression functions are hoisted. Closures work.
 
-```js
+```go
 x := y; // Error: y does not exist
 y := 3;
 
 return x;
 ```
-```js
+```go
 if (true) {
   x := 3; // Warn: x is unused
 }
 
 return x; // Error: x does not exist
 ```
-```js
+```go
 x := 0;
 
 if (true) {
@@ -331,11 +331,11 @@ if (true) {
 
 return x; // 1
 ```
-```js
+```go
 for (i := 0; i < 3; i++) {}
 return i; // Error: i does not exist
 ```
-```js
+```go
 // Mutual recursion is a complex example, but it's also the motivating example for hoisting.
 // Hoisting adds significant complexity to the language, and it wouldn't be implemented if it
 // were not for this case.
@@ -361,12 +361,12 @@ return foo(7, 0); // ['stopping at 1', {depth: 17}]
 // By the way, tail call optimization is applicable here. This is implemented in js, but not yet
 // in the VM.
 ```
-```js
+```go
 x := 3;
 func foo() => x; // Ok: x is in scope, it gets captured
 return foo(); // 3
 ```
-```js
+```go
 y := foo();
 // Error: Although foo is hoisted, it captures x, so it is only hoisted up to where it is ok to
 // call it.
@@ -377,7 +377,7 @@ x := 3;
 func foo() => x;
 return y;
 ```
-```js
+```go
 func Counter() {
   i := 0;
 
@@ -430,7 +430,7 @@ Expected output:
 
 `vxc` also accepts files. If you create `readme-demo.vx` with this content:
 
-```js
+```go
 for (x of [5, 7]) {
   log.info x:String() ++ '^2 is ' ++ (x ** 2):String();
 }
