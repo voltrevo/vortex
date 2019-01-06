@@ -446,24 +446,26 @@ return [a(), b(), c()]; // [1, 2, 3]
 ```
 
 **Methods**
+
 Methods are functions based on values accessed by `:`, i.e. the method lookup operator. This removes the restrictions and complications of object keys caused by overloading the `.` operator in other languages. Methods are fixed and not assignable.
 
 These are the currently available methods:
 
-| null   | bool   | Number types | string | array     | object    |
-|--------|--------|--------------|--------|-----------|-----------|
-| String | String | String       | String | String    | String    |
-|        |        |              | Length | Length    |           |
-|        |        |              |        | Keys      | Keys      |
-|        |        |              |        | Values    | Values    |
-|        |        |              |        | Entries   | Entries   |
-|        |        |              |        | Row       | Row       |
-|        |        |              |        | Column    | Column    |
-|        |        |              |        | Transpose | Transpose |
-|        |        |              |        | Front     |           |
-|        |        |              |        | Back      |           |
-|        |        |              |        | map       |           |
-|        |        |              |        | reduce    |           |
+| null   | bool   | Number types | string | array     | object    | function |
+|--------|--------|--------------|--------|-----------|-----------|----------|
+| String | String | String       | String | String    | String    |          |
+|        |        |              | Length | Length    |           |          |
+|        |        |              |        | Keys      | Keys      |          |
+|        |        |              |        | Values    | Values    |          |
+|        |        |              |        | Entries   | Entries   |          |
+|        |        |              |        | Row       | Row       |          |
+|        |        |              |        | Column    | Column    |          |
+|        |        |              |        | Transpose | Transpose |          |
+|        |        |              |        | Front     |           |          |
+|        |        |              |        | Back      |           |          |
+|        |        |              |        | map       |           |          |
+|        |        |              |        | reduce    |           |          |
+|        |        |              |        |           |           | bind     |
 
 Usually the function obtained from method lookup is called immediately, e.g.:
 
@@ -482,8 +484,66 @@ return {
 };
 ```
 
+**Modules**
+
+Every module simply returns a value, which can be imported into another module:
+
+```js
+// values.vx
+return [1, 1, 2, 3, 5, 8];
+```
+```js
+import values;
+return values:reduce(+); // 20
+```
+
+If you're only using the import in one place and don't want to add its name to the scope, `import` also works inside an expression:
+
+```js
+return (import values):reduce(+); // 20
+```
+
+`import` defaults to the current directory, use the `from` clause to import from elsewhere:
+
+```js
+import foo from './util'; // ./util/foo.vx
+```
+
+You can't import from parent directories or otherwise use `..` in import paths, but you can use `@` to start your path from the project root:
+
+```js
+import foo from '@/demos/util'; // @/demos/util/foo.vx
+```
+
+(Currently the project root is just the working directory where the CLI is launched.)
+
+If you create a circular import in a way that would create an infinite loop, an error is emitted:
+
+```js
+// loop.vx
+import loop;
+return loop; // Error: Import loop detected: @/([loop.vx] -> [loop.vx])
+```
+
+However, import statements (ie not part of a larger expression) are deferred until their actual usage. This means a circular import is actually ok as long as it doesn't get called during execution of the module. For example:
+
+```js
+// circular.vx
+import circular;
+
+return {
+  foo: func(x) => 2 * circular.bar(x),
+  bar: func(x) => 2 * x,
+};
+```
+```js
+import circular;
+return circular.foo(10); // 40
+```
+
+Imports can be mutually circular too. See [src/testCode/imports](src/testCode/imports) for more examples.
+
 TODO:
-- Modules
 - Logging
 - Testing
 - Classes
