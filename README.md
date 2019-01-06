@@ -509,10 +509,11 @@ return (import values):reduce(+); // 20
 import foo from './util'; // ./util/foo.vx
 ```
 
-You can't import from parent directories or otherwise use `..` in import paths, but you can use `@` to start your path from the project root:
+You can't use `..` to access parent directories in import paths, but you can use `@` to start your path from the project root:
 
 ```js
-import foo from '@/demos/util'; // @/demos/util/foo.vx
+// @/foo/bar.vx
+import sort from '@/util'; // @/util/sort.vx (aka ../util/sort.vx)
 ```
 
 (Currently the project root is just the working directory where the CLI is launched.)
@@ -543,8 +544,26 @@ return circular.foo(10); // 40
 
 Imports can be mutually circular too. See [src/testCode/imports](src/testCode/imports) for more examples.
 
+**Logging**
+
+Vortex has special log statements beginning with `log.info`, `log.warn`, and `log.error`. These statements have no effect on the formal output of a Vortex program, but are generally surfaced to the developer in some way depending on the tooling being used. Currently `vxc` emits compiler notes about them, and the VM prints messages to stderr. Future optimizations may impact log messages (e.g. by calling `foo` only once in `foo() + foo()`) or offer to remove them altogether.
+
+```js
+log.info 1 + 1; // INFO: 2
+
+x := 1000000;
+
+if (x > 1000) {
+  log.warn ['Computation may be excessive for large input', {x}];
+  // WARN: ['Computation may be excessive for large input', {x: 1000000}]
+}
+
+log.error 123; // ERROR: 123
+
+return 'done';
+```
+
 TODO:
-- Logging
 - Testing
 - Classes
 
