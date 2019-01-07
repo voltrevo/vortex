@@ -138,17 +138,51 @@ function blockTrim(text: string) {
 const editorEl = <HTMLElement>notNull(document.querySelector('#editor'));
 const outputEl = notNull(document.querySelector('#output'));
 const vasmEl = notNull(document.querySelector('#vasm'));
-const selectEl = notNull(document.querySelector('#file-location select'));
+
+const selectEl = <HTMLSelectElement>notNull(document.querySelector('#file-location select'));
+const filePreviousEl = notNull(document.querySelector('#file-previous'));
+const fileNextEl = notNull(document.querySelector('#file-next'));
 
 const files = {
   '@/tutorial/hello.vx': blockTrim(`
+    // Welcome to the Vortex playground!
+    //
+    // This playground also acts as a tutorial by describing a variety of
+    // examples. Please go ahead and make edits to the code, you should see
+    // the results in real-time!
+    //
+    // Keeping with tradition, here is the hello world program:
+
     return 'Hello world!';
+
+    // When you're ready, click the next arrow ('>') above to continue.
+  `),
+  '@/tutorial/empty.vx': blockTrim(`
+    // An empty program is invalid because it doesn't return a value. You
+    // should see a red underline at the end of the input. Hover over it with
+    // your mouse to see details.
   `),
   '@/tutorial/variables/1.vx': blockTrim(`
+    // Create variables with :=
     x := 0;
+
+    // Mutate variables with =
+    x = 1;
+
+    // Increment, decrement, and compound assignment operators are also
+    // available:
     x++;
+    x--;
+    x += 10;
+    x *= 2;
 
     return x;
+  `),
+  '@/tutorial/variables/2.vx': blockTrim(`
+    // It's an error to create a variable that already exists:
+
+    x := 0;
+    x := 0;
   `),
 };
 
@@ -172,10 +206,31 @@ window.addEventListener('resize', () => editor.layout());
 
 const model = notNull(editor.getModel());
 
-selectEl.addEventListener('change', () => {
-  currentFile = (<HTMLSelectElement>selectEl).value;
+function onFileChange() {
+  currentFile = selectEl.value;
   model.setValue(files[currentFile]);
-});
+}
+
+selectEl.addEventListener('change', onFileChange);
+
+const moveFileIndex = (change: number) => () => {
+  const filenames = Object.keys(files);
+  let idx = filenames.indexOf(currentFile);
+
+  if (idx === -1) {
+    throw new Error('This should not happen');
+  }
+
+  idx += change;
+  idx = Math.max(idx, 0);
+  idx = Math.min(idx, filenames.length - 1);
+
+  selectEl.selectedIndex = idx;
+  onFileChange();
+};
+
+filePreviousEl.addEventListener('click', moveFileIndex(-1));
+fileNextEl.addEventListener('click', moveFileIndex(1));
 
 let timerId: undefined | number = undefined;
 
