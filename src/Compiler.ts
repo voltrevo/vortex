@@ -26,6 +26,32 @@ namespace Compiler {
     readFile: (f: string) => string | Error,
     opt: { stepLimit?: number } = {},
   ): [Note[], Analyzer] {
+    let res: [Note[], Analyzer];
+
+    try {
+      res = compileImpl(files, readFile, opt);
+    } catch (error) {
+      res = [
+        [
+          Note(
+            ['(compiler)', null],
+            'error',
+            ['internal'],
+            'Internal error (please report this bug): ' + error.stack
+          ),
+        ],
+        Analyzer(Package()),
+      ];
+    }
+
+    return res;
+  }
+
+  function compileImpl(
+    files: string[],
+    readFile: (f: string) => string | Error,
+    opt: { stepLimit?: number } = {},
+  ): [Note[], Analyzer] {
     const before = Time();
 
     let pack = Package();
