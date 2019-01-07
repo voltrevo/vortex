@@ -12,10 +12,10 @@ You can try Vortex without any installs, straight from your browser at: https://
 | Name | Description |
 |---|---|
 | Familiarity | Vortex should feel familiar coming from JavaScript and other C family languages. |
-| Strict Semantics | Interpreting an unusual constructs as errors is prefererred over guessing intent. `1 == '1'` is neither true nor false - it's an error. |
+| Strict Semantics | Interpreting an unusual constructs as an error is prefererred over guessing intent. `1 == '1'` is neither true nor false - it's an error. |
 | Fast Feedback | The compiler should analyze local correctness to deliver instant feedback during editing, even for very large projects. |
 | Pure Functions | You will never get a different result when calling the same function with the same arguments (except for resource constraints and implementation bugs). |
-| Local Mutation | Although tail recursion (implemented in js, coming soon to the VM) means you *can* write efficient recursive code, you don't have to. Functions are still pure, so you can safely mix and match these styles. |
+| Local Mutation | Although tail recursion (implemented in `vxc` analyzer, coming soon to the VM) means you *can* write efficient recursive code, you don't have to. Functions are still pure, so you can safely mix and match these styles. |
 | Immutable Data Structures | All values have *value semantics*, not just primitives. `['a', 'b'] == ['a', 'b']`. |
 | Plain Old Data | Every functionless value has a straightforward json-like representation which identifies its data uniquely and completely. Just call `:String()`. Json and binary formats are planned too. |
 | Abstraction | Vortex feels quite different to C/C++ because its semantics are based on a clean inner-universe of computation which is incompatible with things like memory layout, direct hardware access, and reference semantics. This allows many more opportunities for optimization because it is easier to transform programs without introducing subtle differences. |
@@ -194,7 +194,7 @@ for (true) { // also infinite loop
   return 'hi';
 }
 
-// Error: might fail to return (for now, vortex's return analysis can't handle this case)
+// Error: might fail to return (for now, Vortex's return analysis can't handle this case)
 ```
 ```go
 sum := 0;
@@ -358,8 +358,8 @@ func bar(x, depth) {
 
 return foo(7, 0); // ['stopping at 1', {depth: 17}]
 
-// By the way, tail call optimization is applicable here. This is implemented in js, but not yet
-// in the VM.
+// By the way, tail call optimization is applicable here. This is implemented in the vxc analyzer,
+// but not yet in the VM.
 ```
 ```go
 x := 3;
@@ -607,8 +607,8 @@ Classes are unimplemented, except for their syntax. The behavior I have in mind 
 
 ```js
 class Point { // Error: unimplemented
-  float64 x;
-  float64 y;
+  f64 x;
+  f64 y;
 
   :flip() { [x, y] = [y, x]; }
   :size() => (x * x + y * y) ** 0.5;
@@ -743,7 +743,15 @@ Then you can expand the previous command with:
 echo 'return 1 + 1;' | vxc - --code | run
 ```
 
-TODO: Expand this section.
+The VM is a stack machine. You can try a simpler implementation of the above program with:
+
+```sh
+echo '1 1 + return' | run
+```
+
+For a more readable format that's one step further away from the bytecode, use `--vasm` instead of `--code` when compiling.
+
+The VM is much faster than the `vxc` analyzer, and allows Vortex programs to run outside of JavaScript. The plan is to use this for bootstrapping (compiling Vortex programs into the bytecode using Vortex itself), optimize the bytecode, and then compile down to targets like llvm and webassembly.
 
 ### Editor Support
 
@@ -769,7 +777,7 @@ ln -s ~/.vim/syntax/vortex.vim $(pwd)/src/vim/syntax/vortex.vim
 ln -s ~/.vim/syntax/vasm.vim $(pwd)/src/vim/syntax/vasm.vim
 ```
 
-These steps should work on their own for basic syntax support. For the actual compiler feedback you'll need to set up the [ale plugin](https://github.com/w0rp/ale). Then you can connect the vortex compiler with one more symlink:
+These steps should work on their own for basic syntax support. For the actual compiler feedback you'll need to set up the [ale plugin](https://github.com/w0rp/ale). Then you can connect the Vortex compiler with one more symlink:
 
 ```sh
 ln -s ~/.vim/ale_linters/vortex $(pwd)/src/vim/ale_linters/vortex
@@ -793,8 +801,7 @@ The instance of VS Code that launches initially is for developing the extension.
 
 ### FAQ
 
-**What is Vortex for?**
-Vortex is a general purpose programming language, so it could potentially be used for just about anything. I do have some more concrete purposes in mind, but I want to limit how much those purposes drive the design, because that could make Vortex less suitable for other purposes.
+**What is Vortex for?** Vortex is a general purpose programming language, so it could potentially be used for just about anything. I do have some more concrete purposes in mind, but I want to limit how much those purposes drive the design, because that could make Vortex less suitable for other purposes.
 
 **How does Vortex talk to the outside world?**
 It isn't yet well defined. I have a few methods in mind, and one of them is demonstrated with an interactive console application for playing blackjack:
