@@ -971,6 +971,39 @@ function InvalidAssignmentTargets(
   return invalids;
 }
 
+function validateMutation(
+  exp: Syntax.Expression,
+  target: Syntax.Expression,
+  action: string,
+): Note[] {
+  const notes: Note[] = [];
+
+  for (const invalid of InvalidAssignmentTargets(target)) {
+    notes.push(Note(
+      invalid.p,
+      'error',
+      ['validation', 'invalid-assignment-target'],
+      [
+        'Invalid assignment target: ',
+        invalid.t,
+        ' expression',
+        // TODO: Link documentation explaining assignment targets
+      ].join(''),
+    ));
+  }
+
+  if (!exp.topExp) {
+    notes.push(Note(
+      exp.p,
+      'error',
+      ['validation', 'scope', 'subexpression-mutation'],
+      `${action} a variable in a subexpression is not allowed`,
+    ));
+  }
+
+  return notes;
+}
+
 function validateExpression(exp: Syntax.Expression): Note[] {
   const notes: Note[] = [];
 
@@ -998,30 +1031,22 @@ function validateExpression(exp: Syntax.Expression): Note[] {
       case '^=':
       case '|=':
       case ':=': {
-        for (const invalid of InvalidAssignmentTargets(exp.v[0])) {
-          notes.push(Note(
-            invalid.p,
-            'error',
-            ['validation', 'invalid-assignment-target'],
-            [
-              'Invalid assignment target: ',
-              invalid.t,
-              ' expression',
-              // TODO: Link documentation explaining assignment targets
-            ].join(''),
-          ));
-        }
+        notes.push(...validateMutation(
+          exp,
+          exp.v[0],
+          exp.t === ':=' ? 'Creating' : 'Assigning to',
+        ));
 
-        if (!exp.topExp) {
-          const action = exp.t === ':=' ? 'Creating' : 'Assigning to';
+        return null;
+      }
 
-          notes.push(Note(
-            exp.p,
-            'error',
-            ['validation', 'scope', 'subexpression-mutation'],
-            `${action} a variable in a subexpression is not allowed`,
-          ));
-        }
+      case 'unary ++':
+      case 'unary --': {
+        notes.push(...validateMutation(
+          exp,
+          exp.v,
+          exp.t === 'unary ++' ? 'Incrementing' : 'Decrementing'
+        ));
 
         return null;
       }
