@@ -104,7 +104,8 @@ function notNull<T>(value: T | null): T {
 }
 
 const editorEl = <HTMLElement>notNull(document.querySelector('#editor'));
-const displayEl = notNull(document.querySelector('#display'));
+const outputEl = notNull(document.querySelector('#output'));
+const vasmEl = notNull(document.querySelector('#vasm'));
 
 editorEl.innerHTML = '';
 
@@ -323,6 +324,18 @@ function compile() {
     { stepLimit: 100000 },
   );
 
+  const mod = az.modules['@/playground.vx'];
+
+  if (mod === undefined) {
+    throw new Error('Shouldn\'t be possible');
+  }
+
+  if (mod.outcome === null) {
+    outputEl.textContent = '';
+  } else {
+    outputEl.textContent = vortex.Outcome.LongString(mod.outcome);
+  }
+
   const notes = vortex.Note.flatten(rawNotes);
 
   const markers: monaco.editor.IMarkerData[] = [];
@@ -386,7 +399,7 @@ function compile() {
 
   lines.push(`mcall $@/playground.vx return`);
 
-  displayEl.textContent = lines.join('\n');
+  vasmEl.textContent = lines.join('\n');
 }
 
 compile();

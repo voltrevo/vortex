@@ -18,8 +18,8 @@
       #editor {
         position: absolute;
         left: 0;
-        top: 0;
-        height: 100vh;
+        top: 1em;
+        height: calc(100vh - 1em);
         width: 50vw;
       }
 
@@ -38,9 +38,17 @@
         top: 0;
         height: 100vh;
         width: 50vw;
-        white-space: pre;
-        overflow: scroll;
+        overflow-y: scroll;
+        overflow-x: hidden;
+      }
+
+      #display div {
+        white-space: pre-wrap;
         padding: 1em;
+      }
+
+      #vasm {
+        border-top: 1px solid black;
       }
 
       a, a:visited {
@@ -53,12 +61,15 @@
     <div id="editor">
       <div id="editor-loading"></div>
     </div>
-    <div id="display">mfunc $@/preview.vx {
+    <div id="display">
+      <div id="output">'The playground is loading'</div>
+      <div id="vasm">mfunc $@/preview.vx {
   'The playground is loading'
   return
 }
 
 mcall $@/preview.vx</div>
+    </div>
 
     <script src="index.js" defer></script>
   </body>
