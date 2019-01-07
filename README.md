@@ -563,9 +563,82 @@ log.error 123; // ERROR: 123
 return 'done';
 ```
 
-TODO:
-- Testing
-- Classes
+**Testing**
+
+In Vortex, you should weave code and tests together using `assert` statements. For example:
+
+```js
+func sort(values) {
+  // TODO: actually sort the values
+  return values;
+};
+
+assert sort([3, 1, 2]) == [1, 2, 3];
+
+return sort;
+```
+
+This allows using `assert` inside nested functions that might not be directly accessible. `assert` should be used liberally to promote code quality and flag unexpected data as early as possible.
+
+If you'd still like to write tests in dedicated test files, you can do that too:
+
+```js
+import sort;
+
+assert sort([3, 1, 2]) == [1, 2, 3];
+
+return 'done';
+```
+
+When an assert fails, `vxc` provides details about the false expression:
+
+```js
+x := 3;
+y := 10;
+
+assert x > y; // Error: Asserted (3 > 10)
+
+return 'done';
+```
+
+**Classes**
+
+Classes are unimplemented, except for their syntax. The behavior I have in mind is tied up in the also unimplemented typing system - classes should simply be objects with a compile-time-only distinction. For example, this program:
+
+```js
+class Point { // Error: unimplemented
+  float64 x;
+  float64 y;
+
+  :flip() { [x, y] = [y, x]; }
+  :size() => (x * x + y * y) ** 0.5;
+};
+
+p := Point({x: 3.0, y: 4.0});
+
+p = :flip();
+
+return [p, p:size()];
+```
+
+Should be equivalent to something like:
+
+```js
+// All the behavior here is implemented.
+
+func flip(point) {
+  [point.x, point.y] = [point.y, point.x];
+  return point;
+};
+
+func size(point) => (point.x * point.x + point.y * point.y) ** 0.5;
+
+p := {x: 3.0, y: 4.0};
+
+p = flip(p);
+
+return [p, size(p)]; // [{x: 4.0, y: 3.0}, 5.0]
+```
 
 There are lots more examples in [testCode](src/testCode) and [projectEuler](src/projectEuler) ([about](https://projecteuler.net)), exploring all sorts of complex cases.
 
