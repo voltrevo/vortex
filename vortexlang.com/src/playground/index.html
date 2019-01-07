@@ -15,10 +15,38 @@
         position: fixed;
       }
 
+      #file-selector {
+        position: absolute;
+        left: 0;
+        top: 0;
+        height: 2em;
+        font-size: 1.5em;
+        display: flex;
+        width: 100vw;
+        border-bottom: 1px solid black;
+        box-sizing: border-box;
+        user-select: none;
+      }
+
+      #file-selector > div {
+        width: 2em;
+        padding: 0.5em;
+        text-align: center;
+      }
+
+      #file-location {
+        flex-grow: 1;
+      }
+
+      #file-previous, #file-next {
+        color: hsl(44, 100%, 50%);
+        font-weight: bold;
+      }
+
       #editor {
         position: absolute;
         left: 0;
-        top: 1em;
+        top: 3em;
         height: calc(100vh - 1em);
         width: 50vw;
       }
@@ -35,8 +63,8 @@
         border-left: 1px solid black;
         position: absolute;
         left: 50vw;
-        top: 0;
-        height: 100vh;
+        top: 3em;
+        height: calc(100vh - 3em);
         width: 50vw;
         overflow-y: scroll;
         overflow-x: hidden;
@@ -61,6 +89,12 @@
     <div id="editor">
       <div id="editor-loading"></div>
     </div>
+    <div id="file-selector">
+      <div id="file-previous">&lt;</div>
+      <div id="file-location">@/playground.vx</div>
+      <div id="file-next">&gt;</div>
+    </div>
+
     <div id="display">
       <div id="output">'The playground is loading'</div>
       <div id="vasm">mfunc $@/preview.vx {
