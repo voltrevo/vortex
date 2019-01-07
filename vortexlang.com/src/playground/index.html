@@ -15,6 +15,11 @@
         position: fixed;
       }
 
+      a, a:visited {
+        color: hsl(227, 83%, 69%);
+        text-decoration: none;
+      }
+
       #file-selector {
         background-color: #181818;
         position: absolute;
@@ -95,9 +100,12 @@
         padding: 0.5em;
       }
 
-      a, a:visited {
-        color: hsl(227, 83%, 69%);
-        text-decoration: none;
+      #project-files {
+        display: none;
+      }
+
+      #project-files div {
+        white-space: pre;
       }
     </style>
   </head>
@@ -108,12 +116,7 @@
     <div id="file-selector">
       <div id="file-previous">&lt;</div>
       <div id="file-location">
-        <select>
-          <option>@/hello.vx</option>
-          <option>@/tutorial/variables/1.vx</option>
-          <option>@/tutorial/variables/2.vx</option>
-          <option>@/tutorial/variables/3.vx</option>
-        </select>
+        <select></select>
       </div>
       <div id="file-next">&gt;</div>
     </div>

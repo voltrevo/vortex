@@ -103,173 +103,68 @@ function notNull<T>(value: T | null): T {
   return value;
 }
 
+function blockTrim(text: string) {
+  let lines = text.split('\n');
+
+  while (lines.length > 0 && /^ *$/.test(lines[0])) {
+    lines.shift();
+  }
+
+  while (lines.length > 0 && /^ *$/.test(lines[lines.length - 1])) {
+    lines.pop();
+  }
+
+  let minIndent = Infinity;
+
+  for (const line of lines) {
+    if (line.trim() === '') {
+      continue;
+    }
+
+    let match = line.match(/^ */);
+
+    if (match === null || match[0].length >= minIndent) {
+      continue;
+    }
+
+    minIndent = match[0].length;
+  }
+
+  lines = lines.map(line => line.slice(minIndent));
+
+  return lines.join('\n');
+}
+
 const editorEl = <HTMLElement>notNull(document.querySelector('#editor'));
 const outputEl = notNull(document.querySelector('#output'));
 const vasmEl = notNull(document.querySelector('#vasm'));
+const selectEl = notNull(document.querySelector('#file-location select'));
+
+const files = {
+  '@/tutorial/hello.vx': blockTrim(`
+    return 'Hello world!';
+  `),
+  '@/tutorial/variables/1.vx': blockTrim(`
+    x := 0;
+    x++;
+
+    return x;
+  `),
+};
+
+for (const filename of Object.keys(files)) {
+  const option = document.createElement('option');
+  option.textContent = filename;
+  selectEl.appendChild(option);
+}
+
+let currentFile = '@/tutorial/hello.vx';
 
 editorEl.innerHTML = '';
 
 const editor = monaco.editor.create(editorEl, {
   theme: 'vs-dark',
-  value: [
-    `demos := {};`,
-    ``,
-    `func intro() => spaceJoin(['Welcome', 'to', 'the', 'vortex', 'playground']);`,
-    `log.info intro();`,
-    `demos ++= {intro};`,
-    ``,
-    `// Hover your mouse over ^^^ log.info statements ^^^ to see calculations`,
-    ``,
-    `// You can add as many as you like, try uncommenting this:`,
-    `// log.info 1 + 1;`,
-    ``,
-    `func sums() {`,
-    `  func sumSimple() => (`,
-    `    'A simple sum: ' ++`,
-    `    [1, 2, 3, 4]:map(func(x) => x ** 2):reduce(+):String()`,
-    `  );`,
-    ``,
-    `  func sumLoop() {`,
-    `    sum := 0;`,
-    ``,
-    `    for (i := 1; i <= 4; i++) {`,
-    `      sum += i ** 2;`,
-    `      log.info [i ** 2, sum];`,
-    `    }`,
-    ``,
-    `    return 'You can also use a loop: ' ++ sum:String();`,
-    `  };`,
-    ``,
-    `  return [[sumSimple()], [sumLoop()]];`,
-    `};`,
-    ``,
-    `log.info sums();`,
-    `demos ++= {sums};`,
-    ``,
-    `captureMe := 3;`,
-    ``,
-    `func getCapture() {`,
-    `  return captureMe:String() ++ ' was referenced by capture';`,
-    `};`,
-    ``,
-    `log.info getCapture();`,
-    `demos ++= {getCapture};`,
-    ``,
-    `func mutate() {`,
-    `  x := 0;`,
-    `  x++;`,
-    ``,
-    `  // This fails, try it!`,
-    `  // captureMe++;`,
-    ``,
-    `  return 'Non-captured variables can be mutated: ' ++ x:String();`,
-    `};`,
-    ``,
-    `log.info mutate();`,
-    `demos ++= {mutate};`,
-    ``,
-    `func vectorAddition() {`,
-    `  return [`,
-    `    'Add apples to apples and oranges to oranges:',`,
-    `    (`,
-    `      {apples: 3, oranges: 1} +`,
-    `      {apples: 5, oranges: 2}`,
-    `    ),`,
-    `  ];`,
-    `};`,
-    ``,
-    `log.info vectorAddition();`,
-    `demos ++= {vectorAddition};`,
-    ``,
-    `func matrices() {`,
-    `  mat := [[1, 2], [3, 4]];`,
-    `  return 'Matrices work too: ' ++ (2 * mat * mat + mat):String();`,
-    `};`,
-    ``,
-    `log.info matrices();`,
-    `demos ++= {matrices};`,
-    ``,
-    `func valueSemantics() {`,
-    `  x := [0, 0, 0];`,
-    `  y := x;`,
-    ``,
-    `  msg := 'y is unaffected when x is mutated';`,
-    `  x[1u64] += 123;`,
-    `  // (x[1] += 123 would also work in the js implementation, but this might change)`,
-    ``,
-    `  return [`,
-    `    {msg, x, y},`,
-    `    'Also, structural equality and comparison:',`,
-    `    [`,
-    `      '[1, 2] == [1, 2]: ' ++ ([1, 2] == [1, 2]):String(),`,
-    `      '[1, 2] == [1, 3]: ' ++ ([1, 2] == [1, 3]):String(),`,
-    `      '[1, 2] < [1, 3]: ' ++ ([1, 2] < [1, 3]):String(),`,
-    `      'Object keys are unordered:',`,
-    `      '{a: 1, b: 2} == {b: 2, a: 1}: ' ++ ({a: 1, b: 2} == {b: 2, a: 1}):String(),`,
-    `      (`,
-    `        'In fact, the syntactical order is inaccessible. It is impossible to ' ++`,
-    `        'construct a function which behaves differently for different key orders, ' ++`,
-    `        'so they *really* are the same. In vortex, there is no such thing as ' ++`,
-    `        'reference equality.'`,
-    `      ),`,
-    `      [],`,
-    `    ],`,
-    `  ];`,
-    `};`,
-    ``,
-    `log.info valueSemantics();`,
-    `demos ++= {valueSemantics};`,
-    ``,
-    `func factorial(n) {`,
-    `  if (n <= 0) {`,
-    `    return 1;`,
-    `  }`,
-    ``,
-    `  return n * factorial(n - 1);`,
-    `};`,
-    ``,
-    `log.info factorial(5);`,
-    `demos ++= {factorial5: func() => factorial(5)};`,
-    ``,
-    `func destructuring() {`,
-    `  func impl([a, b]) {`,
-    `    [a, b] = [b, a];`,
-    ``,
-    `    return [a, b];`,
-    `  };`,
-    ``,
-    `  return impl(['foo', 'bar']);`,
-    `};`,
-    ``,
-    `log.info destructuring();`,
-    `demos ++= {destructuring};`,
-    ``,
-    `for ([name, demo] of demos:Entries()) {`,
-    `  log.info [name, demo()];`,
-    `}`,
-    ``,
-    `func spaceJoin(values) => values:reduce(func(acc, v) => acc ++ ' ' ++ v);`,
-    ``,
-    `return [`,
-    `  [`,
-    `    'If you\\'ve enjoyed these demos, please consider starring the github repo:',`,
-    `    'https://github.com/voltrevo/vortex',`,
-    `  ],`,
-    `  [`,
-    `    'The repo has more cool stuff in it, including:',`,
-    `    [`,
-    `      'Modules',`,
-    `      'Recursion',`,
-    `      'C++ Virtual Machine',`,
-    `      'Project Euler sample solutions',`,
-    `    ],`,
-    `  ],`,
-    `  [`,
-    `    'My other projects and contact information can be found at:',`,
-    `    'https://andrewmorris.io',`,
-    `  ],`,
-    `];`,
-  ].join('\n'),
+  value: files[currentFile],
 	language: 'vortex',
 });
 
@@ -277,9 +172,15 @@ window.addEventListener('resize', () => editor.layout());
 
 const model = notNull(editor.getModel());
 
+selectEl.addEventListener('change', () => {
+  currentFile = (<HTMLSelectElement>selectEl).value;
+  model.setValue(files[currentFile]);
+});
+
 let timerId: undefined | number = undefined;
 
 model.onDidChangeContent(() => {
+  files[currentFile] = model.getValue();
   clearTimeout(timerId);
 
   timerId = setTimeout(() => {
@@ -288,46 +189,20 @@ model.onDidChangeContent(() => {
 });
 
 function compile() {
-  const docs = [
-    {
-      uri: 'monaco:///playground.vx',
-      text: model.getValue(),
-    },
-  ];
-
-  const firstDoc = docs[0];
-
-  const baseMatch = firstDoc.uri.match(/^[^\/]*\/\/[^/]*/);
-
-  if (baseMatch === null) {
-    throw new Error('Shouldn\'t be possible');
-  }
-
-  const base = baseMatch[0];
-
-  const paths = docs.map(doc => doc.uri.replace(base, '@'));
-
   function readFile(f: string): string | Error {
-    const uri = f.replace('@', base);
-    const doc = docs.find(d => d.uri === uri);
-
-    if (!doc) {
-      return new Error('Document not open: ' + uri);
-    }
-
-    return doc.text;
+    return files[f] || new Error('File not found');
   }
 
   const [rawNotes, az] = vortex.Compiler.compile(
-    paths,
+    [currentFile],
     readFile,
     { stepLimit: 100000 },
   );
 
-  const mod = az.modules['@/playground.vx'];
+  const mod = az.modules[currentFile];
 
   if (mod === undefined) {
-    throw new Error('Shouldn\'t be possible');
+    throw new Error('currentFile not found');
   }
 
   if (mod.outcome === null) {
@@ -341,9 +216,10 @@ function compile() {
   const markers: monaco.editor.IMarkerData[] = [];
 
   for (const note of notes) {
-    const [, range] = note.pos;
+    const [file, range] = note.pos;
 
-    if (range === null) {
+    // TODO: Include notes from other files and non-file notes
+    if (file !== currentFile || range === null) {
       continue;
     }
 
@@ -397,7 +273,7 @@ function compile() {
     );
   }
 
-  lines.push(`mcall $@/playground.vx return`);
+  lines.push(`mcall ${currentFile} return`);
 
   vasmEl.textContent = lines.join('\n');
 }
