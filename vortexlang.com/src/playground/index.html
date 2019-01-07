@@ -16,38 +16,47 @@
       }
 
       #file-selector {
+        background-color: #181818;
         position: absolute;
         left: 0;
         top: 0;
-        height: 2em;
         font-size: 1.5em;
         display: flex;
-        width: 100vw;
+        width: 50vw;
         border-bottom: 1px solid black;
-        box-sizing: border-box;
         user-select: none;
       }
 
       #file-selector > div {
         width: 2em;
         padding: 0.5em;
-        text-align: center;
       }
 
       #file-location {
         flex-grow: 1;
       }
 
+      #file-location select, #file-location option {
+        background-color: #181818;
+        border: none;
+        color: white;
+        font-family: monospace;
+        font-size: 1em;
+        width: 100%;
+        -webkit-appearance: none;
+      }
+
       #file-previous, #file-next {
         color: hsl(44, 100%, 50%);
         font-weight: bold;
+        text-align: center;
       }
 
       #editor {
         position: absolute;
         left: 0;
-        top: 3em;
-        height: calc(100vh - 1em);
+        top: 4em;
+        height: calc(100vh - 4em);
         width: 50vw;
       }
 
@@ -63,8 +72,8 @@
         border-left: 1px solid black;
         position: absolute;
         left: 50vw;
-        top: 3em;
-        height: calc(100vh - 3em);
+        top: 0em;
+        height: 100vh;
         width: 50vw;
         overflow-y: scroll;
         overflow-x: hidden;
@@ -72,11 +81,18 @@
 
       #display div {
         white-space: pre-wrap;
-        padding: 1em;
+        padding: 1.5em;
       }
 
-      #vasm {
+      #display div:not(:first-child) {
         border-top: 1px solid black;
+      }
+
+      #display .display-title {
+        text-align: center;
+        font-size: 1.5em;
+        background-color: #181818;
+        padding: 0.5em;
       }
 
       a, a:visited {
@@ -91,12 +107,21 @@
     </div>
     <div id="file-selector">
       <div id="file-previous">&lt;</div>
-      <div id="file-location">@/playground.vx</div>
+      <div id="file-location">
+        <select>
+          <option>@/hello.vx</option>
+          <option>@/tutorial/variables/1.vx</option>
+          <option>@/tutorial/variables/2.vx</option>
+          <option>@/tutorial/variables/3.vx</option>
+        </select>
+      </div>
       <div id="file-next">&gt;</div>
     </div>
 
     <div id="display">
+      <div class="display-title">Output</div>
       <div id="output">'The playground is loading'</div>
+      <div class="display-title">Bytecode</div>
       <div id="vasm">mfunc $@/preview.vx {
   'The playground is loading'
   return
