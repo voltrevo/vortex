@@ -1,4 +1,4 @@
-import first from './core';
+import ./core/first.vx;
 
 func abs(x) {
   if (x < 0) {

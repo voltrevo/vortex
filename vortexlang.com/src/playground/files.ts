@@ -658,7 +658,7 @@ export default {
     // String interpolation is planned, which will enable expressions like:
     // 'number: ' ++ (1 + 1):String()
     // to be simplified to:
-    // 'number: {123}' // (Or something like that)
+    // 'number: {1 + 1}' // (Or something like that)
   `),
 
   '@/tutorial/objects/1.vx': blockTrim(`

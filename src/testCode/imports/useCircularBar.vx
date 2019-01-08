@@ -1,3 +1,3 @@
-value := (import circular).bar(3);
+value := (import ./circular.vx).bar(3);
 assert value == 'odd';
 return 'done';

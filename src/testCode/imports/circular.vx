@@ -1,6 +1,6 @@
 // Doesn't cause an infinite loop - not executed until used (type analysis
 // should occur though)
-import circular;
+import ./circular.vx;
 
 return {
   foo: func(n) {

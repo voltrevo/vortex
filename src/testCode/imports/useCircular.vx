@@ -1,5 +1,5 @@
-import circular;
-import mutuallyCircularA;
+import ./circular.vx;
+import ./mutuallyCircularA.vx;
 
 assert circular.foo(3) == 'odd';
 assert mutuallyCircularA(5) == 'B';

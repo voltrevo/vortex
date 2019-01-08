@@ -1,1 +1,1 @@
-return (import a); // #error #infinite-loop
+return (import ./a.vx); // #error #infinite-loop

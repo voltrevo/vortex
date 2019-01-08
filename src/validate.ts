@@ -307,8 +307,7 @@ function validateFunctionScope(
             return [];
           }
 
-          const [identifier] = el.v;
-          return [{ t: 'CreateVariable', v: identifier }];
+          return [{ t: 'CreateVariable', v: Syntax.IdentifierFromImport(el) }];
         }
 
         case 'methodLookup': {

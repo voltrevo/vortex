@@ -230,52 +230,40 @@ namespace Package {
     file: string,
     import_: Syntax.Import,
   ): string | Note {
-    let { v: [name, source] } = import_;
-    const nameStr = name.v + '.vx';
+    const source = (() => {
+      switch (import_.v.t) {
+        case 'simple': {
+          return import_.v.v;
+        }
 
-    const sourceStr = (
-      source === null ?
-      '.' :
-      source.v.slice(1, source.v.length - 1)
-    );
+        case 'long': {
+          const [, str] = import_.v.v;
+          return str.v.slice(1, str.v.length - 1);
+        }
+      }
+    })();
 
-    let [sourceEntry, ...sourceRest] = sourceStr.split('/');
+    const sourceParts = source.split('/');
 
-    if (sourceEntry !== '.' && sourceEntry !== '..') {
-      return [sourceEntry, ...sourceRest, nameStr].join('/');
+    if (sourceParts.indexOf('..') !== -1) {
+      return Note(
+        import_.p,
+        'error',
+        ['package', 'invalid-import-source'],
+        'Import source uses ..',
+      );
+    }
+
+    let [sourceEntry, ...sourceRest] = sourceParts;
+
+    if (sourceEntry !== '.') {
+      return source;
     }
 
     const fileParts = file.split('/');
     const dirname = fileParts.slice(0, fileParts.length - 1).join('/');
 
-    let dirPath = dirname === '' ? [] : dirname.split('/');
-
-    while (sourceEntry === '..') {
-      if (dirPath.length === 0) {
-        return Note(
-          import_.p,
-          'error',
-          ['package', 'invalid-import-source'],
-          'Import source is above the package root',
-        );
-      }
-
-      dirPath.pop();
-      [sourceEntry, ...sourceRest] = sourceRest;
-    }
-
-    const res = [
-      ...dirPath,
-      ...(
-        sourceEntry === undefined || sourceEntry === '.' ?
-        [] :
-        [sourceEntry]
-      ),
-      ...sourceRest,
-      nameStr,
-    ].join('/');
-
-    return res;
+    return [dirname, ...sourceRest].join('/');
   }
 }
 

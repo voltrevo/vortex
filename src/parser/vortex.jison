@@ -17,7 +17,7 @@
 'return'              return 'RETURN'
 'break'               return 'BREAK'
 'continue'            return 'CONTINUE'
-'import'              return 'IMPORT'
+"import "[^\s);]+     return 'IMPORT'
 'from'                return 'FROM'
 'class'               return 'CLASS'
 'static'              return 'STATIC'
@@ -201,10 +201,10 @@ string
     ;
 
 import
-    : IMPORT identifier
-        {$$ = { t: 'import', v: [$2, null], p: L(@$) }}
-    | IMPORT identifier FROM string
-        {$$ = { t: 'import', v: [$2, $4], p: L(@$) }}
+    : IMPORT
+        {$$ = { t: 'import', v: { t: 'simple', v: $1.replace('import ', '') }, p: L(@$) }}
+    | IMPORT FROM string
+        {$$ = { t: 'import', v: { t: 'long', v: [$1.replace('import ', ''), $3] }, p: L(@$) }}
     ;
 
 func

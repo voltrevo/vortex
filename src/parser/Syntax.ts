@@ -210,8 +210,8 @@ namespace Syntax {
   };
 
   export type Import = { topExp?: true } & (
-    { t: 'import', v: [Identifier, null], p: Pos } |
-    { t: 'import', v: [Identifier, STRING], p: Pos } |
+    { t: 'import', v: { t: 'simple', v: string }, p: Pos } |
+    { t: 'import', v: { t: 'long', v: [string, STRING] }, p: Pos } |
     never
   );
 
@@ -354,23 +354,16 @@ namespace Syntax {
       }
 
       case 'import': {
-        // TODO: The first element here is an identifier but the parser is
-        // providing it as a raw string. The parser should be changed not to
-        // do that - passing through the identifier syntax element would be
-        // simpler. There are other examples of this, e.g. function names.
-        const [identifier, fromString] = el.v;
+        const children: Expression[] = [];
 
-        if (typeof fromString === 'string') {
-          // This is not reachable, but Typescript doesn't know that
-          // because it's not good at control flow analysis for tuples.
-          // TODO: Don't use tuples :-(.
-          throw new Error('Should not be possible');
+        children.push(IdentifierFromImport(el));
+
+        if (el.v.t === 'long') {
+          const [, str] = el.v.v;
+          children.push(str);
         }
 
-        return [
-          identifier,
-          ...(fromString ? [fromString] : []),
-        ];
+        return children;
       }
 
       case 'switch': {
@@ -455,6 +448,34 @@ namespace Syntax {
     }
 
     return expChildren;
+  }
+
+  export function IdentifierFromImport(import_: Import): Identifier {
+    switch (import_.v.t) {
+      case 'simple': {
+        const parts = import_.v.v.split('/');
+        const last = parts[parts.length - 1];
+        const name = last.split('.')[0];
+
+        const synthIdentifier: Syntax.Identifier = {
+          t: 'IDENTIFIER',
+          v: name,
+          p: import_.p,
+        };
+
+        return synthIdentifier;
+      }
+
+      case 'long': {
+        const [identifierName] = import_.v.v;
+
+        return {
+          t: 'IDENTIFIER',
+          v: identifierName,
+          p: import_.p,
+        };
+      }
+    }
   }
 
   export function Program(programText: string): Program {

@@ -545,7 +545,7 @@ namespace ByteCoder {
           return [[`'Failed to resolve import' throw`], coder];
         }
 
-        const [ident] = statement.v;
+        const ident = Syntax.IdentifierFromImport(statement);
 
         return [[], setMFunc(coder, ident.v, resolved)];
       }

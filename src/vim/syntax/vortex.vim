@@ -77,6 +77,9 @@ syn region      vxString            start=+'+ skip=+\\\\\|\\"+ end=+'+ contains=
 hi def link     vxString            String
 " hi def link     vxRawString         String
 
+syn match       vxString            "\(import  *\)\@<=[\w@.]\w*\/\(\w\w*\/\)*"
+syn match       vxString            "\(import  *[\w@.]\w*\/\(\w\w*\/\)*\<[a-zA-Z]\w*\>\)\@<=\.vx"
+
 " Regions
 syn region      vxBlock             start="{" end="}" transparent fold
 syn region      vxParen             start='(' end=')' transparent
@@ -91,7 +94,9 @@ hi def link     vxOperator          Operator
 
 " Name creation
 syn match       vxNameCreation      "\<\([a-zA-Z]\w*\)\>\( *\(:=\|of\)\)\@="
-syn match       vxNameCreation      "\(\(import\|class\|func\) *\)\@<=\<[a-zA-Z]\w*\>"
+syn match       vxNameCreation      "\(\(class\|func\) *\)\@<=\<[a-zA-Z]\w*\>"
+syn match       vxNameCreation      "\(\(import\)  *\)\@<=\<[a-zA-Z]\w*\>\( *from\)\@="
+syn match       vxNameCreation      "\(import  *[\w@.]\w*\/\(\w\w*\/\)*\)\@<=\<[a-zA-Z]\w*\>\(\.vx\)\@="
 syn match       vxNameCreation      "\<[a-zA-Z]\w*\>\(: \)\@="
 hi def link     vxNameCreation      Define
 

@@ -1,4 +1,4 @@
-import mutuallyCircularB;
+import ./mutuallyCircularB.vx;
 
 return func(n) {
   if (n > 0) {

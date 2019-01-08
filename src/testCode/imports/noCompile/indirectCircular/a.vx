@@ -1,4 +1,4 @@
-import b;
-import callMe;
+import ./b.vx;
+import ./callMe.vx;
 
 return callMe(func() => b);

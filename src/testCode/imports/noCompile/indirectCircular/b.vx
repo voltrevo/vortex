@@ -1,2 +1,2 @@
-import a; // #error #import-loop
+import ./a.vx; // #error #import-loop
 return a;

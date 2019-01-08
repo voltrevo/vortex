@@ -1,0 +1,121 @@
+import math from 'core'; // #warn #unused
+
+import factorial; // #info #is-duplicated TODO:error:not-found
+
+!true; // #warn #no-effect
+
+// main doesn't have special significance
+func main(n) { // #warn #unused
+  2 ** 3 ** 4; // #warn #no-effect #top-expression
+  1 + 1; // #warn #no-effect
+
+  100 + 2 * 3; // #warn #no-effect
+
+  foo := 7;
+  (import bar)(); // #warn #no-effect TODO:error:not-found
+
+  if (1 > 1) {
+    foo = foo + 1;
+  }
+
+  return multiplyAdd(n, n, n) + 'hello';
+};
+
+func multiplyAdd(a, b, c) => a * b + c;
+
+func methodCalls() { // #warn #unused
+  return getObject():method():method2(); // #error #not-found
+};
+
+func arrays() { // #warn #unused
+  literal := [1, 2, 3, 2 + 2];
+  subscript := literal[blah()]; // #error #warn #not-found #unused
+}; // #error #return-failure
+
+func objects() { // #warn #unused
+  x := { a: 1, b: 1 };
+  x += { '': 3 };
+  x.b++;
+  x.c := 3;
+}; // #error #return-failure
+
+func immutableStuff() { // #warn #unused
+  x := { a: 0, b: 0 };
+  y := x;
+
+  x.a++;
+
+  y == { a: 0, b: 0 }; // #warn #no-effect
+  x == { a: 1, b: 0 }; // #warn #no-effect
+}; // #error #return-failure
+
+func trailing() { // #warn #unused
+  { // #warn #no-effect
+    a: 1,
+    b: 2,
+  };
+
+  [ // #warn #no-effect
+    1,
+    2,
+    3,
+  ];
+}; // #error #return-failure
+
+/*
+  block comments work too
+*/
+
+if (true) {
+  continue; // #error #validation #loop-control-outside-loop
+  break; // #error #validation #loop-control-outside-loop #warn #unreachable
+}
+
+func() {}; // #error #empty-body #warn #no-effect
+
+foo := func() {}; // #error #warn #control-flow #unused
+
+func loops() { // #warn #unused
+  for {
+    infiniteLoop := 1; // #warn #unused TODO-easy:infinite-loop
+  }
+
+  for (1) {} // TODO: type-error
+  for (i := 1; 1; i = i + 1) {}
+  for (i of values) {} // #error #warn #warn #no-inner-return #not-found #for-return #control-clause-prevents-return #scope #warn #unused
+}; // #error #return-failure
+
+class Point { // #warn #unused
+  x: f64;
+  y: f64;
+
+  :sqDist() => x ** 2 + y ** 2;
+
+  :sum() {
+    return x + y;
+  }
+};
+
+class Error: string {
+  :message() { return this; }
+};
+
+assert 1 == 1;
+
+foo = switch (37) {
+  37 => 42;
+};
+
+func concat() { // #warn #unused
+  s := 'foo' ++ 'bar';
+  s ++= 'baz';
+  return s;
+};
+
+eight := (+)(2, 6); // #warn #unused
+
+return func factorial(n) => switch { // #error #duplicate
+  (n < 0) => Error('Invalid input');
+  (n == 0) => 1;
+  (true) => n * factorial(n - 1);
+};

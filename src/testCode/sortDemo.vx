@@ -1,4 +1,4 @@
-import sort from './core';
+import ./core/sort.vx;
 
 assert [1, 2, 3] == sort([3, 1, 2], <);
 assert [3, 2, 1] == sort([3, 1, 2], >);

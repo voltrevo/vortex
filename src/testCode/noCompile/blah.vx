@@ -20,4 +20,4 @@ func() { // #warn #no-effect #top-expression
 a++; // #error #not-found
 
 foo.d.e := 42;
-// #error #return-failure
+// #error #return-failure #control-flow

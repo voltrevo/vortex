@@ -919,7 +919,7 @@ namespace Analyzer {
           }
 
           case 'import': {
-            const [importIdentifier] = statement.v;
+            const importIdentifier = Syntax.IdentifierFromImport(statement);
 
             az = Analyzer.add(az, importIdentifier.v, {
               cat: 'ref',

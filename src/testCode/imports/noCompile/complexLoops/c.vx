@@ -1,1 +1,1 @@
-return (import b) + (import a); // #error #error #import-loop
+return (import ./b.vx) + (import ./a.vx); // #error #error #import-loop #analyzer

@@ -1,1 +1,1 @@
-return (import c) + (import d);
+return (import ./c.vx) + (import ./d.vx);

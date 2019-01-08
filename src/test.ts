@@ -13,14 +13,14 @@ const files = (spawnSync('git', ['ls-files'])
   .filter(line => (
     line !== '' &&
     /\.vx$/.test(line) &&
-    /testCode|parser/.test(line)
+    /testCode/.test(line)
   ))
   .sort((a, b) => (
     a.toUpperCase() < b.toUpperCase() ? -1 :
     a.toUpperCase() === b.toUpperCase() ? 0 :
     1
   ))
-  .map(f => '@/' + f)
+  .map(f => '@/' + f.replace(/^.*testCode\//, ''))
 );
 
 const unseenTags: { [tag: string]: true | undefined } = {};
@@ -83,8 +83,12 @@ const readFile = (file: string): string | Error => {
     throw new Error('Expected a local read: ' + file);
   }
 
+  const prefix = ((__dirname + '/testCode/')
+    .replace('vortex/build', 'vortex/src')
+  );
+
   try {
-    text = readFileSync(file.slice(2)).toString();
+    text = readFileSync(prefix + file.slice(2)).toString();
   } catch {}
 
   if (text === null) {

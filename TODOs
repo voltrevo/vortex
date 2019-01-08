@@ -1,8 +1,7 @@
 TODO: Add test code for compounds and inc/dec with non-identifier targets
 TODO: Implement expressions like `[a[0]] += [1]` (combine destructure with accessor mutation)
-TODO: Update import syntax e.g. `import ./sibling.vx;`, `import ./sibling.vx as otherName;`
-TODO: Memory leak analysis
 TODO: TODO tagging, group based on tags
+TODO: Fix vim plugin not knowing file path (fix @/imports/foo.vx)
 TODO: More unused warnings via return value dependency analysis (see cirumventUnused.vx)
 TODO: _ for implicit ignore
 TODO: Place import trace notes at lookup site rather than at import expression
