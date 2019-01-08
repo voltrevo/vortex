@@ -7,7 +7,7 @@
     <style>
       body {
         background-color: #1e1e1e;
-        color: white;
+        color: #d4d4d4;
         font-family: monospace;
         font-size: 1.2em;
         margin: 0;
@@ -107,6 +107,40 @@
       #project-files div {
         white-space: pre;
       }
+
+      #display #notes {
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+      }
+
+      #display .note {
+        padding: 0.5em 1.5em;
+      }
+
+      .note.info {
+        background-color: hsla(240, 100%, 50%, 0.1);
+      }
+
+      .note.warn {
+        background-color: hsla(30, 100%, 50%, 0.1);
+      }
+
+      .note.error {
+        background-color: hsla(0, 100%, 50%, 0.1);
+      }
+
+      #display .note .note {
+        border: 1px solid black;
+      }
+
+      #display .note .note:first-child {
+        margin-top: 0.5em;
+      }
+
+      #display .note .note:not(:first-child) {
+        border-top: 0;
+      }
     </style>
   </head>
   <body>
@@ -122,9 +156,16 @@
     </div>
 
     <div id="display">
-      <div class="display-title">Output</div>
-      <div id="output">'The playground is loading'</div>
-      <div class="display-title">Bytecode</div>
+      <div class="display-title">Outcome</div>
+      <div id="outcome">'The playground is loading'</div>
+
+      <div class="display-title">Steps</div>
+      <div id="steps"></div>
+
+      <div class="display-title">Notes</div>
+      <div id="notes"></div>
+
+      <div class="display-title">Assembly</div>
       <div id="vasm">mfunc $@/preview.vx {
   'The playground is loading'
   return

@@ -136,7 +136,9 @@ function blockTrim(text: string) {
 }
 
 const editorEl = <HTMLElement>notNull(document.querySelector('#editor'));
-const outputEl = notNull(document.querySelector('#output'));
+const outcomeEl = notNull(document.querySelector('#outcome'));
+const stepsEl = notNull(document.querySelector('#steps'));
+const notesEl = notNull(document.querySelector('#notes'));
 const vasmEl = notNull(document.querySelector('#vasm'));
 
 const selectEl = <HTMLSelectElement>notNull(document.querySelector('#file-location select'));
@@ -151,7 +153,7 @@ const files = {
     // examples. Please go ahead and make edits to the code, you should see
     // the results in real-time!
     //
-    // Keeping with tradition, here is the hello world program:
+    // Keeping with tradition, here is the hello world program.
 
     return 'Hello world!';
 
@@ -170,7 +172,7 @@ const files = {
     x = 1;
 
     // Increment, decrement, and compound assignment operators are also
-    // available:
+    // available.
     x++;
     x--;
     x += 10;
@@ -179,10 +181,32 @@ const files = {
     return x;
   `),
   '@/tutorial/variables/2.vx': blockTrim(`
-    // It's an error to create a variable that already exists:
+    // It's an error to create a variable that already exists.
 
     x := 0;
     x := 0;
+
+    return x;
+  `),
+  '@/tutorial/variables/3.vx': blockTrim(`
+    // It's also an error to mutate a variable that doesn't exist.
+
+    x = 0;
+
+    return 'done';
+  `),
+  '@/tutorial/variables/4.vx': blockTrim(`
+    // Mutations cannot happen inside subexpressions.
+
+    x := 0;
+    x = x++;
+
+    return x;
+  `),
+  '@/tutorial/dataStructures/1.vx': blockTrim(`
+    // Data structures...
+
+    return [1, 2, 3];
   `),
 };
 
@@ -256,14 +280,70 @@ function compile() {
 
   const mod = az.modules[currentFile];
 
-  if (mod === undefined) {
-    throw new Error('currentFile not found');
+  if (mod === undefined || mod.outcome === null) {
+    outcomeEl.textContent = '';
+  } else {
+    outcomeEl.textContent = vortex.Outcome.LongString(mod.outcome);
   }
 
-  if (mod.outcome === null) {
-    outputEl.textContent = '';
-  } else {
-    outputEl.textContent = vortex.Outcome.LongString(mod.outcome);
+  stepsEl.textContent = `${az.steps}`;
+  notesEl.innerHTML = '';
+
+  for (const note of rawNotes) {
+    if (
+      note.tags.indexOf('file-outcome') !== -1 ||
+      note.tags.indexOf('statistics') !== -1
+    ) {
+      continue;
+    }
+
+    function replaceAll(str: string, pattern: string, newPattern: string) {
+      while (str.indexOf(pattern) !== -1) {
+        str = str.replace(pattern, newPattern);
+      }
+
+      return str;
+    }
+
+    function noteText(note: vortex.Note) {
+      return replaceAll(
+        `${vortex.formatLocation(note.pos)}: ${note.message}`,
+        `${currentFile}:`,
+        '',
+      );
+    }
+
+    let message = note.message;
+
+    while (message.indexOf(`${currentFile}:`) !== -1) {
+      message = message.replace(`${currentFile}:`, '');
+    }
+
+    const noteEl = document.createElement('div');
+    noteEl.classList.add('note');
+    noteEl.classList.add(note.level);
+
+    noteEl.textContent = noteText(note);
+
+    notesEl.appendChild(noteEl);
+
+    if (note.subnotes.length > 0) {
+      const subnotesEl = document.createElement('div');
+      subnotesEl.style.backgroundColor = '#1e1e1e';
+      subnotesEl.style.padding = '0';
+
+      for (const subnote of note.subnotes) {
+        const subnoteEl = document.createElement('div');
+        subnoteEl.classList.add('note');
+        subnoteEl.classList.add(subnote.level);
+
+        subnoteEl.textContent = noteText(subnote);
+
+        subnotesEl.appendChild(subnoteEl);
+      }
+
+      noteEl.appendChild(subnotesEl);
+    }
   }
 
   const notes = vortex.Note.flatten(rawNotes);
@@ -309,28 +389,33 @@ function compile() {
   const modules = goodModules(az.pack);
 
   if (modules === null) {
-    throw new Error('Can\'t emit bytecode for package that failed parsing');
-  }
-
-  const lines: string[] = [];
-
-  for (const file of Object.keys(modules)) {
-    const mod = modules[file];
-
-    lines.push(
-      `mfunc $${file} {`,
-      ...vortex.ByteCoder.Block(
-        vortex.ByteCoder(file),
-        mod.program
-      ).map(line => '  ' + line),
-      `}`,
-      ``,
+    vasmEl.textContent = (
+      'Can\'t emit assembly for package that failed parsing'
     );
+
+    vasmEl.classList.add('error');
+  } else {
+    const lines: string[] = [];
+
+    for (const file of Object.keys(modules)) {
+      const mod = modules[file];
+
+      lines.push(
+        `mfunc $${file} {`,
+        ...vortex.ByteCoder.Block(
+          vortex.ByteCoder(file),
+          mod.program
+        ).map(line => '  ' + line),
+        `}`,
+        ``,
+      );
+    }
+
+    lines.push(`mcall ${currentFile} return`);
+
+    vasmEl.textContent = lines.join('\n');
+    vasmEl.classList.remove('error');
   }
-
-  lines.push(`mcall ${currentFile} return`);
-
-  vasmEl.textContent = lines.join('\n');
 }
 
 compile();
