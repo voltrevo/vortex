@@ -122,37 +122,6 @@ export default {
     return 'done';
   `),
 
-  '@/tutorial/empty.vx': blockTrim(`
-    // An empty program is invalid because it doesn't return a value. You
-    // should see a red underline at the end of the input. Hover over it with
-    // your mouse to see details.
-  `),
-  '@/tutorial/topTypes.vx': blockTrim(`
-    // Every Vortex value is one of 7 top-level types:
-
-    log.info null;           // null
-    log.info true;           // bool
-    log.info 42;             // number
-    log.info 'hello';        // string
-    log.info [1, 2];         // array
-    log.info {x: 1};         // object
-    log.info func() => null; // function
-
-    // Each of these will be covered in more detail later. Note a couple of
-    // planned changes here:
-    // - The initial JS implementation of Vortex running here only has one
-    //   number type, because that's how JS natively works. In future there
-    //   will be many number types:
-    //   - u8, u16, u32, u64: Unsigned integer types
-    //   - i8, i16, i32, i64: Signed integer types
-    //   - f8, f16, f32, f64: Floating point types (js number == f64)
-    //   Most of these are already supported in the C++ VM, and an in-browser
-    //   solution for including these is planned too.
-    // - Sets will be added, which are like unordered arrays.
-
-    return 'done';
-  `),
-
   '@/tutorial/variables/1.vx': blockTrim(`
     // Create variables with :=
     x := 0;
@@ -202,6 +171,356 @@ export default {
     x += 3;
 
     return x;
+  `),
+
+  '@/tutorial/bools/1.vx': blockTrim(`
+    // Bools are like super primitive numbers with only two values:
+    // - false (aka 0, 'off')
+    // - true  (aka 1, 'on' )
+    // (Note that bools have a dedicated type, and are actually different than
+    // 0 and 1, which are numbers in Vortex.)
+
+    log.info false;
+    log.info true;
+
+    return 'done';
+  `),
+  '@/tutorial/bools/2.vx': blockTrim(`
+    // Like the arithmetic operators which take numbers and produce more
+    // numbers, bool operators take and produce bools.
+
+    // and
+    log.info false && false;
+    log.info false && true;
+    log.info true && false;
+    log.info true && true;
+
+    // or
+    log.info false || false;
+    log.info false || true;
+    log.info true || false;
+    log.info true || true;
+
+    // not
+    log.info !false;
+    log.info !true;
+
+    x := true;
+    y := false;
+    z := true;
+
+    log.info x && y && z;
+    log.info x && !y && z;
+    log.info !(x || y);
+
+    return 'done';
+  `),
+  '@/tutorial/bools/3.vx': blockTrim(`
+    // An operator can return a different type than its inputs. For example,
+    // when comparing numbers, numbers go in and a bool comes out.
+
+    x := 5;
+    y := 10;
+
+    return x == y; // Is x equal to y?
+  `),
+  '@/tutorial/bools/4.vx': blockTrim(`
+    // There are 6 comparison operators.
+
+    x := 5;
+    y := 10;
+
+    log.info x < y;
+    log.info x > y;
+    log.info x <= y;
+    log.info x >= y;
+
+    log.info x == y;
+    log.info x != y;
+
+    return 'done';
+  `),
+
+  '@/tutorial/empty.vx': blockTrim(`
+    // An empty program is invalid because it doesn't return a value. You
+    // should see a red underline at the end of the input. Hover over it with
+    // your mouse to see details.
+  `),
+  '@/tutorial/unreachableCode.vx': blockTrim(`
+    // Similarly, Vortex can detect certain forms of unreachable code, and
+    // emits warnings.
+
+    return 'done';
+    log.info 'Can\\'t get here';
+  `),
+
+  '@/tutorial/controlFlow/1.vx': blockTrim(`
+    // Code needs structures to decide to go one way or another. The simplest
+    // way to do this is {if}.
+
+    age := 20;
+
+    if (age >= 18) {
+      return 'Can drink in Australia';
+    }
+
+    if (age >= 21) {
+      // There's actually a bug in this code - this line is unreachable.
+      // Analysis is planned that can detect this and flag it as a warning.
+      return 'Can drink in Australia and United States';
+    }
+
+    return 'Too young to drink, except maybe in a few places like Ethiopia';
+  `),
+  '@/tutorial/controlFlow/2.vx': blockTrim(`
+    // Programs that might not return a value are invalid. For example, this
+    // incomplete version of the previous program.
+
+    age := 20;
+
+    if (age >= 18) {
+      return 'Can drink in Australia';
+    }
+
+    // In this example, we actually can't reach here, but only because of the
+    // particular value of {age}. Programs like this might become valid in the
+    // future.
+  `),
+  '@/tutorial/controlFlow/3.vx': blockTrim(`
+    // Condition clauses only accept bools. Otherwise it's an error.
+
+    if ('false') {
+      return 'entered branch';
+    }
+
+    return 'done';
+  `),
+  '@/tutorial/controlFlow/4.vx': blockTrim(`
+    // You can use an {else} clause to run a different piece of code when the
+    // condition is false.
+
+    msg := null;
+
+    age := 20;
+
+    if (age >= 18) {
+      msg = 'Can drink in Australia';
+    } else {
+      msg = 'Can\\'t drink in Australia';
+    }
+
+    return msg;
+  `),
+  '@/tutorial/controlFlow/5.vx': blockTrim(`
+    // If you have more than two possibilities, you can also use {else if}.
+
+    msg := null;
+
+    food := 'tomato';
+
+    if (food == 'banana') {
+      msg = 'A banana is a fruit';
+    } else if (food == 'carrot') {
+      msg = 'A carrot is a vegetable';
+    } else if (food == 'tomato') {
+      msg = 'A tomato is a fruit... I guess';
+    } else {
+      msg = 'I\\'m not sure what that one is';
+    }
+
+    return msg;
+  `),
+  '@/tutorial/controlFlow/6.vx': blockTrim(`
+    // Often though, you might find a {switch} solution is simpler.
+
+    food := 'tomato';
+
+    msg := switch (food) {
+      'banana' => 'A banana is a fruit';
+      'carrot' => 'A carrot is a vegetable';
+      'tomato' => 'A tomato is a fruit... I guess';
+    };
+
+    return msg;
+
+    // The Vortex {switch} is quite different to the traditional
+    // C-family {switch}, but it is less error prone when used for simple
+    // {switch} use-cases. We might end up using a different keyword here.
+  `),
+  '@/tutorial/controlFlow/7.vx': blockTrim(`
+    // In the previous program, if you change {food} to something unrecognized
+    // by the {switch}, an error is produced. Sometimes this is what you want.
+    // If you want a default, or have cases involving other variables, use this
+    // form instead.
+
+    food := 'tomato';
+
+    msg := switch {
+      (food == 'banana') => 'A banana is a fruit';
+      (food == 'carrot') => 'A carrot is a vegetable';
+      (food == 'tomato') => 'A tomato is a fruit... I guess';
+
+      true => 'I\\'m not sure what that one is';
+    };
+
+    return msg;
+
+    // Although it isn\\'t necessary for this form of switch, adding the
+    // keyword {default} to specify default cases for both forms will probably
+    // be added in the future.
+  `),
+  '@/tutorial/controlFlow/8.vx': blockTrim(`
+    // Vortex takes a page out of golang's book and uses the {for} keyword for
+    // every form of loop. The simplest form is just like {if}, except the code
+    // is repeated as long as the condition is true, instead of only going
+    // once.
+
+    sum := 0;
+
+    i := 1;
+
+    for (i <= 4) {
+      sum += i;
+
+      log.info i;
+      log.info sum;
+
+      i++;
+    }
+
+    return sum;
+  `),
+  '@/tutorial/controlFlow/9.vx': blockTrim(`
+    // This form of loop is very common:
+    // 1. Create a variable with a starting value.
+    // 2. Continue the loop as long as the variable is in range.
+    // 3. Move the variable to the next value after each round.
+    //
+    // Because of that, there is a dedicated syntax for it.
+
+    sum := 0;
+
+    for (      i := 1    ;         i <= 4          ;      i++       ) {
+      //  1. Start i at 1; 2. Continue while i <= 4; 3. Increment i
+
+      sum += i;
+
+      log.info i;
+      log.info sum;
+    }
+
+    return sum;
+  `),
+  '@/tutorial/controlFlow/10.vx': blockTrim(`
+    // If you want the loop to keep going unconditionally, simply omit the
+    // parentheses altogether.
+
+    sum := 0;
+    i := 1;
+
+    for {
+      sum += i;
+      i++;
+
+      log.info i;
+      log.info sum;
+
+      if (sum > 8) {
+        return sum;
+      }
+    }
+
+    // Vortex knows we can't reach here because of the unconditional loop, so
+    // it doesn't emit an error for failing to return.
+  `),
+  '@/tutorial/controlFlow/11.vx': blockTrim(`
+    // To break out of the loop without returning, use {break}.
+
+
+    sum := 0;
+    i := 1;
+
+    for {
+      sum += i;
+      i++;
+
+      log.info i;
+      log.info sum;
+
+      if (sum > 8) {
+        break;
+      }
+    }
+
+    sum += i * i;
+
+    return sum;
+  `),
+  '@/tutorial/controlFlow/12.vx': blockTrim(`
+    // To skip the rest of the current iteration but continue looping, use
+    // {continue}.
+
+    sum := 0;
+    i := 1;
+
+    for {
+      sum += i;
+      i++;
+
+      if (i == 2) {
+        continue;
+      }
+
+      log.info i;
+      log.info sum;
+
+      if (sum > 8) {
+        break;
+      }
+    }
+
+    sum += i * i;
+
+    return sum;
+  `),
+  '@/tutorial/controlFlow/13.vx': blockTrim(`
+    // Arrays are covered in more detail later, but there's one more type of
+    // loop which depends on them. It allows the loop variable to take a
+    // specific sequence of values.
+
+    sum := 0;
+
+    for (i of [1, 2, 3, 4]) {
+      sum += i;
+    }
+
+    return sum;
+  `),
+
+  '@/tutorial/topTypes.vx': blockTrim(`
+    // Every Vortex value is one of 7 top-level types:
+
+    log.info null;           // null
+    log.info true;           // bool
+    log.info 42;             // number
+    log.info 'hello';        // string
+    log.info [1, 2];         // array
+    log.info {x: 1};         // object
+    log.info func() => null; // function
+
+    // Each of these will be covered in more detail later. Note a couple of
+    // planned changes here:
+    // - The initial JS implementation of Vortex running here only has one
+    //   number type, because that's how JS natively works. In future there
+    //   will be many number types:
+    //   - u8, u16, u32, u64: Unsigned integer types
+    //   - i8, i16, i32, i64: Signed integer types
+    //   - f8, f16, f32, f64: Floating point types (js number == f64)
+    //   Most of these are already supported in the C++ VM, and an in-browser
+    //   solution for including these is planned too.
+    // - Sets will be added, which are like unordered arrays.
+
+    return 'done';
   `),
 
   '@/tutorial/arrays/1.vx': blockTrim(`
@@ -294,10 +613,16 @@ export default {
     // Strings are similar to arrays, but have important differences.
 
     // Both are sequences with a :Length() method.
-    log.info ['foo':Length(), ['f', 'o', 'o']:Length()];
+    log.info [
+      'foo':Length(),
+      ['f', 'o', 'o']:Length(),
+    ];
 
     // Both can be concatenated with ++.
-    log.info ['foo' ++ 'bar', ['f', 'o', 'o'] ++ ['b', 'a', 'r']];
+    log.info [
+      'foo' ++ 'bar',
+      ['f', 'o', 'o'] ++ ['b', 'a', 'r'],
+    ];
 
     // Arrays can contain anything, strings only contain unicode characters.
     log.info [1, [2], 'three'];
@@ -506,7 +831,7 @@ export default {
 
     return doubleTransform(
       100,
-      func(x) => 2 * x,
+      func(x) => x * 2,
       func(x) => x + 7,
     );
   `),
