@@ -416,4 +416,98 @@ export default {
       ['The toy car wheels are made of ' ++ toyCar.wheels.material],
     ];
   `),
+
+  '@/tutorial/functions/1.vx': blockTrim(`
+    // A function is a way to repeat the same code with different starting
+    // conditions.
+
+    func doublePlus1(x) {
+      return 2 * x + 1;
+    };
+
+    return [
+      doublePlus1(10),
+      doublePlus1(100),
+    ];
+  `),
+  '@/tutorial/functions/2.vx': blockTrim(`
+    // If a function only needs a single expression, you can use this more
+    // concise format.
+
+    func doublePlus1(x) => 2 * x + 1;
+
+
+
+    return [
+      doublePlus1(10),
+      doublePlus1(100),
+    ];
+  `),
+  '@/tutorial/functions/3.vx': blockTrim(`
+    // Feel free to use input variables like normal. It has no effect outside
+    // the function.
+
+    func doublePlus1(x) {
+      x *= 2;
+      x += 1;
+
+      return x;
+    };
+
+    results := [];
+
+    x := 10;
+    results ++= [doublePlus1(x)];
+    log.info x;
+
+    x = 100;
+    results ++= [doublePlus1(x)];
+    log.info x;
+
+    return results;
+  `),
+  '@/tutorial/functions/4.vx': blockTrim(`
+    // Functions are also simply values. You can use them like any other value,
+    // like assign them to variables.
+
+
+    f := func doublePlus1(x) => 2 * x + 1;
+
+    return [f(10), f(100)];
+  `),
+  '@/tutorial/functions/5.vx': blockTrim(`
+    // Note that the previous program generated a warning about {doublePlus1}
+    // being unused. Generally, if you assign a function to a variable, you
+    // should not give the function a name.
+
+    f := func(x) => 2 * x + 1;
+
+    return [f(10), f(100)];
+  `),
+  '@/tutorial/functions/6.vx': blockTrim(`
+    // A function can return another function.
+
+    func Adder(x) => func(y) => x + y;
+
+    add3 := Adder(3);
+    add5 := Adder(5);
+
+    return [add3(10), add5(100), Adder(8)(1000)];
+  `),
+  '@/tutorial/functions/7.vx': blockTrim(`
+    // You can even pass in functions as parameters.
+
+    func doubleTransform(value, transform1, transform2) {
+      value = transform1(value);
+      value = transform2(value);
+
+      return value;
+    };
+
+    return doubleTransform(
+      100,
+      func(x) => 2 * x,
+      func(x) => x + 7,
+    );
+  `),
 };
