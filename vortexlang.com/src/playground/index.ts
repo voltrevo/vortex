@@ -1,101 +1,7 @@
-import * as vortex from 'vortexlang';
 import * as monaco from './monaco';
 
+import compileRender from './compileRender';
 import files from './files';
-
-monaco.languages.register({
-  id: 'vortex',
-});
-
-monaco.languages.setMonarchTokensProvider('vortex', <any>{
-  // Set defaultToken to invalid to see what you do not tokenize yet
-  // defaultToken: 'invalid',
-
-  keywords: [
-    'continue', 'for', 'switch', 'assert', 'if', 'break', 'throw', 'else',
-    'return', 'static', 'class', 'true', 'false', 'null', 'func', 'log',
-    'import', 'from', 'of',
-  ],
-
-  typeKeywords: [
-    'bool', 'u8', 'u16', 'u32', 'u64', 'i8', 'i16', 'i32', 'i64', 'f8', 'f16',
-    'f32', 'f64', 'string',
-  ],
-
-  operators: [
-    '=', '>', '<', '!', '~', '?', ':', '==', '<=', '>=', '!=',
-    '&&', '||', '++', '--', '+', '-', '*', '/', '&', '|', '^', '%',
-    '<<', '>>', '>>>', '+=', '-=', '*=', '/=', '&=', '|=', '^=',
-    '%=', '<<=', '>>=', '>>>=', '**', '**=', ':=',
-  ],
-
-  // we include these common regular expressions
-  symbols:  /[=><!~?:&|+\-*\/\^%]+/,
-
-  // C# style strings
-  escapes: /\\(?:[abfnrtv\\"']|x[0-9A-Fa-f]{1,4}|u[0-9A-Fa-f]{4}|U[0-9A-Fa-f]{8})/,
-
-  // The main tokenizer for our languages
-  tokenizer: {
-    root: [
-      // identifiers and keywords
-      [/[a-z_$][\w$]*/, { cases: { '@typeKeywords': 'keyword',
-                                   '@keywords': 'keyword',
-                                   '@default': 'identifier' } }],
-
-      // whitespace
-      { include: '@whitespace' },
-
-      // delimiters and operators
-      [/[{}()\[\]]/, '@brackets'],
-      [/[<>](?!@symbols)/, '@brackets'],
-      [/@symbols/, { cases: { '@operators': 'operator',
-                              '@default'  : '' } } ],
-
-      // @ annotations.
-      // As an example, we emit a debugging log message on these tokens.
-      // Note: message are supressed during the first load -- change some lines to see them.
-      [/@\s*[a-zA-Z_\$][\w\$]*/, { token: 'annotation', log: 'annotation token: $0' }],
-
-      // numbers
-      [/\d*\.\d+([eE][\-+]?\d+)?/, 'number.float'],
-      [/0[xX][0-9a-fA-F]+/, 'number.hex'],
-      [/\d+/, 'number'],
-
-      // delimiter: after number because of .\d floats
-      [/[;,.]/, 'delimiter'],
-
-      // strings
-      [/"([^'\\]|\\.)*$/, 'string.invalid' ],  // non-teminated string
-      [/'/,  { token: 'string.quote', bracket: '@open', next: '@string' } ],
-
-      // characters
-      [/'[^\\']'/, 'string'],
-      [/(')(@escapes)(')/, ['string','string.escape','string']],
-      [/'/, 'string.invalid']
-    ],
-
-    comment: [
-      [/[^\/*]+/, 'comment' ],
-      [/\/\*/,    'comment', '@push' ], // nested comment
-      [/\*\//,    'comment', '@pop'  ],
-      [/[\/*]/,   'comment' ]
-    ],
-
-    string: [
-      [/[^\\']+/,  'string'],
-      [/@escapes/, 'string.escape'],
-      [/\\./,      'string.escape.invalid'],
-      [/'/,        { token: 'string.quote', bracket: '@close', next: '@pop' } ]
-    ],
-
-    whitespace: [
-      [/[ \t\r\n]+/, 'white'],
-      [/\/\*/,       'comment', '@comment' ],
-      [/\/\/.*$/,    'comment'],
-    ],
-  },
-});
 
 function notNull<T>(value: T | null): T {
   if (value === null) {
@@ -105,15 +11,15 @@ function notNull<T>(value: T | null): T {
   return value;
 }
 
-const editorEl = <HTMLElement>notNull(document.querySelector('#editor'));
-const outcomeEl = notNull(document.querySelector('#outcome'));
-const stepsEl = notNull(document.querySelector('#steps'));
-const notesEl = notNull(document.querySelector('#notes'));
-const vasmEl = notNull(document.querySelector('#vasm'));
+function domQuery<T = HTMLElement>(query: string): T {
+  return <T><unknown>notNull(document.querySelector(query));
+}
 
-const selectEl = <HTMLSelectElement>notNull(document.querySelector('#file-location select'));
-const filePreviousEl = notNull(document.querySelector('#file-previous'));
-const fileNextEl = notNull(document.querySelector('#file-next'));
+const editorEl = domQuery('#editor');
+
+const selectEl = domQuery<HTMLSelectElement>('#file-location select');
+const filePreviousEl = domQuery('#file-previous');
+const fileNextEl = domQuery('#file-next');
 
 for (const filename of Object.keys(files)) {
   const option = document.createElement('option');
@@ -168,177 +74,8 @@ model.onDidChangeContent(() => {
   clearTimeout(timerId);
 
   timerId = setTimeout(() => {
-    compile();
+    compileRender(files, currentFile, model, domQuery);
   }, 200) as any as number;
 });
 
-function compile() {
-  function readFile(f: string): string | Error {
-    return files[f] || new Error('File not found');
-  }
-
-  const [rawNotes, az] = vortex.Compiler.compile(
-    [currentFile],
-    readFile,
-    { stepLimit: 100000 },
-  );
-
-  const mod = az.modules[currentFile];
-
-  if (mod === undefined || mod.outcome === null) {
-    outcomeEl.textContent = '';
-  } else {
-    outcomeEl.textContent = vortex.Outcome.LongString(mod.outcome);
-  }
-
-  stepsEl.textContent = `${az.steps}`;
-  notesEl.innerHTML = '';
-
-  for (const note of rawNotes) {
-    if (
-      note.tags.indexOf('file-outcome') !== -1 ||
-      note.tags.indexOf('statistics') !== -1
-    ) {
-      continue;
-    }
-
-    function replaceAll(str: string, pattern: string, newPattern: string) {
-      while (str.indexOf(pattern) !== -1) {
-        str = str.replace(pattern, newPattern);
-      }
-
-      return str;
-    }
-
-    function noteText(note: vortex.Note) {
-      return replaceAll(
-        `${vortex.formatLocation(note.pos)}: ${note.message}`,
-        `${currentFile}:`,
-        '',
-      );
-    }
-
-    let message = note.message;
-
-    while (message.indexOf(`${currentFile}:`) !== -1) {
-      message = message.replace(`${currentFile}:`, '');
-    }
-
-    const noteEl = document.createElement('div');
-    noteEl.classList.add('note');
-    noteEl.classList.add(note.level);
-
-    noteEl.textContent = noteText(note);
-
-    notesEl.appendChild(noteEl);
-
-    if (note.subnotes.length > 0) {
-      const subnotesEl = document.createElement('div');
-      subnotesEl.style.backgroundColor = '#1e1e1e';
-      subnotesEl.style.padding = '0';
-
-      for (const subnote of note.subnotes) {
-        const subnoteEl = document.createElement('div');
-        subnoteEl.classList.add('note');
-        subnoteEl.classList.add(subnote.level);
-
-        subnoteEl.textContent = noteText(subnote);
-
-        subnotesEl.appendChild(subnoteEl);
-      }
-
-      noteEl.appendChild(subnotesEl);
-    }
-  }
-
-  const notes = vortex.Note.flatten(rawNotes);
-
-  const markers: monaco.editor.IMarkerData[] = [];
-
-  for (const note of notes) {
-    const [file, range] = note.pos;
-
-    // TODO: Include notes from other files and non-file notes
-    if (file !== currentFile || range === null) {
-      continue;
-    }
-
-    const startLineNumber = range[0][0];
-    const startColumn = range[0][1];
-    const endLineNumber = range[1][0];
-    const endColumn = range[1][1] + 1;
-
-    const severity = (() => {
-      switch (note.level) {
-        case 'info': return monaco.MarkerSeverity.Info;
-        case 'warn': return monaco.MarkerSeverity.Warning;
-        case 'error': return monaco.MarkerSeverity.Error;
-      }
-    })();
-
-    const message = note.message;
-
-    markers.push({
-      severity,
-      message,
-      startLineNumber,
-      startColumn,
-      endLineNumber,
-      endColumn,
-    });
-  }
-
-  monaco.editor.setModelMarkers(model, 'default', markers);
-
-  // TODO: dedupe with vxc cli tool
-  const modules = goodModules(az.pack);
-
-  if (modules === null) {
-    vasmEl.textContent = (
-      'Can\'t emit assembly for package with errors'
-    );
-
-    vasmEl.classList.add('error');
-  } else {
-    const lines: string[] = [];
-
-    for (const file of Object.keys(modules)) {
-      const mod = modules[file];
-
-      lines.push(
-        `mfunc $${file} {`,
-        ...vortex.ByteCoder.Block(
-          vortex.ByteCoder(file),
-          mod.program
-        ).map(line => '  ' + line),
-        `}`,
-        ``,
-      );
-    }
-
-    lines.push(`mcall ${currentFile} return`);
-
-    vasmEl.textContent = lines.join('\n');
-    vasmEl.classList.remove('error');
-  }
-}
-
-compile();
-
-function goodModules(
-  pack: vortex.Package,
-): { [file: string]: vortex.Package.Module } | null {
-  const res: { [file: string]: vortex.Package.Module } = {};
-
-  for (const file of Object.keys(pack.modules)) {
-    const entry = pack.modules[file];
-
-    if (entry === undefined || entry.t === 'ParserNotes') {
-      return null;
-    }
-
-    res[file] = entry;
-  }
-
-  return res;
-}
+compileRender(files, currentFile, model, domQuery);
