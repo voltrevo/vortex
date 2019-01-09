@@ -1520,7 +1520,7 @@ export default {
 
     import util from './10.vx';
 
-    return util.Max(
+    return util.Max(15, 20);
   `),
   '@/tutorial/imports/messages.vx': blockTrim(`
     return {
