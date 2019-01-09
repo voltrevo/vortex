@@ -1384,7 +1384,150 @@ export default {
     return 'done';
   `),
 
-  // TODO: map, reduce, operator-functions
-  // TODO: imports
+  '@/tutorial/mapReduce/1.vx': blockTrim(`
+    // Arrays have a couple of extra very important methods - the fabled
+    // :map and :reduce.
+    //
+    // :map creates a new array by calling a function on each element.
+
+    return ([1, 2, 3]
+      :map(func(x) => x * x)
+    );
+  `),
+  '@/tutorial/mapReduce/2.vx': blockTrim(`
+    // :reduce reduces many values into one by repeatedly calling a function
+    // which takes two values and produces one.
+
+
+
+    return ([1, 2, 3]
+      :reduce(func(x, y) => x + y)
+    );
+  `),
+  '@/tutorial/mapReduce/3.vx': blockTrim(`
+    // :map and :reduce are frequently chained together.
+
+
+
+
+    return ([1, 2, 3]
+      :map(func(x) => x * x)
+      :reduce(func(x, y) => x + y)
+    );
+  `),
+  '@/tutorial/mapReduce/4.vx': blockTrim(`
+    // For convenience, operators can be interpreted as function values in
+    // appropriate contexts lacking arguments.
+
+
+
+    return ([1, 2, 3]
+      :map(func(x) => x * x)
+      :reduce(+)
+    );
+
+    // In contexts where this doesn't work, you can always use parentheses
+    // instead.
+    // return (+)(1, 2);
+  `),
+
+  '@/tutorial/imports/1.vx': blockTrim(`
+    // Imports allow you to build larger programs by splitting them up into
+    // files.
+
+    import ./messages.vx;
+
+    return messages.hello;
+  `),
+  '@/tutorial/imports/2.vx': blockTrim(`
+    // Imports are often at the top of a file, but they can also go anywhere.
+    // They can even be embedded inside expressions.
+
+    return (import ./messages.vx).numbers;
+  `),
+  '@/tutorial/imports/3.vx': blockTrim(`
+    // Imports have an alternative syntax when the filename is not a valid
+    // identifier, or you need to use an alternative name to avoid a collision.
+
+    import example2 from './2.vx';
+
+    return example2;
+  `),
+  '@/tutorial/imports/newFolder/4.vx': blockTrim(`
+    // You can't use .. to access parent directories.
+
+
+    import example2 from '../2.vx';
+
+    return example2;
+  `),
+  '@/tutorial/imports/newFolder/5.vx': blockTrim(`
+    // But you can use @ instead of . to start at the root of the project
+    // and access any file.
+
+    import example2 from '@/tutorial/imports/2.vx';
+
+    return example2;
+  `),
+  '@/tutorial/imports/6.vx': blockTrim(`
+    // If you have a circular import, Vortex will emit an error instead of
+    // spinning in a loop.
+
+    import six from './6.vx';
+
+    return six;
+  `),
+  '@/tutorial/imports/7.vx': blockTrim(`
+    // It detects import problems across multiple files too.
+
+    import eight from './8.vx';
+
+    return eight;
+  `),
+  '@/tutorial/imports/8.vx': blockTrim(`
+    // It detects import problems across multiple files too.
+
+    import nine from './9.vx';
+
+    return nine;
+  `),
+  '@/tutorial/imports/9.vx': blockTrim(`
+    // It detects import problems across multiple files too.
+
+    import eight from './8.vx';
+
+    return eight;
+  `),
+  '@/tutorial/imports/10.vx': blockTrim(`
+    // Having said that, some circular imports are actually ok.
+
+    import util from './10.vx';
+
+    return {
+      Min: func(a, b) => util.MinMax(a, b)[0],
+      Max: func(a, b) => util.MinMax(a, b)[1],
+
+      MinMax: func(a, b) => switch {
+        (a < b) => [a, b];
+        true => [b, a];
+      },
+    };
+  `),
+  '@/tutorial/imports/11.vx': blockTrim(`
+    // An import statement is a declaration that is only resolved when it is
+    // actually used. Circular imports are ok as long as they don't create an
+    // evaluation loop.
+
+    import util from './10.vx';
+
+    return util.Max(
+  `),
+  '@/tutorial/imports/messages.vx': blockTrim(`
+    return {
+      hello: 'Hi there',
+      numbers: [1, 2, 3, 4],
+    };
+  `),
+
   // TODO: applications
 };
