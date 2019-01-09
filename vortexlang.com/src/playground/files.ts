@@ -911,6 +911,26 @@ export default {
     return i;
   `),
   '@/tutorial/scope/5.vx': blockTrim(`
+    // Some languages allow you to re-use names for new variables inside blocks
+    // that would otherwise still be in scope. This is called shadowing.
+    //
+    // In Vortex, shadowing is not allowed. Here are a couple of examples.
+
+    x := 1;
+
+    if (true) {
+      log.info x; // 1 in C/C++, TDZ error in JS.
+      x := 2;
+      log.info x;
+    }
+
+    log.info x; // This would log 0 if shadowing was allowed.
+
+    func foo(x) => 10 * x;
+
+    return foo(x); // 10, if shadowing was allowed.
+  `),
+  '@/tutorial/scope/6.vx': blockTrim(`
     // When a function is defined in a statement, it is hoisted to the top of
     // the current block (the file as a whole is also a block).
 
@@ -920,7 +940,7 @@ export default {
 
     return x;
   `),
-  '@/tutorial/scope/6.vx': blockTrim(`
+  '@/tutorial/scope/7.vx': blockTrim(`
     // However, when a function is a subexpression, it is not hoisted, and its
     // name only exists inside that function.
 
@@ -932,7 +952,7 @@ export default {
 
     return [f, x, y];
   `),
-  '@/tutorial/scope/7.vx': blockTrim(`
+  '@/tutorial/scope/8.vx': blockTrim(`
     // Usually giving a function a name in a subexpression doesn't make sense.
     // But it can be used for recursion.
 
@@ -941,7 +961,7 @@ export default {
       true => 1;
     };
   `),
-  '@/tutorial/scope/8.vx': blockTrim(`
+  '@/tutorial/scope/9.vx': blockTrim(`
     // Many programs can be written without hoisting. For this reason, you
     // might be tempted to avoid it and always assign to a variable instead.
     // However, hoisting is necessary for mutual recursion. Therefore, if you
@@ -973,9 +993,398 @@ export default {
     // much more difficult to read and write.)
   `),
 
-  // TODO: closures
-  // TODO: Entries
-  // TODO: Vector operations
+  '@/tutorial/closures/1.vx': blockTrim(`
+    // According to the rules of scoping, when inside a function there can be
+    // variables available that were defined outside the function. If you've
+    // never encountered this before, it can be surprising that it works.
+
+    x := 10;
+
+    func twiceXPlus1() => 2 * x + 1;
+
+    return twiceXPlus1();
+  `),
+  '@/tutorial/closures/2.vx': blockTrim(`
+    // This is called a closure. When a function captures variables into its
+    // closure, it is not available until after those variables have been
+    // created.
+
+    y := twiceXPlus1();
+
+    x := 10;
+
+    func twiceXPlus1() => 2 * x + 1;
+
+    return y;
+  `),
+  '@/tutorial/closures/3.vx': blockTrim(`
+    // The simplest way to implement closures would be to simply allow
+    // functions to passively read from the surrounding scope. However, if we
+    // did that, we'd have to limit the scope of functions based on their
+    // captures.
+
+    f := null;
+
+    if (true) {
+      msg := 'Hello';
+      f = func() => msg;
+    }
+
+    msg := 'world';
+
+    // {f} implicitly stores the {msg} it saw when it was created.
+    return f();
+  `),
+  '@/tutorial/closures/4.vx': blockTrim(`
+    // In other languages, closures are sometimes used to create an external
+    // state that influences the function's behavior over time.
+    //
+    // In Vortex, this is prevented by disallowing the capture of variables
+    // that are mutated.
+
+    i := 0;
+
+    func counter() {
+      i++;
+      return i;
+    };
+
+    log.info counter(); // 1?
+    log.info counter(); // 2?
+    log.info counter(); // 3?
+
+    i = 0;
+    log.info counter(); // Back to 1?
+
+    return 'done';
+  `),
+  '@/tutorial/closures/5.vx': blockTrim(`
+    // For some programming patterns, this ability to have shared state
+    // manipulation is convenient. However, it can also make programming
+    // profoundly more complicated.
+
+    func workSlow(task1, task2) => [
+      task1(),
+      task2(),
+      task1(),
+    ];
+
+    func workFast(task1, task2) {
+      output1 := task1(); // Only do task1 once!
+      output2 := task2();
+
+      return [output1, output2, output1];
+    };
+
+    // In Vortex, you can safely simplify workSlow into workFast. In fact,
+    // future versions of the compiler will do this kind of optimization for
+    // you.
+
+    func test(work) {
+      a := 1;
+      b := 2;
+      c := 3;
+      d := 4;
+
+      func addThings() => a + b;
+      func multiplyThings() => c * d;
+
+      return work(addThings, multiplyThings);
+    };
+
+    return [
+      test(workSlow),
+      test(workFast),
+    ];
+  `),
+  '@/tutorial/closures/6.vx': blockTrim(`
+    // However, if mutating closure variables was allowed, this could go
+    // wrong.
+
+
+    func workSlow(task1, task2) => [
+      task1(),
+      task2(),
+      task1(),
+    ];
+
+    func workFast(task1, task2) {
+      output1 := task1(); // Only do task1 once!
+      output2 := task2();
+
+      return [output1, output2, output1];
+    };
+
+
+
+
+
+    func test(work) {
+      a := 1;
+      b := 2;
+      c := 3;
+      d := 4;
+
+      func addThings() => a + b;
+
+      func multiplyThings() {
+        a = 100; // ¯\\_(ツ)_/¯ - most languages
+        return c * d;
+      };
+
+      return work(addThings, multiplyThings);
+    };
+
+    return [
+      test(workSlow), // Would be: [3, 12, 102]
+      test(workFast), // Would be: [3, 12, 3]
+    ];
+
+    // In Vortex, you should always get the same output when calling the same
+    // function with the same arguments. If you can find an example that
+    // doesn't do this, please file a bug report at:
+    // https://github.com/voltrevo/vortex/issues
+  `),
+
+  '@/tutorial/valueSemantics/1.vx': blockTrim(`
+    // Vortex always uses value semantics. This means that changes to data
+    // structures are not shared between multiple variables.
+    //
+    // Many other languages allow reference semantics, which is another way
+    // functions can change their behavior.
+
+    x := [5, 6, 7];
+
+    func checkX() {
+      if (x != [5, 6, 7]) {
+        return 'Something happened to x!';
+      }
+
+      return 'Ok';
+    };
+
+    log.info checkX();
+
+    y := x;
+
+    // With reference semantics, x and y merely *reference* an array that
+    // currently contains [5, 6, 7]. When we update 6 -> 60 in y, that change
+    // is reflected in x. In Vortex, x and y *are* [5, 6, 7], and this update
+    // is only reflected in y.
+    y[1] *= 10;
+
+    log.info checkX();
+
+    return {x, y};
+  `),
+  '@/tutorial/valueSemantics/2.vx': blockTrim(`
+    // Another consequence of value semantics is that data structures are
+    // compared according to their actual content.
+
+    x := [1, 2, 3];
+    y := [1, 2, 3];
+
+    return x == y; // In JS, this is false.
+  `),
+
+  '@/tutorial/destructuring/1.vx': blockTrim(`
+    // Destructuring is a feature which simplifies getting the contents of
+    // data structures.
+
+    data := [1, 2, 3];
+
+    [a, b, c] := data;
+
+    return a + b * c;
+  `),
+  '@/tutorial/destructuring/2.vx': blockTrim(`
+    // Destructuring allows you to name the arguments to your functions, so
+    // that the order doesn't matter.
+
+    func foo({a, b, c}) => a + b * c;
+
+    return foo({
+      c: 3,
+      b: 2,
+      a: 1,
+    });
+  `),
+  '@/tutorial/destructuring/3.vx': blockTrim(`
+    // It can also be used to simplify other patterns, like swapping two
+    // values.
+
+    a := 'foo';
+    b := 'bar';
+
+    log.info a ++ b;
+
+    [a, b] = [b, a];
+
+    log.info a ++ b;
+
+    return 'done';
+  `),
+  '@/tutorial/destructuring/4.vx': blockTrim(`
+    // Objects (and arrays) have an :Entries() method, which is generally
+    // expected to be combined with destructuring.
+
+    data := {
+      a: 1,
+      b: 2,
+      c: 3,
+    };
+
+    for ([key, value] of data:Entries()) {
+      log.info {key, value};
+    }
+
+    return 'done';
+  `),
+
+  '@/tutorial/vectorOperations/1.vx': blockTrim(`
+    // The reason why strings use ++ for concatenation, is to be consistent
+    // with arrays using ++ for concatenation. + is reserved instead for
+    // vector addition.
+
+    return [10, 20] + [3, 4];
+  `),
+  '@/tutorial/vectorOperations/2.vx': blockTrim(`
+    // You can also multiply and divide by scalars.
+
+    return 10 * [5, 6] + ([7, 7] / 7);
+  `),
+  '@/tutorial/vectorOperations/3.vx': blockTrim(`
+    // Matrices work too, they're just nested arrays.
+
+    x := [
+      [1, 2],
+      [3, 4],
+    ];
+
+    log.info x * x;
+
+    identity := [
+      [1, 0],
+      [0, 1],
+    ];
+
+    log.info (x + identity) * (x + identity);
+    log.info x * x + 2 * x + identity;
+
+    return 'done';
+  `),
+  '@/tutorial/vectorOperations/4.vx': blockTrim(`
+    // For a practical example of matrix multiplication, consider a program
+    // that implements poker. You might represent the chips owned by each
+    // player using a matrix.
+
+    holdings := [
+      [1,  3, 20], // 1 blue chip(s),  3 green chip(s), 20 white chip(s)
+      [0, 20,  5], // 0 blue chip(s), 20 green chip(s),  5 white chip(s)
+    ];
+
+    // Then you could represent how much each type of chip is worth, in
+    // equivalent white chips, using another matrix.
+
+    chipValues := [
+      [100], // blue  chips are worth 100 white chip(s)
+      [ 20], // green chips are worth  20 white chip(s)
+      [  1], // white chips are worth   1 white chip(s)
+    ];
+
+    // That way, multiplying them together would tell you how much each player
+    // has in equivalent white chips.
+
+    return holdings * chipValues;
+  `),
+  '@/tutorial/vectorOperations/5.vx': blockTrim(`
+    // In Vortex, you can also represent matrices with objects. This makes the
+    // poker logic easier to understand.
+
+
+    holdings := {
+      player1: {blue: 1, green:  3, white: 20},
+      player2: {blue: 0, green: 20, white:  5},
+    };
+
+    chipValues := {
+      blue:  {white: 100},
+      green: {white:  20},
+      white: {white:   1},
+    };
+
+    return holdings * chipValues;
+  `),
+  '@/tutorial/vectorOperations/6.vx': blockTrim(`
+    // You might wonder whether [1, 2, 3] is a column vector or a row vector.
+    // It's actually neither. [1, 2, 3] only has 1 dimension - 3. Column
+    // vectors and row vectors are special cases of matrices, and matrices have
+    // 2 dimensions. In this case we need 3x1 for a column vector and 1x3 for a
+    // row vector.
+
+    v := [1, 2, 3];
+
+    column := [
+      [1],
+      [2],
+      [3],
+    ];
+
+    row := [
+      [1, 2, 3],
+    ];
+
+    log.info row * column;
+    log.info 1 * 1 + 2 * 2 + 3 * 3;
+
+    // Arrays provide :Column() and :Row() methods to help here.
+
+    log.info v:Row() * v:Column();
+
+    // You can turn a row vector into a column vector with :Transpose(), and
+    // vice versa.
+
+    log.info v:Row():Transpose();
+    log.info v:Column():Transpose();
+
+    return 'done';
+  `),
+  '@/tutorial/vectorOperations/7.vx': blockTrim(`
+    // Transpose also works on matrices.
+
+    matrix := [
+      [1, 2, 3],
+      [4, 5, 6],
+    ];
+
+    return {
+      regular: matrix,
+      transposed: matrix:Transpose(),
+    };
+  `),
+  '@/tutorial/vectorOperations/8.vx': blockTrim(`
+    // Sometimes transpose can come in handy outside of linear algebra. If
+    // you have a pair of arrays, and want an array of pairs, you can use
+    // :Transpose() for that.
+
+    teams := ['Lions', 'Tigers', 'Bears'];
+    points := [5, 6, 7];
+
+    log.info {
+      regular: [teams, points],
+      transposed: [teams, points]:Transpose(),
+    };
+
+    for ([t, p] of [teams, points]:Transpose()) {
+      log.info 'The ' ++ t ++ ' have ' ++ p:String() ++ ' points.';
+      // Planned enhancement:
+      // log.info 'The {t} have {p} points';
+    }
+
+    return 'done';
+  `),
+
   // TODO: map, reduce, operator-functions
   // TODO: imports
+  // TODO: applications
 };
