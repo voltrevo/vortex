@@ -4,3 +4,4 @@ export { default as Compiler } from './Compiler';
 export { default as formatLocation } from './formatLocation';
 export { default as Note } from './Note';
 export { default as Package } from './Package';
+export { default as runConsoleApp } from './runConsoleApp';
