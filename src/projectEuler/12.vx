@@ -1,4 +1,4 @@
-import Primes from './util';
+import ./util/Primes.vx;
 
 primes := Primes(300);
 

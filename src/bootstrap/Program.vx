@@ -1,5 +1,5 @@
-import parse;
-import Number;
+import ./parse.vx;
+import ./Number.vx;
 
 // TODO: {a, b, ...} := rhs
 Many := parse.Many;

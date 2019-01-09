@@ -1,4 +1,4 @@
-import Primes from './util';
+import ./util/Primes.vx;
 
 // Generates most composite numbers less than limit, misses composites with
 // prime factors greater than the square root. Not sure how to efficiently

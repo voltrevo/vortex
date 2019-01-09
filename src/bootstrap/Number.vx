@@ -1,5 +1,5 @@
-import parse;
-import tryConvertFromU64;
+import ./parse.vx;
+import ./tryConvertFromU64.vx;
 
 func NonEmptyLine(lines, [i, j]) {
   if (i >= lines:Length()) {

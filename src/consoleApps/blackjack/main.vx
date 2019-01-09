@@ -1,6 +1,6 @@
-import blackjack;
-import util;
-import render;
+import ./blackjack.vx;
+import ./util.vx;
+import ./render.vx;
 
 func reduce(state, action) {
   if (state:String() == 'null') {

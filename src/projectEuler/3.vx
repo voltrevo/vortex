@@ -1,4 +1,4 @@
-import max from './util';
+import ./util/max.vx;
 
 n := 600851475143;
 i := 2;

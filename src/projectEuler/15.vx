@@ -1,4 +1,4 @@
-import Repeat from './util';
+import ./util/Repeat.vx;
 
 size := 21u64;
 

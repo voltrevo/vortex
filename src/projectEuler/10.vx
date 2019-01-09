@@ -1,4 +1,4 @@
-import Primes from './util';
+import ./util/Primes.vx;
 
 sum := Primes(2000000u64):reduce(+);
 

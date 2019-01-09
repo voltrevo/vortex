@@ -1,4 +1,4 @@
-import Digits from './util';
+import ./util/Digits.vx;
 
 n := [1];
 sz := 1000000000000;

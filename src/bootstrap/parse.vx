@@ -1,4 +1,4 @@
-import parse;
+import ./parse.vx;
 
 func isNull(x) => x:String() == 'null';
 

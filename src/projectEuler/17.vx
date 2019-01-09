@@ -1,4 +1,4 @@
-import Range from './util';
+import ./util/Range.vx;
 
 smallLens := [
   null, // zero not used

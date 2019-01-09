@@ -69,7 +69,7 @@ func partialCache(cacheStride) {
 };
 
 func fast() {
-  import collatz from './util';
+  import ./util/collatz.vx;
 
   keys := [
     27, 31, 41, 47, 54, 55, 62, 63, 71, 82, 83, 91, 103, 111, 121, 126, 127,

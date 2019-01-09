@@ -1,4 +1,4 @@
-import blackjack;
+import ./blackjack.vx;
 
 newline := '
 ';
