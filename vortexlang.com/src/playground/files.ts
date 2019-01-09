@@ -741,6 +741,30 @@ export default {
       ['The toy car wheels are made of ' ++ toyCar.wheels.material],
     ];
   `),
+  '@/tutorial/objects/9.vx': blockTrim(`
+    // You can also lookup object keys dynamically with the subscript operator.
+
+    car := {
+      wheels: {
+        material: 'rubber',
+      },
+    };
+
+    component := 'whe' ++ 'els';
+
+    return car[component].material;
+  `),
+  '@/tutorial/objects/10.vx': blockTrim(`
+    // Objects have a convenient shorthand syntax where {name} is the same
+    // as {name: name}. This is especially handy for logging.
+
+    x := 3;
+    y := 5;
+
+    log.info {x, y};
+
+    return x + y;
+  `),
 
   '@/tutorial/functions/1.vx': blockTrim(`
     // A function is a way to repeat the same code with different starting
@@ -835,4 +859,123 @@ export default {
       func(x) => x + 7,
     );
   `),
+
+  '@/tutorial/scope/1.vx': blockTrim(`
+    // The parts of the code where a variable is available for use is called
+    // its scope.
+    //
+    // Regular variables exist from the point of creation until
+    // the end of the applicable block.
+    //
+    // Here's an example of using a variable too early.
+
+    log.info x;
+
+    x := 3;
+
+    return x;
+  `),
+  '@/tutorial/scope/2.vx': blockTrim(`
+    // And here's an example of using a variable too late.
+
+    if (true) {
+      x := 3;
+      // x goes out of scope here. Because it wasn't used, we also get an
+      // unused warning.
+    }
+
+    return x;
+  `),
+  '@/tutorial/scope/3.vx': blockTrim(`
+    // This is ok though.
+
+    x := 0;
+
+    if (true) {
+      x = 3; // Ok: x is still in scope.
+    }
+
+    return x;
+    // x goes out of scope here.
+  `),
+  '@/tutorial/scope/4.vx': blockTrim(`
+    // The loop variables of for loops exist from creation until the end of the
+    // loop.
+
+    sum := 0;
+
+    for (i := 1; i <= 4; i++) {
+      sum += i;
+    }
+
+    return i;
+  `),
+  '@/tutorial/scope/5.vx': blockTrim(`
+    // When a function is defined in a statement, it is hoisted to the top of
+    // the current block (the file as a whole is also a block).
+
+    x := doublePlus1(10);
+
+    func doublePlus1(y) => 2 * y + 1;
+
+    return x;
+  `),
+  '@/tutorial/scope/6.vx': blockTrim(`
+    // However, when a function is a subexpression, it is not hoisted, and its
+    // name only exists inside that function.
+
+    x := doublePlus1(10);
+
+    f := func doublePlus1(y) => 2 * y + 1;
+
+    y := doublePlus1(100);
+
+    return [f, x, y];
+  `),
+  '@/tutorial/scope/7.vx': blockTrim(`
+    // Usually giving a function a name in a subexpression doesn't make sense.
+    // But it can be used for recursion.
+
+    return func factorial(n) => switch {
+      (n > 0) => n * factorial(n - 1);
+      true => 1;
+    };
+  `),
+  '@/tutorial/scope/8.vx': blockTrim(`
+    // Many programs can be written without hoisting. For this reason, you
+    // might be tempted to avoid it and always assign to a variable instead.
+    // However, hoisting is necessary for mutual recursion. Therefore, if you
+    // want to prefer one format over another when both will work for you,
+    // prefer hoisting.
+    //
+    // Here's an example of mutual recursion.
+
+    func foo(x, depth) {
+      if (x == 0) {
+        return ['stopping at 0', {depth}];
+      }
+
+      return bar((x + 5) % 13, depth + 1); // Ok: bar is hoisted
+    };
+
+    func bar(x, depth) {
+      if (x == 1) {
+        return ['stopping at 1', {depth}];
+      }
+
+      return foo((x + 5) % 13, depth + 1);
+    };
+
+    return foo(7, 0);
+
+    // (It's also possible to avoid hoisting by continuously passing the
+    // necessary functions through as parameters. However, those programs are
+    // much more difficult to read and write.)
+  `),
+
+  // TODO: closures
+  // TODO: Entries
+  // TODO: Vector operations
+  // TODO: map, reduce, operator-functions
+  // TODO: imports
 };

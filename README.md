@@ -310,10 +310,10 @@ return call2(*, 3, 5); // 15
 In a nutshell, Vortex has strict block scoping, no shadowing, and only non-subexpression functions are hoisted. Closures work.
 
 ```go
-x := y; // Error: y does not exist
-y := 3;
+y := x; // Error: x does not exist
+x := 3;
 
-return x;
+return y;
 ```
 ```go
 if (true) {
