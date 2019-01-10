@@ -1,6 +1,7 @@
 const path = require('path');
 
 module.exports = {
+  mode: 'development',
   entry: {
     playground: './src/playground/index.ts',
     'editor.worker': 'monaco-editor/esm/vs/editor/editor.worker.js',
