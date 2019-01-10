@@ -365,7 +365,7 @@ export default {
 
     return msg;
 
-    // Although it isn\\'t necessary for this form of switch, adding the
+    // Although it isn\'t necessary for this form of switch, adding the
     // keyword {default} to specify default cases for both forms will probably
     // be added in the future.
   `),
