@@ -5,16 +5,6 @@ export default function renderConsoleApplication(
   outcome: vortex.Outcome.ConcreteObject,
   contentEl: HTMLElement,
 ) {
-  if (!('reduce' in outcome.v)) {
-    return;
-  }
-
-  const reduce = outcome.v.reduce;
-
-  if (reduce.t !== 'Func') {
-    return;
-  }
-
   const displayEl = document.createElement('div');
   displayEl.style.padding = '1.5em';
 
@@ -45,7 +35,7 @@ export default function renderConsoleApplication(
 
   vortex.runConsoleApp(
     az,
-    reduce,
+    outcome,
     (text: string) => displayEl.textContent = text,
     () => new Promise((resolve) => {
       sendEl.onclick = () => {

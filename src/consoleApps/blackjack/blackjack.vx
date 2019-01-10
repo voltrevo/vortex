@@ -191,6 +191,10 @@ func findOption(options, input) {
 };
 
 func reduce(state, action) {
+  if (state:String() == 'null') {
+    return Init(action);
+  }
+
   match := findOption(state.options, action);
 
   if (match:String() == 'null') {

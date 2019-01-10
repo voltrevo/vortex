@@ -1,21 +1,28 @@
-func reducer(state, action) {
+func reduce(state, action) {
   if (state:String() == 'null') {
-    return {display: 'What\'s your name? ', count: 0};
+    return {count: 0};
   }
 
   state.count += 1;
 
   if (state.count == 1) {
     state.name := action;
-    state.display = 'Hi ' ++ state.name ++ ' ';
     return state;
   }
-
-  state.display = state.name ++ ', could you press Ctrl+D? ;-) ';
 
   return state;
 };
 
-assert reducer(null, null).display == 'What\'s your name? ';
+func render(state) => switch {
+  (state.count == 0) => 'What\'s your name? ';
 
-return reducer;
+  true => state.name ++ ', could you press Ctrl+D? ;-) ';
+};
+
+state := reduce(null, null);
+assert render(state) == 'What\'s your name? ';
+
+state = reduce(state, 'Alice');
+assert state.name == 'Alice';
+
+return {reduce, render};

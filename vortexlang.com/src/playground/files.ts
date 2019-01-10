@@ -1723,6 +1723,10 @@ export default {
     };
 
     func reduce(state, action) {
+      if (state:String() == 'null') {
+        return Init(action);
+      }
+
       match := findOption(state.options, action);
 
       if (match:String() == 'null') {
@@ -1738,20 +1742,9 @@ export default {
   `),
   '@/demos/blackjack/main.vx': blockTrim(`
     import ./blackjack.vx;
-    import ./util.vx;
     import ./render.vx;
 
-    func reduce(state, action) {
-      if (state:String() == 'null') {
-        state = {blackjack: blackjack.Init(action)};
-      } else {
-        state = {blackjack: blackjack.reduce(state.blackjack, action)};
-      }
-
-      state.display := render(state.blackjack);
-
-      return state;
-    };
+    reduce := blackjack.reduce;
 
     assert 'done' == (func() {
       state := reduce(null, 0.2873);
@@ -1760,7 +1753,7 @@ export default {
       state = reduce(state, 'next');
       state = reduce(state, 'next');
       state = reduce(state, 'finish');
-      log.info state.display;
+      log.info render(state);
 
       return 'done';
     })();
@@ -1768,6 +1761,7 @@ export default {
     return {
       type: 'application.console',
       reduce,
+      render,
     };
   `),
   '@/demos/blackjack/render.vx': blockTrim(`

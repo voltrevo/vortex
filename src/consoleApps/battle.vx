@@ -67,10 +67,9 @@ func render(state) {
   return display;
 };
 
-func reducer(state, action) {
+func reduce(state, action) {
   if (state:String() == 'null') {
     state = initState;
-    state.display := render(state);
     return state;
   }
 
@@ -92,9 +91,7 @@ func reducer(state, action) {
     }
   }
 
-  state.display = render(state);
-
   return state;
 };
 
-return reducer;
+return {reduce, render};

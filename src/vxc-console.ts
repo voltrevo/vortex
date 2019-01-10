@@ -85,16 +85,21 @@ if (entryMod.outcome === null) {
 
 const entryValue = entryMod.outcome;
 
-if (entryValue.t !== 'Func') {
+if (entryValue.t !== 'Object') {
   throw new Error(
-    'Expected a function to be returned from ' + entryFile +
+    'Expected an object to be returned from ' + entryFile +
     ' but got ' + entryValue.t
   );
 }
 
+let displayStr: string = '';
+
 runConsoleApp(
   az,
   entryValue,
-  (text: string) => process.stdout.write(text),
-  () => new Promise(resolve => rl.question('', resolve)),
+  (text: string) => { displayStr = text; },
+  () => new Promise(resolve => {
+    console.clear();
+    rl.question(displayStr, resolve)
+  }),
 );

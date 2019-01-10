@@ -2,47 +2,71 @@ import { default as Analyzer, Outcome } from './Analyzer';
 
 export default async function runConsoleApp(
   az: Analyzer,
-  reducer: Outcome.Func,
-  render: (value: string) => void,
+  app: Outcome.Object,
+  display: (value: string) => void,
   getInput: () => Promise<string | null>,
 ) {
+  for (const key of ['reduce', 'render']) {
+    if (!(key in app.v)) {
+      display(`Missing key ${key} in app`);
+      return;
+    }
+  }
+
+  const {reduce, render} = app.v;
+
+  if (reduce.t !== 'Func') {
+    display('Expected reduce to be func but it was a(n) ' + reduce.t);
+    return;
+  }
+
+  if (render.t !== 'Func') {
+    display('Expected render to be func but it was a(n) ' + render.t);
+    return;
+  }
+
   let state: Outcome = Outcome.Null();
   let action: Outcome = Outcome.Number(Math.random());
 
   while (true) {
     if (state.cat !== 'concrete') {
-      render('Reached unexpected state: ' + Outcome.LongString(state));
+      display('Reached unexpected state: ' + Outcome.LongString(state));
       return;
     }
 
     [state, az] = Analyzer.analyze.functionCallValue(
       az,
       null,
-      reducer,
+      reduce,
       [state, action],
     );
 
-    if (state.t !== 'Object' || state.v.display === undefined) {
-      render(
-        'Expected state ' + Outcome.LongString(state) +
-        ' to have a display key'
+    if (state.t !== 'Object') {
+      display(
+        'Expected state ' + Outcome.LongString(state) + ' to be an object'
       );
 
       return;
     }
 
-    const display = state.v.display;
+    let displayStr: Outcome;
+    [displayStr, az] = Analyzer.analyze.functionCallValue(
+      az,
+      null,
+      render,
+      [state],
+    );
 
-    if (display.t !== 'String') {
-      render(
-        'Expected display to be a string but it was a(n) ' +
-        display.t
+    if (displayStr.t !== 'String') {
+      display(
+        'Expected render output to be a string but it was a(n) ' +
+        displayStr.t
       );
 
       return;
     }
 
-    render(display.v);
+    display(displayStr.v);
 
     const input = await getInput();
 
