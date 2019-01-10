@@ -84,12 +84,12 @@
         overflow-x: hidden;
       }
 
-      #display div {
+      #display > div {
         white-space: pre-wrap;
         padding: 1.5em;
       }
 
-      #display div:not(:first-child) {
+      #display > div:not(:first-child) {
         border-top: 1px solid black;
       }
 
@@ -141,6 +141,36 @@
       #display .note .note:not(:first-child) {
         border-top: 0;
       }
+
+      #display #application {
+        display: none;
+        padding: 0;
+      }
+
+      #display #application.active {
+        display: block;
+      }
+
+      input[type=text] {
+        background-color: transparent;
+        color: #d4d4d4;
+        font-family: monospace;
+        font-size: 1em;
+        border: 0;
+        border-right: 1px solid black;
+        padding: 0.5em 1.5em;
+        outline: none;
+      }
+
+      .button {
+        background-color: rgba(0, 0, 255, 0.2);
+        padding: 0.5em;
+        cursor: pointer;
+      }
+
+      .content > div {
+        border-top: 1px solid black;
+      }
     </style>
   </head>
   <body>
@@ -156,6 +186,11 @@
     </div>
 
     <div id="display">
+      <div id="application"><div
+        class="display-title">Application</div
+      ><div class="content"></div
+      ></div>
+
       <div class="display-title">Outcome</div>
       <div id="outcome">'The playground is loading'</div>
 

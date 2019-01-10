@@ -2,14 +2,7 @@ import * as monaco from './monaco';
 
 import compileRender from './compileRender';
 import files from './files';
-
-function notNull<T>(value: T | null): T {
-  if (value === null) {
-    throw new Error();
-  }
-
-  return value;
-}
+import notNull from './notNull';
 
 function domQuery<T = HTMLElement>(query: string): T {
   return <T><unknown>notNull(document.querySelector(query));

@@ -1529,5 +1529,408 @@ export default {
     };
   `),
 
-  // TODO: applications
+  '@/demos/blackjack/blackjack.vx': blockTrim(`
+    import ./util.vx;
+
+    cards := [
+      { name: 'A', values: [1, 11] },
+      { name: '2', values: [2] },
+      { name: '3', values: [3] },
+      { name: '4', values: [4] },
+      { name: '5', values: [5] },
+      { name: '6', values: [6] },
+      { name: '7', values: [7] },
+      { name: '8', values: [8] },
+      { name: '9', values: [9] },
+      { name: '10', values: [10] },
+      { name: 'J', values: [10] },
+      { name: 'Q', values: [10] },
+      { name: 'K', values: [10] },
+    ];
+
+    suits := ['♠', '♥', '♦', '♣'];
+
+    fullDeck := (func() {
+      res := [];
+
+      for (suit of suits) {
+        for (card of cards) {
+          res ++= [card ++ {suit}];
+        }
+      }
+
+      return res;
+    })();
+
+    func scoreHand(hand) {
+      possibleScores := [0];
+
+      for (card of hand) {
+        newScores := [];
+
+        for (value of card.values) {
+          newScores ++= possibleScores:map(func(s) => s + value);
+        }
+
+        possibleScores = newScores;
+      }
+
+      possibleScores = possibleScores:filter(func(score) => score <= 21);
+
+      return possibleScores:reduceFrom(100, BestScore);
+    };
+
+    func BestScore(s1, s2) {
+      [min, max] := util.MinMax(s1, s2);
+
+      if (max == 100) {
+        return min;
+      }
+
+      return max;
+    };
+
+    func WinLossTie(playerHand, dealerHand) {
+      playerScore := scoreHand(playerHand);
+
+      if (playerScore == 100) {
+        return 'loss';
+      }
+
+      dealerScore := scoreHand(dealerHand);
+
+      if (dealerScore == 100) {
+        return 'win';
+      }
+
+      if (playerScore == dealerScore) {
+        return 'tie';
+      }
+
+      if (playerScore > dealerScore) {
+        return 'win';
+      }
+
+      return 'loss';
+    };
+
+    func Init(seed) {
+      rand := util.iterateRand(seed + 0.1237892);
+
+      deck := null;
+      [deck, rand] = util.shuffle(rand, fullDeck);
+
+      playerHand := [];
+      dealerHand := [];
+
+      for (i := 0; i < 2; i++) {
+        playerHand ++= [deck:Front()];
+        deck = deck:Tail();
+
+        dealerHand ++= [deck:Front()];
+        deck = deck:Tail();
+      }
+
+      return {
+        rand,
+        deck,
+        account: 100,
+        bet: 10,
+        playerHand,
+        dealerHand,
+        options: ['hit', 'stand', 'double'],
+      };
+    };
+
+    func apply(action) => switch (action) {
+      'hit' => func(state) {
+        state.playerHand ++= [state.deck:Front()];
+        state.deck = state.deck:Tail();
+
+        state.options = switch {
+          (scoreHand(state.playerHand) >= 21) => ['stand'];
+          true => ['hit', 'stand'];
+        };
+
+        return state;
+      };
+
+      'stand' => func(state) {
+        for (scoreHand(state.dealerHand) < 16) {
+          state.dealerHand ++= [state.deck:Front()];
+          state.deck = state.deck:Tail();
+        }
+
+        state.account += switch (WinLossTie(state.playerHand, state.dealerHand)) {
+          'win' => state.bet;
+          'loss' => -state.bet;
+          'tie' => 0;
+        };
+
+        state.options = [];
+
+        if (state.account >= 10) {
+          state.options ++= ['next'];
+        }
+
+        return state;
+      };
+
+      'double' => func(state) {
+        state.bet *= 2;
+        state.options = ['hit', 'stand'];
+
+        return state;
+      };
+
+      'next' => func(state) {
+        account := state.account;
+        state = Init(state.rand);
+        state.account = account;
+
+        return state;
+      };
+    };
+
+    func findOption(options, input) {
+      if (input == '') {
+        if (options:Length() > 0) {
+          return options:Front();
+        }
+
+        return null;
+      }
+
+      exactMatch := null;
+      firstCharMatches := [];
+
+      for (op of options) {
+        if (input == op) {
+          exactMatch = op;
+          break;
+        }
+
+        if (input[0] == op[0]) {
+          firstCharMatches ++= [op];
+        }
+      }
+
+      return switch {
+        (exactMatch:String() != 'null') => exactMatch;
+        (firstCharMatches:Length() > 0) => firstCharMatches:Front();
+        true => null;
+      };
+    };
+
+    func reduce(state, action) {
+      match := findOption(state.options, action);
+
+      if (match:String() == 'null') {
+        return state;
+      }
+
+      state = apply(match)(state);
+
+      return state;
+    };
+
+    return {Init, reduce, scoreHand, WinLossTie};
+  `),
+  '@/demos/blackjack/main.vx': blockTrim(`
+    import ./blackjack.vx;
+    import ./util.vx;
+    import ./render.vx;
+
+    func reduce(state, action) {
+      if (state:String() == 'null') {
+        state = {blackjack: blackjack.Init(action)};
+      } else {
+        state = {blackjack: blackjack.reduce(state.blackjack, action)};
+      }
+
+      state.display := render(state.blackjack);
+
+      return state;
+    };
+
+    assert 'done' == (func() {
+      state := reduce(null, 0.2873);
+      state = reduce(state, 'hit');
+      state = reduce(state, 'stand');
+      state = reduce(state, 'next');
+      state = reduce(state, 'next');
+      state = reduce(state, 'finish');
+      log.info state.display;
+
+      return 'done';
+    })();
+
+    return {
+      type: 'application.console',
+      reduce,
+    };
+  `),
+  '@/demos/blackjack/render.vx': blockTrim(`
+    import ./blackjack.vx;
+
+    newline := '
+    ';
+
+    func renderCard(card) {
+      return card.name ++ card.suit;
+    };
+
+    func renderHand(hand) {
+      return (hand
+        :map(func(card) => renderCard(card) ++ '  ')
+        :reduce(++)
+      );
+    };
+
+    func renderOptions(options) {
+      len := options:Length();
+
+      res := switch {
+        (len == 0) => [''];
+        true => ['Options:'];
+      };
+
+      for (i := 0; i < 4; i++) {
+        if (i < len) {
+          res ++= ['  ' ++ options[i]];
+        } else {
+          res ++= [''];
+        }
+      }
+
+      res ++= switch {
+        (len == 0) => ['Game Over'];
+        true => ['What will you do? '];
+      };
+
+      return res;
+    };
+
+    func renderScore(hand) {
+      score := blackjack.scoreHand(hand);
+
+      return switch {
+        (score <= 21) => score:String();
+        true => 'BUST';
+      };
+    };
+
+    func padLeft(len, str) {
+      for (str:Length() < len) {
+        str = ' ' ++ str;
+      }
+
+      return str;
+    };
+
+    func render({rand, deck, account, bet, playerHand, dealerHand, options}) {
+      lines := [
+        'Account: $' ++ padLeft(3, account:String()),
+        'Bet:     $' ++ padLeft(3, bet:String()),
+      ];
+
+      // TODO: This is a hack to suppress the warning for not using rand.
+      assert [rand, deck]:Length() == 2;
+
+      optionsStr := options:String();
+
+      finished := optionsStr == '[]' || optionsStr == '[\\'next\\']';
+
+      if (finished) {
+        lines ++= ['', 'Dealer hand: ' ++ renderHand(dealerHand)];
+      } else {
+        lines ++= ['', 'Dealer hand: ' ++ renderCard(dealerHand[0]) ++ '  ??'];
+      }
+
+      lines ++= ['Your hand:   ' ++ renderHand(playerHand)];
+
+      if (finished) {
+        lines ++= [
+          '',
+          'Your score:   ' ++ renderScore(playerHand),
+          'Dealer score: ' ++ renderScore(dealerHand),
+          '',
+        ];
+
+        betStr := '  $' ++ bet:String();
+
+        lines ++= switch (blackjack.WinLossTie(playerHand, dealerHand)) {
+          'win' => ['====> WIN <====', betStr ++ ' added'];
+          'loss' => ['====> LOSS <====', betStr ++ ' deducted'];
+          'tie' => ['====> TIE <====', ''];
+        };
+      } else {
+        lines ++= ['', '', '', '', '', ''];
+      }
+
+      lines ++= [''];
+      lines ++= renderOptions(options);
+
+      msg := lines:reduce(func(acc, next) => acc ++ newline ++ next);
+
+      return msg;
+    };
+
+    return render;
+  `),
+  '@/demos/blackjack/util.vx': blockTrim(`
+    import ./util.vx;
+
+    res := {
+      MinMax: func(a, b) => switch (a < b) {
+        true => [a, b];
+        false => [b, a];
+      },
+
+      abs: func(x) => switch (x >= 0) {
+        true => x;
+        false => -x;
+      },
+
+      iterateRand: func iterateRand(rand) {
+        r := rand;
+
+        for (i := 0; i < 5; i++) {
+          r -= (r ** 2 + 1) / (2 * r);
+        }
+
+        if (r == r + 1) {
+          return iterateRand(iterateRand(rand + 0.1) + 0.1);
+        }
+
+        return util.abs(1000 * r) % 1;
+      },
+
+      repeat: func(x, n) {
+        res := [];
+
+        for (i := 0; i < n; i++) {
+          res ++= [x];
+        }
+
+        return res;
+      },
+
+      shuffle: func(rand, arr) {
+        len := arr:Length();
+        limit := len - 1;
+
+        for (i := 0; i < limit; i++) {
+          j := i + rand * (len - i);
+          j -= j % 1;
+          rand = util.iterateRand(rand);
+          [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+
+        return [arr, rand];
+      },
+    };
+
+    return res;
+  `),
 };

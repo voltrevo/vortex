@@ -1,5 +1,7 @@
-import * as monaco from './monaco';
 import * as vortex from 'vortexlang';
+
+import * as monaco from './monaco';
+import renderApplication from './renderApplication';
 
 export default function compileRender(
   files: { [filename: string]: string },
@@ -144,6 +146,10 @@ export default function compileRender(
     vasmEl.textContent = lines.join('\n');
     vasmEl.classList.remove('error');
   }
+
+  const appEl = domQuery('#application');
+
+  renderApplication(az, mod && mod.outcome || null, appEl);
 }
 
 function goodModules(

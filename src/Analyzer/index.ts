@@ -2142,6 +2142,26 @@ namespace Analyzer {
       func: Outcome.Func,
       args: Outcome.Value[],
     ): [Outcome, Analyzer] {
+      const funcArgLength = Outcome.Func.ArgLength(func);
+
+      if (funcArgLength !== args.length) {
+        const ex = Outcome.Exception(
+          null,
+          ['type-error', 'arguments-length-mismatch'],
+          [
+            'Arguments length mismatch: ',
+            Outcome.JsString(func),
+            ' requires ',
+            funcArgLength,
+            ' arguments but ',
+            args.length,
+            ' were provided'
+          ].join(''),
+        );
+
+        return [ex, az];
+      }
+
       let out: Outcome | TailCall = TailCall(funcExp, func, args);
 
       while (typeof out === 'function') {
