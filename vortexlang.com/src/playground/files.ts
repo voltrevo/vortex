@@ -640,7 +640,7 @@ export default {
     log.info 'foo';           //  5 characters
     log.info ['f', 'o', 'o']; // 15 characters
 
-    // Arrays also have several extra methods not shared by arrays, these will
+    // Arrays also have several extra methods not shared by objects, these will
     // be covered later.
 
     return 'done';
