@@ -1,5 +1,11 @@
-const blackjackContext = require.context(
-  'raw-loader!./blackjack',
+const demosContext = require.context(
+  'raw-loader!./demos',
+  true,
+  /\.vx$/,
+);
+
+const utilContext = require.context(
+  'raw-loader!./util',
   true,
   /\.vx$/,
 );
@@ -37,65 +43,6 @@ function blockTrim(text: string) {
 }
 
 const files = {
-  '@/tmp.vx': blockTrim(`
-    func Marker(sz) => func(p) {
-      points := [];
-
-      [x, y] := p - [sz, sz] / 2;
-
-      points ++= [[x, y]];
-
-      x += sz;
-      points ++= [[x, y]];
-
-      y += sz;
-      points ++= [[x, y]];
-
-      x -= sz;
-      points ++= [[x, y]];
-
-      y -= sz;
-      points ++= [[x, y]];
-
-      return {
-        points,
-        style: {
-          fill: 'rgba(0, 0, 255, 0.3)',
-          stroke: {
-            color: 'white',
-            lineWidth: 1,
-          },
-        }
-      };
-    };
-
-    init := {time: 0, clickPoints: []};
-
-    func reduce({time, clickPoints}, [actionType, actionData]) {
-      if (actionType == 'click') {
-        clickPoints ++= [actionData];
-      } else if (actionType == 'frame') {
-        time = 0 + actionData.time;
-      } else {
-        assert false;
-      }
-
-      return {time, clickPoints};
-    };
-
-    func render({time, clickPoints}) => {
-      events: ['click', 'frame'],
-      polygons: clickPoints:map(Marker(0.1 + (time % 1) / 10)),
-    };
-
-    return {
-      type: 'application.canvas',
-      init,
-      reduce,
-      render,
-    };
-  `),
-
   '@/tutorial/hello.vx': blockTrim(`
     // Welcome to the Vortex playground!
     //
@@ -1595,8 +1542,12 @@ const files = {
   `),
 };
 
-for (const f of blackjackContext.keys()) {
-  files[f.replace('./', '@/demos/blackjack/')] = blackjackContext(f);
+for (const f of demosContext.keys()) {
+  files[f.replace('./', '@/demos/')] = demosContext(f);
+}
+
+for (const f of utilContext.keys()) {
+  files[f.replace('./', '@/util/')] = utilContext(f);
 }
 
 export default files;

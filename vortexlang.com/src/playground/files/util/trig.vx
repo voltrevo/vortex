@@ -1,0 +1,39 @@
+tau := 2 * 3.1415926536;
+
+func rawSin(x) {
+  mul := 1;
+
+  if (x < 0) {
+    mul = -mul;
+    x = -x;
+  }
+
+  x %= tau;
+
+  if (x > tau / 2) {
+    mul = -mul;
+    x -= tau / 2;
+  }
+
+  if (x > tau / 4) {
+    x = 2 * tau / 4 - x;
+  }
+
+  assert -0.01 <= x && x <= tau / 4 + 0.01;
+
+  return mul * (
+    x
+    - x ** 3 / 6
+    + x ** 5 / 120
+    - x ** 7 / 5040
+    + x ** 9 / 362880
+  );
+};
+
+top := rawSin(tau / 4);
+
+func sin(x) => rawSin(x) / top;
+func cos(x) => sin(x + tau / 4);
+func tan(x) => sin(x) / cos(x);
+
+return {sin, cos, tan};

@@ -1,0 +1,63 @@
+import @/util/trig.vx;
+
+tau := 2 * 3.14159265;
+
+func Marker(sz, angle) => func(p) {
+  points := [];
+
+  n := 5;
+
+  for (i := 0; i < n + 1; i++) {
+    a := angle + 2 * i / n * tau;
+
+    points ++= [p + [
+      sz * trig.cos(a),
+      sz * trig.sin(a),
+    ]];
+  }
+
+  return {
+    points,
+    style: {
+      fill: 'rgba(0, 0, 255, 0.3)',
+      stroke: {
+        color: 'white',
+        lineWidth: 1,
+      },
+    }
+  };
+};
+
+init := {time: 0, clickPoints: []};
+
+func reduce({time, clickPoints}, [actionType, actionData]) {
+  if (actionType == 'click') {
+    clickPoints ++= [actionData];
+  } else if (actionType == 'frame') {
+    time = 0 + actionData.time;
+  } else {
+    assert false;
+  }
+
+  return {time, clickPoints};
+};
+
+func render({time, clickPoints}) => {
+  events: ['click', 'frame'],
+  polygons: (func() {
+    res := [];
+
+    for ([i, p] of clickPoints:Entries()) {
+      res ++= [Marker(0.1, time * (2 * (i % 2) - 1))(p)];
+    }
+
+    return res;
+  })(),
+};
+
+return {
+  type: 'application.canvas',
+  init,
+  reduce,
+  render,
+};
