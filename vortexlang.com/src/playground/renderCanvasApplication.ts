@@ -1,5 +1,7 @@
 import * as vortex from 'vortexlang';
 
+import notNull from './notNull';
+
 export default function renderCanvasApplication(
   az: vortex.Analyzer,
   app: vortex.Outcome.ConcreteObject,
@@ -23,15 +25,14 @@ export default function renderCanvasApplication(
 
   cleanupJobs.push(() => clearInterval(intervalId));
 
+  let alive = true;
+  const startTime = Date.now();
+
+  cleanupJobs.push(() => { alive = false; });
+
   const canvasEl = document.createElement('canvas');
   canvasEl.style.borderTop = '1px solid black';
-  const ctx2d = canvasEl.getContext('2d');
-
-  if (ctx2d === null) {
-    console.error('Couldn\'t get 2d context');
-    cleanup();
-    return;
-  }
+  const ctx2d = notNull(canvasEl.getContext('2d'));
 
   let width = 0;
 
@@ -48,151 +49,199 @@ export default function renderCanvasApplication(
   window.addEventListener('resize', updateSize);
   cleanupJobs.push(() => window.removeEventListener('resize', updateSize));
 
-  (async () => {
-    for (const key of ['reduce', 'render']) {
-      if (!(key in app.v)) {
-        console.error(`Missing key ${key} in app`);
-        return;
-      }
+  for (const key of ['reduce', 'render']) {
+    if (!(key in app.v)) {
+      console.error(`Missing key ${key} in app`);
+      return;
     }
+  }
 
-    const {reduce, render} = app.v;
+  const {init, reduce, render} = app.v;
 
+  if (init === undefined || reduce === undefined || render === undefined) {
+    console.error('Expected app to have init, reduce, render');
+    return;
+  }
+
+  let state: vortex.Outcome = init;
+
+  if (state.cat !== 'concrete') {
+    console.error('Unexpected state: ' + vortex.Outcome.LongString(state));
+    return;
+  }
+
+  function applyAction(action: vortex.Outcome.Value) {
     if (reduce.t !== 'Func') {
-      console.error('Expected reduce to be func but it was a(n) ' + reduce.t);
+      console.error('Expected reduce to be func but it was a(n) ' + reduce.t, reduce);
       return;
     }
 
+    if (state.cat === 'invalid') {
+      console.error(
+        'Expected state ' + vortex.Outcome.LongString(state) + ' to be valid'
+      );
+
+      return;
+    }
+
+    [state, az] = vortex.Analyzer.analyze.functionCallValue(
+      az,
+      null,
+      reduce,
+      [state, action],
+    );
+
+    updateRender();
+  }
+
+  function updateRender() {
     if (render.t !== 'Func') {
-      console.error('Expected render to be func but it was a(n) ' + render.t);
+      console.error('Expected render to be func but it was a(n) ' + render.t, render);
       return;
     }
 
-    let state: vortex.Outcome = vortex.Outcome.Null();
-    let action: vortex.Outcome = vortex.Outcome.Number(Math.random());
-
-    while (true) {
-      if (false /*state.cat === 'invalid'*/) {
-        console.error('Reached unexpected state: ' + vortex.Outcome.LongString(state));
-        return;
-      }
-
-      [state, az] = vortex.Analyzer.analyze.functionCallValue(
-        az,
-        null,
-        reduce,
-        [state, action],
+    if (state.cat === 'invalid') {
+      console.error(
+        'Expected state ' + vortex.Outcome.LongString(state) + ' to be valid'
       );
 
-      if (state.cat === 'invalid') {
-        console.error(
-          'Expected state ' + vortex.Outcome.LongString(state) + ' to be valid'
-        );
+      return;
+    }
 
-        return;
-      }
+    let renderData: vortex.Outcome;
+    [renderData, az] = vortex.Analyzer.analyze.functionCallValue(
+      az,
+      null,
+      render,
+      [state],
+    );
 
-      let canvasObjects: vortex.Outcome;
-      [canvasObjects, az] = vortex.Analyzer.analyze.functionCallValue(
-        az,
-        null,
-        render,
-        [state],
+    if (renderData.t !== 'Object') {
+      console.error(
+        'Expected render data to be an object but it was a(n) ' +
+        renderData.t, renderData
       );
 
-      if (canvasObjects.t !== 'Array') {
-        console.error(
-          'Expected render output to be an array but it was a(n) ' +
-          canvasObjects.t
-        );
+      return;
+    }
 
-        return;
+    const {events, polygons} = renderData.v;
+
+    if (
+      events === undefined || events.t !== 'Array' ||
+      polygons === undefined || polygons.t !== 'Array'
+    ) {
+      console.error('Expected events and polygons arrays');
+      return;
+    }
+
+    for (const evt of events.v) {
+      if (evt.t !== 'String') {
+        console.error('Non-string event', evt);
       }
 
-      ctx2d.clearRect(0, 0, width, width);
-      ctx2d.fillStyle = 'blue';
-
-      for (const path of canvasObjects.v) {
-        if (path.cat !== 'concrete' || path.t !== 'Object') {
-          console.error('Path was not an object', path);
-          continue;
-        }
-
-        const {points, style} = path.v;
-
-        if (
-          points === undefined || points.t !== 'Array' ||
-          style === undefined || style.t !== 'Object'
-        ) {
-          console.error('Path object invalid', path.v);
-          continue;
-        }
-
-        ctx2d.beginPath();
-
-        for (const p of points.v) {
-          if (p.t !== 'Array' || p.v.length !== 2) {
-            console.error('Invalid point', p, 'in', path);
-            continue;
-          }
-
-          const [x, y] = p.v;
-
-          if (x.t !== 'Number' || y.t !== 'Number') {
-            console.error('Invalid point', p, 'in', path);
-            continue;
-          }
-
-          ctx2d.lineTo(x.v * width, y.v * width);
-        }
-
-        ctx2d.closePath();
-
-        const {fill, stroke} = style.v;
-
-        if (fill !== undefined) {
-          if (fill.t !== 'String') {
-            console.error('Invalid fill', path);
-            continue;
-          }
-
-          ctx2d.fillStyle = fill.v;
-          ctx2d.fill();
-        }
-
-        if (stroke !== undefined) {
-          if (stroke.t !== 'Object') {
-            console.error('Invalid stroke', path);
-            continue;
-          }
-
-          const {color, lineWidth} = stroke.v;
-
-          if (color === undefined || color.t !== 'String') {
-            console.error('Invalid stroke color', path);
-            continue;
-          }
-
-          ctx2d.strokeStyle = color.v;
-
-          if (lineWidth !== undefined) {
-            if (lineWidth.t !== 'Number') {
-              console.error('Invalid lineWidth', path);
-              continue;
+      switch (evt.v) {
+        case 'frame': {
+          window.requestAnimationFrame(() => {
+            if (!alive) {
+              return;
             }
 
-            ctx2d.lineWidth = lineWidth.v;
-          } else {
-            ctx2d.lineWidth = 1;
-          }
+            applyAction(vortex.Outcome.Array([
+              vortex.Outcome.String('frame'),
+              vortex.Outcome.Object({
+                time: vortex.Outcome.Number((Date.now() - startTime) / 1000),
+              }),
+            ]));
+          });
 
-          ctx2d.stroke();
+          break;
         }
+
+        default: console.error('Unrecognized event', evt);
+      }
+    }
+
+    ctx2d.clearRect(0, 0, width, width);
+
+    for (const poly of polygons.v) {
+      if (poly.cat !== 'concrete' || poly.t !== 'Object') {
+        console.error('poly was not an object', poly);
+        continue;
       }
 
-      break;
+      const {points, style} = poly.v;
+
+      if (
+        points === undefined || points.t !== 'Array' ||
+        style === undefined || style.t !== 'Object'
+      ) {
+        console.error('poly object invalid', poly.v);
+        continue;
+      }
+
+      ctx2d.beginPath();
+
+      for (const p of points.v) {
+        if (p.t !== 'Array' || p.v.length !== 2) {
+          console.error('Invalid point', p, 'in', poly);
+          continue;
+        }
+
+        const [x, y] = p.v;
+
+        if (x.t !== 'Number' || y.t !== 'Number') {
+          console.error('Invalid point', p, 'in', poly);
+          continue;
+        }
+
+        ctx2d.lineTo(x.v * width, y.v * width);
+      }
+
+      ctx2d.closePath();
+
+      const {fill, stroke} = style.v;
+
+      if (fill !== undefined) {
+        if (fill.t !== 'String') {
+          console.error('Invalid fill', poly);
+          continue;
+        }
+
+        ctx2d.fillStyle = fill.v;
+        ctx2d.fill();
+      }
+
+      if (stroke !== undefined) {
+        if (stroke.t !== 'Object') {
+          console.error('Invalid stroke', poly);
+          continue;
+        }
+
+        const {color, lineWidth} = stroke.v;
+
+        if (color === undefined || color.t !== 'String') {
+          console.error('Invalid stroke color', poly);
+          continue;
+        }
+
+        ctx2d.strokeStyle = color.v;
+
+        if (lineWidth !== undefined) {
+          if (lineWidth.t !== 'Number') {
+            console.error('Invalid lineWidth', poly);
+            continue;
+          }
+
+          ctx2d.lineWidth = lineWidth.v;
+        } else {
+          ctx2d.lineWidth = 1;
+        }
+
+        ctx2d.stroke();
+      }
     }
-  })().catch(err => {
-    console.error(err);
-  });
+  }
+
+  updateRender();
 }
