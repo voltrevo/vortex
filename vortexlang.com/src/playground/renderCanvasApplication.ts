@@ -24,6 +24,7 @@ export default function renderCanvasApplication(
   cleanupJobs.push(() => clearInterval(intervalId));
 
   const canvasEl = document.createElement('canvas');
+  canvasEl.style.borderTop = '1px solid black';
   const ctx2d = canvasEl.getContext('2d');
 
   if (ctx2d === null) {
@@ -111,31 +112,85 @@ export default function renderCanvasApplication(
       ctx2d.clearRect(0, 0, width, width);
       ctx2d.fillStyle = 'blue';
 
-      for (const obj of canvasObjects.v) {
-        if (obj.cat === 'concrete' && obj.t === 'Array' && obj.v.length === 4) {
-          const [x, y, w, h] = obj.v;
+      for (const path of canvasObjects.v) {
+        if (path.cat !== 'concrete' || path.t !== 'Object') {
+          console.error('Path was not an object', path);
+          continue;
+        }
 
-          if (x.t === 'Number' && y.t === 'Number' && w.t === 'Number' && h.t === 'Number') {
-            ctx2d.fillRect(width * x.v, width * y.v, width * w.v, width * h.v);
-          } else {
-            console.error('Type error on rect inputs');
+        const {points, style} = path.v;
+
+        if (
+          points === undefined || points.t !== 'Array' ||
+          style === undefined || style.t !== 'Object'
+        ) {
+          console.error('Path object invalid', path.v);
+          continue;
+        }
+
+        ctx2d.beginPath();
+
+        for (const p of points.v) {
+          if (p.t !== 'Array' || p.v.length !== 2) {
+            console.error('Invalid point', p, 'in', path);
+            continue;
           }
-        } else {
-          console.error('Canvas object is not a 4 length array');
+
+          const [x, y] = p.v;
+
+          if (x.t !== 'Number' || y.t !== 'Number') {
+            console.error('Invalid point', p, 'in', path);
+            continue;
+          }
+
+          ctx2d.lineTo(x.v * width, y.v * width);
+        }
+
+        ctx2d.closePath();
+
+        const {fill, stroke} = style.v;
+
+        if (fill !== undefined) {
+          if (fill.t !== 'String') {
+            console.error('Invalid fill', path);
+            continue;
+          }
+
+          ctx2d.fillStyle = fill.v;
+          ctx2d.fill();
+        }
+
+        if (stroke !== undefined) {
+          if (stroke.t !== 'Object') {
+            console.error('Invalid stroke', path);
+            continue;
+          }
+
+          const {color, lineWidth} = stroke.v;
+
+          if (color === undefined || color.t !== 'String') {
+            console.error('Invalid stroke color', path);
+            continue;
+          }
+
+          ctx2d.strokeStyle = color.v;
+
+          if (lineWidth !== undefined) {
+            if (lineWidth.t !== 'Number') {
+              console.error('Invalid lineWidth', path);
+              continue;
+            }
+
+            ctx2d.lineWidth = lineWidth.v;
+          } else {
+            ctx2d.lineWidth = 1;
+          }
+
+          ctx2d.stroke();
         }
       }
 
       break;
-
-      /*
-      const input = await getInput();
-
-      if (input === null) {
-        return;
-      }
-
-      action = vortex.Outcome.String(input);
-       */
     }
   })().catch(err => {
     console.error(err);

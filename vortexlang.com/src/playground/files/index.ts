@@ -42,8 +42,22 @@ const files = {
       type: 'application.canvas',
       reduce: func(state, action) => null,
       render: func(state) => [
-        [0.5, 0.5, 0.1, 0.1],
-        [0.7, 0.5, 0.1, 0.1],
+        {
+          points: [
+            [0.1, 0.1],
+            [0.2, 0.1],
+            [0.2, 0.2],
+            //[0.1, 0.2],
+            [0.1, 0.1],
+          ],
+          style: {
+            fill: 'blue',
+            stroke: {
+              color: 'red',
+              lineWidth: 5,
+            },
+          },
+        },
       ],
     };
   `),
