@@ -40,25 +40,32 @@ const files = {
   '@/tmp.vx': blockTrim(`
     return {
       type: 'application.canvas',
-      reduce: func(state, action) => null,
-      render: func(state) => [
-        {
-          points: [
-            [0.1, 0.1],
-            [0.2, 0.1],
-            [0.2, 0.2],
-            //[0.1, 0.2],
-            [0.1, 0.1],
-          ],
-          style: {
-            fill: 'blue',
-            stroke: {
-              color: 'red',
-              lineWidth: 5,
+      init: 0,
+      reduce: func(state, [t, {time}]) {
+        assert t == 'frame';
+        return time / 3;
+      },
+      render: func(time) => {
+        events: ['frame'],
+        polygons: [
+          {
+            points: [
+              [0.1, 0.1],
+              [0.2, 0.1],
+              [time % 1, time % 1],
+              [0.1, 0.2],
+              [0.1, 0.1],
+            ],
+            style: {
+              fill: 'blue',
+              stroke: {
+                color: 'red',
+                lineWidth: 5,
+              },
             },
           },
-        },
-      ],
+        ],
+      }
     };
   `),
 
