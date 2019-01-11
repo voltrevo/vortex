@@ -20,7 +20,7 @@ for (const filename of Object.keys(files)) {
   selectEl.appendChild(option);
 }
 
-let currentFile = '@/tutorial/hello.vx';
+let currentFile = Object.keys(files)[0];
 
 editorEl.innerHTML = '';
 

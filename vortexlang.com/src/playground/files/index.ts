@@ -37,6 +37,17 @@ function blockTrim(text: string) {
 }
 
 const files = {
+  '@/tmp.vx': blockTrim(`
+    return {
+      type: 'application.canvas',
+      reduce: func(state, action) => null,
+      render: func(state) => [
+        [0.5, 0.5, 0.1, 0.1],
+        [0.7, 0.5, 0.1, 0.1],
+      ],
+    };
+  `),
+
   '@/tutorial/hello.vx': blockTrim(`
     // Welcome to the Vortex playground!
     //

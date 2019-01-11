@@ -2,6 +2,7 @@ import * as vortex from 'vortexlang';
 
 import notNull from './notNull';
 import renderConsoleApplication from './renderConsoleApplication';
+import renderCanvasApplication from './renderCanvasApplication';
 
 export default function renderApplication(
   az: vortex.Analyzer,
@@ -32,5 +33,8 @@ export default function renderApplication(
   if (type.v === 'application.console') {
     appEl.classList.add('active');
     renderConsoleApplication(az, outcome, contentEl);
+  } else if (type.v === 'application.canvas') {
+    appEl.classList.add('active');
+    renderCanvasApplication(az, outcome, contentEl);
   }
 }

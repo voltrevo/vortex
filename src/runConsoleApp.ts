@@ -41,9 +41,9 @@ export default async function runConsoleApp(
       [state, action],
     );
 
-    if (state.t !== 'Object') {
+    if (state.cat === 'invalid') {
       display(
-        'Expected state ' + Outcome.LongString(state) + ' to be an object'
+        'Expected state ' + Outcome.LongString(state) + ' to be valid'
       );
 
       return;
