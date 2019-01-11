@@ -1,0 +1,28 @@
+import ./transform2d.vx;
+
+return func flatten(object) {
+  func impl(transform, [type, data]) {
+    if (type == 'polygon') {
+      return [{
+        points: data.points:map(transform2d.apply:bind(transform)),
+        style: data.style,
+      }];
+    }
+
+    if (type == 'group') {
+      return data:map(impl:bind(transform)):reduce(++);
+    }
+
+    if (type == 'transform') {
+      return impl(
+        transform2d.compose(transform, data.transform),
+        data.object,
+      );
+    }
+
+    assert false;
+    return null;
+  };
+
+  return impl(transform2d.identity, object);
+};

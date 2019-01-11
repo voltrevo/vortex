@@ -1,0 +1,55 @@
+import @/util/polyFlatten.vx;
+import @/util/transform2d.vx;
+import @/util/trig.vx;
+
+init := 0;
+
+func reduce(state, action) => action[1].time;
+
+obj := ['group', [
+  ['polygon', {
+    points: [
+      [-0.5, -0.5],
+      [0.5, -0.5],
+      [0.5, 0.5],
+      [-0.5, 0.5],
+      [-0.5, -0.5],
+    ],
+    style: {stroke: {color: 'white'}},
+  }],
+  ['polygon', {
+    points: [
+      [-0.5, -0.5],
+      [0.5, -0.5],
+      [0.5, 0.5],
+      [-0.5, 0.5],
+      [-0.5, -0.5],
+    ]:map(func(p) => p + [0.2, 0.2]),
+    style: {stroke: {color: 'white'}},
+  }],
+]];
+
+object := obj;
+
+log.info polyFlatten(object);
+
+func render(time) => {
+  events: ['frame'],
+  polygons: polyFlatten(['transform', {
+    transform: [
+      transform2d.identity,
+      transform2d.Translation([0, trig.sin(2 * time) / 5]:Column()),
+      transform2d.Translation([0.5, 0.5]:Column()),
+      transform2d.Scale(0.2),
+      transform2d.Rotation(time * 6.28 / 2),
+    ]:reduce(transform2d.compose),
+    object,
+  }]),
+};
+
+return {
+  type: 'application.canvas',
+  init,
+  reduce,
+  render,
+};

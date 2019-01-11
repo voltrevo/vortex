@@ -1,0 +1,63 @@
+import ./trig.vx;
+
+identity := {
+  world: [
+    [1, 0],
+    [0, 1],
+  ],
+  offset: [
+    [0],
+    [0],
+  ],
+};
+
+return {
+  identity,
+
+  Rotation: func(angle) {
+    cos := trig.cos(angle);
+    sin := (1 - cos ** 2) ** 0.5;
+
+    absAngle := switch {
+      (angle < 0) => -angle;
+      true => angle;
+    };
+
+    if ((absAngle / (trig.tau / 2)) % 2 > 1) {
+      sin = -sin;
+    }
+
+    return {
+      world: [
+        [cos, -sin],
+        [sin, cos],
+      ],
+      offset: identity.offset,
+    };
+  },
+
+  Translation: func(p) => {
+    world: identity.world,
+    offset: p,
+  },
+
+  Scale: func(sz) => {
+    world: [
+      [sz, 0],
+      [0, sz],
+    ],
+    offset: identity.offset,
+  },
+
+  compose: func(a, b) {
+    return {
+      world: a.world * b.world,
+      offset: a.world * b.offset + a.offset,
+    };
+  },
+
+  apply: func(t, p) {
+    col := t.world * p:Column() + t.offset;
+    return [col[0][0], col[1][0]];
+  },
+};

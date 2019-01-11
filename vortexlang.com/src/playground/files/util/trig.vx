@@ -36,4 +36,4 @@ func sin(x) => rawSin(x) / top;
 func cos(x) => sin(x + tau / 4);
 func tan(x) => sin(x) / cos(x);
 
-return {sin, cos, tan};
+return {tau, sin, cos, tan};
