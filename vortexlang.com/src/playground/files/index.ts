@@ -38,33 +38,48 @@ function blockTrim(text: string) {
 
 const files = {
   '@/tmp.vx': blockTrim(`
+    func Marker(p) {
+      points := [];
+
+      sz := 0.05;
+
+      [x, y] := p - [sz, sz] / 2;
+
+      points ++= [[x, y]];
+
+      x += sz;
+      points ++= [[x, y]];
+
+      y += sz;
+      points ++= [[x, y]];
+
+      x -= sz;
+      points ++= [[x, y]];
+
+      y -= sz;
+      points ++= [[x, y]];
+
+      return {
+        points,
+        style: {
+          fill: 'blue',
+          stroke: {
+            color: 'white',
+            lineWidth: 1,
+          },
+        }
+      };
+    };
+
     return {
       type: 'application.canvas',
-      init: 0,
-      reduce: func(state, [t, {time}]) {
-        assert t == 'frame';
-        return time / 3;
+      init: [],
+      reduce: func(state, [actionType, clickPoint]) {
+        return state ++ [clickPoint];
       },
-      render: func(time) => {
-        events: ['frame'],
-        polygons: [
-          {
-            points: [
-              [0.1, 0.1],
-              [0.2, 0.1],
-              [time % 1, time % 1],
-              [0.1, 0.2],
-              [0.1, 0.1],
-            ],
-            style: {
-              fill: 'blue',
-              stroke: {
-                color: 'red',
-                lineWidth: 5,
-              },
-            },
-          },
-        ],
+      render: func(clickPoints) => {
+        events: ['click'],
+        polygons: clickPoints:map(Marker),
       }
     };
   `),

@@ -2,6 +2,31 @@ import * as vortex from 'vortexlang';
 
 import notNull from './notNull';
 
+function FrameEventManager() {
+  let handler: (() => void) | null = null;
+  let requested = false;
+
+  return {
+    setHandler: function(h: (() => void) | null) {
+      handler = h;
+
+      if (handler !== null && !requested) {
+        window.requestAnimationFrame(function request() {
+          if (handler !== null) {
+            handler();
+            window.requestAnimationFrame(request);
+            requested = true;
+          } else {
+            requested = false;
+          }
+        });
+
+        requested = true;
+      }
+    }
+  };
+};
+
 export default function renderCanvasApplication(
   az: vortex.Analyzer,
   app: vortex.Outcome.ConcreteObject,
@@ -94,6 +119,9 @@ export default function renderCanvasApplication(
     updateRender();
   }
 
+  const frameEventManager = FrameEventManager();
+  cleanupJobs.push(() => frameEventManager.setHandler(null));
+
   function updateRender() {
     if (render.t !== 'Func') {
       console.error('Expected render to be func but it was a(n) ' + render.t, render);
@@ -140,13 +168,12 @@ export default function renderCanvasApplication(
         console.error('Non-string event', evt);
       }
 
+      canvasEl.onclick = null;
+      frameEventManager.setHandler(null);
+
       switch (evt.v) {
         case 'frame': {
-          window.requestAnimationFrame(() => {
-            if (!alive) {
-              return;
-            }
-
+          frameEventManager.setHandler(() => {
             applyAction(vortex.Outcome.Array([
               vortex.Outcome.String('frame'),
               vortex.Outcome.Object({
@@ -154,6 +181,26 @@ export default function renderCanvasApplication(
               }),
             ]));
           });
+
+          break;
+        }
+
+        case 'click': {
+          canvasEl.onclick = ({clientX, clientY}) => {
+            if (!alive) {
+              return;
+            }
+
+            const {x, y} = <DOMRect>canvasEl.getBoundingClientRect();
+
+            applyAction(vortex.Outcome.Array([
+              vortex.Outcome.String('click'),
+              vortex.Outcome.Array([
+                vortex.Outcome.Number((clientX - x) / width),
+                vortex.Outcome.Number((clientY - y) / width),
+              ]),
+            ]));
+          };
 
           break;
         }
