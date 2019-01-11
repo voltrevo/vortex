@@ -35,7 +35,7 @@ export default async function runConsoleApp(
     }
 
     [state, az] = Analyzer.analyze.functionCallValue(
-      az,
+      {...az, steps: 0},
       null,
       reduce,
       [state, action],

@@ -41,9 +41,9 @@ export default function renderCanvasApplication(
     canvasEl.style.height = `${width}px`;
     canvasEl.setAttribute('width', `${width}`);
     canvasEl.setAttribute('height', `${width}`);
+    updateRender();
   }
 
-  updateSize();
   contentEl.appendChild(canvasEl);
 
   window.addEventListener('resize', updateSize);
@@ -85,7 +85,7 @@ export default function renderCanvasApplication(
     }
 
     [state, az] = vortex.Analyzer.analyze.functionCallValue(
-      az,
+      {...az, steps: 0},
       null,
       reduce,
       [state, action],
@@ -110,7 +110,7 @@ export default function renderCanvasApplication(
 
     let renderData: vortex.Outcome;
     [renderData, az] = vortex.Analyzer.analyze.functionCallValue(
-      az,
+      {...az, steps: 0},
       null,
       render,
       [state],
@@ -243,5 +243,5 @@ export default function renderCanvasApplication(
     }
   }
 
-  updateRender();
+  updateSize();
 }
