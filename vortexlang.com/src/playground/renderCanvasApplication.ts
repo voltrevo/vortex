@@ -163,13 +163,13 @@ export default function renderCanvasApplication(
       return;
     }
 
+    canvasEl.onclick = null;
+    frameEventManager.setHandler(null);
+
     for (const evt of events.v) {
       if (evt.t !== 'String') {
         console.error('Non-string event', evt);
       }
-
-      canvasEl.onclick = null;
-      frameEventManager.setHandler(null);
 
       switch (evt.v) {
         case 'frame': {

@@ -38,10 +38,8 @@ function blockTrim(text: string) {
 
 const files = {
   '@/tmp.vx': blockTrim(`
-    func Marker(p) {
+    func Marker(sz) => func(p) {
       points := [];
-
-      sz := 0.05;
 
       [x, y] := p - [sz, sz] / 2;
 
@@ -62,7 +60,7 @@ const files = {
       return {
         points,
         style: {
-          fill: 'blue',
+          fill: 'rgba(0, 0, 255, 0.3)',
           stroke: {
             color: 'white',
             lineWidth: 1,
@@ -71,16 +69,30 @@ const files = {
       };
     };
 
+    init := {time: 0, clickPoints: []};
+
+    func reduce({time, clickPoints}, [actionType, actionData]) {
+      if (actionType == 'click') {
+        clickPoints ++= [actionData];
+      } else if (actionType == 'frame') {
+        time = 0 + actionData.time;
+      } else {
+        assert false;
+      }
+
+      return {time, clickPoints};
+    };
+
+    func render({time, clickPoints}) => {
+      events: ['click', 'frame'],
+      polygons: clickPoints:map(Marker(0.1 + (time % 1) / 10)),
+    };
+
     return {
       type: 'application.canvas',
-      init: [],
-      reduce: func(state, [actionType, clickPoint]) {
-        return state ++ [clickPoint];
-      },
-      render: func(clickPoints) => {
-        events: ['click'],
-        polygons: clickPoints:map(Marker),
-      }
+      init,
+      reduce,
+      render,
     };
   `),
 
