@@ -34,6 +34,8 @@ window.addEventListener('resize', () => editor.layout());
 
 const model = notNull(editor.getModel());
 
+model.updateOptions({ tabSize: 2, insertSpaces: true });
+
 function onFileChange() {
   currentFile = selectEl.value;
   model.setValue(files[currentFile]);
