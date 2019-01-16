@@ -1,9 +1,7 @@
 import ./transform2d.vx;
 
 return func flatten(object) {
-  func impl(transform, arg2) {
-    log.info arg2;
-    [type, data] := arg2;
+  func impl(transform, [type, data]) {
     if (type == 'polygon') {
       return [{
         points: data.points:map(transform2d.apply:bind(transform)),
