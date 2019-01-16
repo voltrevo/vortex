@@ -1,0 +1,44 @@
+import ./polyFlatten.vx;
+
+return {
+  App: func({init, reduce, render}) {
+    func renderFlat(state) {
+      {events, tree} := render(state);
+      polygons := polyFlatten(tree);
+
+      return {events, polygons};
+    };
+
+    state := init;
+    renders := [];
+
+    for (i := 0; i < 10; i++) {
+      renderData := renderFlat(state);
+      renders ++= [render(state)];
+
+      if (renderData.events:Length() == 0) {
+        break;
+      }
+
+      event := renderData.events[i % renderData.events:Length()];
+
+      state = reduce(state, [event, switch (event) {
+        'frame' => {time: i * 20};
+        'click' => [i * 0.618 % 1, i * (0.618 ** 2) % 1];
+      }]);
+    }
+
+    assert renders:Length() > 0;
+
+    return {
+      type: 'application.canvas',
+      init,
+      reduce,
+      render: renderFlat,
+    };
+  },
+
+  Group: func(polygons) => ['group', polygons],
+  Transform: func(transform, object) => ['transform', {transform, object}],
+  Poly: func({points, style}) => ['polygon', {points, style}],
+};
