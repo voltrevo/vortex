@@ -1,0 +1,1 @@
+return [1, 2]:map(func(x, y) => x + y); // #error #arguments-length-mismatch

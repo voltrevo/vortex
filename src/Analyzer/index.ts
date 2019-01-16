@@ -2203,6 +2203,22 @@ namespace Analyzer {
               return [ex, az];
             }
 
+            const argLength = Outcome.Func.ArgLength(mapper);
+
+            if (argLength !== 1) {
+              const ex = Outcome.Exception(
+                null,
+                ['type-error', 'arguments-length-mismatch'],
+                [
+                  ':map takes a function taking 1 argument, but the provded ',
+                  `function ${Outcome.LongString(mapper)} takes ${argLength} `,
+                  'argument(s)',
+                ].join(''),
+              );
+
+              return [ex, az];
+            }
+
             const values: Outcome.Value[] = [];
 
             for (const el of base.v) {
@@ -2231,6 +2247,22 @@ namespace Analyzer {
               const ex = Outcome.Exception(funcExp,
                 ['type-error', 'call-non-function'],
                 `Type error: attempt to call a ${filterFn.t} as a function`
+              );
+
+              return [ex, az];
+            }
+
+            const argLength = Outcome.Func.ArgLength(filterFn);
+
+            if (argLength !== 1) {
+              const ex = Outcome.Exception(
+                null,
+                ['type-error', 'arguments-length-mismatch'],
+                [
+                  ':filter takes a function taking 1 argument, but the ',
+                  `provided function ${Outcome.LongString(filterFn)} takes `,
+                  `${argLength} argument(s)`,
+                ].join(''),
               );
 
               return [ex, az];
@@ -2286,6 +2318,22 @@ namespace Analyzer {
               return [ex, az];
             }
 
+            const argLength = Outcome.Func.ArgLength(reducer);
+
+            if (argLength !== 2) {
+              const ex = Outcome.Exception(
+                null,
+                ['type-error', 'arguments-length-mismatch'],
+                [
+                  ':reduce takes a function taking 2 arguments, but the ',
+                  `provided function ${Outcome.LongString(reducer)} takes `,
+                  `${argLength} argument(s)`,
+                ].join(''),
+              );
+
+              return [ex, az];
+            }
+
             // Should know that base is non-empty
             let value = base.v[0];
 
@@ -2317,6 +2365,22 @@ namespace Analyzer {
               const ex = Outcome.Exception(funcExp,
                 ['type-error', 'call-non-function'],
                 `Type error: attempt to call a ${reducer.t} as a function`
+              );
+
+              return [ex, az];
+            }
+
+            const argLength = Outcome.Func.ArgLength(reducer);
+
+            if (argLength !== 2) {
+              const ex = Outcome.Exception(
+                null,
+                ['type-error', 'arguments-length-mismatch'],
+                [
+                  ':reduceFrom takes a function taking 2 arguments, but the ',
+                  `provided function ${Outcome.LongString(reducer)} takes `,
+                  `${argLength} argument(s)`,
+                ].join(''),
               );
 
               return [ex, az];
