@@ -1,3 +1,4 @@
+TODO: Fix bug: missing top of stack trace when starting inside bodyExpression
 TODO: Add test code for compounds and inc/dec with non-identifier targets
 TODO: Implement expressions like `[a[0]] += [1]` (combine destructure with accessor mutation)
 TODO: TODO tagging, group based on tags
