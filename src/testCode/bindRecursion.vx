@@ -1,0 +1,15 @@
+breakpoint;
+
+func foo(a, b) {
+  if (b == 100) {
+    return 'done';
+  }
+
+  if (a == 100) {
+    return foo:bind(100)(100);
+  }
+
+  return foo:bind(100)(0);
+};
+
+return foo(0, 0);

@@ -1,0 +1,19 @@
+blah := (func() {
+  x := 37;
+
+  fn := func foo(a) {
+    if (a == 0) {
+      return foo(10);
+    }
+
+    return x;
+  };
+
+  return fn:bind(0);
+})();
+
+x := 42;
+
+assert x + blah() == 42 + 37;
+
+return 'done';

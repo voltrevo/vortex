@@ -2477,7 +2477,7 @@ namespace Analyzer {
           funcAz = Analyzer.add(
             funcAz,
             funcDef.v.exp.v.name.v,
-            func,
+            { ...func, v: { ...func.v, binds: [] } },
           );
         }
 
