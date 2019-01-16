@@ -20,7 +20,28 @@ for (const filename of Object.keys(files)) {
   selectEl.appendChild(option);
 }
 
-let currentFile = Object.keys(files)[0];
+let currentFile = location.hash.slice(1);
+
+if (Object.keys(files).indexOf(currentFile) === -1) {
+  currentFile = Object.keys(files)[0];
+  location.hash = currentFile;
+}
+
+window.addEventListener('hashchange', () => {
+  const hashFile = location.hash.slice(1);
+
+  if (hashFile === currentFile) {
+    return;
+  }
+
+  if (Object.keys(files).indexOf(hashFile) === -1) {
+    location.hash = currentFile;
+    return;
+  }
+
+  currentFile = hashFile;
+  onFileChange();
+});
 
 editorEl.innerHTML = '';
 
@@ -38,6 +59,7 @@ model.updateOptions({ tabSize: 2, insertSpaces: true });
 
 function onFileChange() {
   currentFile = selectEl.value;
+  location.hash = currentFile;
   model.setValue(files[currentFile]);
 }
 
