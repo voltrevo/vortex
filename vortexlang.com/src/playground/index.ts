@@ -20,35 +20,20 @@ for (const filename of Object.keys(files)) {
   selectEl.appendChild(option);
 }
 
-let currentFile = location.hash.slice(1);
-
-if (Object.keys(files).indexOf(currentFile) === -1) {
-  currentFile = Object.keys(files)[0];
-  location.hash = currentFile;
-}
-
-window.addEventListener('hashchange', () => {
-  const hashFile = location.hash.slice(1);
-
-  if (hashFile === currentFile) {
-    return;
-  }
-
-  if (Object.keys(files).indexOf(hashFile) === -1) {
-    location.hash = currentFile;
-    return;
-  }
-
-  currentFile = hashFile;
-  onFileChange();
-});
+let currentFile = '';
 
 editorEl.innerHTML = '';
 
 const editor = monaco.editor.create(editorEl, {
   theme: 'vs-dark',
-  value: files[currentFile],
+  value: '',
   language: 'vortex',
+});
+
+setTimeout(() => changeFile(location.hash.slice(1)));
+
+window.addEventListener('hashchange', () => {
+  changeFile(location.hash.slice(1));
 });
 
 window.addEventListener('resize', () => editor.layout());
@@ -57,13 +42,28 @@ const model = notNull(editor.getModel());
 
 model.updateOptions({ tabSize: 2, insertSpaces: true });
 
-function onFileChange() {
-  currentFile = selectEl.value;
+function changeFile(newFile: string) {
+  if (currentFile === '') {
+    currentFile = Object.keys(files)[0];
+  } else if (newFile === currentFile) {
+    return;
+  }
+
+  let fileIdx = Object.keys(files).indexOf(newFile);
+
+  if (fileIdx !== -1) {
+    currentFile = newFile;
+  }
+
+  fileIdx = Object.keys(files).indexOf(currentFile);
   location.hash = currentFile;
+  selectEl.selectedIndex = fileIdx;
   model.setValue(files[currentFile]);
 }
 
-selectEl.addEventListener('change', onFileChange);
+selectEl.addEventListener('change', () => {
+  changeFile(selectEl.value);
+});
 
 const moveFileIndex = (change: number) => () => {
   const filenames = Object.keys(files);
@@ -77,8 +77,7 @@ const moveFileIndex = (change: number) => () => {
   idx = Math.max(idx, 0);
   idx = Math.min(idx, filenames.length - 1);
 
-  selectEl.selectedIndex = idx;
-  onFileChange();
+  changeFile(filenames[idx]);
 };
 
 filePreviousEl.addEventListener('click', moveFileIndex(-1));
@@ -94,5 +93,3 @@ model.onDidChangeContent(() => {
     compileRender(files, currentFile, model, domQuery);
   }, 200) as any as number;
 });
-
-compileRender(files, currentFile, model, domQuery);
