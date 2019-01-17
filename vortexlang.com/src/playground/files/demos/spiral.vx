@@ -1,0 +1,63 @@
+import @/util/canvasTree.vx;
+import t2 from '@/util/transform2d.vx';
+import @/util/trig.vx;
+
+{App, Group, Transform, Poly} := canvasTree;
+
+init := {time: 0, angle: 0};
+
+reducers := {
+  frame: func(state, frame) {
+    dt := frame.time - state.time;
+    state.time += dt;
+
+    state.angle += 0.001 + trig.sin(2 * state.angle) ** 2 * dt;
+
+    return state;
+  },
+};
+
+func reduce(state, [actionType, actionData]) => (
+  reducers[actionType](state, actionData)
+);
+
+unitSquare := Poly({
+  points: [
+    [-0.5, -0.5],
+    [0.5, -0.5],
+    [0.5, 0.5],
+    [-0.5, 0.5],
+    [-0.5, -0.5],
+  ],
+  style: {stroke: {color: 'white'}},
+});
+
+func Col(x, y) => [[x], [y]];
+
+func RotateIn(angle) {
+  angle = angle % (trig.tau / 4);
+
+  return t2.compose(
+    t2.Rotation(angle),
+    t2.Scale(1 / (trig.sin(angle) + trig.cos(angle))),
+  );
+};
+
+func render(state) {
+  tree := unitSquare;
+
+  rotateIn := RotateIn(state.angle);
+
+  for (i := 0; i < 8; i++) {
+    tree = Group([unitSquare, Transform(rotateIn, tree)]);
+  }
+
+  tree = Transform(t2.Translation(Col(0.5, 0.5)), tree);
+
+  return {
+    events: ['frame'],
+    tree,
+  };
+};
+
+return App({init, reduce, render});
