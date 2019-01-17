@@ -330,13 +330,29 @@ export default function renderCanvasApplication(
 
         ctx2d.fillStyle = color.v;
 
+        try {
+          const t: any = transform;
+
+          ctx2d.setTransform(
+            t.v.world.v[0].v[0].v,
+            t.v.world.v[1].v[0].v,
+            t.v.world.v[0].v[1].v,
+            t.v.world.v[1].v[1].v,
+            width * t.v.offset.v[0].v[0].v,
+            width * t.v.offset.v[1].v[0].v,
+          );
+        } catch (err) {
+          console.error('Error while setting transform', obj);
+          continue;
+        }
+
         ctx2d.fillText(
           content.v,
           width * 0.5 * (twidth.v - textWidth),
           width * 0.5 * (theight.v - textHeight),
         );
 
-        // TODO: transform
+        ctx2d.setTransform(1, 0, 0, 1, 0, 0);
       } else {
         console.error('Invalid canvas object', obj);
       }

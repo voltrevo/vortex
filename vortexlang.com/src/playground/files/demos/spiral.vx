@@ -42,7 +42,20 @@ func RotateIn(angle) {
 };
 
 func render(state) {
-  tree := unitSquare;
+  tree := ct.Group([
+    unitSquare,
+    ct.Transform(
+      t2.compose(
+        t2.Scale(0.8),
+        t2.Translation(Col(-0.5, -0.5)),
+      ),
+      ct.Text('Vortex', {
+        width: 1,
+        height: 1,
+        color: '#6644ff',
+      }),
+    ),
+  ]);
 
   rotateIn := RotateIn(state.angle);
 
