@@ -86,7 +86,7 @@
         overflow-x: hidden;
       }
 
-      #display > div {
+      #display > div, #state {
         white-space: pre-wrap;
         padding: 1.5em;
       }
@@ -100,14 +100,7 @@
         font-size: 1.5em;
         background-color: #181818;
         padding: 0.5em;
-      }
-
-      #project-files {
-        display: none;
-      }
-
-      #project-files div {
-        white-space: pre;
+        white-space: normal;
       }
 
       #display #notes {
@@ -177,6 +170,18 @@
       .content > div {
         border-top: 1px solid black;
       }
+
+      #state, .state-title {
+        border-top: 1px solid black;
+      }
+
+      #state-refresh {
+        float: left;
+        transform: rotate(-45deg);
+        cursor: pointer;
+        user-select: none;
+        padding: 0 0.5em;
+      }
     </style>
   </head>
   <body>
@@ -193,8 +198,15 @@
 
     <div id="display">
       <div id="application"><div
-        class="display-title">Application</div
+            class="display-title application-title">
+        <span id="state-refresh">⟳</span>
+        Application
+      </div
       ><div class="content"></div
+      ><div class="display-title state-title">
+        State
+      </div
+      ><div id="state"></div
       ></div>
 
       <div class="display-title">Outcome</div>

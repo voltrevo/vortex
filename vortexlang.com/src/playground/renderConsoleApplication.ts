@@ -4,9 +4,13 @@ export default function renderConsoleApplication(
   az: vortex.Analyzer,
   outcome: vortex.Outcome.ConcreteObject,
   contentEl: HTMLElement,
+  stateEl: HTMLElement,
+  storage: any,
 ) {
   const displayEl = document.createElement('div');
   displayEl.style.padding = '1.5em';
+
+  stateEl.textContent = '(Not implemented yet for console apps)';
 
   const inputBox = document.createElement('div');
   const inputEl = document.createElement('input');

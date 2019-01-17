@@ -5,6 +5,7 @@ import renderApplication from './renderApplication';
 
 export default function compileRender(
   files: { [filename: string]: string },
+  filesStorage: { [filename: string]: any },
   currentFile: string,
   monacoModel: monaco.editor.ITextModel,
   domQuery: (query: string) => HTMLElement,
@@ -148,8 +149,29 @@ export default function compileRender(
   }
 
   const appEl = domQuery('#application');
+  const stateEl = domQuery('#state');
 
-  renderApplication(az, mod && mod.outcome || null, appEl);
+  filesStorage[currentFile] = filesStorage[currentFile] || {};
+
+  renderApplication(
+    az,
+    mod && mod.outcome || null,
+    appEl,
+    stateEl,
+    filesStorage[currentFile],
+  );
+
+  domQuery('#state-refresh').onclick = () => {
+    filesStorage[currentFile] = {};
+    
+    renderApplication(
+      az,
+      mod && mod.outcome || null,
+      appEl,
+      stateEl,
+      filesStorage[currentFile],
+    );
+  };
 }
 
 function goodModules(

@@ -8,8 +8,11 @@ export default function renderApplication(
   az: vortex.Analyzer,
   outcome: vortex.Outcome | null,
   appEl: HTMLElement,
+  stateEl: HTMLElement,
+  storage: any,
 ) {
   appEl.className = '';
+  stateEl.className = '';
 
   let contentEl = <HTMLElement>notNull(appEl.querySelector('.content'));
   contentEl.outerHTML = '<div class="content"></div>';
@@ -32,9 +35,11 @@ export default function renderApplication(
 
   if (type.v === 'application.console') {
     appEl.classList.add('active');
-    renderConsoleApplication(az, outcome, contentEl);
+    stateEl.classList.add('active');
+    renderConsoleApplication(az, outcome, contentEl, stateEl, storage);
   } else if (type.v === 'application.canvas') {
     appEl.classList.add('active');
-    renderCanvasApplication(az, outcome, contentEl);
+    stateEl.classList.add('active');
+    renderCanvasApplication(az, outcome, contentEl, stateEl, storage);
   }
 }

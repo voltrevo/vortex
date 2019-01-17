@@ -6,10 +6,8 @@ init := {time: 0, angle: 0};
 
 reducers := {
   frame: func(state, frame) {
-    dt := frame.time - state.time;
-    state.time += dt;
-
-    state.angle += 0.001 + trig.sin(2 * state.angle) ** 2 * dt;
+    state.time += frame.dt;
+    state.angle += 0.001 + trig.sin(2 * state.angle) ** 2 * frame.dt;
 
     return state;
   },

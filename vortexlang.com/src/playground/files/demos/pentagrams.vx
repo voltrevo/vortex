@@ -21,7 +21,7 @@ func Marker(sz, angle) => func(p) {
     style: {
       fill: 'rgba(0, 0, 255, 0.3)',
       stroke: {
-        color: 'white',
+        color: 'orange',
         lineWidth: 1,
       },
     }
@@ -39,7 +39,7 @@ func reduce({time, clickPoints}, [actionType, actionData]) {
   if (actionType == 'click') {
     clickPoints ++= [actionData];
   } else if (actionType == 'frame') {
-    time = 0 + actionData.time;
+    time += actionData.dt;
   } else {
     assert false;
   }

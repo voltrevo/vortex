@@ -21,6 +21,7 @@ for (const filename of Object.keys(files)) {
 }
 
 let currentFile = '';
+const filesStorage: { [file: string]: any } = {};
 
 editorEl.innerHTML = '';
 
@@ -90,6 +91,6 @@ model.onDidChangeContent(() => {
   clearTimeout(timerId);
 
   timerId = setTimeout(() => {
-    compileRender(files, currentFile, model, domQuery);
+    compileRender(files, filesStorage, currentFile, model, domQuery);
   }, 200) as any as number;
 });

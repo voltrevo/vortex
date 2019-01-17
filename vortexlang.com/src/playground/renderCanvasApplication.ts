@@ -31,6 +31,8 @@ export default function renderCanvasApplication(
   az: vortex.Analyzer,
   app: vortex.Outcome.ConcreteObject,
   contentEl: HTMLElement,
+  stateEl: HTMLElement,
+  storage: any,
 ) {
   let cleanupJobs: (() => void)[] = [];
 
@@ -51,7 +53,7 @@ export default function renderCanvasApplication(
   cleanupJobs.push(() => clearInterval(intervalId));
 
   let alive = true;
-  const startTime = Date.now();
+  let lastTime = Date.now();
 
   cleanupJobs.push(() => { alive = false; });
 
@@ -89,6 +91,21 @@ export default function renderCanvasApplication(
   }
 
   let state: vortex.Outcome = init;
+
+  if (storage.init && storage.state && storage.state.cat === 'concrete') {
+    const cmp = vortex.Outcome.EvalVanillaOperator(
+      null,
+      '==',
+      [storage.init, init]
+    );
+
+    if (cmp.t === 'Bool' && cmp.v === true) {
+      state = storage.state;
+    }
+  } else {
+    storage.init = init;
+    storage.state = state;
+  }
 
   if (state.cat !== 'concrete') {
     console.error('Unexpected state: ' + vortex.Outcome.LongString(state));
@@ -128,6 +145,8 @@ export default function renderCanvasApplication(
       return;
     }
 
+    stateEl.textContent = vortex.Outcome.LongString(state);
+
     if (state.cat === 'invalid') {
       console.error(
         'Expected state ' + vortex.Outcome.LongString(state) + ' to be valid'
@@ -135,6 +154,8 @@ export default function renderCanvasApplication(
 
       return;
     }
+
+    storage.state = state;
 
     let renderData: vortex.Outcome;
     [renderData, az] = vortex.Analyzer.analyze.functionCallValue(
@@ -174,10 +195,13 @@ export default function renderCanvasApplication(
       switch (evt.v) {
         case 'frame': {
           frameEventManager.setHandler(() => {
+            const dt = Date.now() - lastTime;
+            lastTime += dt;
+
             applyAction(vortex.Outcome.Array([
               vortex.Outcome.String('frame'),
               vortex.Outcome.Object({
-                time: vortex.Outcome.Number((Date.now() - startTime) / 1000),
+                dt: vortex.Outcome.Number(dt / 1000),
               }),
             ]));
           });
