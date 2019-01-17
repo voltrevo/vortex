@@ -1,8 +1,6 @@
-import @/util/canvasTree.vx;
+import ct from '@/util/canvasTree.vx';
 import t2 from '@/util/transform2d.vx';
 import @/util/trig.vx;
-
-{App, Group, Transform, Poly} := canvasTree;
 
 init := {time: 0, angle: 0};
 
@@ -21,7 +19,7 @@ func reduce(state, [actionType, actionData]) => (
   reducers[actionType](state, actionData)
 );
 
-unitSquare := Poly({
+unitSquare := ct.Poly({
   points: [
     [-0.5, -0.5],
     [0.5, -0.5],
@@ -49,10 +47,10 @@ func render(state) {
   rotateIn := RotateIn(state.angle);
 
   for (i := 0; i < 8; i++) {
-    tree = Group([unitSquare, Transform(rotateIn, tree)]);
+    tree = ct.Group([unitSquare, ct.Transform(rotateIn, tree)]);
   }
 
-  tree = Transform(t2.Translation(Col(0.5, 0.5)), tree);
+  tree = ct.Transform(t2.Translation(Col(0.5, 0.5)), tree);
 
   return {
     events: ['frame'],
@@ -60,4 +58,4 @@ func render(state) {
   };
 };
 
-return App({init, reduce, render});
+return ct.App({init, reduce, render});

@@ -18,7 +18,7 @@ func Marker(sz, angle) => func(p) {
     ]];
   }
 
-  return {
+  return ['polygon', {
     points,
     style: {
       fill: 'rgba(0, 0, 255, 0.3)',
@@ -27,7 +27,7 @@ func Marker(sz, angle) => func(p) {
         lineWidth: 1,
       },
     }
-  };
+  }];
 };
 
 init := {time: 0, clickPoints: []};
@@ -46,7 +46,7 @@ func reduce({time, clickPoints}, [actionType, actionData]) {
 
 func render({time, clickPoints}) => {
   events: ['click', 'frame'],
-  polygons: (func() {
+  objects: (func() {
     res := [];
 
     for ([i, p] of clickPoints:Entries()) {

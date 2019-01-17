@@ -1,12 +1,42 @@
-import ./polyFlatten.vx;
+import ./transform2d.vx;
+import ./canvasTree.vx;
 
 return {
+  flatten: func(object) {
+    func impl(transform, [type, data]) => switch (type) {
+      'polygon' => [['polygon', {
+        points: data.points:map(transform2d.apply:bind(transform)),
+        style: data.style,
+      }]];
+
+      'text' => [['text', (func() {
+        newData := data;
+
+        newData.transform = transform2d.compose(
+          transform,
+          data.transform
+        );
+
+        return newData;
+      })()]];
+
+      'group' => data:map(impl:bind(transform)):reduce(++);
+
+      'transform' => impl(
+        transform2d.compose(transform, data.transform),
+        data.object,
+      );
+    };
+
+    return impl(transform2d.identity, object);
+  },
+
   App: func({init, reduce, render}) {
     func renderFlat(state) {
       {events, tree} := render(state);
-      polygons := polyFlatten(tree);
+      objects := canvasTree.flatten(tree);
 
-      return {events, polygons};
+      return {events, objects};
     };
 
     state := init;
@@ -38,7 +68,17 @@ return {
     };
   },
 
-  Group: func(polygons) => ['group', polygons],
+  Group: func(objects) => ['group', objects],
   Transform: func(transform, object) => ['transform', {transform, object}],
   Poly: func({points, style}) => ['polygon', {points, style}],
+
+  Text: func(content, options) {
+    assert options.width > 0;
+    assert options.height > 0;
+
+    options.content := content;
+    options.transform := transform2d.identity;
+
+    return ['text', options];
+  },
 };

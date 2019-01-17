@@ -153,13 +153,13 @@ export default function renderCanvasApplication(
       return;
     }
 
-    const {events, polygons} = renderData.v;
+    const {events, objects} = renderData.v;
 
     if (
       events === undefined || events.t !== 'Array' ||
-      polygons === undefined || polygons.t !== 'Array'
+      objects === undefined || objects.t !== 'Array'
     ) {
-      console.error('Expected events and polygons arrays');
+      console.error('Expected events and objects arrays');
       return;
     }
 
@@ -211,81 +211,134 @@ export default function renderCanvasApplication(
 
     ctx2d.clearRect(0, 0, width, width);
 
-    for (const poly of polygons.v) {
-      if (poly.cat !== 'concrete' || poly.t !== 'Object') {
-        console.error('poly was not an object', poly);
+    for (const obj of objects.v) {
+      if (obj.cat !== 'concrete' || obj.t !== 'Array' || obj.v.length !== 2) {
+        console.error('Invalid canvas object', obj);
         continue;
       }
 
-      const {points, style} = poly.v;
+      const [type, data] = obj.v;
 
-      if (
-        points === undefined || points.t !== 'Array' ||
-        style === undefined || style.t !== 'Object'
-      ) {
-        console.error('poly object invalid', poly.v);
+      if (type.t !== 'String' || data.t !== 'Object') {
+        console.error('Invalid canvas object', obj);
         continue;
       }
 
-      ctx2d.beginPath();
-
-      for (const p of points.v) {
-        if (p.t !== 'Array' || p.v.length !== 2) {
-          console.error('Invalid point', p, 'in', poly);
+      if (type.v === 'polygon') {
+        if (data.t !== 'Object') {
+          console.error('Invalid canvas object', obj);
           continue;
         }
 
-        const [x, y] = p.v;
+        const {points, style} = data.v;
 
-        if (x.t !== 'Number' || y.t !== 'Number') {
-          console.error('Invalid point', p, 'in', poly);
+        if (
+          points === undefined || points.t !== 'Array' ||
+          style === undefined || style.t !== 'Object'
+        ) {
+          console.error('Invalid canvas object', obj);
           continue;
         }
 
-        ctx2d.lineTo(x.v * width, y.v * width);
-      }
+        ctx2d.beginPath();
 
-      ctx2d.closePath();
-
-      const {fill, stroke} = style.v;
-
-      if (fill !== undefined) {
-        if (fill.t !== 'String') {
-          console.error('Invalid fill', poly);
-          continue;
-        }
-
-        ctx2d.fillStyle = fill.v;
-        ctx2d.fill();
-      }
-
-      if (stroke !== undefined) {
-        if (stroke.t !== 'Object') {
-          console.error('Invalid stroke', poly);
-          continue;
-        }
-
-        const {color, lineWidth} = stroke.v;
-
-        if (color === undefined || color.t !== 'String') {
-          console.error('Invalid stroke color', poly);
-          continue;
-        }
-
-        ctx2d.strokeStyle = color.v;
-
-        if (lineWidth !== undefined) {
-          if (lineWidth.t !== 'Number') {
-            console.error('Invalid lineWidth', poly);
+        for (const p of points.v) {
+          if (p.t !== 'Array' || p.v.length !== 2) {
+            console.error('Invalid point', p, 'in', obj);
             continue;
           }
 
-          ctx2d.lineWidth = lineWidth.v;
-        } else {
-          ctx2d.lineWidth = 1;
+          const [x, y] = p.v;
+
+          if (x.t !== 'Number' || y.t !== 'Number') {
+            console.error('Invalid point', p, 'in', obj);
+            continue;
+          }
+
+          ctx2d.lineTo(x.v * width, y.v * width);
         }
 
-        ctx2d.stroke();
+        ctx2d.closePath();
+
+        const {fill, stroke} = style.v;
+
+        if (fill !== undefined) {
+          if (fill.t !== 'String') {
+            console.error('Invalid fill', obj);
+            continue;
+          }
+
+          ctx2d.fillStyle = fill.v;
+          ctx2d.fill();
+        }
+
+        if (stroke !== undefined) {
+          if (stroke.t !== 'Object') {
+            console.error('Invalid stroke', obj);
+            continue;
+          }
+
+          const {color, lineWidth} = stroke.v;
+
+          if (color === undefined || color.t !== 'String') {
+            console.error('Invalid stroke color', obj);
+            continue;
+          }
+
+          ctx2d.strokeStyle = color.v;
+
+          if (lineWidth !== undefined) {
+            if (lineWidth.t !== 'Number') {
+              console.error('Invalid lineWidth', obj);
+              continue;
+            }
+
+            ctx2d.lineWidth = lineWidth.v;
+          } else {
+            ctx2d.lineWidth = 1;
+          }
+
+          ctx2d.stroke();
+        }
+      } else if (type.v === 'text') {
+        const {content, width: twidth, height: theight, transform, color} = data.v;
+
+        if (
+          content === undefined || content.t !== 'String' ||
+          color === undefined || color.t !== 'String' ||
+          twidth === undefined || twidth.t !== 'Number' ||
+          theight === undefined || theight.t !== 'Number' ||
+          transform === undefined || transform.t !== 'Object'
+        ) {
+          console.error('Invalid canvas object', obj);
+          continue;
+        }
+
+        ctx2d.font = '12px monospace';
+        ctx2d.textBaseline = 'top';
+        const textDims = ctx2d.measureText(content.v);
+        const textDimsHeight = 12;
+
+        const squashX = twidth.v / textDims.width;
+        const squashY = theight.v / textDimsHeight;
+
+        const squash = Math.min(squashX, squashY);
+        ctx2d.font = `${12 * squash * width}px monospace`;
+
+        const textWidth = squash * textDims.width;
+        const textHeight = squash * textDimsHeight;
+
+        ctx2d.fillStyle = color.v;
+
+        ctx2d.fillText(
+          content.v,
+          width * 0.5 * (twidth.v - textWidth),
+          width * 0.5 * (theight.v - textHeight),
+        );
+
+        // TODO: transform
+      } else {
+        console.error('Invalid canvas object', obj);
       }
     }
   }
