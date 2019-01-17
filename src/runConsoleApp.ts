@@ -3,7 +3,9 @@ import { default as Analyzer, Outcome } from './Analyzer';
 export default async function runConsoleApp(
   az: Analyzer,
   app: Outcome.Object,
+  init: Outcome,
   display: (value: string) => void,
+  stateChange: (state: Outcome) => void,
   getInput: () => Promise<string | null>,
 ) {
   for (const key of ['reduce', 'render']) {
@@ -25,8 +27,10 @@ export default async function runConsoleApp(
     return;
   }
 
-  let state: Outcome = Outcome.Null();
+  let state: Outcome = init;
   let action: Outcome = Outcome.Number(Math.random());
+
+  stateChange(state);
 
   while (true) {
     if (state.cat !== 'concrete') {
@@ -34,19 +38,23 @@ export default async function runConsoleApp(
       return;
     }
 
-    [state, az] = Analyzer.analyze.functionCallValue(
-      {...az, steps: 0},
-      null,
-      reduce,
-      [state, action],
-    );
-
-    if (state.cat === 'invalid') {
-      display(
-        'Expected state ' + Outcome.LongString(state) + ' to be valid'
+    if (action.t === 'String' || state.t === 'Null') {
+      [state, az] = Analyzer.analyze.functionCallValue(
+        {...az, steps: 0},
+        null,
+        reduce,
+        [state, action],
       );
 
-      return;
+      stateChange(state);
+
+      if (state.cat === 'invalid') {
+        display(
+          'Expected state ' + Outcome.LongString(state) + ' to be valid'
+        );
+
+        return;
+      }
     }
 
     let displayStr: Outcome;

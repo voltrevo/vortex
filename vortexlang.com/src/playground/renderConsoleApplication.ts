@@ -40,7 +40,12 @@ export default function renderConsoleApplication(
   vortex.runConsoleApp(
     az,
     outcome,
+    storage.state || vortex.Outcome.Null(),
     (text: string) => displayEl.textContent = text,
+    (state: vortex.Outcome) => {
+      storage.state = state;
+      stateEl.textContent = vortex.Outcome.LongString(state);
+    },
     () => new Promise((resolve) => {
       sendEl.onclick = () => {
         resolve(inputEl.value);

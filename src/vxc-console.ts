@@ -5,6 +5,7 @@ import * as minimist from 'minimist';
 
 import Compiler from './Compiler';
 import Note from './Note';
+import Outcome from './Analyzer/Outcome';
 import pretty from './pretty';
 import runConsoleApp from './runConsoleApp';
 
@@ -97,7 +98,9 @@ let displayStr: string = '';
 runConsoleApp(
   az,
   entryValue,
+  Outcome.Null(),
   (text: string) => { displayStr = text; },
+  (state: Outcome) => {},
   () => new Promise(resolve => {
     console.clear();
     rl.question(displayStr, resolve)
