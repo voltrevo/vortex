@@ -1,3 +1,5 @@
+// Click inside the app to add pentagrams
+
 import @/util/trig.vx;
 
 tau := 2 * 3.14159265;
