@@ -1,0 +1,113 @@
+import ct from '@/util/canvasTree.vx';
+import t2 from '@/util/transform2d.vx';
+import @/util/trig.vx;
+
+textScale := 0.7;
+uiHeight := 0.2;
+
+func Header(text) => ct.Box({
+  width: 1,
+  height: uiHeight,
+  text: {
+    content: text,
+    color: 'white',
+    scale: textScale,
+  },
+  style: {
+    fill: 'black',
+  },
+});
+
+func Footer(rows) {
+  elements := [];
+
+  h := uiHeight / rows:Length();
+
+  for ([i, buttons] of rows:Entries()) {
+    w := 1 / buttons:Length();
+
+    for ([j, {text, color, click}] of buttons:Entries()) {
+      elements ++= [
+        ct.Transform(
+          t2.Translation([[j * w], [1 - uiHeight + (i * h)]]),
+          ct.Box({
+            width: w,
+            height: h,
+            text: {
+              content: text,
+              color: 'white',
+              scale: textScale,
+            },
+            style: {
+              fill: color,
+            },
+            click,
+          }),
+        ),
+      ];
+    }
+  }
+
+  return ct.Group(elements);
+};
+
+func Spiralgon({n, k, t}) {
+  points := [];
+
+  for (i := 0; i < n + 1; i++) {
+    a := 0.5 * t + k * i / n * trig.tau;
+
+    points ++= [[
+      trig.cos(a),
+      trig.sin(a),
+    ]];
+  }
+
+  return ['polygon', {
+    points,
+    style: {
+      fill: 'rgba(0, 0, 255, 0.3)',
+      stroke: {
+        color: 'orange',
+        lineWidth: 1,
+      },
+    }
+  }];
+};
+
+return ct.App({
+  init: {n: 3, k: 1, t: 0},
+  reduce: func(state, [type, event]) {
+    if (type == 'frame') {
+      state.t += event.dt;
+      return state;
+    }
+
+    return state + ({t: 0} ++ event.data);
+  },
+  render: func({n, k, t}) => {
+    events: ['frame'],
+    tree: ct.Group([
+      Header('Spiralgons'),
+      ct.Transform(
+        t2.compose(
+          t2.Translation([[0.5], [0.5]]),
+          t2.Scale(0.4 * (1 - 2 * uiHeight)),
+        ),
+        Spiralgon({n, k, t}),
+      ),
+      Footer([
+        [
+          {text: '-', color: 'red', click: {n: -1, k: 0}},
+          {text: 'n = ' ++ n:String(), color: 'black', click: {n: 0, k: 0}},
+          {text: '+', color: 'green', click: {n: 1, k: 0}},
+        ],
+        [
+          {text: '-', color: 'red', click: {n: 0, k: -1}},
+          {text: 'k = ' ++ k:String(), color: 'black', click: {n: 0, k: 0}},
+          {text: '+', color: 'green', click: {n: 0, k: 1}},
+        ],
+      ]),
+    ]),
+  },
+});

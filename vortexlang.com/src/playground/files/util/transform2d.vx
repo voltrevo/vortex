@@ -11,6 +11,11 @@ identity := {
   ],
 };
 
+func invertMat2([[a, b], [c, d]]) => (
+  [[d, -b], [-c, a]] /
+  (a * d - b * c)
+);
+
 return {
   identity,
 
@@ -56,8 +61,14 @@ return {
     };
   },
 
+  invert: func({world, offset}) {
+    world = invertMat2(world);
+    offset = -1 * (world * offset);
+    return {world, offset};
+  },
+
   apply: func(t, p) {
-    col := t.world * p:Column() + t.offset;
-    return [col[0][0], col[1][0]];
+    [[x], [y]] := t.world * p:Column() + t.offset;
+    return [x, y];
   },
 };

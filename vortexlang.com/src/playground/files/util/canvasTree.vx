@@ -1,6 +1,85 @@
 import ./transform2d.vx;
 import ./canvasTree.vx;
 
+// TODO: This is inefficient.
+func tryGetKey(obj, key, fallback) {
+  for (k of obj:Keys()) {
+    if (k == key) {
+      return obj[key];
+    }
+  }
+
+  return fallback;
+};
+
+// TODO: This is inefficient.
+func hasKey(obj, key) {
+  for (k of obj:Keys()) {
+    if (k == key) {
+      return true;
+    }
+  }
+
+  return false;
+};
+
+// TODO: This is inefficient.
+func arrayContains(array, element) {
+  for (el of array) {
+    if (el == element) {
+      return true;
+    }
+  }
+
+  return false;
+};
+
+func boxContainsClickPos(box, clickPos) {
+  if (!hasKey(box, 'click')) {
+    return false;
+  }
+
+  [x, y] := clickPos;
+
+  if (!(
+    0 <= x && x <= box.width &&
+    0 <= y && y <= box.height
+  )) {
+    return false;
+  }
+
+  return true;
+};
+
+func findBoxClicks([objectType, objectData], clickPos) {
+  boxClicks := [];
+
+  if (objectType == 'box') {
+    if (boxContainsClickPos(objectData, clickPos)) {
+      return [['boxClick', {
+        pos: clickPos,
+        data: objectData.click
+      }]];
+    }
+  } else if (objectType == 'group') {
+    for (i := objectData:Length() - 1; i >= 0; i--) {
+      boxClicks = findBoxClicks(objectData[i], clickPos);
+
+      if (boxClicks:Length() > 0) {
+        return boxClicks;
+      }
+    }
+  } else if (objectType == 'transform') {
+    clickPos = transform2d.apply(
+      transform2d.invert(objectData.transform),
+      clickPos
+    );
+    return findBoxClicks(objectData.object, clickPos);
+  }
+
+  return [];
+};
+
 return {
   flatten: func(object) {
     func impl(transform, [type, data]) => switch (type) {
@@ -9,16 +88,48 @@ return {
         style: data.style,
       }]];
 
-      'text' => [['text', (func() {
-        newData := data;
+      'box' => (func() {
+        box := data;
 
-        newData.transform = transform2d.compose(
-          transform,
-          data.transform
-        );
+        width := box.width;
+        height := box.height;
 
-        return newData;
-      })()]];
+        children := [];
+
+        for (key of box:Keys()) {
+          if (key == 'text') {
+            scale := tryGetKey(box.text, 'scale', 1);
+
+            children ++= impl(
+              [
+                transform,
+                transform2d.Scale(scale),
+                transform2d.Translation(0.5 * (1 / scale - 1) * [[width], [height]]),
+              ]:reduce(transform2d.compose),
+              ['text', box.text ++ {width, height}],
+            );
+          } else if (key == 'style') {
+            children ++= impl(transform, ['polygon', {
+              points: [
+                [0, 0],
+                [width, 0],
+                [width, height],
+                [0, height],
+                [0, 0],
+              ],
+              style: box.style,
+            }]);
+          } else if (key == 'click') {
+            // Not used for rendering
+          } else if (key != 'width' && key != 'height') {
+            log.warn ['Unrecognized box key', {box, key}];
+          }
+        }
+
+        return children;
+      })();
+
+      'text' => [['text', data ++ {transform}]];
 
       'group' => data:map(impl:bind(transform)):reduce(++);
 
@@ -31,18 +142,39 @@ return {
     return impl(transform2d.identity, object);
   },
 
+  findBoxClicks,
+
   App: func({init, reduce, render}) {
     func renderFlat(state) {
       {events, tree} := render(state);
       objects := canvasTree.flatten(tree);
 
+      events ++= ['click'];
+
       return {events, objects};
+    };
+
+    func reduceWithBoxClicks(state, [actionType, actionData]) {
+      if (actionType == 'click') {
+        {events, tree} := render(state);
+        boxClicks := findBoxClicks(tree, actionData);
+
+        for (boxClick of boxClicks) {
+          state = reduce(state, boxClick);
+        }
+
+        if (!arrayContains(events, 'click')) {
+          return state;
+        }
+      }
+
+      return reduce(state, [actionType, actionData]);
     };
 
     state := init;
     renders := [];
 
-    for (i := 0; i < 10; i++) {
+    for (i := 0; i < 5; i++) {
       renderData := renderFlat(state);
       renders ++= [render(state)];
 
@@ -52,7 +184,7 @@ return {
 
       event := renderData.events[i % renderData.events:Length()];
 
-      state = reduce(state, [event, switch (event) {
+      state = reduceWithBoxClicks(state, [event, switch (event) {
         'frame' => {dt: 20};
         'click' => [i * 0.618 % 1, i * (0.618 ** 2) % 1];
       }]);
@@ -63,7 +195,7 @@ return {
     return {
       type: 'application.canvas',
       init,
-      reduce,
+      reduce: reduceWithBoxClicks,
       render: renderFlat,
     };
   },
@@ -72,13 +204,10 @@ return {
   Transform: func(transform, object) => ['transform', {transform, object}],
   Poly: func({points, style}) => ['polygon', {points, style}],
 
-  Text: func(content, options) {
+  Box: func(options) {
     assert options.width > 0;
     assert options.height > 0;
 
-    options.content := content;
-    options.transform := transform2d.identity;
-
-    return ['text', options];
+    return ['box', options];
   },
 };

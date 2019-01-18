@@ -2,13 +2,18 @@ import ct from '@/util/canvasTree.vx';
 import t2 from '@/util/transform2d.vx';
 import @/util/trig.vx;
 
-init := {time: 0, angle: 0};
+init := {time: 0, angle: 0, boxClicks: []};
 
 reducers := {
   frame: func(state, frame) {
     state.time += frame.dt;
     state.angle += 0.001 + trig.sin(2 * state.angle) ** 2 * frame.dt;
 
+    return state;
+  },
+
+  boxClick: func(state, boxClick) {
+    state.boxClicks ++= [boxClick];
     return state;
   },
 };
@@ -40,20 +45,22 @@ func RotateIn(angle) {
 };
 
 func render(state) {
-  tree := ct.Group([
-    unitSquare,
-    ct.Transform(
-      t2.compose(
-        t2.Scale(0.8),
-        t2.Translation(Col(-0.5, -0.5)),
-      ),
-      ct.Text('Vortex', {
-        width: 1,
-        height: 1,
+  tree := ct.Transform(
+    t2.Translation([[-0.5], [-0.5]]),
+    ct.Box({
+      width: 1,
+      height: 1,
+      text: {
+        content: 'Vortex',
         color: '#6644ff',
-      }),
-    ),
-  ]);
+        scale: 0.8,
+      },
+      style: {
+        stroke: {color: 'white'},
+      },
+      click: {foo: 'bar'},
+    }),
+  );
 
   rotateIn := RotateIn(state.angle);
 
