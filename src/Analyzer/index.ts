@@ -1136,8 +1136,15 @@ namespace Analyzer {
           case 'functionCall':
           case 'methodLookup':
           case '.': {
-            // Ignoring invalid top-level expression. Validator should warn
-            // about this.
+            // Unused expressions need to evaluated to check whether they emit
+            // exceptions. Their values are otherwise discarded.
+            let out: Outcome;
+            [out, az] = subExpression(az, exp);
+
+            if (out.t === 'exception') {
+              mex = out;
+            }
+
             return null;
           }
         }
