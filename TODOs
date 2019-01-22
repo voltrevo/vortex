@@ -1,10 +1,40 @@
 TODO: Fix bug: missing top of stack trace when starting inside bodyExpression
 TODO: Add test code for compounds and inc/dec with non-identifier targets
+TODO: Fix compiling unused expressions (need {discard} op)
 TODO: Implement expressions like `[a[0]] += [1]` (combine destructure with accessor mutation)
+
+TODO: Implement sets in VM
+TODO: Add Set as another native data structure
+  e.g.
+  {()} | {(3)} | {(1, 2)} == {(1, 2, 3)}
+  {(1, 2)} & {(2, 3)} == {(2)}
+  {(1, 2)} ^ {(2, 3)} == {(1, 3)}
+  {(1, 2)}:PowerSet() == {({()}, {(1)}, {(2)}, {(1, 2)})}
+
+TODO: Implement maps with non-string keys in VM (keys can be any functionless value)
+TODO: Implement frame guards / handle argument length mismatches
+TODO: Bootstrap parser
+TODO: Bootstrap validator
+TODO: Bootstrap bytecoder
+TODO: Add exec command to vm to create nested vm from vortex byte array
+TODO: Implement exception recovery / defaults
+TODO: Bootstrap analyzer
+TODO: _ for implicit ignore
+TODO: Validator should call into Analyzer without waiting for complete context
+TODO: Type system, type annotations, analysis
+TODO: More unused warnings via return value dependency analysis (see cirumventUnused.vx)
+
+TODO: Lowest hanging fruit optimizations eg:
+  { func { gcall 123 } call } => { gcall 123    }
+  { [] 123 pushBack concat  } => { 123 pushBack }
+  tail call optimization
+  xget: move local variable onto stack
+  xat : move variable at array/object index onto stack
+
+TODO: Class syntax
+
 TODO: TODO tagging, group based on tags
 TODO: Fix vim plugin not knowing file path (fix @/imports/foo.vx)
-TODO: More unused warnings via return value dependency analysis (see cirumventUnused.vx)
-TODO: _ for implicit ignore
 TODO: Place import trace notes at lookup site rather than at import expression
 TODO: Add tests for every possible note
 TODO: Syntax to turn on compiler notes for return value
@@ -12,20 +42,9 @@ TODO: Validation warning for variables that can be moved to an inner scope
 TODO: String interpolation
 TODO: Raw strings
 TODO: Naming consistency module vs file
-TODO: Class syntax
 TODO: Cross-type comparison operators e.g. :<:
-TODO: Allow object keys to be any functionless value
-
-TODO: Add Set as another native data structure
-        e.g.
-        {()} | {(3)} | {(1, 2)} == {(1, 2, 3)}
-        {(1, 2)} & {(2, 3)} == {(2)}
-        {(1, 2)} ^ {(2, 3)} == {(1, 3)}
-        {(1, 2)}:PowerSet() == {({()}, {(1)}, {(2)}, {(1, 2)})}
-
 TODO: Finish defining packaging system, warn on unused files
 TODO: Consider extending addition, subtraction, and matrix multiplication to inconsistent dimensions by (basically) assuming zeros (possibly use :+:, :*: etc)
-TODO: Validator should call into Analyzer without waiting for complete context
 TODO: Establish location indexing/linking so that caching the result of programs with equivalent syntax trees is possible
 TODO: Spaceship operator <=>
 TODO: Element-wise operators
