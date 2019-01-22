@@ -1,4 +1,5 @@
 import CapturedNames from './CapturedNames';
+import formatLocation from './formatLocation';
 import Package from './Package';
 import Syntax from './parser/Syntax';
 
@@ -320,7 +321,7 @@ namespace ByteCoder {
         lines.push('');
       }
 
-      lines.push(...slines);
+      lines.push(`location '${formatLocation(statement.p)}'`, ...slines);
 
       first = false;
     }

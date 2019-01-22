@@ -15,6 +15,7 @@ namespace Vortex {
   struct Machine {
     struct Context {
       std::vector<Value> locals;
+      Value location = Value(Value::null());
 
       Value getLocal(byte i) {
         if (i >= locals.size()) {
@@ -185,6 +186,11 @@ namespace Vortex {
                   std::cerr << "INFO: " << back << std::endl;
 
                   calc.pop_back();
+                  break;
+                }
+
+                case LOCATION: {
+                  ctx.location = pos.getValue(pos.get());
                   break;
                 }
 
@@ -386,7 +392,14 @@ namespace Vortex {
           }
         }
         catch (...) {
-          std::cerr << "Threw exception at location " << location << std::endl;
+          std::cerr << "Threw exception at location " << location;
+
+          if (ctx.location.type != NULL_) {
+            std::cerr << " " << ctx.location << std::endl;
+          }
+
+          std::cerr << std::endl;
+
           throw;
         }
       }

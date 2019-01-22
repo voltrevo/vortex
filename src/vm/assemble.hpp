@@ -18,6 +18,7 @@ namespace Vortex {
     {"swap", SWAP},
     {"assert", ASSERT},
     {"logInfo", LOG_INFO},
+    {"location", LOCATION},
 
     // TOP_TYPE
     //{"", NULL_},
@@ -152,6 +153,34 @@ namespace Vortex {
     }
 
     return res;
+  }
+
+  void parseString(std::istream& in, std::ostream& out) {
+    out.put(STRING);
+
+    if (in.get() != '\'') {
+      throw SyntaxError("' expected");
+    }
+
+    while (true) {
+      char c = in.get();
+
+      if (c == '\'') {
+        break;
+      }
+
+      if (c == '\\') {
+        c = in.get();
+
+        if (c != '\'') {
+          throw SyntaxError("' expected");
+        }
+      }
+
+      out.put(c);
+    }
+
+    out.put(END);
   }
 
   void skipWhitespace(std::istream& in) {
@@ -375,28 +404,7 @@ namespace Vortex {
     }
 
     if (c == '\'') {
-      out.put(STRING);
-      in.get();
-
-      while (true) {
-        c = in.get();
-
-        if (c == '\'') {
-          break;
-        }
-
-        if (c == '\\') {
-          c = in.get();
-
-          if (c != '\'') {
-            throw SyntaxError("' expected");
-          }
-        }
-
-        out.put(c);
-      }
-
-      out.put(END);
+      parseString(in, out);
       return;
     }
 
@@ -529,6 +537,11 @@ namespace Vortex {
         byte b = parseByteNumber(in);
         out.put(b);
         break;
+      }
+
+      case LOCATION: {
+        skipWhitespace(in);
+        parseString(in, out);
       }
 
       default:

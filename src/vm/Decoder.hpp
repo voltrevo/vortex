@@ -55,6 +55,18 @@ namespace Vortex {
             break;
           }
 
+          if (code == LOCATION) {
+            auto instr = get();
+
+            if (instr != STRING) {
+              throw InternalError("LOCATION not followed by STRING");
+            }
+
+            skip(STRING);
+
+            break;
+          }
+
           if (
             code == END ||
             code == DUP ||
@@ -450,6 +462,7 @@ namespace Vortex {
           if (code == SWAP) { os << "swap" << std::endl; break; }
           if (code == ASSERT) { os << "assert" << std::endl; break; }
           if (code == LOG_INFO) { os << "logInfo" << std::endl; break; }
+          if (code == LOCATION) { os << "location "; break; }
 
           throw InternalError("Unrecognized SPECIAL instruction");
         }
