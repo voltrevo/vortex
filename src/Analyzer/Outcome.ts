@@ -1995,7 +1995,7 @@ namespace Outcome {
 
     if (value === null) {
       value = Exception(
-        null,
+        exp,
         ['type-error', 'operator'],
         `Type error: ${left.t} ${op} ${right.t}`,
       );

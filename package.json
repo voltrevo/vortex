@@ -11,7 +11,7 @@
   },
   "scripts": {
     "build": "rm -rf build && mkdir -p build/parser/vasm && jison src/parser/vortex.jison -o build/parser/vortex.js && jison src/parser/vasm/vasm.jison -o build/parser/vasm/vasm.js && tsc",
-    "test": "node build/src/test.js"
+    "test": "node build/test.js"
   },
   "license": "MIT",
   "dependencies": {},
