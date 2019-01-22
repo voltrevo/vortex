@@ -194,6 +194,11 @@ namespace Vortex {
                   break;
                 }
 
+                case DISCARD: {
+                  calc.pop_back();
+                  break;
+                }
+
                 default:
                   throw InternalError("Unrecognized SPECIAL instruction");
               }

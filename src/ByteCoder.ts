@@ -590,7 +590,29 @@ namespace ByteCoder {
     }
   }
 
-  export function Expression(coder: ByteCoder, exp: Syntax.Expression): [string[], ByteCoder] {
+  export function Expression(
+    coder: ByteCoder,
+    exp: Syntax.Expression
+  ): [string[], ByteCoder] {
+    let lines: string[];
+    [lines, coder] = ExpressionImpl(coder, exp);
+
+    if (
+      exp.topExp &&
+      exp.t !== ':=' &&
+      !Syntax.isAssignmentOperator(exp.t) &&
+      ['unary ++', 'unary --', 'Func', 'class', 'import'].indexOf(exp.t) === -1
+    ) {
+      lines.push('discard');
+    }
+
+    return [lines, coder];
+  }
+
+  function ExpressionImpl(
+    coder: ByteCoder,
+    exp: Syntax.Expression
+  ): [string[], ByteCoder] {
     switch (exp.t) {
       case 'IDENTIFIER': return [getName(coder, exp.v), coder];
       case 'NUMBER': return [[exp.v], coder];

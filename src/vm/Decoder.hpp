@@ -72,7 +72,8 @@ namespace Vortex {
             code == DUP ||
             code == SWAP ||
             code == ASSERT ||
-            code == LOG_INFO
+            code == LOG_INFO ||
+            code == DISCARD
           ) {
             break;
           }
@@ -463,6 +464,7 @@ namespace Vortex {
           if (code == ASSERT) { os << "assert" << std::endl; break; }
           if (code == LOG_INFO) { os << "logInfo" << std::endl; break; }
           if (code == LOCATION) { os << "location "; break; }
+          if (code == DISCARD) { os << "discard" << std::endl; break; }
 
           throw InternalError("Unrecognized SPECIAL instruction");
         }

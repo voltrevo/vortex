@@ -25,6 +25,7 @@ namespace Vortex {
     ASSERT,
     LOG_INFO,
     LOCATION,
+    DISCARD,
 
     // TOP_TYPE
     NULL_,

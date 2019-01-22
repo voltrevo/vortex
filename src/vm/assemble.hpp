@@ -19,6 +19,7 @@ namespace Vortex {
     {"assert", ASSERT},
     {"logInfo", LOG_INFO},
     {"location", LOCATION},
+    {"discard", DISCARD},
 
     // TOP_TYPE
     //{"", NULL_},
