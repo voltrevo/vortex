@@ -664,10 +664,6 @@ namespace ByteCoder {
         const gfuncCaptures: string[] = [];
 
         for (const capture of CapturedNames(exp)) {
-          if ((exp.v.name && exp.v.name.v) === capture) {
-            continue;
-          }
-
           const entry = coder.names[capture];
 
           if (entry === undefined) {

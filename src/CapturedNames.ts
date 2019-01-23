@@ -59,6 +59,19 @@ function ProcessScope(
   scope: Scope<ST>,
 } {
   let scope: Scope<ST> | Scope.Root<ST> = Scope.push<ST>(outerScope);
+
+  if (func.v.name !== null && Scope.get(scope, func.v.name.v) === null) {
+    scope = Scope.add(scope, func.v.name.v, {
+      origin: func.v.name,
+      data: {
+        uses: [],
+        mutations: null,
+        captures: [],
+        hoistInfo: null,
+      },
+    });
+  }
+
   const closure: Closure = [];
 
   const items: ScopeItem[] = [];
