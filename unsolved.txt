@@ -1,0 +1,34 @@
+- Including complex numbers
+- Number promotion
+- Including decimal numbers (well maybe not... lack of standardization: .NET System.Decimal vs IEEE decimal vs DEC64)
+- Exceptions
+- Switching to column major ordering for matrices (syntax vs math conventions)
+- Use uppercase for all functions instead of just noun(ish) names?
+- Set syntax? Maybe settled on #[], #[1, 2], etc here
+
+- Syntax support for updating properties in an expression:
+    func incrementXProp(obj) => ???;
+
+    currently can do:
+    func incrementXProp(obj) {
+      obj.x++;
+      return obj;
+    };
+
+- Typing
+  - Types uppercase or lowercase? e.g. Array vs array, String vs string
+  - Type inspection, maybe: if (foo is i32) { ... }
+  - Inclusion of type atoms like array as vortex plain values
+  - :Kind() and :Layout() ?
+  - Special treatment of monomorphic arrays (also sets, maps...)
+
+- Class semantics. Are classes plain data as originally imagined?
+- Variadic functions, parameter defaults
+- Pipeline syntax (similar to JS https://github.com/tc39/proposal-pipeline-operator)
+- Any need for explicit memoization/parallelization or just an implementation detail?
+
+- Complexity of non-optimized map & set operations
+  -> currently maintaining sorted order but this could be problematic
+  -> switch to hash and use heap for enumeration? (want to preserve non-arbitrary ordering when exposing values)
+
+- How best to expose hardware implementations of math functions (e.g. sin, cos, exp...)
