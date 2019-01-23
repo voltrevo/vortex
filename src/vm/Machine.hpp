@@ -423,8 +423,8 @@ namespace Vortex {
     }
 
     void callFunc(const Func& func) {
-      for (const Value& v: func.binds) {
-        calc.push_back(v);
+      for (auto i = func.binds.crbegin(); i != func.binds.crend(); ++i) {
+        calc.push_back(*i);
       }
 
       if (func.method != BuiltInMethod::NONE) {

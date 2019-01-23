@@ -1,0 +1,8 @@
+x := 'x';
+y := 'y';
+
+func fn(a, b) {
+  return [x, y, a, b];
+};
+
+return fn:bind('a'):bind('b')();

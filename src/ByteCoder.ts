@@ -236,12 +236,9 @@ namespace ByteCoder {
         },
       };
 
-      captureLines.reverse();
       lines.push(...captureLines);
 
-      for (let i = hoist.v.args.length - 1; i >= 0; i--) {
-        const arg = hoist.v.args[i];
-
+      for (const arg of hoist.v.args) {
         lines.push(
           ...Destructure(coder, arg.v, 'insert').map(line => '  ' + line)
         );
@@ -710,9 +707,7 @@ namespace ByteCoder {
         captureLines.reverse();
         lines.push(...captureLines);
 
-        for (let i = exp.v.args.length - 1; i >= 0; i--) {
-          const arg = exp.v.args[i];
-
+        for (const arg of exp.v.args) {
           lines.push(
             ...Destructure(coder, arg.v, 'insert').map(line => '  ' + line)
           );
@@ -870,7 +865,8 @@ namespace ByteCoder {
 
         const lines: string[] = [];
 
-        for (const arg of args) {
+        for (let i = args.length - 1; i >= 0; i--) {
+          const arg = args[i];
           lines.push(...SubExpression(coder, arg));
         }
 
