@@ -426,7 +426,13 @@ namespace Vortex {
       switch (target.type) {
         case ARRAY: {
           if (key.type != UINT64) {
-            throw TypeError("Attempt to update array at non-u64 index");
+            if (key.type == INT32 && key.data.INT32 >= 0) {
+              Uint64 newData = key.data.INT32;
+              key.type = UINT64;
+              key.data.UINT64 = newData;
+            } else {
+              throw TypeError("Attempt to update array at non-u64 index");
+            }
           }
 
           if (key.data.UINT64 >= target.data.ARRAY->Length()) {
@@ -930,7 +936,13 @@ namespace Vortex {
       switch (left.type) {
         case ARRAY: {
           if (right.type != UINT64) {
-            throw TypeError("Attempt to index array with non-u64");
+            if (right.type == INT32 && right.data.INT32 >= 0) {
+              Uint64 newData = right.data.INT32;
+              right.type = UINT64;
+              right.data.UINT64 = newData;
+            } else {
+              throw TypeError("Attempt to index array with non-u64");
+            }
           }
 
           left = left.data.ARRAY->at(right.data.UINT64);
