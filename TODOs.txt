@@ -1,3 +1,4 @@
+TODO: Add contributing.md
 TODO: Implement sets in VM
 TODO: Add Set as another native data structure
   e.g.
@@ -16,7 +17,7 @@ TODO: Implement exception recovery / defaults
 TODO: Bootstrap analyzer
 TODO: _ for implicit ignore
 TODO: Validator should call into Analyzer without waiting for complete context
-TODO: Type system, type annotations, analysis
+TODO: Type system, type annotations, analysis (see typing in unsolved.txt)
 TODO: More unused warnings via return value dependency analysis (see cirumventUnused.vx)
 
 TODO: Lowest hanging fruit optimizations eg:
@@ -27,15 +28,13 @@ TODO: Lowest hanging fruit optimizations eg:
   xat : move variable at array/object index onto stack
 
 TODO: Class syntax
-
 TODO: TODO tagging, group based on tags
 TODO: Fix vim plugin not knowing file path (fix @/imports/foo.vx)
 TODO: Place import trace notes at lookup site rather than at import expression
 TODO: Add tests for every possible note
-TODO: Syntax to turn on compiler notes for return value
+TODO: Syntax to turn on analyzer notes for return value
 TODO: Validation warning for variables that can be moved to an inner scope
-TODO: String interpolation
-TODO: Raw strings
+TODO: String interpolation (e.g. '3 times 5 is {3 * 5}.')
 TODO: Naming consistency module vs file
 TODO: Cross-type comparison operators e.g. :<:
 TODO: Finish defining packaging system, warn on unused files
@@ -43,26 +42,7 @@ TODO: Consider extending addition, subtraction, and matrix multiplication to inc
 TODO: Establish location indexing/linking so that caching the result of programs with equivalent syntax trees is possible
 TODO: Spaceship operator <=>
 TODO: Element-wise operators
-TODO: assert.static?, also are type annotations equivalent to embedded assert.static? Should assert just be static? ie never exist at runtime and are an error if not proven to be true
-
-TODO: {unreachable;}? asserts that statement is unreachable
-        e.g.
-
-        if (0 <= x && x < 2) {
-          if (x == 0) {
-            return 'zero';
-          }
-
-          if (x == 1) {
-            return 'one';
-          }
-
-          unreachable;
-        }
-
-        Should this be equivalent to {assert false;}?
-
-TODO: enable {x: i32 = 3;} for creation, which generalizes nicely to allow some names to be created by destructuring and not others: {[x: i32, y] = [1, 2]}
+TODO: enable {any x = 3;} for creation, which generalizes nicely to allow some names to be created by destructuring and not others: {[any x, y] = [1, 2]}
 TODO: implement: if (foo := maybeFoo(); foo != null) { return foo; }
 TODO: 0b 0x 0o literals (allow floats and e, e.g. 0b1.1e5 == 48 (what to do about e in hex?))
 TODO: Implement TODO prioritization and sorting
@@ -70,24 +50,7 @@ TODO: Mechanism for removing TODO false positives
 TODO: Variable/code references in comments (jsdoc?)
 TODO: parser guessing
 TODO: interactive debugger
-TODO: range/set operators .. ., ,. ,, (commas indicate exclusion of that end)
 TODO: super terse $ style lambdas: e.g. $ > 0 is func(x) => x > 0 (research similar constructs in existing languages)
 TODO: define exactly what should/shouldn't be a valid identifier... js allows emojis, should vortex allow emojis?
+TODO: Properly support unicode in strings, e.g. '☃️':Length() == 1u64 (currently 3u64 in VM (using chars))
 TODO: rest/spread
-
-TODO: syntactic sugar for function chains?
-  func chain doThings() {
-    json := chain fetch('http://blah');
-    bytes := chain os.readFile('/tmp/{json.filename}');
-    return bytes.length;
-  }
-
-  is equivalent to:
-
-  func doThings() {
-    func step1() => [fetch('http://blah'), step2];
-    func step2(json) => [os.readFile('/tmp/{json.filename}'), step3];
-    func step3(bytes) => bytes.length;
-
-    return step1();
-  }

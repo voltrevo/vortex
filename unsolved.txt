@@ -1,8 +1,61 @@
 - Including complex numbers
+
 - Number promotion
+  - I've added i32 -> u64 conversions for array indexes so you can do e.g.:
+      a[0]
+  - But the following throw, should they be ok somehow?
+      a:Length() == 0 // needs to be 0u64
+      a[a:Length() - 1] // use a:Back() or 1u64
+  - In general, there are cases like this one:
+      // i is u64 because it's an index
+      // height is an f64
+      y := i * height;
+
+      // Number promotion would mostly solve this problem but it's problematic
+      // because some u64 values don't have an exact f64 representation (and
+      // vice versa). Alternatively, explicit conversion like:
+      y := (i as f64) * height;
+      // Syntax and semantics of conversion is another unsolved problem
+
 - Including decimal numbers (well maybe not... lack of standardization: .NET System.Decimal vs IEEE decimal vs DEC64)
+
 - Exceptions
+  - Making exception detail inaccessible inside the program preserves many execution rearrangements important for optimization
+  - Use catch keyword as an operator?
+      [1, 2][10] catch null // null
+  - Use exception keyword for producing exceptions explicitly?
+      exception catch null // null
+  - Should functions be explicit about whether they might throw?
+      func sqrt(f64 x) f64 | exception { ... } // can throw?
+      func sqrt(f64 x) f64? { ... } // can throw?
+  - If a function is allowed to throw, is it exempt from return analysis with failure to return just an exception?
+      (func() any | exception {})() // exception?
+      (func() any             {})() // fails to compile?
+      (func()                 {})() // ???
+
 - Switching to column major ordering for matrices (syntax vs math conventions)
+  Perhaps switch to column major but prefer this syntax (from octave etc):
+    [
+      1, 2;
+      3, 4;
+    ]
+    (== [[1, 3], [2, 4]])
+
+  array
+    [x, y]
+
+  row vector
+    [x, y;] // needs trailing semicolon to distinguish from plain array
+    (== [[x], [y]])
+
+  column vector
+    [x; y]
+    (== [[x, y]])
+
+  element access
+    M[1, 2]
+    (== M[2][1])
+
 - Use uppercase for all functions instead of just noun(ish) names?
 - Set syntax? Maybe settled on #[], #[1, 2], etc here
 
@@ -18,17 +71,63 @@
 - Typing
   - Types uppercase or lowercase? e.g. Array vs array, String vs string
   - Type inspection, maybe: if (foo is i32) { ... }
+  - Type conversion, maybe: (i as f64) * height
   - Inclusion of type atoms like array as vortex plain values
   - :Kind() and :Layout() ?
   - Special treatment of monomorphic arrays (also sets, maps...)
+  - Want to include types that model singular values, syntax for this?
+      1 is 1:Type() // Type is a method that turns a value into its type
+      1 is type(1) // ?
+      2 is type(1 | 2) // ?
+      2 is type(1) | type(2) // ?
+  - If types are values, and every value has a singular type, does that mean
+    there is an infinite hierarchy? E.g.
+      1             is type(1)
+      type(1)       is type(type(1))
+      type(type(1)) is type(type(type(1)))
+    Does this make sense? Is it desirable?
+  - Include range types? E.g.
+      3 is type(1..5)
+      for (x of type(1..5)) { ... }
+      for (x of type(0.,5)) { ... }
+      type(1..5) == type(1 | 2 | 3 | 4 | 5)
+      type(0.,5) == type(0 | 1 | 2 | 3 | 4)
+      // If not, is some other mechanism needed to help optimizer elide bounds checking? Unnecessary?
 
-- Class semantics. Are classes plain data as originally imagined?
+- Class semantics
+  - Are classes plain data as originally imagined?
+  - Convert to & from plain data?
+  - Restrict method names not to clash with builtins?
+  - Allow dynamic or require typing?
+  - Operator overloading?
+
 - Variadic functions, parameter defaults
 - Pipeline syntax (similar to JS https://github.com/tc39/proposal-pipeline-operator)
-- Any need for explicit memoization/parallelization or just an implementation detail?
+- Any need for explicit suggestion of memoization/parallelization or just an implementation detail?
 
 - Complexity of non-optimized map & set operations
   -> currently maintaining sorted order but this could be problematic
   -> switch to hash and use heap for enumeration? (want to preserve non-arbitrary ordering when exposing values)
 
 - How best to expose hardware implementations of math functions (e.g. sin, cos, exp...)
+- Raw strings
+- Blocks of alternative syntax (macros?), e.g. for jsx-like html fragments
+
+- Removing trailing semicolons for top-level functions, classes (want to avoid incompatibility with LALR)
+  - Maybe LALR difficulty is related to this unintentionally valid program:
+      return func() { return 3; }(); // 3
+
+- Support more terse lambdas, e.g. x => 2 * x
+
+- Support streaming interactions
+  - Generators? (Are they enough/compatible with value semantics? Perhaps dedicated stream construct?)
+  - Transform programs that read and write sequentially to arrays?
+
+- Cross-type comparison (i.e. :<:) compares everything by comparing type first, but should regular comparison be relaxed? E.g.
+  [1, 0] <  [1, 2]     // currently true
+  [1]    <  [1, 2]     // currently exception, should be true? (lexicographical ordering)
+  [1]    <  [1, 'foo'] // true? Are there complications regarding mathematical axioms about ordering?
+
+  #[1]   <  #[2]       // probably true
+  #[1.0] <  #[2]       // probably false, since 1.0 :>: 2 (is that ok? (1u8 :<: 2.0, 2.0 :<: 3u8 is a mess))
+  #[]    <  #[x]       // true for all x? Are sets ordered?
