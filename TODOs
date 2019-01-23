@@ -1,4 +1,3 @@
-TODO: Add test code for compounds and inc/dec with non-identifier targets
 TODO: Implement expressions like `[a[0]] += [1]` (combine destructure with accessor mutation)
 
 TODO: Implement sets in VM
