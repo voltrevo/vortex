@@ -772,7 +772,22 @@ namespace ByteCoder {
       }
 
       case 'op': {
-        return [[`func { ${exp.v} }`], coder];
+        // TODO: The swap here is an artifact of reversing arguments for
+        // functions but not operators. E.g.
+        // vortex(foo(a, b)) <=> vasm(get $b get $a get $foo call)
+        //
+        // This could be resolved by reversing arguments to operators here and
+        // in the VM, but I'm leaving this for now since it seems to be paired
+        // with the convention of the stack growing down instead of up which
+        // I'm also not doing. This would be a significant change and I need to
+        // weigh things carefully.
+        //
+        // There seems to be precedent for inconsistency however, since if
+        // arguments are reversed, we should have:
+        // postfix(2 1 -) <=> infix(1 - 2)
+        // but instead we have:
+        // postfix(2 1 -) <=> infix(2 - 1)
+        return [[`func { swap ${exp.v} }`], coder];
       }
 
       case 'Array': {
