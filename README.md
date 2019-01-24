@@ -20,6 +20,10 @@ You can try Vortex without any installs, straight from your browser at: https://
 | Plain Old Data | Every functionless value has a straightforward json-like representation which identifies its data uniquely and completely. Just call `:String()`. Json and binary formats are planned too. |
 | Abstraction | Vortex feels quite different to C/C++ because its semantics are based on a clean inner-universe of computation which is incompatible with things like memory layout, direct hardware access, and reference semantics. This allows many more opportunities for optimization because it is easier to transform programs without introducing subtle differences. |
 
+### Contributing
+
+See [CONTRIBUTING.md](./CONTRIBUTING.md).
+
 ### Examples
 
 Hello world:
