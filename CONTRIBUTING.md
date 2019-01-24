@@ -2,10 +2,10 @@
 
 Thanks for considering contributing to Vortex! :tada:
 
-I suggest starting small, like [this](/voltrevo/vortex/pull/1). However, if you already have something in mind, let's have a conversation first. Please file an [issue](/voltrevo/vortex/issues).
+I suggest starting small, like [this](https://github.com/voltrevo/vortex/pull/1). However, if you already have something in mind, let's have a conversation first. Please file an [issue](/voltrevo/vortex/issues).
 
 ### Reporting Bugs
-Bug reporting is a valuable contribution that doesn't require code changes. If you find something you believe is a bug, or especially if you see the phrase 'Internal error (please report this bug)' in the playground or from `vxc`, please file an [issue](/voltrevo/vortex/issues) with example input.
+Bug reporting is a valuable contribution that doesn't require code changes. If you find something you believe is a bug, or especially if you see the phrase 'Internal error (please report this bug)' in the playground or from `vxc`, please file an [issue](https://github.com/voltrevo/vortex/issues) with example input.
 
 Optional: If you'd like your code demonstrating the bug to be included in the version history, so that GitHub lists you as a contributor, create a branch with a new file in [./src/testCode](./src/testCode) and mention it in the issue. I'll incorporate your commits when making the fix.
 
@@ -22,7 +22,7 @@ The files for the [playground](https://vortexlang.com/playground/) are specified
 - Adding a demo for something you coded on the playground
 - Improving the wording or fixing typos
 - Adding a tutorial section on applications
-- Reorganizing/rewriting some of the content (but start a conversation about it by filing an [issue](/voltrevo/vortex/issues) first)
+- Reorganizing/rewriting some of the content (but start a conversation about it by filing an [issue](https://github.com/voltrevo/vortex/issues) first)
 
 ### Standard Library Drafting
 Vortex will need a standard library for common algorithms and data structures. The way these work will probably be shaped by future developments of the core language, but if you want to try them out now anyway I would be happy to add them to [./src/testCode/core](./src/testCode/core).
@@ -30,7 +30,7 @@ Vortex will need a standard library for common algorithms and data structures. T
 ### Language Design Suggestions
 I'm open to suggestions about how the language should work. There are many unsolved problems in this area, some of which are detailed in [unsolved.txt](/voltrevo/vortex/tree/master/unsolved.txt).
 
-Please file an [issue](/voltrevo/vortex/issues), and include at least one example program and the proposed output. Something like this:
+Please file an [issue](https://github.com/voltrevo/vortex/issues), and include at least one example program and the proposed output. Something like this:
 
 > I think that `%` should be used for percentage literals instead of modular arithmetic, and `mod` should be used for that instead. For example:
 > ```js
