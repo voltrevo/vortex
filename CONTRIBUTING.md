@@ -2,7 +2,7 @@
 
 Thanks for considering contributing to Vortex! :tada:
 
-I suggest starting small, like [this](https://github.com/voltrevo/vortex/pull/1). However, if you already have something in mind, let's have a conversation first. Please file an [issue](/voltrevo/vortex/issues).
+I suggest starting small, like [this](https://github.com/voltrevo/vortex/pull/1). However, if you already have something in mind, let's have a conversation first. Please file an [issue](https://github.com/voltrevo/vortex/issues).
 
 ### Reporting Bugs
 Bug reporting is a valuable contribution that doesn't require code changes. If you find something you believe is a bug, or especially if you see the phrase 'Internal error (please report this bug)' in the playground or from `vxc`, please file an [issue](https://github.com/voltrevo/vortex/issues) with example input.
