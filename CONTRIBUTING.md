@@ -15,7 +15,7 @@ This codebase uses the word `TODO` for most issue tracking. Use `git grep -n TOD
 ### Adding/Improving Test Code
 Vortex is primarily tested using [testCode](./src/testCode). In there you'll find code examples which explore lots of complex cases that the toolchain needs to handle correctly.
 
-Lines which produce errors, warns, and infos are annotated with `#error`, `#warn`, and `#info` respectively. These annotations are checked against the actual output when running `npm test`. Every note has a series of tags describing the categories it falls into. Some tags are untested, and fixing that would be a great help.
+Lines which produce errors, warns, and infos are annotated with `#error`, `#warn`, and `#info` respectively. These annotations are checked against the actual output when running `npm test`. Every note has a series of tags describing the categories it falls into. Some tags are untested, and fixing that would be a great help. Also any unusual or interesting programs could be added here, so we can monitor their behavior.
 
 ### Playground Content
 The files for the [playground](https://vortexlang.com/playground/) are specified [here](./vortexlang.com/src/playground/files). You could make contributions here by:
@@ -25,7 +25,16 @@ The files for the [playground](https://vortexlang.com/playground/) are specified
 - Reorganizing/rewriting some of the content (but start a conversation about it by filing an [issue](https://github.com/voltrevo/vortex/issues) first)
 
 ### Standard Library Drafting
-Vortex will need a standard library for common algorithms and data structures. The way these work will probably be shaped by future developments of the core language, but if you want to try them out now anyway I would be happy to add them to [./src/testCode/core](./src/testCode/core).
+Vortex will need a standard library for common algorithms and data structures. The way these work will probably be shaped by future developments of the core language, but if you want to try them out now anyway I would be happy to add them to [./src/testCode/core](./src/testCode/core). Here are some ideas:
+- Sorting and searching
+- Heaps
+- Linear Algebra
+- Numerical Methods
+- Trees
+- Graph data structures, Dijkstra's algorithm, etc
+- Multi-index containers
+- Hash functions, and adaptors to compute hashes of vortex data structures
+- Pseudorandom algorithms (something better than [this](https://github.com/voltrevo/vortex/blob/af255d5/src/consoleApps/blackjack/util.vx#L14-L26))
 
 ### Language Design Suggestions
 I'm open to suggestions about how the language should work. There are many unsolved problems in this area, some of which are detailed in [unsolved.txt](/voltrevo/vortex/tree/master/unsolved.txt).
