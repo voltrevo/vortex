@@ -22,6 +22,7 @@ export default function compileRender(
 
   const outcomeEl = domQuery('#outcome');
   const stepsEl = domQuery('#steps');
+  const charsEl = domQuery('#chars');
   const notesEl = domQuery('#notes');
   const vasmEl = domQuery('#vasm');
 
@@ -34,6 +35,7 @@ export default function compileRender(
   }
 
   stepsEl.textContent = `${az.steps}`;
+  charsEl.textContent = `${files[currentFile].length}`;
   notesEl.innerHTML = '';
 
   for (const note of rawNotes) {
