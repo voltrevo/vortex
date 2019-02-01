@@ -182,6 +182,39 @@
         user-select: none;
         padding: 0 0.5em;
       }
+
+      #display > #stats {
+        padding: 1em;
+      }
+
+      #stats .table-wrap {
+        display: inline-block;
+      }
+
+      #stats table {
+        width: 100%;
+      }
+
+      #stats td {
+        padding: 0.5em;
+      }
+
+      #stats td:first-child {
+        text-align: left;
+      }
+
+      #stats td {
+        text-align: right;
+      }
+
+      #stats td:nth-child(2) {
+        width: 4em;
+      }
+
+      .clickable:hover {
+        cursor: pointer;
+        user-select: none;
+      }
     </style>
   </head>
   <body>
@@ -212,11 +245,20 @@
       <div class="display-title">Outcome</div>
       <div id="outcome">'The playground is loading'</div>
 
-      <div class="display-title">Steps</div>
-      <div id="steps"></div>
-
-      <div class="display-title">Characters</div>
-      <div id="chars"></div>
+      <div class="display-title">Stats</div>
+      <div id="stats"><div class="table-wrap"><table
+      >
+          <tr>
+            <td>Steps</td><td></td><td id="steps"></td><td></td>
+          </tr>
+          <tr>
+            <td>Step Limit</td><td class="clickable" id="steps-dec">-</td><td id="stepLimit">100000</td><td class="clickable" id="steps-inc">+</td>
+          </tr>
+          <tr>
+            <td>Characters</td><td></td><td id="chars"></td><td></td>
+          </tr>
+        </table
+      ></div></div>
 
       <div class="display-title">Notes</div>
       <div id="notes"></div>

@@ -9,6 +9,7 @@ export default function compileRender(
   currentFile: string,
   monacoModel: monaco.editor.ITextModel,
   domQuery: (query: string) => HTMLElement,
+  stepLimit: number,
 ) {
   function readFile(f: string): string | Error {
     return files[f] || new Error('File not found');
@@ -17,11 +18,12 @@ export default function compileRender(
   const [rawNotes, az] = vortex.Compiler.compile(
     [currentFile],
     readFile,
-    { stepLimit: 100000 },
+    { stepLimit },
   );
 
   const outcomeEl = domQuery('#outcome');
   const stepsEl = domQuery('#steps');
+  const stepLimitEl = domQuery('#stepLimit');
   const charsEl = domQuery('#chars');
   const notesEl = domQuery('#notes');
   const vasmEl = domQuery('#vasm');
@@ -35,6 +37,7 @@ export default function compileRender(
   }
 
   stepsEl.textContent = `${az.steps}`;
+  stepLimitEl.textContent = `${stepLimit}`;
   charsEl.textContent = `${files[currentFile].length}`;
   notesEl.innerHTML = '';
 

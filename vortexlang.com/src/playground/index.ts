@@ -86,11 +86,43 @@ fileNextEl.addEventListener('click', moveFileIndex(1));
 
 let timerId: undefined | number = undefined;
 
+let stepLimit = 100000;
+
+domQuery('#steps-inc').onclick = () => {
+  const sz = 10 ** Math.floor(Math.log10(stepLimit) + 0.001);
+  let leader = Math.floor(stepLimit / sz);
+
+  leader *= 2;
+
+  if (leader === 4) {
+    leader = 5;
+  }
+
+  stepLimit = leader * sz;
+  updateCompileRender();
+};
+
+domQuery('#steps-dec').onclick = () => {
+  const sz = 10 ** Math.floor(Math.log10(stepLimit) + 0.001);
+  let leader = Math.floor(stepLimit / sz);
+
+  leader /= 2;
+
+  if (Math.floor(leader) === 2) {
+    leader = 2;
+  }
+
+  stepLimit = leader * sz;
+  updateCompileRender();
+};
+
+function updateCompileRender() {
+  compileRender(files, filesStorage, currentFile, model, domQuery, stepLimit);
+}
+
 model.onDidChangeContent(() => {
   files[currentFile] = model.getValue();
   clearTimeout(timerId);
 
-  timerId = setTimeout(() => {
-    compileRender(files, filesStorage, currentFile, model, domQuery);
-  }, 200) as any as number;
+  timerId = setTimeout(updateCompileRender, 200) as any as number;
 });
