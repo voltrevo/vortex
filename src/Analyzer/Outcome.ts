@@ -33,18 +33,27 @@ namespace Outcome {
         name: 'String';
         argLength: 0;
       };
+      Kind: {
+        base: String;
+        name: 'Kind';
+        argLength: 0;
+      };
     };
 
     export type Method = MethodMap[keyof MethodMap];
 
     export type MethodCallMap = {
+      Length: {
+        args: [];
+        result: Number;
+      };
       String: {
         args: [];
         result: String;
       };
-      Length: {
+      Kind: {
         args: [];
-        result: Number;
+        result: String;
       };
     };
 
@@ -56,6 +65,7 @@ namespace Outcome {
     } = {
       Length: (base, args) => Number(base.v.length),
       String: (base, args) => String('\'' + escape(base.v) + '\''),
+      Kind: (base, args) => String('string'),
     };
 
     export const methodArgLengths: {
@@ -63,6 +73,7 @@ namespace Outcome {
     } = {
       Length: 0,
       String: 0,
+      Kind: 0,
     };
   }
 
@@ -79,6 +90,11 @@ namespace Outcome {
         name: 'String';
         argLength: 0;
       };
+      Kind: {
+        base: Number;
+        name: 'Kind';
+        argLength: 0;
+      };
     };
 
     export type Method = MethodMap[keyof MethodMap];
@@ -88,6 +104,10 @@ namespace Outcome {
         args: [];
         result: String;
       };
+      Kind: {
+        args: [];
+        result: String;
+      }
     };
 
     export const methodImpls: {
@@ -97,12 +117,14 @@ namespace Outcome {
       >;
     } = {
       String: (base, args) => String(base.v.toString()),
+      Kind: (base, args) => String('f64'),
     };
 
     export const methodArgLengths: {
       [name in keyof MethodMap]: MethodMap[name]['argLength'];
     } = {
       String: 0,
+      Kind: 0,
     };
   }
 
@@ -119,6 +141,11 @@ namespace Outcome {
         name: 'String';
         argLength: 0;
       };
+      Kind: {
+        base: Bool;
+        name: 'Kind';
+        argLength: 0;
+      }
     };
 
     export type Method = MethodMap[keyof MethodMap];
@@ -128,6 +155,10 @@ namespace Outcome {
         args: [];
         result: String;
       };
+      Kind: {
+        args: [];
+        result: String;
+      }
     };
 
     export const methodImpls: {
@@ -137,12 +168,14 @@ namespace Outcome {
       >;
     } = {
       String: (base, args) => String(base.v.toString()),
+      Kind: (base, args) => String('bool'),
     };
 
     export const methodArgLengths: {
       [name in keyof MethodMap]: MethodMap[name]['argLength'];
     } = {
       String: 0,
+      Kind: 0,
     };
   }
 
@@ -159,6 +192,11 @@ namespace Outcome {
         name: 'String';
         argLength: 0;
       };
+      Kind: {
+        base: Null;
+        name: 'Kind';
+        argLength: 0;
+      }
     };
 
     export type Method = MethodMap[keyof MethodMap];
@@ -168,6 +206,10 @@ namespace Outcome {
         args: [];
         result: String;
       };
+      Kind: {
+        args: [];
+        result: String;
+      }
     };
 
     export const methodImpls: {
@@ -177,12 +219,14 @@ namespace Outcome {
       >;
     } = {
       String: (base, args) => String('null'),
+      Kind: (base, args) => String('null'),
     };
 
     export const methodArgLengths: {
       [name in keyof MethodMap]: MethodMap[name]['argLength'];
     } = {
       String: 0,
+      Kind: 0,
     };
   }
 
@@ -363,6 +407,12 @@ namespace Outcome {
         argLength: 0;
       };
 
+      Kind: {
+        base: Array;
+        name: 'Kind';
+        argLength: 0;
+      }
+
       Front: {
         base: Array;
         name: 'Front';
@@ -466,6 +516,11 @@ namespace Outcome {
         result: String;
       };
 
+      Kind: {
+        args: [];
+        result: String;
+      };
+
       Front: {
         args: [];
         result: Value;
@@ -539,6 +594,7 @@ namespace Outcome {
       )),
       Values: (base, []) => base,
       String: (base, []) => String(JsString(base)),
+      Kind: (base, []) => String('array'),
       Front: (base, []) => base.v[0],
       Back: (base, []) => base.v[base.v.length - 1],
       Head: (base, []) => Array(base.v.slice(0, base.v.length - 1)),
@@ -563,6 +619,7 @@ namespace Outcome {
       Keys: 0,
       Values: 0,
       String: 0,
+      Kind: 0,
       Front: 0,
       Back: 0,
       Head: 0,
@@ -672,6 +729,12 @@ namespace Outcome {
         argLength: 0;
       };
 
+      Kind: {
+        base: Object;
+        name: 'Kind';
+        argLength: 0;
+      }
+
       Row: {
         base: Object;
         name: 'Row';
@@ -714,6 +777,11 @@ namespace Outcome {
         result: String;
       };
 
+      Kind: {
+        args: [];
+        result: String;
+      }
+
       Row: {
         args: [];
         result: Array;
@@ -752,6 +820,7 @@ namespace Outcome {
         )
       ),
       String: (base, args) => String(JsString(base)),
+      Kind: (base, args) => String('object'),
       Row: (base, []) => Array([base]),
       Column: (base, []) => {
         const values: { [key: string]: Value } = {};
@@ -772,6 +841,7 @@ namespace Outcome {
       Keys: 0,
       Values: 0,
       String: 0,
+      Kind: 0,
       Row: 0,
       Column: 0,
       Transpose: 0,
