@@ -1,0 +1,66 @@
+// Write a function that generates text diamonds of any size, like the ones
+// below, where n is the number of steps from the center to each corner.
+
+func Diamond(n) {
+  return 'TODO';
+};
+
+log.info Diamond(0);
+log.info Diamond(1);
+log.info Diamond(2);
+log.info Diamond(3);
+log.info Diamond(10);
+
+assert Diamond(0) == '
+*
+';
+
+assert Diamond(1) == '
+ *
+***
+ *
+';
+
+assert Diamond(2) == '
+  *
+ ***
+*****
+ ***
+  *
+';
+
+assert Diamond(3) == '
+   *
+  ***
+ *****
+*******
+ *****
+  ***
+   *
+';
+
+assert Diamond(10) == '
+          *
+         ***
+        *****
+       *******
+      *********
+     ***********
+    *************
+   ***************
+  *****************
+ *******************
+*********************
+ *******************
+  *****************
+   ***************
+    *************
+     ***********
+      *********
+       *******
+        *****
+         ***
+          *
+';
+
+return Diamond;

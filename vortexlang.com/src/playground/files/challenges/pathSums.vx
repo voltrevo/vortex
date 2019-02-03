@@ -1,0 +1,80 @@
+// Given two positive integers [a, b], a destination N, and an ordered list of
+// forbidden integers, a valid path is an array beginning with 0, ending with
+// N, and advancing by a or b at each step, and without touching a forbidden
+// integer.
+//
+// For example, with these parameters:
+// a: 3
+// b: 8
+// N: 20
+// forbiddens: 6
+//
+// This is a valid path:
+// 0 -> 8 -> 11 -> 14 -> 17 -> 20
+//
+// A function CheckPath is provided which can check examples like this for
+// you.
+
+assert CheckPath(
+  [3, 8], 20, [6],
+  [0, 8, 11, 14, 17, 20]
+);
+
+// Write a function FindPath that finds valid paths.
+
+func FindPath([a, b], N, forbiddens) {
+  // TODO
+  return [];
+};
+
+assert CheckPath(
+  [3, 8], 20, [6],
+  FindPath([3, 8], 20, [6]),
+);
+
+func CheckPath([a, b], N, forbiddens, path) {
+  assert a > 0 && (a - a % 1) == a;
+  assert b > 0 && (b - b % 1) == b;
+
+  if (
+    path:Length() == 0 ||
+    path:Front() != 0 ||
+    path:Back() != N
+  ) {
+    return false;
+  }
+
+  len := path:Length();
+
+  fi := 0;
+  fLen := forbiddens:Length();
+
+  for (i := 1; i < len; i++) {
+    curr := path[i];
+    diff := curr - path[i - 1];
+
+    if (diff != a && diff != b) {
+      return false;
+    }
+
+    for (fi < fLen && forbiddens[fi] < curr) {
+      fi++;
+    }
+
+    if (fi < fLen && forbiddens[fi] == curr) {
+      return false;
+    }
+  }
+
+  return true;
+};
+
+assert CheckPath([3, 8], 20, [],  [0, 3,  6,  9, 12, 20]) == true;
+assert CheckPath([3, 8], 20, [6], [0, 3,  6,  9, 12, 20]) == false;
+assert CheckPath([3, 8], 20, [6], [0, 8, 11, 14, 17, 20]) == true;
+
+assert CheckPath([3, 7], 20, [],      [0, 3, 10, 13, 20]) == true;
+assert CheckPath([3, 7], 20, [3, 13], [0, 3, 10, 13, 20]) == false;
+assert CheckPath([3, 7], 20, [3, 13], [0, 7, 10, 17, 20]) == true;
+
+return 'done';

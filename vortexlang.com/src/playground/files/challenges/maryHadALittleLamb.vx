@@ -1,0 +1,53 @@
+// The nursery rhyme "Mary Had a Little Lamb" goes
+// like this:
+
+/*
+  mary had a little lamb little lamb little lamb
+  mary had a little lamb
+  whose fleece was white as snow
+
+  and everywhere that mary went
+  mary went mary went
+  everywhere that mary went
+  the lamb was sure to go
+
+  he followed her to school one day school one day school one day
+  he followed her to school one day
+  which was against the rules
+
+  it made the children laugh and play
+  laugh and play laugh and play
+  it made the children laugh and play
+  to see a lamb at school
+
+  and so the teacher turned it out
+  turned it out turned it out
+  and so the teacher turned it out
+  but still it lingered near
+
+  he waited patiently about
+  patiently about patiently about
+  he waited patiently about
+  till mary did appear
+
+  why does the lamb love mary so
+  love mary so love mary so
+  why does the lamb love mary so
+  the eager children cried
+  why mary loves the lamb you know
+  lamb you know lamb you know
+  why mary loves the lamb you know
+  the teacher did reply
+*/
+
+// Considering this as a sequence of letters and spaces only,
+// it forms a string of 907 characters.
+
+return 'mary had a little lamb little lamb little lamb mary had a little lamb whose fleece was white as snow and everywhere that mary went mary went mary went everywhere that mary went the lamb was sure to go he followed her to school one day school one day school one day he followed her to school one day which was against the rules it made the children laugh and play laugh and play laugh and play it made the children laugh and play to see a lamb at school and so the teacher turned it out turned it out turned it out and so the teacher turned it out but still it lingered near he waited patiently about patiently about patiently about he waited patiently about till mary did appear why does the lamb love mary so love mary so love mary so why does the lamb love mary so the eager children cried why mary loves the lamb you know lamb you know lamb you know why mary loves the lamb you know the teacher did reply';
+
+// 10 additional characters are needed to form the simplest
+// program that returns it.
+//
+// There are programs returning this string that are shorter
+// than the original 907 characters. Find the shortest one you
+// can.

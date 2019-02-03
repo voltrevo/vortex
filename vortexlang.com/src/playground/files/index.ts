@@ -10,6 +10,12 @@ const utilContext = require.context(
   /\.vx$/,
 );
 
+const challengesContext = require.context(
+  'raw-loader!./challenges',
+  true,
+  /\.vx$/,
+);
+
 function blockTrim(text: string) {
   let lines = text.split('\n');
 
@@ -1542,12 +1548,16 @@ const files = {
   `),
 };
 
-for (const f of demosContext.keys()) {
-  files[f.replace('./', '@/demos/')] = demosContext(f);
-}
+const contexts = [
+  ['demos', demosContext],
+  ['util', utilContext],
+  ['challenges', challengesContext],
+] as [string, any][];
 
-for (const f of utilContext.keys()) {
-  files[f.replace('./', '@/util/')] = utilContext(f);
+for (const [dir, ctx] of contexts) {
+  for (const f of ctx.keys()) {
+    files[f.replace('./', `@/${dir}/`)] = ctx(f);
+  }
 }
 
 export default files;
