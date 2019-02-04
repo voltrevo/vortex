@@ -1018,7 +1018,8 @@ namespace ByteCoder {
       case '>':
       case '&':
       case '^':
-      case '|': {
+      case '|':
+      case 'in': {
         const [leftExp, rightExp] = exp.v;
 
         return [

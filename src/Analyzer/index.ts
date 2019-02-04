@@ -1118,6 +1118,7 @@ namespace Analyzer {
           case '>':
           case '<=':
           case '>=':
+          case 'in':
           case 'unary -':
           case 'unary +':
           case 'unary !':
@@ -1581,7 +1582,8 @@ namespace Analyzer {
         case '>':
         case '&':
         case '^':
-        case '|': {
+        case '|':
+        case 'in': {
           let left: Outcome;
           [left, az] = subExpression(az, exp.v[0]);
 

@@ -41,4 +41,6 @@ assert #[
 
 assert #[2, 3] < #[1, 2, 3];
 
+log.info (null in #[null]);
+
 return 'done';

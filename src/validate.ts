@@ -1142,6 +1142,7 @@ function validateExpression(exp: Syntax.Expression): Note[] {
       case '>':
       case '<=':
       case '>=':
+      case 'in':
       case 'unary -':
       case 'unary +':
       case 'unary !':

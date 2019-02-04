@@ -31,6 +31,7 @@
 'log.info'            return 'LOGINFO'
 'log.warn'            return 'LOGWARN'
 'log.error'           return 'LOGERROR'
+'in'                  return 'in'
 [a-zA-Z]\w*           return 'IDENTIFIER'
 ";"                   return ';'
 [0-9]+("."[0-9]+)?([uif][0-9]*)?\b  return 'NUMBER'
@@ -90,6 +91,7 @@
 
 %right FUNC
 %right ':=' '=' '+=' '++=' '-=' '*=' '/=' '%=' '<<=' '>>=' '&=' '|=' '^='
+%left 'in'
 %left '||'
 %left '&&'
 %left '|'
@@ -320,6 +322,8 @@ e
         {$$ = { t: '>', v: [$1, $3], p: L(@$) }}
     | e '&' e
         {$$ = { t: '&', v: [$1, $3], p: L(@$) }}
+    | e 'in' e
+        {$$ = { t: 'in', v: [$1, $3], p: L(@$) }}
     | e '^' e
         {$$ = { t: '^', v: [$1, $3], p: L(@$) }}
     | e '|' e

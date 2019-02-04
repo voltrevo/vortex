@@ -685,6 +685,62 @@ namespace Outcome {
   }
 
   export namespace Set {
+    export function in_(
+      element: Value,
+      set_: Value,
+    ): Outcome {
+      if (set_.t !== 'Set' && set_.t !== 'Unknown') {
+        return Exception(
+          null,
+          ['type-error'],
+          `Type error: ${element.t} in ${set_.t}`,
+        );
+      }
+
+      if (set_.t === 'Unknown') {
+        return set_;
+      }
+
+      if (set_.v.length === 0) {
+        return Bool(false);
+      }
+
+      if (element.t === 'Unknown') {
+        return element;
+      }
+
+      if (element.cat === 'valid') {
+        // TODO: Could do better here, but not sure whether 'valid' is going
+        // to continue to be a thing.
+        return Unknown('error');
+      }
+
+      if (!isFunctionless(element)) {
+        // TODO: Should this be an exception?
+        return Bool(false);
+      }
+
+      let left = 0;
+      let right = set_.v.length;
+
+      while (left < right) {
+        const mid = Math.floor(left + (right - left) / 2);
+        const cmp = TypeValueOrderFunctionless(element, set_.v[mid]);
+
+        if (cmp === 0) {
+          return Bool(true);
+        }
+
+        if (cmp < 0) {
+          right = mid;
+        } else {
+          left = mid + 1;
+        }
+      }
+
+      return Bool(false);
+    }
+
     export type MethodMap = {
       Values: {
         base: Set;
@@ -2446,6 +2502,10 @@ namespace Outcome {
           }
 
           return TypedComparison(exp, op, left, right)
+        }
+
+        case 'in': {
+          return Set.in_(left, right);
         }
       }
     })();

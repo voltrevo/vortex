@@ -65,6 +65,7 @@ namespace Syntax {
     '&' |
     '^' |
     '|' |
+    'in' |
     never
   );
 
@@ -305,6 +306,7 @@ namespace Syntax {
       case '>':
       case '<=':
       case '>=':
+      case 'in':
       case 'unary -':
       case 'unary +':
       case 'unary !':

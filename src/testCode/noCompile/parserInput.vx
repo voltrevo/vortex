@@ -115,6 +115,7 @@ func concat() { // #warn #unused
 eight := (+)(2, 6); // #warn #unused
 
 nums := #[1, 2, 3]; // #warn #unused
+oneInNums := 1 in #[1, 2, 3]; // #warn #unused
 
 return func factorial(n) => switch { // #error #duplicate
   (n < 0) => Error('Invalid input');
