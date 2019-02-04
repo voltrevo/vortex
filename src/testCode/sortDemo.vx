@@ -13,21 +13,21 @@ players := [
 
 assert sort(players, <) == [
   { name: 'Beckham', sport: 'soccer' },
-  { name: 'Djokovic', sport: 'tennis' },
-  { name: 'Federer', sport: 'tennis' },
   { name: 'Messi', sport: 'soccer' },
   { name: 'Ronaldo', sport: 'soccer' },
+  { name: 'Djokovic', sport: 'tennis' },
+  { name: 'Federer', sport: 'tennis' },
 ];
 
 assert sort(
   players,
-  func(a, b) => [a.sport, a.name] < [b.sport, b.name],
+  func(a, b) => [a.name, a.sport] < [b.name, b.sport],
 ) == [
   { name: 'Beckham', sport: 'soccer' },
-  { name: 'Messi', sport: 'soccer' },
-  { name: 'Ronaldo', sport: 'soccer' },
   { name: 'Djokovic', sport: 'tennis' },
   { name: 'Federer', sport: 'tennis' },
+  { name: 'Messi', sport: 'soccer' },
+  { name: 'Ronaldo', sport: 'soccer' },
 ];
 
 return 'done';
