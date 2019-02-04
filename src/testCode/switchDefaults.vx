@@ -1,0 +1,16 @@
+assert 123 == switch {
+  (0 > 1) => 100;
+  default => 123;
+};
+
+assert 123 == switch (0) {
+  0 => 123;
+  default => 'foo';
+};
+
+assert 123 == switch (0) {
+  1 => 100;
+  default => 123;
+};
+
+return 'done';
