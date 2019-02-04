@@ -95,6 +95,7 @@ namespace Syntax {
 
   export type Identifier = { t: 'IDENTIFIER', v: string, p: Pos };
   export type ArrayExpression = { t: 'Array', v: Expression[], p: Pos };
+  export type SetExpression = { t: 'Set', v: Expression[], p: Pos };
   export type NUMBER = { t: 'NUMBER', v: string, p: Pos };
   export type BOOL = { t: 'BOOL', v: boolean, p: Pos };
   export type NULL = { t: 'NULL', v: null, p: Pos };
@@ -170,6 +171,7 @@ namespace Syntax {
     FunctionExpression |
     OpValueExpression |
     ArrayExpression |
+    SetExpression |
     { t: 'Object', v: [Identifier | STRING, Expression][], p: Pos } |
     ClassExpression |
     SwitchExpression |
@@ -326,6 +328,7 @@ namespace Syntax {
       case 'arg': { return [el.v]; }
       case 'block': { return el.v; }
       case 'Array': { return el.v; }
+      case 'Set': { return el.v; }
 
       case 'Object': {
         const children: Syntax.Element[] = [];

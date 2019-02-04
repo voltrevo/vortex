@@ -1150,6 +1150,7 @@ function validateExpression(exp: Syntax.Expression): Note[] {
       case 'op':
       case 'functionCall':
       case 'Array':
+      case 'Set':
       case 'subscript':
       case '.':
       case 'methodLookup':

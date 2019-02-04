@@ -69,6 +69,7 @@
 "="                   return '='
 [:](?=[a-zA-Z])       return 'METHODLOOKUP'
 ":"                   return 'ATTR'
+"#["                  return 'SETSTART'
 ","                   return ','
 "!"                   return '!'
 "~"                   return '~'
@@ -351,6 +352,8 @@ e
         {$$ = $1}
     | array
         {$$ = $1}
+    | set
+        {$$ = $1}
     | object
         {$$ = $1}
     | '(' import ')'
@@ -465,6 +468,11 @@ atomicExp
 array
     : '[' eList ']'
         {$$ = { t: 'Array', v: $2, p: L(@$) }}
+    ;
+
+set
+    : SETSTART eList ']'
+        {$$ = { t: 'Set', v: $2, p: L(@$) }}
     ;
 
 eList

@@ -811,6 +811,10 @@ namespace ByteCoder {
         return [lines, coder];
       }
 
+      case 'Set': {
+        return [[`'Not implemented: sets' throw`], coder];
+      }
+
       case 'Object': {
         if (isLiteral(exp)) {
           return [

@@ -481,6 +481,7 @@ namespace Analyzer {
       case 'subscript':
       case 'Func':
       case 'Array':
+      case 'Set':
       case 'Object':
       case 'class':
       case 'switch':
@@ -1122,6 +1123,7 @@ namespace Analyzer {
           case 'unary !':
           case 'unary ~':
           case 'Array':
+          case 'Set':
           case 'Object':
 
           // Well, this is a top expression but it's processed as a statement,
@@ -1710,6 +1712,28 @@ namespace Analyzer {
           return [res, az];
         }
 
+        case 'Set': {
+          const values: Outcome.Concrete[] = [];
+
+          for (const elExp of exp.v) {
+            let el: Outcome;
+            [el, az] = subExpression(az, elExp);
+
+            if (el.t === 'exception') {
+              return [el, az];
+            }
+
+            if (el.cat !== 'concrete') {
+              // TODO: Need to limit unknown level based on contained unknowns
+              return [Outcome.Unknown('error'), az];
+            }
+
+            values.push(el);
+          }
+
+          return [Outcome.ConcreteSet(values), az];
+        }
+
         case 'subscript': {
           const [containerExp, indexExp] = exp.v;
 
@@ -2086,6 +2110,7 @@ namespace Analyzer {
           case 'Number':
           case 'String':
           case 'Array':
+          case 'Set':
           case 'Object': {
             return Outcome.Exception(funcExp,
               ['type-error', 'call-non-function'],

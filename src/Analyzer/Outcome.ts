@@ -634,6 +634,116 @@ namespace Outcome {
     };
   }
 
+  export type ConcreteSet = {
+    cat: 'concrete',
+    t: 'Set',
+    v: Concrete[],
+  };
+
+  export function ConcreteSet(
+    v: Concrete[]
+  ): ConcreteSet {
+    if (!v.every(isFunctionless)) {
+      throw new Error('Sets can only contain functionless values');
+    }
+
+    const sorted = v.slice().sort(CrossTypeOrderUnsafe);
+    const uniqValues: Concrete[] = [];
+
+    if (sorted.length > 0) {
+      let last = sorted[0];
+      uniqValues.push(last);
+
+      for (let i = 1; i < sorted.length; i++) {
+        const curr = sorted[i];
+
+        if (CrossTypeOrderUnsafe(last, curr) !== 0) {
+          uniqValues.push(curr);
+          last = curr;
+        }
+      }
+    }
+
+    return {
+      cat: 'concrete',
+      t: 'Set',
+      v: uniqValues,
+    };
+  }
+
+  export type Set = (
+    ConcreteSet |
+    never
+  );
+
+  export function Set(v: Value[]): Set {
+    if (JsObject.keys(v).every(k => v[k].cat === 'concrete')) {
+      return ConcreteSet(v as Concrete[]);
+    }
+
+    throw new Error('Sets can only contain concrete values');
+  }
+
+  export namespace Set {
+    export type MethodMap = {
+      Values: {
+        base: Set;
+        name: 'Values';
+        argLength: 0;
+      };
+
+      String: {
+        base: Set;
+        name: 'String';
+        argLength: 0;
+      };
+
+      Kind: {
+        base: Set;
+        name: 'Kind';
+        argLength: 0;
+      }
+    };
+
+    export type Method = MethodMap[keyof MethodMap];
+
+    export type MethodCallMap = {
+      Values: {
+        args: [];
+        result: Array;
+      };
+
+      String: {
+        args: [];
+        result: String;
+      };
+
+      Kind: {
+        args: [];
+        result: String;
+      }
+    };
+
+    export const methodImpls: {
+      [name in keyof MethodMap]: MethodImpl<
+        MethodMap[name],
+        MethodCallMap[name]
+      >;
+    } = {
+      Values: (base, args) => Array(base.v),
+      String: (base, args) => String(JsString(base)),
+      Kind: (base, args) => String('set'),
+    };
+
+    export const methodArgLengths: {
+      [name in keyof MethodMap]: MethodMap[name]['argLength'];
+    } = {
+      Values: 0,
+      String: 0,
+      Kind: 0,
+    };
+  }
+
   export type ConcreteObject = {
     cat: 'concrete',
     t: 'Object',
@@ -848,6 +958,161 @@ namespace Outcome {
     };
   }
 
+  export function isFunctionless(v: Concrete): boolean {
+    switch (v.t) {
+      case 'Null':
+      case 'Bool':
+      case 'Number':
+      case 'String':
+      case 'Set':
+        return true;
+
+      case 'Array':
+        return v.v.every(isFunctionless);
+
+      case 'Object':
+        return JsObject.keys(v.v).every(k => isFunctionless(v.v[k]));
+
+      case 'Func':
+        return false;
+    }
+  }
+
+  export function CrossTypeOrder(
+    a: Concrete,
+    b: Concrete,
+  ): number | null {
+    if (!isFunctionless(a) || !isFunctionless(b)) {
+      return null;
+    }
+
+    return CrossTypeOrderUnsafe(a, b);
+  }
+
+  export function CrossTypeOrderUnsafe(
+    a: Concrete,
+    b: Concrete,
+  ): number {
+    // Unsafe because if a or b contain functions, the result should have been
+    // null.
+
+    const typeOrder = [
+      'Null',
+      'Bool',
+      'Number',
+      'String',
+      'Array',
+      'Set',
+      'Object',
+    ];
+
+    const aTypeIndex = typeOrder.indexOf(a.t);
+    const bTypeIndex = typeOrder.indexOf(b.t);
+
+    if (aTypeIndex === -1 || bTypeIndex === -1) {
+      throw new Error('Shouldn\'t reach here');
+    }
+
+    if (aTypeIndex !== bTypeIndex) {
+      return aTypeIndex - bTypeIndex;
+    }
+
+    switch (a.t) {
+      case 'Null':
+        return 0;
+
+      case 'Bool':
+        return (
+          a.v === b.v ? 0 :
+          a.v ? 1 :
+          -1
+        );
+
+      case 'Number':
+        return a.v - (b.v as number);
+
+      case 'String':
+        if (b.t !== 'String') { throw new Error('Shouldn\'t be possible'); }
+
+        return (
+          a.v < b.v ? -1 :
+          a.v > b.v ? 1 :
+          0
+        );
+
+      case 'Array': {
+        if (b.t !== 'Array') { throw new Error('Shouldn\'t be possible'); }
+
+        const aLen = a.v.length;
+        const bLen = b.v.length;
+
+        const minLen = Math.min(aLen, bLen);
+
+        for (let i = 0; i < minLen; i++) {
+          const cmp = CrossTypeOrderUnsafe(a.v[i], b.v[i]);
+
+          if (cmp !== 0) {
+            return cmp;
+          }
+        }
+
+        return aLen - bLen;
+      }
+
+      case 'Set': {
+        if (b.t !== 'Set') { throw new Error('Shouldn\'t be possible'); }
+
+        const aLen = a.v.length;
+        const bLen = b.v.length;
+
+        const minLen = Math.min(aLen, bLen);
+
+        for (let i = 1; i <= minLen; i++) {
+          const cmp = CrossTypeOrderUnsafe(a.v[aLen - i], b.v[bLen - i]);
+
+          if (cmp !== 0) {
+            return cmp;
+          }
+        }
+
+        return aLen - bLen;
+      }
+
+      case 'Object': {
+        if (b.t !== 'Object') { throw new Error('Shouldn\'t be possible'); }
+
+        const aKeys = JsObject.keys(a.v);
+        const bKeys = JsObject.keys(b.v);
+
+        const aLen = aKeys.length;
+        const bLen = bKeys.length;
+
+        const minLen = Math.min(aLen, bLen);
+
+        for (let i = 1; i <= minLen; i++) {
+          const aKey = aKeys[aLen - i];
+          const bKey = bKeys[bLen - i];
+
+          if (aKey !== bKey) {
+            return aKey < bKey ? -1 : 1;
+          }
+
+          const cmp = CrossTypeOrderUnsafe(a.v[aKey], b.v[bKey]);
+
+          if (cmp !== 0) {
+            return cmp;
+          }
+        }
+
+        return aLen - bLen;
+      }
+
+      case 'Func': {
+        throw new Error('Shouldn\'t be possible');
+      }
+    }
+  }
+
   export type Level = 'info' | 'warn' | 'error';
 
   export type Unknown = {
@@ -993,6 +1258,7 @@ namespace Outcome {
     Null |
     Func |
     ConcreteArray |
+    ConcreteSet |
     ConcreteObject |
     never
   );
@@ -1151,6 +1417,7 @@ namespace Outcome {
     Number: Number.Method;
     String: String.Method;
     Array: Array.Method;
+    Set: Set.Method;
     Object: Object.Method;
     Func: Func.Method;
   };
@@ -1161,6 +1428,7 @@ namespace Outcome {
     Number: Number.methodImpls,
     String: String.methodImpls,
     Array: Array.methodImpls,
+    Set: Set.methodImpls,
     Object: Object.methodImpls,
     Func: Func.methodImpls,
   };
@@ -1171,6 +1439,7 @@ namespace Outcome {
     Number: Number.methodArgLengths,
     String: String.methodArgLengths,
     Array: Array.methodArgLengths,
+    Set: Set.methodArgLengths,
     Object: Object.methodArgLengths,
     Func: Func.methodArgLengths,
   };
@@ -1276,6 +1545,10 @@ namespace Outcome {
         }
       }
 
+      case 'Set': {
+        return `#[${v.v.map(JsString).join(',')}]`;
+      }
+
       case 'Object': return `{${
         JsObject.keys(v.v).sort().map(key => (
           // TODO: In future keys can be non-identifiers and will need to be
@@ -1294,6 +1567,24 @@ namespace Outcome {
     }
   }
 
+  export function isStringAtomic(v: Outcome) {
+    switch (v.t) {
+      case 'String':
+      case 'Number':
+      case 'Bool':
+      case 'Null':
+      case 'Unknown':
+        return true;
+
+      case 'Array':
+      case 'Set':
+      case 'Object':
+      case 'Func':
+      case 'exception':
+        return false;
+    }
+  }
+
   export function LongString(v: Outcome): string {
     switch (v.t) {
       case 'String':
@@ -1308,9 +1599,7 @@ namespace Outcome {
       case 'Array': {
         // TODO: Unclear why {as any} was necessary below (related to
         // unnecessary switch further down?)
-        const isAtomic = (v.v as any).every(
-          (el: Value) => el.t !== 'Array' && el.t !== 'Object'
-        );
+        const isAtomic = (v.v as any).every(isStringAtomic);
 
         if (isAtomic) {
           switch (v.cat) {
@@ -1336,11 +1625,26 @@ namespace Outcome {
         }
       }
 
+      case 'Set': {
+        // TODO: Unclear why {as any} was necessary below (related to
+        // unnecessary switch further down?)
+        const isAtomic = (v.v as any).every(isStringAtomic);
+
+        if (isAtomic) {
+          return `#[${v.v.map(JsString).join(', ')}]`;
+        }
+
+        return `#[\n  ${v.v
+          .map(el => LongString(el).replace(/\n/g, '\n  '))
+          .join(',\n  ')
+        },\n]`;
+      }
+
       case 'Object': {
         // TODO: Unclear why {as any} was necessary below (related to
         // unnecessary switch further down?)
         const isAtomic = JsObject.keys(v.v).every(
-          key => v.v[key].t !== 'Array' && v.v[key].t !== 'Object'
+          key => isStringAtomic(v.v[key])
         );
 
         if (isAtomic) {
@@ -1437,7 +1741,8 @@ namespace Outcome {
       case 'String':
       case 'Number':
       case 'Bool':
-      case 'Null': {
+      case 'Null':
+      case 'Set': {
         return left.t === right.t;
       }
     }
@@ -1481,6 +1786,14 @@ namespace Outcome {
         }
 
         return Bool(true);
+      }
+
+      case 'Set': {
+        if (right.t !== 'Set') {
+          throw new Error('Shouldn\'t be possible');
+        }
+
+        return Bool(CrossTypeOrderUnsafe(left, right) === 0);
       }
 
       case 'Object': {
@@ -1562,6 +1875,14 @@ namespace Outcome {
         return Bool(false);
       }
 
+      case 'Set': {
+        if (right.t !== 'Set') {
+          throw new Error('Shouldn\'t be possible');
+        }
+
+        return Bool(CrossTypeOrderUnsafe(left, right) < 0);
+      }
+
       case 'Object': {
         if (right.t !== 'Object') {
           throw new Error('Shouldn\'t be possible');
@@ -1569,7 +1890,7 @@ namespace Outcome {
 
         // Already checked types are equal so we know that the left keys are also
         // the right keys.
-        const keys = JsObject.keys(left.v).sort();
+        const keys = JsObject.keys(left.v).sort().reverse();
 
         // TODO: Deduplicate with arrays
         for (const key of keys) {
@@ -1680,6 +2001,10 @@ namespace Outcome {
             left: Value,
             right: Value,
           ): Value | null {
+            if (left.t === 'Set' || right.t === 'Set') {
+              return null;
+            }
+
             if (
               left.t === 'Array' ||
               left.t === 'Object' ||
