@@ -149,6 +149,7 @@ namespace Note {
     'step-limit-reached' |
     'number' |
     'bind-excess' |
+    'early-default' |
     never
   );
 
@@ -240,6 +241,7 @@ namespace Note {
     'step-limit-reached',
     'number',
     'bind-excess',
+    'early-default',
   ];
 
   export const isTag = memberTestFromArray<Tag>(tags);

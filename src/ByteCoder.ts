@@ -933,7 +933,19 @@ namespace ByteCoder {
           switchValCode = SubExpression(coder, testExp).join(' ');
         }
 
+        let hasDefault = false;
+
         for (const [caseLeft, caseRight] of cases) {
+          if (caseLeft.t === 'DEFAULT') {
+            hasDefault = true;
+
+            lines.push(
+              ...SubExpression(coder, caseRight).map(line => indent + line)
+            );
+
+            break;
+          }
+
           if (switchValCode !== null) {
             lines.push(indent + switchValCode);
           }
@@ -958,7 +970,9 @@ namespace ByteCoder {
           indent += '  ';
         }
 
-        lines.push(indent + 'false assert');
+        if (!hasDefault) {
+          lines.push(indent + 'false assert');
+        }
 
         while (indent.length > 0) {
           indent = indent.slice(0, indent.length - 2);

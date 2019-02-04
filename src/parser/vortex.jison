@@ -22,6 +22,7 @@
 'class'               return 'CLASS'
 'static'              return 'STATIC'
 'switch'              return 'SWITCH'
+'default'             return 'DEFAULT'
 'true'                return 'TRUE'
 'false'               return 'FALSE'
 'null'                return 'NULL'
@@ -587,7 +588,14 @@ switchCases
         {$$ = [...$1, $2]}
     ;
 
+default
+    : DEFAULT
+        {$$ = { t: 'DEFAULT', v: null, p: L(@$) }}
+    ;
+
 switchCase
     : atomicExp '=>' eop ';'
+        {$$ = [$1, $3]}
+    | default '=>' eop ';'
         {$$ = [$1, $3]}
     ;

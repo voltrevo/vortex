@@ -1097,6 +1097,25 @@ function validateExpression(exp: Syntax.Expression): Note[] {
         return null;
       }
 
+      case 'switch': {
+        const [, cases] = exp.v;
+
+        for (let i = 0; i < cases.length; i++) {
+          const [cond] = cases[i];
+
+          if (cond.t === 'DEFAULT' && i !== cases.length - 1) {
+            notes.push(Note(
+              cond.p,
+              'error',
+              ['validation', 'early-default'],
+              'default case of switch can only be the last case',
+            ));
+          }
+        }
+
+        return null;
+      }
+
       case 'BOOL':
       case 'NULL':
       case 'STRING':
@@ -1136,7 +1155,6 @@ function validateExpression(exp: Syntax.Expression): Note[] {
       case 'methodLookup':
       case 'class':
       case 'import':
-      case 'switch':
         return null;
     }
   })());

@@ -143,6 +143,18 @@ namespace Syntax {
     p: Pos
   };
 
+  export type DefaultKeyword = {
+    t: 'DEFAULT',
+    v: null,
+    p: Pos,
+  };
+
+  export type SwitchExpression = {
+    t: 'switch',
+    v: [Expression | null, [Expression | DefaultKeyword, Expression][]],
+    p: Pos,
+  };
+
   export type Expression = { topExp?: true } & (
     Identifier |
     NUMBER |
@@ -160,7 +172,7 @@ namespace Syntax {
     ArrayExpression |
     { t: 'Object', v: [Identifier | STRING, Expression][], p: Pos } |
     ClassExpression |
-    { t: 'switch', v: [Expression | null, [Expression, Expression][]], p: Pos } |
+    SwitchExpression |
     Import |
     never
   );
@@ -237,6 +249,7 @@ namespace Syntax {
     Statement |
     Expression |
     Arg |
+    DefaultKeyword |
     never
   );
 
@@ -250,7 +263,8 @@ namespace Syntax {
       case 'BOOL':
       case 'NULL':
       case 'STRING':
-      case 'IDENTIFIER': {
+      case 'IDENTIFIER':
+      case 'DEFAULT': {
         return [];
       }
 
@@ -428,6 +442,7 @@ namespace Syntax {
       case 'if':
       case 'for':
       case 'block':
+      case 'DEFAULT':
       case 'IDENTIFIER': // TODO: identifiers are not expressions?
         return null;
 

@@ -1887,6 +1887,10 @@ namespace Analyzer {
           }
 
           for (const [labelExp, resultExp] of cases) {
+            if (labelExp.t === 'DEFAULT') {
+              return subExpression(az, resultExp);
+            }
+
             let label: Outcome;
             [label, az] = subExpression(az, labelExp);
 
