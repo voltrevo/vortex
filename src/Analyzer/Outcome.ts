@@ -647,7 +647,7 @@ namespace Outcome {
       throw new Error('Sets can only contain functionless values');
     }
 
-    const sorted = v.slice().sort(CrossTypeOrderUnsafe);
+    const sorted = v.slice().sort(TypeValueOrderFunctionless);
     const uniqValues: Concrete[] = [];
 
     if (sorted.length > 0) {
@@ -657,7 +657,7 @@ namespace Outcome {
       for (let i = 1; i < sorted.length; i++) {
         const curr = sorted[i];
 
-        if (CrossTypeOrderUnsafe(last, curr) !== 0) {
+        if (TypeValueOrderFunctionless(last, curr) !== 0) {
           uniqValues.push(curr);
           last = curr;
         }
@@ -978,7 +978,7 @@ namespace Outcome {
     }
   }
 
-  export function CrossTypeOrder(
+  export function TypeValueOrder(
     a: Concrete,
     b: Concrete,
   ): number | null {
@@ -986,16 +986,23 @@ namespace Outcome {
       return null;
     }
 
-    return CrossTypeOrderUnsafe(a, b);
+    return TypeValueOrderFunctionless(a, b);
   }
 
-  export function CrossTypeOrderUnsafe(
+  export function TypeValueOrderFunctionless(
     a: Concrete,
     b: Concrete,
   ): number {
-    // Unsafe because if a or b contain functions, the result should have been
-    // null.
+    const typeCmp = TypeOrderFunctionless(a, b);
 
+    if (typeCmp !== 0) {
+      return typeCmp;
+    }
+
+    return ValueOrderFunctionless(a, b);
+  }
+
+  export function TypeOrderFunctionless(a: Concrete, b: Concrete): number {
     const typeOrder = [
       'Null',
       'Bool',
@@ -1017,6 +1024,74 @@ namespace Outcome {
       return aTypeIndex - bTypeIndex;
     }
 
+    switch (a.t) {
+      case 'Null':
+      case 'Bool':
+      case 'Number':
+      case 'String':
+        return 0;
+
+      case 'Array': {
+        if (b.t !== 'Array') { throw new Error('Shouldn\'t be possible'); }
+
+        const aLen = a.v.length;
+        const bLen = b.v.length;
+
+        const minLen = Math.min(aLen, bLen);
+
+        for (let i = 0; i < minLen; i++) {
+          const cmp = TypeOrderFunctionless(a.v[i], b.v[i]);
+
+          if (cmp !== 0) {
+            return cmp;
+          }
+        }
+
+        return aLen - bLen;
+      }
+
+      case 'Set': {
+        // TODO: Should sets have a type structure?
+        return 0;
+      }
+
+      case 'Object': {
+        if (b.t !== 'Object') { throw new Error('Shouldn\'t be possible'); }
+
+        const aKeys = JsObject.keys(a.v);
+        const bKeys = JsObject.keys(b.v);
+
+        const aLen = aKeys.length;
+        const bLen = bKeys.length;
+
+        const minLen = Math.min(aLen, bLen);
+
+        for (let i = 1; i <= minLen; i++) {
+          const aKey = aKeys[aLen - i];
+          const bKey = bKeys[bLen - i];
+
+          if (aKey !== bKey) {
+            return aKey < bKey ? -1 : 1;
+          }
+
+          const cmp = TypeOrderFunctionless(a.v[aKey], b.v[bKey]);
+
+          if (cmp !== 0) {
+            return cmp;
+          }
+        }
+
+        return aLen - bLen;
+      }
+
+      case 'Func': {
+        // TODO: Should function types themselves be orderable?
+        throw new Error('Shouldn\'t be possible');
+      }
+    }
+  }
+
+  export function ValueOrderFunctionless(a: Concrete, b: Concrete): number {
     switch (a.t) {
       case 'Null':
         return 0;
@@ -1043,20 +1118,17 @@ namespace Outcome {
       case 'Array': {
         if (b.t !== 'Array') { throw new Error('Shouldn\'t be possible'); }
 
-        const aLen = a.v.length;
-        const bLen = b.v.length;
+        const len = a.v.length;
 
-        const minLen = Math.min(aLen, bLen);
-
-        for (let i = 0; i < minLen; i++) {
-          const cmp = CrossTypeOrderUnsafe(a.v[i], b.v[i]);
+        for (let i = 0; i < len; i++) {
+          const cmp = ValueOrderFunctionless(a.v[i], b.v[i]);
 
           if (cmp !== 0) {
             return cmp;
           }
         }
 
-        return aLen - bLen;
+        return 0;
       }
 
       case 'Set': {
@@ -1068,7 +1140,7 @@ namespace Outcome {
         const minLen = Math.min(aLen, bLen);
 
         for (let i = 1; i <= minLen; i++) {
-          const cmp = CrossTypeOrderUnsafe(a.v[aLen - i], b.v[bLen - i]);
+          const cmp = TypeValueOrderFunctionless(a.v[aLen - i], b.v[bLen - i]);
 
           if (cmp !== 0) {
             return cmp;
@@ -1081,30 +1153,20 @@ namespace Outcome {
       case 'Object': {
         if (b.t !== 'Object') { throw new Error('Shouldn\'t be possible'); }
 
-        const aKeys = JsObject.keys(a.v);
-        const bKeys = JsObject.keys(b.v);
+        const keys = JsObject.keys(a.v);
+        const len = keys.length;
 
-        const aLen = aKeys.length;
-        const bLen = bKeys.length;
+        for (let i = 1; i <= len; i++) {
+          const key = keys[len - i];
 
-        const minLen = Math.min(aLen, bLen);
-
-        for (let i = 1; i <= minLen; i++) {
-          const aKey = aKeys[aLen - i];
-          const bKey = bKeys[bLen - i];
-
-          if (aKey !== bKey) {
-            return aKey < bKey ? -1 : 1;
-          }
-
-          const cmp = CrossTypeOrderUnsafe(a.v[aKey], b.v[bKey]);
+          const cmp = ValueOrderFunctionless(a.v[key], b.v[key]);
 
           if (cmp !== 0) {
             return cmp;
           }
         }
 
-        return aLen - bLen;
+        return 0;
       }
 
       case 'Func': {
@@ -1793,7 +1855,7 @@ namespace Outcome {
           throw new Error('Shouldn\'t be possible');
         }
 
-        return Bool(CrossTypeOrderUnsafe(left, right) === 0);
+        return Bool(TypeValueOrderFunctionless(left, right) === 0);
       }
 
       case 'Object': {
@@ -1880,7 +1942,7 @@ namespace Outcome {
           throw new Error('Shouldn\'t be possible');
         }
 
-        return Bool(CrossTypeOrderUnsafe(left, right) < 0);
+        return Bool(ValueOrderFunctionless(left, right) < 0);
       }
 
       case 'Object': {
