@@ -20,7 +20,7 @@ hi def link     vxDeclaration       Keyword
 
 " Keywords within functions
 syn keyword     vxStatement         return break continue assert breakpoint log
-syn keyword     vxConditional       if else switch
+syn keyword     vxConditional       if else switch default
 syn keyword     vxRepeat            for
 
 hi def link     vxStatement         Statement

@@ -120,7 +120,7 @@ monaco.languages.setMonarchTokensProvider('vortex', <any>{
   keywords: [
     'continue', 'for', 'switch', 'assert', 'if', 'break', 'throw', 'else',
     'return', 'static', 'class', 'true', 'false', 'null', 'func', 'log',
-    'import', 'from', 'of',
+    'import', 'from', 'of', 'default',
   ],
 
   typeKeywords: [
