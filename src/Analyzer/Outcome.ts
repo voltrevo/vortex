@@ -741,6 +741,90 @@ namespace Outcome {
       return Bool(false);
     }
 
+    function combine(
+      left: Set,
+      right: Set,
+      keepInLeftOnly: boolean,
+      keepInBoth: boolean,
+      keepInRightOnly: boolean,
+    ): Set {
+      let leftIndex = 0;
+      let rightIndex = 0;
+
+      const leftLen = left.v.length;
+      const rightLen = right.v.length;
+
+      const res: Set = {
+        cat: 'concrete',
+        t: 'Set',
+        v: [],
+      };
+
+      while (leftIndex < leftLen && rightIndex < rightLen) {
+        const leftItem = left.v[leftIndex];
+        const rightItem = right.v[rightIndex];
+
+        const cmp = TypeValueOrderFunctionless(leftItem, rightItem);
+
+        if (cmp === 0) {
+          if (keepInBoth) {
+            res.v.push(leftItem);
+          }
+
+          leftIndex++;
+          rightIndex++;
+          continue;
+        }
+
+        if (cmp === -1) {
+          if (keepInLeftOnly) {
+            res.v.push(leftItem);
+          }
+
+          leftIndex++;
+          continue;
+        }
+
+        if (keepInRightOnly) {
+          res.v.push(rightItem);
+        }
+
+        rightIndex++;
+      }
+
+      if (leftIndex < leftLen && keepInLeftOnly) {
+        while (leftIndex < leftLen) {
+          res.v.push(left.v[leftIndex]);
+          leftIndex++;
+        }
+      }
+
+      if (rightIndex < rightLen && keepInRightOnly) {
+        while (rightIndex < rightLen) {
+          res.v.push(right.v[rightIndex]);
+          rightIndex++;
+        }
+      }
+
+      return res;
+    }
+
+    export function Union(left: Set, right: Set): Set {
+      return combine(left, right, true, true, true);
+    }
+
+    export function Intersection(left: Set, right: Set): Set {
+      return combine(left, right, false, true, false);
+    }
+
+    export function xor(left: Set, right: Set): Set {
+      return combine(left, right, true, false, true);
+    }
+
+    export function subtract(left: Set, right: Set): Set {
+      return combine(left, right, true, false, false);
+    }
+
     export type MethodMap = {
       Values: {
         base: Set;
@@ -2427,7 +2511,6 @@ namespace Outcome {
           return multiplyValues(left, right);
         }
 
-        // Number only operators (for now)
         case '<<':
         case '>>':
         case '&':
@@ -2435,6 +2518,22 @@ namespace Outcome {
         case '|':
         case '%':
         case '**': {
+          if (left.t === 'Set' && right.t === 'Set') {
+            if (op === '&') {
+              return Set.Intersection(left, right);
+            }
+
+            if (op === '^') {
+              return Set.xor(left, right);
+            }
+
+            if (op === '|') {
+              return Set.Union(left, right);
+            }
+
+            return null;
+          }
+
           const impl: (a: number, b: number) => number = (() => {
             switch (op) {
               case '<<': return (a: number, b: number) => a << b;
@@ -2455,6 +2554,7 @@ namespace Outcome {
             (left.t === 'Unknown' || right.t === 'Unknown') &&
             (left.t === 'Number' || right.t === 'Number')
           ) {
+            // TODO: Unknowns for set operations?
             return Unknown.reduce(left, right);
           }
 
