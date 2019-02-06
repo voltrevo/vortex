@@ -9,6 +9,7 @@
 #include "Codes.hpp"
 #include "Exceptions.hpp"
 #include "Func.hpp"
+#include "LexOrder.hpp"
 #include "Object.hpp"
 #include "types.hpp"
 #include "Value.hpp"
@@ -189,74 +190,166 @@ namespace Vortex {
   }
 
   bool Value::operator==(const Value& right) const {
-    const Value& left = *this;
-    Code type = left.type;
+    return ValueOrder(*this, right) == 0;
+  }
 
-    if (right.type != type) {
-      throw TypeError("== between different types");
+  bool Value::operator<(const Value& right) const {
+    return ValueOrder(*this, right) < 0;
+  }
+
+  int TypeValueOrder(const Value& left, const Value& right) {
+    int typeOrder = TypeOrder(left, right);
+
+    if (typeOrder != 0) {
+      return typeOrder;
     }
 
-    switch (type) {
-      case NULL_: return true;
+    return ValueOrderUnchecked(left, right);
+  }
 
-      case BOOL: return left.data.BOOL == right.data.BOOL;
+  int TypeOrder(const Value& left, const Value& right) {
+    if (!left.isFunctionless() || !right.isFunctionless()) {
+      throw TypeError(
+        "Ordering not available for values containing functions"
+      );
+    }
 
-      case INT8: return left.data.INT8 == right.data.INT8;
-      case INT16: return left.data.INT16 == right.data.INT16;
-      case INT32: return left.data.INT32 == right.data.INT32;
-      case INT64: return left.data.INT64 == right.data.INT64;
+    return TypeOrderUnchecked(left, right);
+  }
 
-      case UINT8: return left.data.UINT8 == right.data.UINT8;
-      case UINT16: return left.data.UINT16 == right.data.UINT16;
-      case UINT32: return left.data.UINT32 == right.data.UINT32;
-      case UINT64: return left.data.UINT64 == right.data.UINT64;
+  int TypeOrderUnchecked(const Value& left, const Value& right) {
+    if (left.type != right.type) {
+      return left.type - right.type;
+    }
 
-      case FLOAT32: return left.data.FLOAT32 == right.data.FLOAT32;
-      case FLOAT64: return left.data.FLOAT64 == right.data.FLOAT64;
+    switch (left.type) {
+      case NULL_:
+      case BOOL:
+      case INT8:
+      case INT16:
+      case INT32:
+      case INT64:
+      case UINT8:
+      case UINT16:
+      case UINT32:
+      case UINT64:
+      case FLOAT32:
+      case FLOAT64:
+      case STRING:
+        return 0;
 
-      case STRING: return *left.data.STRING == *right.data.STRING;
-      case ARRAY: return *left.data.ARRAY == *right.data.ARRAY;
-      case OBJECT: return *left.data.OBJECT == *right.data.OBJECT;
+      case ARRAY: return ArrayTypeOrderUnchecked(*left.data.ARRAY, *right.data.ARRAY);
+      case OBJECT: return ObjectTypeOrderUnchecked(*left.data.OBJECT, *right.data.OBJECT);
 
-      case FUNC: throw TypeError("== between functions");
+      case FUNC: throw InternalError("Case should be handled elsewhere");
 
       default: throw InternalError("Unrecognized value type");
     }
   }
 
-  bool Value::operator<(const Value& right) const {
-    const Value& left = *this;
-
-    if (right.type != type) {
-      throw TypeError("< between different types");
+  int ValueOrder(const Value& left, const Value& right) {
+    if (TypeOrder(left, right) != 0) {
+      throw TypeError("ValueOrder between different (deep) types");
     }
 
-    switch (type) {
-      case NULL_: return false;
+    return ValueOrderUnchecked(left, right);
+  }
 
-      case BOOL: return left.data.BOOL < right.data.BOOL;
+  int ValueOrderUnchecked(const Value& left, const Value& right) {
+    switch (left.type) {
+      case NULL_: return 0;
 
-      case INT8: return left.data.INT8 < right.data.INT8;
-      case INT16: return left.data.INT16 < right.data.INT16;
-      case INT32: return left.data.INT32 < right.data.INT32;
-      case INT64: return left.data.INT64 < right.data.INT64;
-
-      case UINT8: return left.data.UINT8 < right.data.UINT8;
-      case UINT16: return left.data.UINT16 < right.data.UINT16;
-      case UINT32: return left.data.UINT32 < right.data.UINT32;
-      case UINT64: return left.data.UINT64 < right.data.UINT64;
-
-      case FLOAT32: return left.data.FLOAT32 < right.data.FLOAT32;
-      case FLOAT64: return left.data.FLOAT64 < right.data.FLOAT64;
-
-      case STRING: {
-        return StringComparator()(*left.data.STRING, *right.data.STRING);
+      case BOOL: {
+        return (
+          left.data.BOOL == right.data.BOOL ? 0 :
+          left.data.BOOL == false ? -1 :
+          1
+        );
       }
 
-      case ARRAY: return *left.data.ARRAY < *right.data.ARRAY;
-      case OBJECT: return *left.data.OBJECT < *right.data.OBJECT;
+      case INT8: return left.data.INT8 - right.data.INT8;
+      case INT16: return left.data.INT16 - right.data.INT16;
+      case INT32: return left.data.INT32 - right.data.INT32;
 
-      case FUNC: throw TypeError("< between functions");
+      case INT64: {
+        return (
+          left.data.INT64 < right.data.INT64 ? -1 :
+          left.data.INT64 == right.data.INT64 ? 0 :
+          1
+        );
+      }
+
+      case UINT8: return int(left.data.UINT8) - int(right.data.UINT8);
+      case UINT16: return int(left.data.UINT16) - int(right.data.UINT16);
+
+      case UINT32: {
+        return (
+          left.data.UINT32 < right.data.UINT32 ? -1 :
+          left.data.UINT32 == right.data.UINT32 ? 0 :
+          1
+        );
+      }
+
+      case UINT64: {
+        return (
+          left.data.UINT64 < right.data.UINT64 ? -1 :
+          left.data.UINT64 == right.data.UINT64 ? 0 :
+          1
+        );
+      }
+
+      case FLOAT32: {
+        return (
+          left.data.FLOAT32 < right.data.FLOAT32 ? -1 :
+          left.data.FLOAT32 == right.data.FLOAT32 ? 0 :
+          1
+        );
+      }
+
+      case FLOAT64: {
+        return (
+          left.data.FLOAT64 < right.data.FLOAT64 ? -1 :
+          left.data.FLOAT64 == right.data.FLOAT64 ? 0 :
+          1
+        );
+      }
+
+      case STRING: {
+        return lexContainerOrder(
+          *left.data.STRING,
+          *right.data.STRING,
+          [](char a, char b) { return a - b; }
+        );
+      }
+
+      case ARRAY: return ArrayValueOrderUnchecked(*left.data.ARRAY, *right.data.ARRAY);
+      case OBJECT: return ObjectValueOrderUnchecked(*left.data.OBJECT, *right.data.OBJECT);
+
+      default: throw InternalError("Unrecognized value type");
+    }
+  }
+
+  bool Value::isFunctionless() const {
+    switch (type) {
+      case NULL_:
+      case BOOL:
+      case INT8:
+      case INT16:
+      case INT32:
+      case INT64:
+      case UINT8:
+      case UINT16:
+      case UINT32:
+      case UINT64:
+      case FLOAT32:
+      case FLOAT64:
+      case STRING:
+        return true;
+
+      case ARRAY: return data.ARRAY->isFunctionless();
+      case OBJECT: return data.OBJECT->isFunctionless();
+
+      case FUNC: return false;
 
       default: throw InternalError("Unrecognized value type");
     }

@@ -1,75 +1,51 @@
 #include <immer/flex_vector_transient.hpp>
 
 #include "Array.hpp"
+#include "LexOrder.hpp"
 #include "Object.hpp"
 #include "Value.hpp"
 
 namespace Vortex {
   bool Array::operator==(const Array& right) const {
-    const Array& left = *this;
-    Uint64 sz = left.values.size();
-
-    if (right.values.size() != sz) {
-      throw TypeError("== on arrays of unequal sizes");
+    if (!isFunctionless() || !right.isFunctionless()) {
+      throw TypeError("== on arrays that contain functions");
     }
 
-    bool same = true;
-
-    Array::iterator leftIter = left.values.begin();
-    Array::iterator rightIter = right.values.begin();
-
-    for (Uint64 i = 0; i < sz; i++) {
-      const Value& leftEl = *leftIter;
-      const Value& rightEl = *rightIter;
-
-      // Can't exit when same is false because we need to keep running
-      // comparisons until the end so that a type mismatch will throw an
-      // exception
-      same &= leftEl == rightEl;
-
-      leftIter++;
-      rightIter++;
+    if (ArrayTypeOrderUnchecked(*this, right) != 0) {
+      throw TypeError("== on arrays of different (deep) types");
     }
 
-    return same;
+    return ArrayValueOrderUnchecked(*this, right) == 0;
   }
 
   bool Array::operator<(const Array& right) const {
-    const Array& left = *this;
-    Uint64 sz = left.values.size();
-
-    if (right.values.size() != sz) {
-      throw TypeError("< on arrays of unequal sizes");
+    if (!isFunctionless() || !right.isFunctionless()) {
+      throw TypeError("< on arrays that contain functions");
     }
 
-    int outcome = 0;
+    if (ArrayTypeOrderUnchecked(*this, right) != 0) {
+      throw TypeError("< on arrays of different (deep) types");
+    }
 
-    Array::iterator leftIter = left.values.begin();
-    Array::iterator rightIter = right.values.begin();
+    return ArrayValueOrderUnchecked(*this, right) < 0;
+  }
 
-    // TODO: Not satisfied with this implementation. It's redundant and
-    // inefficient, even for an implementation that doesn't exploit structural
-    // sharing.
-    for (Uint64 i = 0; i < sz; i++) {
-      const Value& leftEl = *leftIter;
-      const Value& rightEl = *rightIter;
+  int ArrayTypeOrderUnchecked(const Array& left, const Array& right) {
+    return lexContainerOrder(left.values, right.values, TypeOrderUnchecked);
+  }
 
-      if (outcome == 0) {
-        if (leftEl < rightEl) {
-          outcome = -1;
-        } else if (rightEl < leftEl) {
-          outcome = 1;
-        }
-      } else {
-        // Need to run this for type error side effect
-        leftEl.operator==(rightEl);
+  int ArrayValueOrderUnchecked(const Array& left, const Array& right) {
+    return lexContainerOrder(left.values, right.values, ValueOrderUnchecked);
+  }
+
+  bool Array::isFunctionless() const {
+    for (const Value& el: values) {
+      if (!el.isFunctionless()) {
+        return false;
       }
-
-      leftIter++;
-      rightIter++;
     }
 
-    return outcome < 0;
+    return true;
   }
 
   Array Array::pushBack(Value&& value) const {

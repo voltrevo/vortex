@@ -12,6 +12,10 @@ namespace Vortex {
     bool operator==(const Object& right) const;
     bool operator<(const Object& right) const;
 
+    friend int ObjectTypeOrderUnchecked(const Object& left, const Object& right);
+    friend int ObjectValueOrderUnchecked(const Object& left, const Object& right);
+    bool isFunctionless() const;
+
     Object insert(Value key, Value value) const;
     Object update(const Value& key, Value value) const;
     Value at(const Value& key) const;

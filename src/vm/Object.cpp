@@ -1,20 +1,86 @@
+#include "LexOrder.hpp"
 #include "Object.hpp"
 #include "Value.hpp"
 
 namespace Vortex {
   bool Object::operator==(const Object& right) const {
-    return (
-      keys == right.keys &&
-      values == right.values
-    );
+    if (!isFunctionless() || !right.isFunctionless()) {
+      throw TypeError("== on objects that contain functions");
+    }
+
+    if (ObjectTypeOrderUnchecked(*this, right) != 0) {
+      throw TypeError("== on objects of different (deep) types");
+    }
+
+    return ObjectValueOrderUnchecked(*this, right) == 0;
   }
 
   bool Object::operator<(const Object& right) const {
-    if (!(keys == right.keys)) {
-      throw TypeError("Object keys mismatch during comparison");
+    if (!isFunctionless() || !right.isFunctionless()) {
+      throw TypeError("< on objects that contain functions");
     }
 
-    return values < right.values;
+    if (ObjectTypeOrderUnchecked(*this, right) != 0) {
+      throw TypeError("< on objects of different (deep) types");
+    }
+
+    return ObjectValueOrderUnchecked(*this, right) < 0;
+  }
+
+  int ObjectTypeOrderUnchecked(const Object& left, const Object& right) {
+    auto leftLen = left.keys.Length();
+    auto rightLen = right.keys.Length();
+
+    auto minLen = std::min(leftLen, rightLen);
+
+    auto leftKeyIter = left.keys.values.rbegin();
+    auto leftValueIter = left.values.values.rbegin();
+
+    auto rightKeyIter = right.keys.values.rbegin();
+    auto rightValueIter = right.values.values.rbegin();
+
+    for (auto i = 0ul; i < minLen; i++) {
+      int keyTypeCmp = TypeOrderUnchecked(*leftKeyIter, *rightKeyIter);
+
+      if (keyTypeCmp != 0) {
+        return keyTypeCmp;
+      }
+
+      int keyValueCmp = ValueOrderUnchecked(*leftKeyIter, *rightKeyIter);
+
+      if (keyValueCmp != 0) {
+        return keyValueCmp;
+      }
+
+      int valueTypeCmp = TypeOrderUnchecked(*leftValueIter, *rightValueIter);
+
+      if (valueTypeCmp != 0) {
+        return valueTypeCmp;
+      }
+
+      ++leftKeyIter;
+      ++leftValueIter;
+      ++rightKeyIter;
+      ++rightValueIter;
+    }
+
+    return leftLen - rightLen;
+  }
+
+  int ObjectValueOrderUnchecked(const Object& left, const Object& right) {
+    return lexIterOrder(
+      left.values.values.rbegin(),
+      left.values.values.rend(),
+      right.values.values.rbegin(),
+      right.values.values.rend(),
+      ValueOrderUnchecked
+    );
+  }
+
+  bool Object::isFunctionless() const {
+    // TODO: keys.isFunctionless() is unnecessary for string-only keys, remove
+    // this note when objects can have non-string keys.
+    return keys.isFunctionless() && values.isFunctionless();
   }
 
   Object Object::insert(Value key, Value value) const {
@@ -141,20 +207,22 @@ namespace Vortex {
         throw InternalError("Encountered non-string key during search");
       }
 
-      if (Value::StringComparator()(
+      if (lexContainerOrder(
         *key.data.STRING,
-        *midValue.data.STRING
-      )) {
+        *midValue.data.STRING,
+        [](char a, char b) { return a - b; }
+      ) < 0) {
         right = mid;
       } else {
         left = mid;
       }
     }
 
-    if (Value::StringComparator()(
+    if (lexContainerOrder(
       *keys.at(left).data.STRING,
-      *key.data.STRING
-    )) {
+      *key.data.STRING,
+      [](char a, char b) { return a - b; }
+    ) < 0) {
       left++;
     }
 

@@ -36,8 +36,8 @@ namespace Vortex {
 
       case STRING:
       case ARRAY:
-      case OBJECT:
       case VSET:
+      case OBJECT:
       case FUNC:
         return TOP_TYPE;
 

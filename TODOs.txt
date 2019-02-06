@@ -11,6 +11,7 @@ TODO: Implement frame guards / handle argument length mismatches
 TODO: Bootstrap parser
 TODO: Bootstrap validator
 TODO: Bootstrap bytecoder
+TODO: Speed up comparisons using structural sharing
 TODO: Add exec command to vm to create nested vm from vortex byte array
 TODO: Implement exception recovery / defaults
 TODO: Bootstrap analyzer

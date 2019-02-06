@@ -14,6 +14,10 @@ namespace Vortex {
     bool operator==(const Array& right) const;
     bool operator<(const Array& right) const;
 
+    friend int ArrayTypeOrderUnchecked(const Array& left, const Array& right);
+    friend int ArrayValueOrderUnchecked(const Array& left, const Array& right);
+    bool isFunctionless() const;
+
     Array pushBack(Value&& value) const;
     Array pushFront(Value&& value) const;
     Array update(Uint64 i, Value&& value) const;

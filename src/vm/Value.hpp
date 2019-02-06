@@ -22,17 +22,6 @@ namespace Vortex {
   struct Value {
     struct null {};
 
-    struct StringComparator {
-      bool operator()(const String& left, const String& right) const {
-        return std::lexicographical_compare(
-          left.begin(),
-          left.end(),
-          right.begin(),
-          right.end()
-        );
-      }
-    };
-
     union Data {
       bool BOOL;
 
@@ -69,6 +58,8 @@ namespace Vortex {
     Value& operator=(Value&& right) noexcept;
     bool operator==(const Value& right) const;
     bool operator<(const Value& right) const;
+
+    bool isFunctionless() const;
 
     Value();
 
@@ -168,4 +159,10 @@ namespace Vortex {
 
   bool isNumeric(Code type);
   bool isVector(Code type);
+
+  int TypeValueOrder(const Value& left, const Value& right);
+  int TypeOrder(const Value& left, const Value& right);
+  int TypeOrderUnchecked(const Value& left, const Value& right);
+  int ValueOrder(const Value& left, const Value& right);
+  int ValueOrderUnchecked(const Value& left, const Value& right);
 }
