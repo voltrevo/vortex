@@ -1131,6 +1131,7 @@ function validateExpression(exp: Syntax.Expression): Note[] {
       case '&':
       case '^':
       case '|':
+      case '~':
       case '/':
       case '%':
       case '**':

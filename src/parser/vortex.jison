@@ -97,13 +97,14 @@
 %left '|'
 %left '^'
 %left '&'
+%left '~'
 %left '==' '!='
 %left '<' '>' '>=' '<='
 %left '<<' '>>'
 %left '+' '-' '++' '--'
 %left '*' '/' '%'
 %right '**'
-%left '!' '~' POSTFIX UMINUS UPLUS
+%left '!' POSTFIX UMINUS UPLUS BITNEGATE
 %left '(' ')' '[' ']' '.' METHODLOOKUP
 
 %start program
@@ -314,12 +315,14 @@ e
         {$$ = { t: '=', v: [$1, $3], p: L(@$) }}
     | '!' e
         {$$ = { t: 'unary !', v: $2, p: L(@$) }}
-    | '~' e
+    | '~' e %prec BITNEGATE
         {$$ = { t: 'unary ~', v: $2, p: L(@$) }}
     | e '<' e
         {$$ = { t: '<', v: [$1, $3], p: L(@$) }}
     | e '>' e
         {$$ = { t: '>', v: [$1, $3], p: L(@$) }}
+    | e '~' e
+        {$$ = { t: '~', v: [$1, $3], p: L(@$) }}
     | e '&' e
         {$$ = { t: '&', v: [$1, $3], p: L(@$) }}
     | e 'in' e

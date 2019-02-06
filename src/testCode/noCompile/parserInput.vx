@@ -117,6 +117,8 @@ eight := (+)(2, 6); // #warn #unused
 nums := #[1, 2, 3]; // #warn #unused
 oneInNums := 1 in #[1, 2, 3]; // #warn #unused
 
+setSub := #[1, 2, 3] ~ #[2];
+
 return func factorial(n) => switch { // #error #duplicate
   (n < 0) => Error('Invalid input');
   (n == 0) => 1;

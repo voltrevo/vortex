@@ -1,4 +1,4 @@
-TODO: Add challenges section to playground
+TODO: Support more compound assignment operators (including ~=)
 TODO: Implement sets in VM
 TODO: Add Set as another native data structure
   e.g.

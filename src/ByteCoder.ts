@@ -640,7 +640,7 @@ namespace ByteCoder {
           switch (exp.t) {
             case 'unary -': return 'negate';
             case 'unary !': return '!';
-            case 'unary ~': return '~';
+            case 'unary ~': return 'bitnegate';
           }
         })();
 
@@ -1019,6 +1019,7 @@ namespace ByteCoder {
       case '&':
       case '^':
       case '|':
+      case '~':
       case 'in': {
         const [leftExp, rightExp] = exp.v;
 

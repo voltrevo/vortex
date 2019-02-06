@@ -1107,6 +1107,7 @@ namespace Analyzer {
           case '&':
           case '^':
           case '|':
+          case '~':
           case '/':
           case '%':
           case '**':
@@ -1583,6 +1584,7 @@ namespace Analyzer {
         case '&':
         case '^':
         case '|':
+        case '~':
         case 'in': {
           let left: Outcome;
           [left, az] = subExpression(az, exp.v[0]);

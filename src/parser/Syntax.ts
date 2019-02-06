@@ -65,6 +65,7 @@ namespace Syntax {
     '&' |
     '^' |
     '|' |
+    '~' |
     'in' |
     never
   );
@@ -295,6 +296,7 @@ namespace Syntax {
       case '&':
       case '^':
       case '|':
+      case '~':
       case '/':
       case '%':
       case '**':

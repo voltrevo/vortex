@@ -2561,6 +2561,14 @@ namespace Outcome {
           return null;
         }
 
+        case '~': {
+          if (left.t === 'Set' && right.t === 'Set') {
+            return Set.subtract(left, right);
+          }
+
+          return null;
+        }
+
         case '&&':
         case '||': {
           const impl: (a: boolean, b: boolean) => boolean = (() => {
