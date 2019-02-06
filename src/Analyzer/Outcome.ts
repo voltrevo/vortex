@@ -503,7 +503,7 @@ namespace Outcome {
 
       Keys: {
         args: [];
-        result: Array;
+        result: Set;
       };
 
       Values: {
@@ -588,10 +588,12 @@ namespace Outcome {
         // TODO: Unclear why {as any} was necessary below
         (base as any).v.map((v: Value, i: number) => Array([Number(i), v]))
       )),
-      Keys: (base, []) => (Array(
+      Keys: (base, []) => ({
+        cat: 'concrete',
+        t: 'Set',
         // TODO: Unclear why {as any} was necessary below
-        (base as any).v.map((v: Value, i: number) => Number(i))
-      )),
+        v: (base as any).v.map((v: Value, i: number) => Number(i)),
+      }),
       Values: (base, []) => base,
       String: (base, []) => String(JsString(base)),
       Kind: (base, []) => String('array'),
@@ -1014,7 +1016,7 @@ namespace Outcome {
 
       Keys: {
         args: [];
-        result: Array;
+        result: Set;
       };
 
       Values: {
@@ -1059,11 +1061,13 @@ namespace Outcome {
           (k: string, i: number) => Array([String(k), base.v[k]])
         )
       )),
-      Keys: (base, args) => (Array(
-        JsObject.keys(base.v).sort().map(
+      Keys: (base, args) => ({
+        cat: 'concrete',
+        t: 'Set',
+        v: JsObject.keys(base.v).sort().map(
           (k: string, i: number) => String(k)
-        )
-      )),
+        ),
+      }),
       Values: (base, args) => Array(
         JsObject.keys(base.v).sort().map(
           (k: string, i: number) => base.v[k]

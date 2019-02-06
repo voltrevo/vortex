@@ -41,8 +41,6 @@ assert #[
 
 assert #[2, 3] < #[1, 2, 3];
 
-log.info (null in #[null]);
-
 x := #[1];
 x |= #[2];
 

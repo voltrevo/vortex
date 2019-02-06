@@ -13,11 +13,11 @@ assert obj:String() == '{x:\'a\',y:2,z:\'c\'}';
 assert 'foo':Length() == 3;
 
 assert arr:Length() == 3;
-assert arr:Keys() == [0, 1, 2];
+assert arr:Keys() == #[0, 1, 2];
 assert arr:Values() == ['a', 2, 'c'];
 assert arr:Entries() == [[0, 'a'], [1, 2], [2, 'c']];
 
-assert obj:Keys() == ['x', 'y', 'z'];
+assert obj:Keys() == #['x', 'y', 'z'];
 assert obj:Values() == ['a', 2, 'c'];
 assert obj:Entries() == [['x', 'a'], ['y', 2], ['z', 'c']];
 

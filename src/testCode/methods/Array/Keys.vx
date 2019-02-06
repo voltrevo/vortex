@@ -1,4 +1,4 @@
-assert []:Keys() == [];
-assert ['foo', 'bar', 'baz']:Keys() == [0u64, 1u64, 2u64];
+assert []:Keys() == #[];
+assert ['foo', 'bar', 'baz']:Keys() == #[0u64, 1u64, 2u64];
 
 return 'done';

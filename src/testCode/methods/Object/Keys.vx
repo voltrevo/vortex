@@ -1,4 +1,4 @@
-assert {}:Keys() == [];
-assert {foo: 4, bar: 5, baz: 6}:Keys() == ['bar', 'baz', 'foo'];
+assert {}:Keys() == #[];
+assert {foo: 4, bar: 5, baz: 6}:Keys() == #['bar', 'baz', 'foo'];
 
 return 'done';
