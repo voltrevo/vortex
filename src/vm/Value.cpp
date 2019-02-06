@@ -1156,6 +1156,14 @@ namespace Vortex {
       }
     }
 
+    void setSubtract(Value& left, Value&& right) {
+      if (left.type != VSET || right.type != VSET) {
+        throw TypeError("~ operands are not both sets");
+      }
+
+      left.data.SET->subtract(std::move(*right.data.SET));
+    }
+
     void less(Value& left, Value&& right) {
       left = Value(left < right);
     }
@@ -1376,6 +1384,7 @@ namespace Vortex {
       case INTERSECT: BinaryOperators::intersect(left, std::move(right)); break;
       case EX_UNION: BinaryOperators::exUnify(left, std::move(right)); break;
       case UNION: BinaryOperators::unify(left, std::move(right)); break;
+      case SET_SUBTRACT: BinaryOperators::setSubtract(left, std::move(right)); break;
 
       case LESS: BinaryOperators::less(left, std::move(right)); break;
       case GREATER: BinaryOperators::greater(left, std::move(right)); break;
@@ -1456,6 +1465,36 @@ namespace Vortex {
       }
     }
 
+    void bitNegate(Value& value) {
+      switch (value.type) {
+        case UINT8: value.data.UINT8 = ~value.data.UINT8; return;
+        case UINT16: value.data.UINT16 = ~value.data.UINT16; return;
+        case UINT32: value.data.UINT32 = ~value.data.UINT32; return;
+        case UINT64: value.data.UINT64 = ~value.data.UINT64; return;
+
+        case INT8: value.data.INT8 = ~value.data.INT8; return;
+        case INT16: value.data.INT16 = ~value.data.INT16; return;
+        case INT32: value.data.INT32 = ~value.data.INT32; return;
+        case INT64: value.data.INT64 = ~value.data.INT64; return;
+
+        case NULL_:
+        case BOOL:
+        case FLOAT32:
+        case FLOAT64:
+        case STRING:
+        case FUNC:
+        case ARRAY:
+        case VSET:
+        case OBJECT: {
+          throw TypeError(
+            "bitNegate on null, bool, float, string, func, array, set, or object"
+          );
+        }
+
+        default: throw InternalError("Unrecognized value type");
+      }
+    }
+
     void inc(Value& value) {
       switch (value.type) {
         case UINT8: value.data.UINT8++; return;
@@ -1529,9 +1568,7 @@ namespace Vortex {
       case LENGTH: UnaryOperators::length(value); break;
 
       case NEGATE: UnaryOperators::negate(value); break;
-
-      case BIT_NEGATE:
-        throw NotImplementedError("Operator not implemented");
+      case BIT_NEGATE: UnaryOperators::bitNegate(value); break;
 
       case NOT: UnaryOperators::not_(value); break;
       case INC: UnaryOperators::inc(value); break;

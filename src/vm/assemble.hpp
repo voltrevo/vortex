@@ -74,6 +74,7 @@ namespace Vortex {
     {"&", INTERSECT},
     {"^", EX_UNION},
     {"|", UNION},
+    {"~", SET_SUBTRACT},
 
     {"++", CONCAT},
     {"pushBack", PUSH_BACK},
@@ -87,7 +88,7 @@ namespace Vortex {
 
     // UNARY_OPERATOR
     {"negate", NEGATE},
-    {"~", BIT_NEGATE},
+    {"bitNegate", BIT_NEGATE},
     {"!", NOT},
     {"inc", INC},
     {"dec", DEC},

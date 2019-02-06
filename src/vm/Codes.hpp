@@ -80,6 +80,7 @@ namespace Vortex {
     INTERSECT,
     EX_UNION,
     UNION,
+    SET_SUBTRACT,
 
     CONCAT,
     PUSH_BACK,

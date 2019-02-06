@@ -552,6 +552,7 @@ namespace Vortex {
             case INTERSECT: os << "&" << std::endl; return;
             case EX_UNION: os << "^" << std::endl; return;
             case UNION: os << "|" << std::endl; return;
+            case SET_SUBTRACT: os << "~" << std::endl; return;
 
             case CONCAT: os << "++" << std::endl; return;
             case PUSH_BACK: os << "push-back" << std::endl; return;

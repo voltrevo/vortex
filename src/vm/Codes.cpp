@@ -68,6 +68,7 @@ namespace Vortex {
       case INTERSECT:
       case EX_UNION:
       case UNION:
+      case SET_SUBTRACT:
 
       case CONCAT:
       case PUSH_BACK:
