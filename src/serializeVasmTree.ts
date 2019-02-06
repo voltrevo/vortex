@@ -70,6 +70,10 @@ namespace serializeAsmTree {
         return Array_(value.v);
       }
 
+      case 'set_': {
+        return Set_(value.v);
+      }
+
       case 'object': {
         return Object_(value.v);
       }
@@ -108,6 +112,7 @@ namespace serializeAsmTree {
       case 'number':
       case 'string':
       case 'array':
+      case 'set_':
       case 'object': {
         return [Value(statement)];
       }
@@ -198,6 +203,10 @@ namespace serializeAsmTree {
 
   export function Array_(arr: Syntax.Value[]): string {
     return '[' + arr.map(Value).join(', ') + ']';
+  }
+
+  export function Set_(arr: Syntax.Value[]): string {
+    return '#[' + arr.map(Value).join(', ') + ']';
   }
 
   export function Object_(obj: [Syntax.Value, Syntax.Value][]): string {

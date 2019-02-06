@@ -28,7 +28,8 @@
 ']'                   return ']'
 ','                   return ','
 ':'                   return ':'
-[!%^&*\-+<>=/\.|]+    return 'OPERATOR'
+"#["                  return 'SETSTART'
+[!%^&*\-+<>=/\.|~]+   return 'OPERATOR'
 [0-9]+("."[0-9]+)?([uif][0-9]*)?\b  return 'NUMBER'
 [a-zA-Z]\w*           return 'IDENTIFIER'
 ['](\\.|[^'])*[']     return 'STRING'
@@ -120,6 +121,8 @@ value
         {$$ = $1}
     | array
         {$$ = $1}
+    | set
+        {$$ = $1}
     | object
         {$$ = $1}
     ;
@@ -152,6 +155,11 @@ number
 array
     : '[' vList ']'
         {$$ = { t: 'array', v: $2, p: L(@$) }}
+    ;
+
+set
+    : SETSTART vList ']'
+        {$$ = { t: 'set_', v: $2, p: L(@$) }}
     ;
 
 vList

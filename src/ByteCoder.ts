@@ -562,6 +562,10 @@ namespace ByteCoder {
         return exp.v.every(isLiteral);
       }
 
+      case 'Set': {
+        return exp.v.every(isLiteral);
+      }
+
       case 'Object': {
         return exp.v.every(([key, val]) => (
           (isLiteral(key) || key.t === 'IDENTIFIER') &&
@@ -640,7 +644,7 @@ namespace ByteCoder {
           switch (exp.t) {
             case 'unary -': return 'negate';
             case 'unary !': return '!';
-            case 'unary ~': return 'bitnegate';
+            case 'unary ~': return 'bitNegate';
           }
         })();
 
@@ -812,7 +816,24 @@ namespace ByteCoder {
       }
 
       case 'Set': {
-        return [[`'Not implemented: sets' throw`], coder];
+        if (isLiteral(exp)) {
+          return [
+            [
+              '#[' +
+              exp.v.map(el => SubExpression(coder, el)[0]).join(', ') +
+              ']'
+            ],
+            coder,
+          ];
+        }
+
+        const lines: string[] = ['#[]'];
+
+        for (const el of exp.v) {
+          lines.push(...SubExpression(coder, el), 'setInsert');
+        }
+
+        return [lines, coder];
       }
 
       case 'Object': {

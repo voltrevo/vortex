@@ -14,6 +14,7 @@ namespace Syntax {
     Number_ |
     String_ |
     Array_ |
+    Set_ |
     Object_ |
     never
   );
@@ -24,6 +25,7 @@ namespace Syntax {
   export type String_ = { t: 'string', v: string, p: Pos };
 
   export type Array_ = { t: 'array', v: Value[], p: Pos };
+  export type Set_ = { t: 'set_', v: Value[], p: Pos };
   export type Object_ = { t: 'object', v: [Value, Value][], p: Pos };
 
   export type Func = { t: 'func', v: Block, p: Pos };
