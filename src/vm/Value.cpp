@@ -973,6 +973,189 @@ namespace Vortex {
       }
     }
 
+    void leftShift(Value& left, const Value& right) {
+      Code type = left.type;
+
+      if (right.type != type) {
+        throw TypeError("<< between different types");
+      }
+
+      switch (type) {
+        case UINT8: left.data.UINT8 <<= right.data.UINT8; return;
+        case UINT16: left.data.UINT16 <<= right.data.UINT16; return;
+        case UINT32: left.data.UINT32 <<= right.data.UINT32; return;
+        case UINT64: left.data.UINT64 <<= right.data.UINT64; return;
+
+        case INT8: left.data.INT8 <<= right.data.INT8; return;
+        case INT16: left.data.INT16 <<= right.data.INT16; return;
+        case INT32: left.data.INT32 <<= right.data.INT32; return;
+        case INT64: left.data.INT64 <<= right.data.INT64; return;
+
+        case NULL_:
+        case BOOL:
+        case FLOAT32:
+        case FLOAT64:
+        case STRING:
+        case FUNC:
+        case ARRAY:
+        case VSET:
+        case OBJECT: {
+          throw TypeError(
+            "<< between nulls, bools, floats, strings, sets, funcs, arrays, or objects"
+          );
+        }
+
+        default: throw InternalError("Unrecognized value type");
+      }
+    }
+
+    void rightShift(Value& left, const Value& right) {
+      Code type = left.type;
+
+      if (right.type != type) {
+        throw TypeError(">> between different types");
+      }
+
+      switch (type) {
+        case UINT8: left.data.UINT8 >>= right.data.UINT8; return;
+        case UINT16: left.data.UINT16 >>= right.data.UINT16; return;
+        case UINT32: left.data.UINT32 >>= right.data.UINT32; return;
+        case UINT64: left.data.UINT64 >>= right.data.UINT64; return;
+
+        case INT8: left.data.INT8 >>= right.data.INT8; return;
+        case INT16: left.data.INT16 >>= right.data.INT16; return;
+        case INT32: left.data.INT32 >>= right.data.INT32; return;
+        case INT64: left.data.INT64 >>= right.data.INT64; return;
+
+        case NULL_:
+        case BOOL:
+        case FLOAT32:
+        case FLOAT64:
+        case STRING:
+        case FUNC:
+        case ARRAY:
+        case VSET:
+        case OBJECT: {
+          throw TypeError(
+            ">> between nulls, bools, floats, strings, sets, funcs, arrays, or objects"
+          );
+        }
+
+        default: throw InternalError("Unrecognized value type");
+      }
+    }
+
+    void intersect(Value& left, Value&& right) {
+      Code type = left.type;
+
+      if (right.type != type) {
+        throw TypeError("& between different types");
+      }
+
+      switch (type) {
+        case UINT8: left.data.UINT8 &= right.data.UINT8; return;
+        case UINT16: left.data.UINT16 &= right.data.UINT16; return;
+        case UINT32: left.data.UINT32 &= right.data.UINT32; return;
+        case UINT64: left.data.UINT64 &= right.data.UINT64; return;
+
+        case INT8: left.data.INT8 &= right.data.INT8; return;
+        case INT16: left.data.INT16 &= right.data.INT16; return;
+        case INT32: left.data.INT32 &= right.data.INT32; return;
+        case INT64: left.data.INT64 &= right.data.INT64; return;
+
+        case VSET: left.data.SET->intersect(std::move(*right.data.SET)); return;
+
+        case NULL_:
+        case BOOL:
+        case FLOAT32:
+        case FLOAT64:
+        case STRING:
+        case FUNC:
+        case ARRAY:
+        case OBJECT: {
+          throw TypeError(
+            "& between nulls, bools, floats, strings, funcs, arrays, or objects"
+          );
+        }
+
+        default: throw InternalError("Unrecognized value type");
+      }
+    }
+
+    void exUnify(Value& left, Value&& right) {
+      Code type = left.type;
+
+      if (right.type != type) {
+        throw TypeError("^ between different types");
+      }
+
+      switch (type) {
+        case UINT8: left.data.UINT8 ^= right.data.UINT8; return;
+        case UINT16: left.data.UINT16 ^= right.data.UINT16; return;
+        case UINT32: left.data.UINT32 ^= right.data.UINT32; return;
+        case UINT64: left.data.UINT64 ^= right.data.UINT64; return;
+
+        case INT8: left.data.INT8 ^= right.data.INT8; return;
+        case INT16: left.data.INT16 ^= right.data.INT16; return;
+        case INT32: left.data.INT32 ^= right.data.INT32; return;
+        case INT64: left.data.INT64 ^= right.data.INT64; return;
+
+        case VSET: left.data.SET->exUnify(std::move(*right.data.SET)); return;
+
+        case NULL_:
+        case BOOL:
+        case FLOAT32:
+        case FLOAT64:
+        case STRING:
+        case FUNC:
+        case ARRAY:
+        case OBJECT: {
+          throw TypeError(
+            "^ between nulls, bools, floats, strings, funcs, arrays, or objects"
+          );
+        }
+
+        default: throw InternalError("Unrecognized value type");
+      }
+    }
+
+    void unify(Value& left, Value&& right) {
+      Code type = left.type;
+
+      if (right.type != type) {
+        throw TypeError("| between different types");
+      }
+
+      switch (type) {
+        case UINT8: left.data.UINT8 |= right.data.UINT8; return;
+        case UINT16: left.data.UINT16 |= right.data.UINT16; return;
+        case UINT32: left.data.UINT32 |= right.data.UINT32; return;
+        case UINT64: left.data.UINT64 |= right.data.UINT64; return;
+
+        case INT8: left.data.INT8 |= right.data.INT8; return;
+        case INT16: left.data.INT16 |= right.data.INT16; return;
+        case INT32: left.data.INT32 |= right.data.INT32; return;
+        case INT64: left.data.INT64 |= right.data.INT64; return;
+
+        case VSET: left.data.SET->unify(std::move(*right.data.SET)); return;
+
+        case NULL_:
+        case BOOL:
+        case FLOAT32:
+        case FLOAT64:
+        case STRING:
+        case FUNC:
+        case ARRAY:
+        case OBJECT: {
+          throw TypeError(
+            "| between nulls, bools, floats, strings, funcs, arrays, or objects"
+          );
+        }
+
+        default: throw InternalError("Unrecognized value type");
+      }
+    }
+
     void less(Value& left, Value&& right) {
       left = Value(left < right);
     }
@@ -1188,12 +1371,11 @@ namespace Vortex {
       case MODULUS: BinaryOperators::modulus(left, std::move(right)); break;
       case POWER: BinaryOperators::power(left, std::move(right)); break;
 
-      case LEFT_SHIFT:
-      case RIGHT_SHIFT:
-      case INTERSECT:
-      case EX_UNION:
-      case UNION:
-        throw NotImplementedError("Operator not implemented");
+      case LEFT_SHIFT: BinaryOperators::leftShift(left, std::move(right)); break;
+      case RIGHT_SHIFT: BinaryOperators::rightShift(left, std::move(right)); break;
+      case INTERSECT: BinaryOperators::intersect(left, std::move(right)); break;
+      case EX_UNION: BinaryOperators::exUnify(left, std::move(right)); break;
+      case UNION: BinaryOperators::unify(left, std::move(right)); break;
 
       case LESS: BinaryOperators::less(left, std::move(right)); break;
       case GREATER: BinaryOperators::greater(left, std::move(right)); break;

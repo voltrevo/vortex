@@ -84,12 +84,14 @@ namespace Vortex {
     if (keepInLeftOnly) {
       while (leftIter != leftIterEnd) {
         newValues.push_back(*leftIter);
+        ++leftIter;
       }
     }
 
     if (keepInRightOnly) {
       while (rightIter != rightIterEnd) {
         newValues.push_back(*rightIter);
+        ++rightIter;
       }
     }
 
