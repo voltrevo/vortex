@@ -112,6 +112,37 @@ namespace Vortex {
     return combine(right, true, false, false);
   }
 
+  void Set::insert(Value&& element) {
+    if (!element.isFunctionless()) {
+      throw TypeError("Can\'t add non-functionless element to set");
+    }
+
+    auto sz = values.size();
+
+    auto left = 0ul;
+    auto right = sz;
+
+    while (left < right) {
+      auto mid = left + (right - left) / 2;
+
+      int cmp = TypeValueOrderUnchecked(element, values[mid]);
+
+      if (cmp == 0) {
+        // Element already in the set
+        return;
+      }
+
+      if (cmp < 0) {
+        right = mid;
+        continue;
+      }
+
+      left = mid + 1;
+    }
+
+    values = values.insert(left, element);
+  }
+
   bool Set::contains(const Value& element) const {
     if (!element.isFunctionless()) {
       // TODO: Should this be an exception?
@@ -126,7 +157,7 @@ namespace Vortex {
     while (left < right) {
       auto mid = left + (right - left) / 2;
 
-      int cmp = TypeValueOrderUnchecked(values[mid], element);
+      int cmp = TypeValueOrderUnchecked(element, values[mid]);
 
       if (cmp == 0) {
         return true;

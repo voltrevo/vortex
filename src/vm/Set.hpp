@@ -28,6 +28,8 @@ namespace Vortex {
     void exUnify(const Set& right);
     void subtract(const Set& right);
 
+    void insert(Value&& element);
+
     bool contains(const Value& element) const;
   };
 }

@@ -9,6 +9,7 @@
 #include "Array.hpp"
 #include "Func.hpp"
 #include "Object.hpp"
+#include "Set.hpp"
 #include "Value.hpp"
 
 namespace Vortex {
@@ -119,6 +120,7 @@ namespace Vortex {
             }
 
             case ARRAY:
+            case VSET:
             case OBJECT: {
               // TODO: Deduplicate with IF, LOOP
               while (true) {
@@ -144,8 +146,6 @@ namespace Vortex {
 
             case FLOAT8:
             case FLOAT16:
-
-            case VSET:
               throw NotImplementedError("Unimplemented TOP_TYPE instruction");
 
             case FUNC: {
@@ -349,6 +349,26 @@ namespace Vortex {
           }
         }
 
+        case VSET: {
+          // TODO: Constructing the set one by one is an insertion sort and may
+          // be inefficient. Also perhaps the bytecode should require set
+          // literals to have elements in sorted order already. However a more
+          // sophisticated binary format for sets may be coming so I'm leaving
+          // this alone for now.
+
+          auto items = Value(new Set());
+
+          while (true) {
+            auto elType = get();
+
+            if (elType == END) {
+              return items;
+            }
+
+            items.data.SET->insert(getValue(elType));
+          }
+        }
+
         case OBJECT: {
           auto items = Value(new Object());
 
@@ -395,8 +415,6 @@ namespace Vortex {
 
         case FLOAT8:
         case FLOAT16:
-
-        case VSET:
           throw NotImplementedError("Unimplemented literal");
 
         case FUNC: {

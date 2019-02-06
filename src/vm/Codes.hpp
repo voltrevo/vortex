@@ -48,8 +48,8 @@ namespace Vortex {
 
     STRING,
     ARRAY,
-    OBJECT,
     VSET,
+    OBJECT,
     FUNC,
 
     // TERNARY_OPERATOR

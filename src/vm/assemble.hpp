@@ -369,6 +369,47 @@ namespace Vortex {
       return;
     }
 
+    if (c == '#') {
+      in.get();
+
+      if (in.get() != '[') {
+        throw SyntaxError("[ expected");
+      }
+
+      out.put(VSET);
+
+      // TODO: Dedupe with array parsing?
+      while (true) {
+        skipWhitespace(in);
+
+        c = in.peek();
+
+        if (c == ']') {
+          in.get();
+          break;
+        }
+
+        parse(in, out);
+
+        skipWhitespace(in);
+        c = in.peek();
+
+        if (c == ',') {
+          in.get();
+          continue;
+        }
+
+        if (c == ']') {
+          continue;
+        }
+
+        throw SyntaxError(", or ] expected");
+      }
+
+      out.put(END);
+      return;
+    }
+
     if (c == '[') {
       out.put(ARRAY);
       in.get();
