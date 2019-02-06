@@ -73,6 +73,7 @@ namespace Vortex {
       case CONCAT:
       case PUSH_BACK:
       case PUSH_FRONT:
+      case SET_INSERT:
 
       case AT:
       case HAS_INDEX:

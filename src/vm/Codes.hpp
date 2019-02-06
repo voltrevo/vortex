@@ -85,6 +85,7 @@ namespace Vortex {
     CONCAT,
     PUSH_BACK,
     PUSH_FRONT,
+    SET_INSERT,
 
     AT,
     HAS_INDEX,

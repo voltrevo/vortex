@@ -1251,7 +1251,7 @@ namespace Vortex {
 
     void pushBack(Value& left, Value&& right) {
       if (left.type != ARRAY) {
-        throw TypeError("push-back on non-array");
+        throw TypeError("pushBack on non-array");
       }
 
       *left.data.ARRAY = left.data.ARRAY->pushBack(std::move(right));
@@ -1259,10 +1259,18 @@ namespace Vortex {
 
     void pushFront(Value& left, Value&& right) {
       if (left.type != ARRAY) {
-        throw TypeError("push-front on non-array");
+        throw TypeError("pushFront on non-array");
       }
 
       *left.data.ARRAY = left.data.ARRAY->pushFront(std::move(right));
+    }
+
+    void setInsert(Value& left, Value&& right) {
+      if (left.type != VSET) {
+        throw TypeError("setInsert on non-set");
+      }
+
+      left.data.SET->insert(std::move(right));
     }
 
     void at(Value& left, Value&& right) {
@@ -1399,6 +1407,7 @@ namespace Vortex {
       case CONCAT: BinaryOperators::concat(left, std::move(right)); break;
       case PUSH_BACK: BinaryOperators::pushBack(left, std::move(right)); break;
       case PUSH_FRONT: BinaryOperators::pushFront(left, std::move(right)); break;
+      case SET_INSERT: BinaryOperators::setInsert(left, std::move(right)); break;
       case AT: BinaryOperators::at(left, std::move(right)); break;
       case HAS_INDEX: BinaryOperators::hasIndex(left, std::move(right)); break;
 

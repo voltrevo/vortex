@@ -555,11 +555,12 @@ namespace Vortex {
             case SET_SUBTRACT: os << "~" << std::endl; return;
 
             case CONCAT: os << "++" << std::endl; return;
-            case PUSH_BACK: os << "push-back" << std::endl; return;
-            case PUSH_FRONT: os << "push-front" << std::endl; return;
+            case PUSH_BACK: os << "pushBack" << std::endl; return;
+            case PUSH_FRONT: os << "pushFront" << std::endl; return;
+            case SET_INSERT: os << "setInsert" << std::endl; return;
 
             case AT: os << "at" << std::endl; return;
-            case HAS_INDEX: os << "has-index" << std::endl; return;
+            case HAS_INDEX: os << "hasIndex" << std::endl; return;
 
             case BIND: os << "bind" << std::endl; return;
             case METHOD_LOOKUP: os << "methodLookup" << std::endl; return;

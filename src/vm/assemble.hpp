@@ -79,6 +79,7 @@ namespace Vortex {
     {"++", CONCAT},
     {"pushBack", PUSH_BACK},
     {"pushFront", PUSH_FRONT},
+    {"setInsert", SET_INSERT},
 
     {"at", AT},
     {"hasIndex", HAS_INDEX},
