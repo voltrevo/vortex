@@ -40,16 +40,10 @@ namespace Vortex {
     auto rightValueIter = right.values.values.rbegin();
 
     for (auto i = 0ul; i < minLen; i++) {
-      int keyTypeCmp = TypeOrderUnchecked(*leftKeyIter, *rightKeyIter);
+      int keyCmp = TypeValueOrderUnchecked(*leftKeyIter, *rightKeyIter);
 
-      if (keyTypeCmp != 0) {
-        return keyTypeCmp;
-      }
-
-      int keyValueCmp = ValueOrderUnchecked(*leftKeyIter, *rightKeyIter);
-
-      if (keyValueCmp != 0) {
-        return keyValueCmp;
+      if (keyCmp != 0) {
+        return keyCmp;
       }
 
       int valueTypeCmp = TypeOrderUnchecked(*leftValueIter, *rightValueIter);

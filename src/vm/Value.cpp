@@ -11,6 +11,7 @@
 #include "Func.hpp"
 #include "LexOrder.hpp"
 #include "Object.hpp"
+#include "Set.hpp"
 #include "types.hpp"
 #include "Value.hpp"
 
@@ -131,14 +132,19 @@ namespace Vortex {
     data.FLOAT64 = v;
   }
 
+  Value::Value(String* v) {
+    type = STRING;
+    data.STRING = v;
+  }
+
   Value::Value(Array* v) {
     type = ARRAY;
     data.ARRAY = v;
   }
 
-  Value::Value(String* v) {
-    type = STRING;
-    data.STRING = v;
+  Value::Value(Set* v) {
+    type = VSET;
+    data.SET = v;
   }
 
   Value::Value(Object* v) {
@@ -155,10 +161,12 @@ namespace Vortex {
     assert(other.type != INVALID);
     type = other.type;
 
-    if (other.type == ARRAY) {
-      data.ARRAY = new Array(*other.data.ARRAY);
-    } else if (other.type == STRING) {
+    if (other.type == STRING) {
       data.STRING = new String(*other.data.STRING);
+    } else if (other.type == ARRAY) {
+      data.ARRAY = new Array(*other.data.ARRAY);
+    } else if (other.type == VSET) {
+      data.SET = new Set(*other.data.SET);
     } else if (other.type == OBJECT) {
       data.OBJECT = new Object(*other.data.OBJECT);
     } else if (other.type == FUNC) {
@@ -207,6 +215,16 @@ namespace Vortex {
     return ValueOrderUnchecked(left, right);
   }
 
+  int TypeValueOrderUnchecked(const Value& left, const Value& right) {
+    int typeOrder = TypeOrderUnchecked(left, right);
+
+    if (typeOrder != 0) {
+      return typeOrder;
+    }
+
+    return ValueOrderUnchecked(left, right);
+  }
+
   int TypeOrder(const Value& left, const Value& right) {
     if (!left.isFunctionless() || !right.isFunctionless()) {
       throw TypeError(
@@ -236,6 +254,7 @@ namespace Vortex {
       case FLOAT32:
       case FLOAT64:
       case STRING:
+      case VSET:
         return 0;
 
       case ARRAY: return ArrayTypeOrderUnchecked(*left.data.ARRAY, *right.data.ARRAY);
@@ -323,6 +342,7 @@ namespace Vortex {
       }
 
       case ARRAY: return ArrayValueOrderUnchecked(*left.data.ARRAY, *right.data.ARRAY);
+      case VSET: return SetOrder(*left.data.SET, *right.data.SET);
       case OBJECT: return ObjectValueOrderUnchecked(*left.data.OBJECT, *right.data.OBJECT);
 
       default: throw InternalError("Unrecognized value type");
@@ -344,6 +364,7 @@ namespace Vortex {
       case FLOAT32:
       case FLOAT64:
       case STRING:
+      case VSET:
         return true;
 
       case ARRAY: return data.ARRAY->isFunctionless();
@@ -366,6 +387,8 @@ namespace Vortex {
   }
 
   std::ostream& operator<<(std::ostream& os, const Value& value) {
+    // TODO: Indentation
+
     switch (value.type) {
       case NULL_: {
         os << "null";
@@ -442,6 +465,25 @@ namespace Vortex {
         bool notFirst = false;
 
         for (auto& v: (value.data.ARRAY->values)) {
+          if (notFirst) {
+            os << ", ";
+          }
+
+          os << v;
+          notFirst = true;
+        }
+
+        os << ']';
+
+        break;
+      }
+
+      case VSET: {
+        os << "#[";
+
+        bool notFirst = false;
+
+        for (auto& v: (value.data.SET->values)) {
           if (notFirst) {
             os << ", ";
           }
@@ -658,8 +700,9 @@ namespace Vortex {
         case NULL_:
         case BOOL:
         case STRING:
+        case VSET:
         case FUNC:
-          throw TypeError("+ between nulls, bools, strings, or funcs");
+          throw TypeError("+ between nulls, bools, strings, sets, or funcs");
 
         case ARRAY: left.data.ARRAY->plus(std::move(*right.data.ARRAY)); return;
         case OBJECT: left.data.OBJECT->plus(std::move(*right.data.OBJECT)); return;
@@ -692,8 +735,9 @@ namespace Vortex {
         case NULL_:
         case BOOL:
         case STRING:
+        case VSET:
         case FUNC:
-          throw TypeError("- between nulls, bools, strings, or funcs");
+          throw TypeError("- between nulls, bools, strings, sets, or funcs");
 
         case ARRAY: left.data.ARRAY->minus(*right.data.ARRAY); return;
         case OBJECT: left.data.OBJECT->minus(*right.data.OBJECT); return;
@@ -748,8 +792,9 @@ namespace Vortex {
         case NULL_:
         case BOOL:
         case STRING:
+        case VSET:
         case FUNC:
-          throw TypeError("* between nulls, bools, strings, or funcs");
+          throw TypeError("* between nulls, bools, strings, sets, or funcs");
 
         case ARRAY:
         case OBJECT:
@@ -795,6 +840,7 @@ namespace Vortex {
         case STRING:
         case FUNC:
         case ARRAY:
+        case VSET:
         case OBJECT:
           throw TypeError("scalarMultiply with non-scalar");
 
@@ -828,9 +874,10 @@ namespace Vortex {
         case STRING:
         case FUNC:
         case ARRAY:
+        case VSET:
         case OBJECT: {
           throw TypeError(
-            "/ between nulls, bools, strings, funcs, arrays, or objects"
+            "/ between nulls, bools, strings, sets, funcs, arrays, or objects"
           );
         }
 
@@ -871,9 +918,10 @@ namespace Vortex {
         case STRING:
         case FUNC:
         case ARRAY:
+        case VSET:
         case OBJECT: {
           throw TypeError(
-            "% between nulls, bools, strings, funcs, arrays, or objects"
+            "% between nulls, bools, strings, funcs, arrays, sets, or objects"
           );
         }
 
@@ -914,9 +962,10 @@ namespace Vortex {
         case STRING:
         case FUNC:
         case ARRAY:
+        case VSET:
         case OBJECT: {
           throw TypeError(
-            "** between nulls, bools, strings, funcs, arrays, or objects"
+            "** between nulls, bools, strings, funcs, arrays, sets, or objects"
           );
         }
 
@@ -1214,9 +1263,10 @@ namespace Vortex {
         case STRING:
         case FUNC:
         case ARRAY:
+        case VSET:
         case OBJECT: {
           throw TypeError(
-            "negate on null, bool, string, func, array, or object"
+            "negate on null, bool, string, func, array, set, or object"
           );
         }
 
@@ -1244,8 +1294,9 @@ namespace Vortex {
         case STRING:
         case FUNC:
         case ARRAY:
+        case VSET:
         case OBJECT:
-          throw TypeError("inc on null, bool, string, func, array, or object");
+          throw TypeError("inc on null, bool, string, func, array, set, or object");
 
         default: throw InternalError("Unrecognized value type");
       }
@@ -1271,8 +1322,9 @@ namespace Vortex {
         case STRING:
         case FUNC:
         case ARRAY:
+        case VSET:
         case OBJECT:
-          throw TypeError("inc on null, bool, string, func, array, or object");
+          throw TypeError("inc on null, bool, string, func, array, set, or object");
 
         default: throw InternalError("Unrecognized value type");
       }

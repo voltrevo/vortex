@@ -2,7 +2,7 @@ all: bin/run bin/scratch bin/asm bin/dasm test
 
 CC = clang++
 FLAGS = -I. -std=c++17 -O3
-COMMON_FILES = Codes.cpp Value.cpp Object.cpp Array.cpp Func.cpp Exceptions.cpp runBuiltInMethod.cpp
+COMMON_FILES = Codes.cpp Value.cpp Object.cpp Array.cpp Func.cpp Exceptions.cpp runBuiltInMethod.cpp Set.cpp
 COMMON_DEPS = $(COMMON_FILES) bin
 
 COMPILE = $(CC) $(FLAGS) $(COMMON_FILES)

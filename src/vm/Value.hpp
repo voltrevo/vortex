@@ -16,6 +16,7 @@
 
 namespace Vortex {
   struct Array;
+  struct Set;
   struct Object;
   struct Func;
 
@@ -41,6 +42,7 @@ namespace Vortex {
       String* STRING;
 
       Array* ARRAY;
+      Set* SET;
       Object* OBJECT;
 
       Func* FUNC;
@@ -75,8 +77,9 @@ namespace Vortex {
     explicit Value(Int64 v);
     explicit Value(Float32 v);
     explicit Value(Float64 v);
-    explicit Value(Array* v);
     explicit Value(String* v);
+    explicit Value(Array* v);
+    explicit Value(Set* v);
     explicit Value(Object* v);
     explicit Value(Func* v);
 
@@ -161,6 +164,7 @@ namespace Vortex {
   bool isVector(Code type);
 
   int TypeValueOrder(const Value& left, const Value& right);
+  int TypeValueOrderUnchecked(const Value& left, const Value& right);
   int TypeOrder(const Value& left, const Value& right);
   int TypeOrderUnchecked(const Value& left, const Value& right);
   int ValueOrder(const Value& left, const Value& right);

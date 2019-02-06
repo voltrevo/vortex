@@ -778,7 +778,7 @@ namespace Outcome {
           continue;
         }
 
-        if (cmp === -1) {
+        if (cmp < 0) {
           if (keepInLeftOnly) {
             res.v.push(leftItem);
           }
