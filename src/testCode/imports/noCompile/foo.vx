@@ -2,6 +2,6 @@ import ./asdf/bar.vx;
 import otherName from './asdf/bar.vx';
 
 assert bar == otherName;
-assert bar == (import @/imports/asdf/bar.vx);
+assert bar == (import @/imports/noCompile/asdf/bar.vx);
 
 return bar;
