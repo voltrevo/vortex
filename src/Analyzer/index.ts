@@ -960,9 +960,11 @@ namespace Analyzer {
 
       checkNull((() => {
         switch (exp.t) {
-          // TODO: Support more compound assignment operators
           case ':=':
           case '=':
+          case '&&=':
+          case '||=':
+          case '**=':
           case '+=':
           case '++=':
           case '-=':
@@ -973,7 +975,8 @@ namespace Analyzer {
           case '>>=':
           case '&=':
           case '^=':
-          case '|=': {
+          case '|=':
+          case '~=': {
             const leftExp = exp.v[0];
 
             const rightExp: Syntax.Expression = (() => {
@@ -985,6 +988,9 @@ namespace Analyzer {
                 switch (exp.t) {
                   case ':=': return null;
                   case '=': return null;
+                  case '&&=': return '&&';
+                  case '||=': return '||';
+                  case '**=': return '**';
                   case '+=': return '+';
                   case '++=': return '++';
                   case '-=': return '-';
@@ -996,6 +1002,7 @@ namespace Analyzer {
                   case '&=': return '&';
                   case '^=': return '^';
                   case '|=': return '|';
+                  case '~=': return '~';
                 }
               })();
 
@@ -2057,6 +2064,9 @@ namespace Analyzer {
 
         case ':=':
         case '=':
+        case '&&=':
+        case '||=':
+        case '**=':
         case '+=':
         case '++=':
         case '-=':
@@ -2068,6 +2078,7 @@ namespace Analyzer {
         case '&=':
         case '^=':
         case '|=':
+        case '~=':
         case 'unary ++':
         case 'unary --': {
           throw new Error(

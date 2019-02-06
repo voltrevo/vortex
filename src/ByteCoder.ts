@@ -1067,6 +1067,9 @@ namespace ByteCoder {
         ];
       }
 
+      case '&&=':
+      case '||=':
+      case '**=':
       case '+=':
       case '++=':
       case '-=':
@@ -1077,7 +1080,8 @@ namespace ByteCoder {
       case '>>=':
       case '&=':
       case '^=':
-      case '|=': {
+      case '|=':
+      case '~=': {
         const [leftExp, rightExp] = exp.v;
 
         const compoundRightLines = [

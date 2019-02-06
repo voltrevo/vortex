@@ -6,6 +6,9 @@ namespace Syntax {
   export type CreationOperator = ':=';
 
   export type AssignmentOperator = (
+    '&&=' |
+    '||=' |
+    '**=' |
     '+=' |
     '++=' |
     '-=' |
@@ -17,6 +20,7 @@ namespace Syntax {
     '&=' |
     '^=' |
     '|=' |
+    '~=' |
     '=' |
     never
   );
@@ -27,6 +31,9 @@ namespace Syntax {
     // := is excluded on purpose - creation is not assignment, assignment is
     // mutation
     const operators = [
+      '&&=',
+      '||=',
+      '**=',
       '+=',
       '++=',
       '-=',
@@ -38,6 +45,7 @@ namespace Syntax {
       '&=',
       '^=',
       '|=',
+      '~=',
       '=',
     ];
 
@@ -274,6 +282,9 @@ namespace Syntax {
 
       case ':=':
       case '=':
+      case '&&=':
+      case '||=':
+      case '**=':
       case '+=':
       case '++=':
       case '-=':
@@ -285,6 +296,7 @@ namespace Syntax {
       case '&=':
       case '^=':
       case '|=':
+      case '~=':
       case 'unary --':
       case 'unary ++':
       case '++':

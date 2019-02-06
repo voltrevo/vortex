@@ -37,9 +37,22 @@
 [0-9]+("."[0-9]+)?([uif][0-9]*)?\b  return 'NUMBER'
 ['](\\.|[^'])*[']     return 'STRING'
 '=>'                  return '=>'
-"**"                  return '**'
 ":="                  return ':='
 "++="                 return '++='
+"<<="                 return '<<='
+">>="                 return '>>='
+"&&="                 return '&&='
+"||="                 return '||='
+"**="                 return '**='
+"+="                  return '+='
+"-="                  return '-='
+"*="                  return '*='
+"/="                  return '/='
+"%="                  return '%='
+"&="                  return '&='
+"^="                  return '^='
+"|="                  return '|='
+"~="                  return '~='
 "++"                  return '++'
 "--"                  return '--'
 "<<"                  return '<<'
@@ -48,37 +61,28 @@
 ">="                  return '>='
 "=="                  return '=='
 "!="                  return '!='
+"="                   return '='
 "&&"                  return '&&'
 "||"                  return '||'
-"+="                  return '+='
-"-="                  return '-='
-"*="                  return '*='
-"/="                  return '/='
-"%="                  return '%='
-"<<="                 return '<<='
-">>="                 return '>>='
-"&="                  return '&='
-"^="                  return '^='
-"|="                  return '|='
+"**"                  return '**'
+"+"                   return '+'
+"-"                   return '-'
 "*"                   return '*'
 "/"                   return '/'
 '%'                   return '%'
-"-"                   return '-'
-"+"                   return '+'
+"&"                   return '&'
+"^"                   return '^'
+"|"                   return '|'
+"~"                   return '~'
 "("                   return '('
 ")"                   return ')'
-"="                   return '='
 [:](?=[a-zA-Z])       return 'METHODLOOKUP'
 ":"                   return 'ATTR'
 "#["                  return 'SETSTART'
 ","                   return ','
 "!"                   return '!'
-"~"                   return '~'
 "<"                   return '<'
 ">"                   return '>'
-"&"                   return '&'
-"^"                   return '^'
-"|"                   return '|'
 '['                   return '['
 ']'                   return ']'
 '.'                   return '.'
@@ -90,7 +94,7 @@
 /* operator associations and precedence */
 
 %right FUNC
-%right ':=' '=' '+=' '++=' '-=' '*=' '/=' '%=' '<<=' '>>=' '&=' '|=' '^='
+%right ':=' '=' '**=' '+=' '++=' '-=' '*=' '/=' '%=' '<<=' '>>=' '&=' '|=' '^=' '&&=' '||=' '~='
 %left 'in'
 %left '||'
 %left '&&'
@@ -277,6 +281,12 @@ e
         {$$ = { t: '&&', v: [$1, $3], p: L(@$) }}
     | e '||' e
         {$$ = { t: '||', v: [$1, $3], p: L(@$) }}
+    | e '&&=' e
+        {$$ = { t: '&&=', v: [$1, $3], p: L(@$) }}
+    | e '||=' e
+        {$$ = { t: '||=', v: [$1, $3], p: L(@$) }}
+    | e '**=' e
+        {$$ = { t: '**=', v: [$1, $3], p: L(@$) }}
     | e '+=' e
         {$$ = { t: '+=', v: [$1, $3], p: L(@$) }}
     | e '++=' e
@@ -299,6 +309,8 @@ e
         {$$ = { t: '^=', v: [$1, $3], p: L(@$) }}
     | e '|=' e
         {$$ = { t: '|=', v: [$1, $3], p: L(@$) }}
+    | e '~=' e
+        {$$ = { t: '~=', v: [$1, $3], p: L(@$) }}
     | e '*' e
         {$$ = { t: '*', v: [$1, $3], p: L(@$) }}
     | e '/' e

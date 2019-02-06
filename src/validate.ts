@@ -1018,6 +1018,9 @@ function validateExpression(exp: Syntax.Expression): Note[] {
   checkNull((() => {
     switch (exp.t) {
       case '=':
+      case '&&=':
+      case '||=':
+      case '**=':
       case '+=':
       case '++=':
       case '-=':
@@ -1029,6 +1032,7 @@ function validateExpression(exp: Syntax.Expression): Note[] {
       case '&=':
       case '^=':
       case '|=':
+      case '~=':
       case ':=': {
         notes.push(...validateMutation(
           exp,
