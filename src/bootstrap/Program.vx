@@ -4,12 +4,15 @@ import ./Number.vx;
 // TODO: {a, b, ...} := rhs
 Many := parse.Many;
 Select := parse.Select;
+Complete := parse.Complete;
 
-Program := Many(Select([
-  Number,
-  Whitespace,
-  Fail,
-]));
+Program := Complete(
+  Many(Select([
+    Number,
+    Whitespace,
+    Fail,
+  ]))
+);
 
 func Whitespace(lines, [i, j]) {
   empty := true;
@@ -84,15 +87,12 @@ sampleLines := [
   '  321u64 ',
 ];
 
-program := Program(sampleLines, [0u64, 0u64]):Front();
+program := Program(sampleLines);
 
 if (0u8:String() == '0u8') {
-  assert Program(['13i8'], [0u64, 0u64]) == [
-    [
-      {data: ['literal', 13i8], pos: [[0u64, 0u64], [0u64, 4u64]]},
-      {data: ['whitespace'], pos: [[0u64, 4u64], [1u64, 0u64]]},
-    ],
-    [1u64, 0u64],
+  assert Program(['13i8']) == [
+    {data: ['literal', 13i8], pos: [[0u64, 0u64], [0u64, 4u64]]},
+    {data: ['whitespace'], pos: [[0u64, 4u64], [1u64, 0u64]]},
   ];
 
   assert program == [

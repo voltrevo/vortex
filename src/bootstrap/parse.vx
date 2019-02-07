@@ -141,4 +141,20 @@ return {
 
     return [{data, pos: [[i, j], ijNext]}, ijNext];
   },
+
+  Complete: func(parser) => func(lines) {
+    output := parser(lines, [0u64, 0u64]);
+
+    if (output:Kind() == 'null') {
+      return null;
+    }
+
+    [result, [i, j]] := output;
+
+    if (i != lines:Length() || j != 0u64) {
+      return null;
+    }
+
+    return result;
+  },
 };

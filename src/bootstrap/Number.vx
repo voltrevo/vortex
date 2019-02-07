@@ -96,6 +96,7 @@ func NumberU64(lines, [i, j]) {
 
 func NumberConvertedUnsigned(suffix) => func(lines, [i, j]) {
   output := RawU64(lines, [i, j]);
+  log.info ['RawU64:', output];
 
   if (output:Kind() == 'null') {
     return null;
