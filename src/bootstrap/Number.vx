@@ -15,27 +15,25 @@ func NonEmptyLine(lines, [i, j]) {
   return line;
 };
 
-func Digit(s) => switch {
-  (s == '0') => 0u64;
-  (s == '1') => 1u64;
-  (s == '2') => 2u64;
-  (s == '3') => 3u64;
-  (s == '4') => 4u64;
-  (s == '5') => 5u64;
-  (s == '6') => 6u64;
-  (s == '7') => 7u64;
-  (s == '8') => 8u64;
-  (s == '9') => 9u64;
+func Digit(s) => switch (s) {
+  '0' => 0u64;
+  '1' => 1u64;
+  '2' => 2u64;
+  '3' => 3u64;
+  '4' => 4u64;
+  '5' => 5u64;
+  '6' => 6u64;
+  '7' => 7u64;
+  '8' => 8u64;
+  '9' => 9u64;
 
-  true => null;
+  default => null;
 };
-
-func isNull(x) => x:String() == 'null';
 
 func RawU64(lines, [i, j]) {
   line := NonEmptyLine(lines, [i, j]);
 
-  if (isNull(line)) {
+  if (line:Kind() == 'null') {
     return null;
   }
 
@@ -44,11 +42,11 @@ func RawU64(lines, [i, j]) {
   for {
     digit := Digit(line[j]);
 
-    if (isNull(digit)) {
+    if (digit:Kind() == 'null') {
       break;
     }
 
-    if (isNull(res)) {
+    if (res:Kind() == 'null') {
       res = digit;
     } else {
       before := res;
@@ -68,7 +66,7 @@ func RawU64(lines, [i, j]) {
     }
   }
 
-  if (isNull(res)) {
+  if (res:Kind() == 'null') {
     return null;
   }
 
@@ -78,7 +76,7 @@ func RawU64(lines, [i, j]) {
 func NumberU64(lines, [i, j]) {
   output := RawU64(lines, [i, j]);
 
-  if (isNull(output)) {
+  if (output:Kind() == 'null') {
     return null;
   }
 
@@ -87,7 +85,7 @@ func NumberU64(lines, [i, j]) {
 
   suffix := parse.Exact('u64')(lines, [i, j]);
 
-  if (isNull(suffix)) {
+  if (suffix:Kind() == 'null') {
     return null;
   }
 
@@ -99,7 +97,7 @@ func NumberU64(lines, [i, j]) {
 func NumberConvertedUnsigned(suffix) => func(lines, [i, j]) {
   output := RawU64(lines, [i, j]);
 
-  if (isNull(output)) {
+  if (output:Kind() == 'null') {
     return null;
   }
 
@@ -108,7 +106,7 @@ func NumberConvertedUnsigned(suffix) => func(lines, [i, j]) {
 
   suffixParsed := parse.Exact(suffix)(lines, [i, j]);
 
-  if (isNull(suffixParsed)) {
+  if (suffixParsed:Kind() == 'null') {
     return null;
   }
 
@@ -117,7 +115,7 @@ func NumberConvertedUnsigned(suffix) => func(lines, [i, j]) {
   value := literal[1u64];
   value = tryConvertFromU64(value, suffix);
 
-  if (isNull(value)) {
+  if (value:Kind() == 'null') {
     return [['overflow'], [i, j]];
   }
 
@@ -130,14 +128,14 @@ func NumberConvertedSigned(lines, [i, j]) {
   minus := parse.Exact('-')(lines, [i, j]);
   isNegated := false;
 
-  if (!isNull(minus)) {
+  if (minus:Kind() != 'null') {
     isNegated = true;
     [i, j] = minus:Back();
   }
 
   raw := RawU64(lines, [i, j]);
 
-  if (isNull(raw)) {
+  if (raw:Kind() == 'null') {
     return null;
   }
 
@@ -153,13 +151,13 @@ func NumberConvertedSigned(lines, [i, j]) {
 
   suffix := 'i32';
 
-  if (!isNull(parsedSuffix)) {
+  if (parsedSuffix:Kind() != 'null') {
     [suffix, [i, j]] = parsedSuffix;
   }
 
   value[1u64] = tryConvertFromU64(value[1u64], suffix);
 
-  if (isNull(value[1u64])) {
+  if (value[1u64]:Kind() == 'null') {
     return [['overflow'], [i, j]];
   }
 

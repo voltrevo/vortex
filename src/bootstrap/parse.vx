@@ -1,7 +1,5 @@
 import ./parse.vx;
 
-func isNull(x) => x:String() == 'null';
-
 func NonEmptyLine(lines, [i, j]) {
   if (i >= lines:Length()) {
     return null;
@@ -21,7 +19,7 @@ func ExactChar(c) => func(lines, [i, j]) {
 
   // TODO: Short-circuit || so that the following two conditions can be
   // combined.
-  if (isNull(line)) {
+  if (line:Kind() == 'null') {
     return null;
   }
 
@@ -39,7 +37,7 @@ return {
     for (parser of parsers) {
       output := parser(lines, [i, j]);
 
-      if (isNull(output)) {
+      if (output:Kind() == 'null') {
         return null;
       }
 
@@ -68,7 +66,7 @@ return {
     for {
       output := parser(lines, [i, j]);
 
-      if (isNull(output)) {
+      if (output:Kind() == 'null') {
         break;
       }
 
@@ -79,7 +77,7 @@ return {
       count++;
 
       // TODO: Short-circuit boolean operators
-      if (!isNull(max)) {
+      if (max:Kind() != 'null') {
         if (count == max) {
           break;
         }
@@ -100,7 +98,7 @@ return {
     for (parser of parsers) {
       output := parser(lines, [i, j]);
 
-      if (!isNull(output)) {
+      if (output:Kind() != 'null') {
         return output;
       }
     }
@@ -135,7 +133,7 @@ return {
   DataPos: func(parser) => func(lines, [i, j]) {
     output := parser(lines, [i, j]);
 
-    if (isNull(output)) {
+    if (output:Kind() == 'null') {
       return null;
     }
 
