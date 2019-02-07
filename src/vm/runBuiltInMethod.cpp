@@ -48,13 +48,13 @@ namespace Vortex {
               items.push_back(Value(i));
             }
 
-            base = Value(new Array{.values = items.persistent()});
+            base = Value(new Set{.values = items.persistent()});
 
             return;
           }
 
           case OBJECT: {
-            base = Value(new Array(base.data.OBJECT->keys));
+            base = Value(new Set{.values = base.data.OBJECT->keys.values});
             return;
           }
 
