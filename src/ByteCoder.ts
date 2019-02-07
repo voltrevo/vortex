@@ -702,14 +702,9 @@ namespace ByteCoder {
           lines.push(`func {`);
         }
 
-        const captureLines: string[] = [];
-
         for (const capture of [...captures, ...gfuncCaptures]) {
-          captureLines.push(`  set $${capture}`);
+          lines.push(`  set $${capture}`);
         }
-
-        captureLines.reverse();
-        lines.push(...captureLines);
 
         for (const arg of exp.v.args) {
           lines.push(

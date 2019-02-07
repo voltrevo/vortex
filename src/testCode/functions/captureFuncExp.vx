@@ -1,0 +1,8 @@
+a := 'a';
+b := 'b';
+
+foo := func() => [a, b];
+
+assert foo() == [a, b];
+
+return 'done';
