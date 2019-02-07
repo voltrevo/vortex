@@ -1,5 +1,7 @@
+import ./Fail.vx;
+import ./Literal.vx;
 import ./parse.vx;
-import ./Number.vx;
+import ./Whitespace.vx;
 
 // TODO: {a, b, ...} := rhs
 Many := parse.Many;
@@ -8,76 +10,11 @@ Complete := parse.Complete;
 
 Program := Complete(
   Many(Select([
-    Number,
+    Literal,
     Whitespace,
     Fail,
   ]))
 );
-
-func Whitespace(lines, [i, j]) {
-  empty := true;
-
-  if (i >= lines:Length()) {
-    return null;
-  }
-
-  line := lines[i];
-
-  for {
-    for (j >= line:Length()) {
-      empty = false;
-      i++;
-      j = 0u64;
-
-      if (i >= lines:Length()) {
-        return [['whitespace'], [i, j]];
-      }
-
-      line = lines[i];
-    }
-
-    if (!isWhitespace(line[j])) {
-      return switch (empty) {
-        true => null;
-        false => [['whitespace'], [i, j]];
-      };
-    }
-
-    empty = false;
-    j++;
-  }
-};
-
-func Fail(lines, [i, j]) {
-  if (i >= lines:Length()) {
-    return null;
-  }
-
-  line := lines[i];
-
-  if (j < line:Length()) {
-    j++;
-
-    if (j == line:Length()) {
-      i++;
-      j = 0u64;
-    }
-
-    return [['fail'], [i, j]];
-  }
-
-  i++;
-  j = 0u64;
-
-  return [['fail'], [i, j]];
-};
-
-func isWhitespace(s) => switch {
-  (s == ' ') => true;
-  (s == '	') => true; // TODO: \t escape sequence (and others)
-
-  true => false;
-};
 
 sampleLines := [
   '123u64 ',

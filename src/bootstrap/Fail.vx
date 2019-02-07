@@ -1,0 +1,23 @@
+return func(lines, [i, j]) {
+  if (i >= lines:Length()) {
+    return null;
+  }
+
+  line := lines[i];
+
+  if (j < line:Length()) {
+    j++;
+
+    if (j == line:Length()) {
+      i++;
+      j = 0u64;
+    }
+
+    return [['fail'], [i, j]];
+  }
+
+  i++;
+  j = 0u64;
+
+  return [['fail'], [i, j]];
+};
