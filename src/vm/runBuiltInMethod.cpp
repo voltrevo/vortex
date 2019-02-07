@@ -68,8 +68,13 @@ namespace Vortex {
         auto& base = machine.calc.back();
 
         switch (base.type) {
-          case ARRAY:  {
+          case ARRAY: {
             // Values of an array is just the array
+            return;
+          }
+
+          case VSET: {
+            base = Value(new Array{.values = base.data.SET->values});
             return;
           }
 

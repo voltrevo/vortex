@@ -648,6 +648,12 @@ namespace Vortex {
       }
     }
 
+    if (type == VSET) {
+      if (methodName == "Values") {
+        return BuiltInMethod::VALUES;
+      }
+    }
+
     if (type == ARRAY || type == STRING) {
       if (methodName == "Length") {
         return BuiltInMethod::LENGTH;
