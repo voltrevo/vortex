@@ -102,6 +102,7 @@ namespace Vortex {
     NONE,
     LENGTH,
     STRING,
+    KIND,
     KEYS,
     VALUES,
     ENTRIES,

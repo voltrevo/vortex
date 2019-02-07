@@ -138,6 +138,41 @@ namespace Vortex {
         return;
       }
 
+      case BuiltInMethod::KIND: {
+        assert(!machine.calc.empty());
+        auto& base = machine.calc.back();
+
+        switch (base.type) {
+          case NULL_: base = Value(new String{'n', 'u', 'l', 'l'}); break;
+          case BOOL: base = Value(new String{'b', 'o', 'o', 'l'}); break;
+
+          case UINT8: base = Value(new String{'u', '8'}); break;
+          case UINT16: base = Value(new String{'u', '1', '6'}); break;
+          case UINT32: base = Value(new String{'u', '3', '2'}); break;
+          case UINT64: base = Value(new String{'u', '6', '4'}); break;
+
+          case INT8: base = Value(new String{'i', '8'}); break;
+          case INT16: base = Value(new String{'i', '1', '6'}); break;
+          case INT32: base = Value(new String{'i', '3', '2'}); break;
+          case INT64: base = Value(new String{'i', '6', '4'}); break;
+
+          case FLOAT8: base = Value(new String{'f', '8'}); break;
+          case FLOAT16: base = Value(new String{'f', '1', '6'}); break;
+          case FLOAT32: base = Value(new String{'f', '3', '2'}); break;
+          case FLOAT64: base = Value(new String{'f', '6', '4'}); break;
+
+          case STRING: base = Value(new String{'s', 't', 'r', 'i', 'n', 'g'}); break;
+          case ARRAY: base = Value(new String{'a', 'r', 'r', 'a', 'y'}); break;
+          case VSET: base = Value(new String{'s', 'e', 't'}); break;
+          case OBJECT: base = Value(new String{'o', 'b', 'j', 'e', 'c', 't'}); break;
+          case FUNC: base = Value(new String{'f', 'u', 'n', 'c'}); break;
+
+          default: throw InternalError("Unrecognized value type");
+        }
+
+        return;
+      }
+
       case BuiltInMethod::MAP: {
         auto base = machine.pop();
 

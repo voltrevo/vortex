@@ -618,6 +618,10 @@ namespace Vortex {
   }
 
   BuiltInMethod MethodEnum(Code type, const std::string& methodName) {
+    if (methodName == "Kind") {
+      return BuiltInMethod::KIND;
+    }
+
     if (type != FUNC && methodName == "String") {
       return BuiltInMethod::STRING;
     }
