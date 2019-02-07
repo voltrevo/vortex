@@ -1,3 +1,5 @@
+#include <algorithm>
+
 #include <immer/flex_vector_transient.hpp>
 
 #include "Set.hpp"
@@ -13,16 +15,20 @@ namespace Vortex {
   }
 
   int SetOrder(const Set& left, const Set& right) {
-    auto sz = left.values.size();
-
-    if (right.values.size() != sz) {
-      return false;
-    }
-
     auto leftIter = left.values.rbegin();
+    auto leftEnd = left.values.rend();
     auto rightIter = right.values.rbegin();
+    auto rightEnd = right.values.rend();
 
-    for (auto i = 0ul; i < sz; ++i) {
+    while (true) {
+      if (leftIter == leftEnd) {
+        return rightIter == rightEnd ? 0 : -1;
+      }
+
+      if (rightIter == rightEnd) {
+        return 1;
+      }
+
       auto cmp = TypeValueOrderUnchecked(*leftIter, *rightIter);
 
       if (cmp != 0) {
@@ -32,8 +38,6 @@ namespace Vortex {
       ++leftIter;
       ++rightIter;
     }
-
-    return 0;
   }
 
   void Set::combine(
