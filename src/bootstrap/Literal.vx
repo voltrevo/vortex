@@ -2,9 +2,11 @@ import ./Array.vx;
 import ./parse.vx;
 import ./Number.vx;
 import ./Set.vx;
+import ./String.vx;
 
 return parse.Select([
   Number,
+  String,
   Array,
   Set,
 ]);

@@ -2,6 +2,7 @@ import ./Array.vx;
 import p from './parse.vx';
 import ./Program.vx;
 import ./Set.vx;
+import ./String.vx;
 
 func arr(s) => p.Complete(Array)([s])[1];
 
@@ -14,6 +15,11 @@ func set_(s) => p.Complete(Set)([s])[1];
 
 assert set_('#[]') == #[];
 assert set_('#[2, 3, 3, 1]') == #[1, 2, 3];
+
+func str(s) => p.Complete(String)([s])[1];
+
+assert str('\'foo\'') == 'foo';
+assert str('\'fo\\\'o\'') == 'fo\'o';
 
 assert Program(['13i8']) == [
   {data: ['literal', 13i8], pos: [[0u64, 0u64], [0u64, 4u64]]},

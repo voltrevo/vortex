@@ -72,6 +72,7 @@ return {
 
       [value, ijNext] := output;
 
+      // TODO: Don't impose {data, pos} format
       res ++= [{data: value, pos: [[i, j], ijNext]}];
       [i, j] = ijNext;
       count++;
@@ -169,6 +170,39 @@ return {
     }
 
     output[0] = transform(output[0]);
+
+    return output;
+  },
+
+  Char: func(lines, [i, j]) {
+    if (i >= lines:Length()) {
+      return null;
+    }
+
+    line := lines[i];
+
+    if (j == line:Length()) {
+      newline := '
+';
+
+      return [newline, [i + 1u64, 0u64]];
+    }
+
+    assert j < line:Length();
+
+    return [line[j], [i, j + 1u64]];
+  },
+
+  Filter: func(parser, filter) => func(lines, [i, j]) {
+    output := parser(lines, [i, j]);
+
+    if (output:Kind() == 'null') {
+      return null;
+    }
+
+    if (!filter(output[0])) {
+      return null;
+    }
 
     return output;
   },
