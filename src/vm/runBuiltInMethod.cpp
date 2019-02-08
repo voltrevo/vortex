@@ -222,6 +222,9 @@ namespace Vortex {
             continue;
           }
 
+          auto p = machine.BackPair();
+          swap(*p.first, *p.second);
+
           machine.call(fn);
         }
 
