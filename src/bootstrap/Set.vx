@@ -1,0 +1,18 @@
+import ./CommaSequence.vx;
+import ./DeferLiteral.vx;
+import p from './parse.vx';
+
+RawSet := p.Sequence([
+  p.Exact('#['),
+  CommaSequence(DeferLiteral),
+  p.Exact(']'),
+]);
+
+Set := p.Transform(
+  RawSet,
+  func([start, value, end]) => ['literal',
+    ([#[]] ++ value:map(func(v) => #[v])):reduce(|),
+  ],
+);
+
+return Set;
