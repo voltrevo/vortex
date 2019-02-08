@@ -503,6 +503,8 @@ namespace Vortex {
         for (auto& c: *value.data.STRING) {
           if (c == '\'') {
             os << "\\'";
+          } else if (c == '\\') {
+            os << "\\\\";
           } else {
             os << c;
           }

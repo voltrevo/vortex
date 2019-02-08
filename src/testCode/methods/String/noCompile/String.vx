@@ -1,5 +1,0 @@
-//assert '':String() == '\'\'';
-//assert 'foo':String() == '\'foo\'';
-assert 'x\'x':String() == '\'x\\\'x\'';
-
-return 'done';

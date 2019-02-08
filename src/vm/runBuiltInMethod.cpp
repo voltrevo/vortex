@@ -531,9 +531,12 @@ namespace Vortex {
         auto i = 0ul;
 
         for (; i < len; ++i) {
-          if (value.data.STRING->at(i) == '\'') {
+          char c = value.data.STRING->at(i);
+
+          if (c == '\'' || c == '\\') {
             res = res + value.data.STRING->drop(upto).take(i - upto);
-            res = res + String{'\\', '\''};
+            res = res + String{'\\', c};
+            upto = i + 1ul;
           }
         }
 

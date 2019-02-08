@@ -175,8 +175,8 @@ namespace Vortex {
       if (c == '\\') {
         c = in.get();
 
-        if (c != '\'') {
-          throw SyntaxError("' expected");
+        if (c != '\'' && c != '\\') {
+          throw SyntaxError("' or \\ expected");
         }
       }
 
