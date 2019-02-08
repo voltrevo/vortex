@@ -1,0 +1,21 @@
+import p from './parse.vx';
+
+RawIdentifier := p.Sequence([
+  p.Filter(p.Char, func(c) => (
+    ('a' <= c && c <= 'z') ||
+    ('A' <= c && c <= 'Z')
+  )),
+  p.Many(p.Filter(p.Char, func(c) => (
+    ('a' <= c && c <= 'z') ||
+    ('A' <= c && c <= 'Z') ||
+    ('0' <= c && c <= '9') ||
+    c == '_'
+  ))),
+]);
+
+Identifier := p.Transform(RawIdentifier, func([head, tail]) => [
+  'identifier',
+  ([head] ++ tail:map(func(v) => v.data)):reduce(++),
+]);
+
+return Identifier;

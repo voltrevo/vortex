@@ -1,6 +1,7 @@
 import ./Array.vx;
 import ./parse.vx;
 import ./Number.vx;
+import ./Object.vx;
 import ./Set.vx;
 import ./String.vx;
 
@@ -9,4 +10,5 @@ return parse.Select([
   String,
   Array,
   Set,
+  Object,
 ]);

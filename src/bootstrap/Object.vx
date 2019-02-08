@@ -1,0 +1,44 @@
+import ./CommaSequence.vx;
+import ./DeferLiteral.vx;
+import ./Identifier.vx;
+import p from './parse.vx';
+import ./String.vx;
+import ./Whitespace.vx;
+
+OW := p.Optional(Whitespace);
+Colon := p.Exact(':');
+
+Key := p.DataPos(p.Select([Identifier, String]));
+
+KeyValuePair := p.Transform(
+  p.Sequence([Key, OW, Colon, OW, DeferLiteral]),
+  func([key, ws1, colon, ws2, [valueType, value]]) => ['kvp', [key, value]],
+);
+
+RawObject := p.Sequence([
+  p.Exact('{'),
+  CommaSequence(KeyValuePair),
+  p.Exact('}'),
+]);
+
+Object := p.Transform(
+  RawObject,
+  func objTransform([start, pairs, end]) {
+    res := {};
+
+    for ([{data: [keyType, key], pos}, value] of pairs) {
+      if (key in res:Keys()) {
+        return [
+          'invalid',
+          'object has duplicate key \'' ++ key ++ '\' at ' ++ pos:String(),
+        ];
+      }
+
+      res[key] := value;
+    }
+
+    return ['literal', res];
+  },
+);
+
+return Object;
