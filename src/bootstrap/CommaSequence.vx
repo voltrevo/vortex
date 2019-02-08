@@ -1,0 +1,25 @@
+import p from './parse.vx';
+import ./Whitespace.vx;
+
+OW := p.Optional(Whitespace);
+Comma := p.Exact(',');
+
+return func(Item) {
+  RawList := p.Sequence([
+    p.Many(p.Sequence([
+      OW,
+      Item,
+      OW,
+      Comma,
+    ])),
+    p.Optional(p.Sequence([OW, Item])),
+    OW,
+  ]);
+
+  return p.Transform(RawList, func([vals, lastVals, ws]) {
+    func dataSecond(x) => x.data[1];
+    func second(x) => x[1];
+
+    return (vals:map(dataSecond) ++ lastVals:map(dataSecond)):map(second);
+  });
+};
