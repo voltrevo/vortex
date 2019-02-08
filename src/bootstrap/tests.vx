@@ -1,0 +1,41 @@
+import ./Array.vx;
+import p from './parse.vx';
+import ./Program.vx;
+
+func arr(s) => p.Complete(Array)([s])[1];
+
+assert arr('[]') == [];
+assert arr('[1, 2, 3]') == [1, 2, 3];
+assert arr('[1, [2], 3]') == [1, [2], 3];
+assert arr('[1, [2], 3,]') == [1, [2], 3];
+
+assert Program(['13i8']) == [
+  {data: ['literal', 13i8], pos: [[0u64, 0u64], [0u64, 4u64]]},
+  {data: ['whitespace'], pos: [[0u64, 4u64], [1u64, 0u64]]},
+];
+
+if (0u8:String() == '0u8') {
+  sampleLines := [
+    '123u64 ',
+    '',
+    '500u8',
+    ' ',
+    '  321u64 ',
+    '[]',
+  ];
+
+  program := Program(sampleLines);
+
+  assert program == [
+    {data: ['literal', 123u64], pos: [[0u64, 0u64], [0u64, 6u64]]},
+    {data: ['whitespace'], pos: [[0u64, 6u64], [2u64, 0u64]]},
+    {data: ['overflow'], pos: [[2u64, 0u64], [2u64, 5u64]]},
+    {data: ['whitespace'], pos: [[2u64, 5u64], [4u64, 2u64]]},
+    {data: ['literal', 321u64], pos: [[4u64, 2u64], [4u64, 8u64]]},
+    {data: ['whitespace'], pos: [[4u64, 8u64], [5u64, 0u64]]},
+    {data: ['literal', []], pos: [[5u64, 0u64], [5u64, 2u64]]},
+    {data: ['whitespace'], pos: [[5u64, 2u64], [6u64, 0u64]]},
+  ];
+}
+
+return 'done';

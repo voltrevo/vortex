@@ -1,0 +1,39 @@
+import ./DeferLiteral.vx;
+import p from './parse.vx';
+import ./Whitespace.vx;
+
+OW := p.Optional(Whitespace);
+Comma := p.Exact(',');
+
+RawArray := p.Sequence([
+  p.Exact('['),
+  p.Many(p.Sequence([
+    OW,
+    DeferLiteral,
+    OW,
+    Comma,
+  ])),
+  p.Optional(p.Sequence([
+    OW,
+    DeferLiteral,
+  ])),
+  OW,
+  p.Exact(']'),
+]);
+
+Array := p.Transform(
+  RawArray,
+  func([start, commaVals, noCommaVals, whitespace, end]) {
+    func second(x) => x[1];
+    func dataSecond(x) => x.data[1];
+
+    value := (
+      commaVals:map(dataSecond) ++
+      noCommaVals:map(dataSecond)
+    ):map(second);
+
+    return ['literal', value];
+  },
+);
+
+return Array;

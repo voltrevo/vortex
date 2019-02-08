@@ -27,7 +27,7 @@ func ExactChar(c) => func(lines, [i, j]) {
     return null;
   }
 
-  return [c, [i, j + 1]];
+  return [c, [i, j + 1u64]];
 };
 
 return {
@@ -91,7 +91,7 @@ return {
     return [res, [i, j]];
   },
 
-  Optional: func(parser) => parse.Repeat(parser, 0u64, 1u64),
+  Optional: func(parser) => parse.Repeat(parser, [0u64, 1u64]),
   Many: func(parser) => parse.Repeat(parser, [0u64, null]),
 
   Select: func(parsers) => func(lines, [i, j]) {
@@ -151,10 +151,25 @@ return {
 
     [result, [i, j]] := output;
 
-    if (i != lines:Length() || j != 0u64) {
+    if (
+      (i == lines:Length() && j == 0u64) ||
+      (i == lines:Length() - 1u64 && j == lines:Back():Length())
+    ) {
+      return result;
+    }
+
+    return null;
+  },
+
+  Transform: func(parser, transform) => func(lines, [i, j]) {
+    output := parser(lines, [i, j]);
+
+    if (output:Kind() == 'null') {
       return null;
     }
 
-    return result;
+    output[0] = transform(output[0]);
+
+    return output;
   },
 };

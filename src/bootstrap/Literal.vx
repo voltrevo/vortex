@@ -1,3 +1,8 @@
+import ./Array.vx;
+import ./parse.vx;
 import ./Number.vx;
 
-return Number;
+return parse.Select([
+  Number,
+  Array,
+]);
