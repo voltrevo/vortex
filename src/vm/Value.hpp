@@ -145,6 +145,7 @@ namespace Vortex {
     void pushFront(Value& left, Value&& right);
     void at(Value& left, Value&& right);
     void hasIndex(Value& left, Value&& right);
+    void in(Value& left, const Value& right);
     void bind(Value& left, Value&& right);
     void methodLookup(Value& left, Value&& right);
   }

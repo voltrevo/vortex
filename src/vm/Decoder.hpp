@@ -561,6 +561,7 @@ namespace Vortex {
 
             case AT: os << "at" << std::endl; return;
             case HAS_INDEX: os << "hasIndex" << std::endl; return;
+            case IN: os << "in" << std::endl; return;
 
             case BIND: os << "bind" << std::endl; return;
             case METHOD_LOOKUP: os << "methodLookup" << std::endl; return;

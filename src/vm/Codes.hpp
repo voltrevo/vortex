@@ -89,6 +89,7 @@ namespace Vortex {
 
     AT,
     HAS_INDEX,
+    IN,
 
     BIND,
     METHOD_LOOKUP,

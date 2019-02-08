@@ -77,6 +77,7 @@ namespace Vortex {
 
       case AT:
       case HAS_INDEX:
+      case IN:
 
       case BIND:
       case METHOD_LOOKUP:

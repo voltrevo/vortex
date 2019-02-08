@@ -46,4 +46,6 @@ x |= #[2];
 
 assert x == #[1, 2];
 
+assert 1 in x;
+
 return 'done';

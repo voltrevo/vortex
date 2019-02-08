@@ -83,6 +83,7 @@ namespace Vortex {
 
     {"at", AT},
     {"hasIndex", HAS_INDEX},
+    {"in", IN},
 
     {"bind", BIND},
     {"methodLookup", METHOD_LOOKUP},
@@ -537,7 +538,7 @@ namespace Vortex {
     auto pos = codeMap.find(word);
 
     if (pos == codeMap.end()) {
-      throw SyntaxError("Unrecognized word");
+      throw SyntaxError("Unrecognized word: " + word);
     }
 
     Code code = pos->second;

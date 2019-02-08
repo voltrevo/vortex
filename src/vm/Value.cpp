@@ -1360,6 +1360,14 @@ namespace Vortex {
       }
     }
 
+    void in(Value& left, const Value& right) {
+      if (right.type != VSET) {
+        throw TypeError("Rhs of {in} operator is not a set");
+      }
+
+      left = Value(right.data.SET->contains(left));
+    }
+
     void bind(Value& left, Value&& right) {
       if (left.type != FUNC) {
         throw TypeError("Attempt to bind argument to non-function");
@@ -1422,6 +1430,7 @@ namespace Vortex {
       case SET_INSERT: BinaryOperators::setInsert(left, std::move(right)); break;
       case AT: BinaryOperators::at(left, std::move(right)); break;
       case HAS_INDEX: BinaryOperators::hasIndex(left, std::move(right)); break;
+      case IN: BinaryOperators::in(left, std::move(right)); break;
 
       case BIND: BinaryOperators::bind(left, std::move(right)); break;
       case METHOD_LOOKUP: BinaryOperators::methodLookup(left, std::move(right)); break;
