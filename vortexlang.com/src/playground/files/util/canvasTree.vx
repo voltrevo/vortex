@@ -1,7 +1,6 @@
 import ./transform2d.vx;
 import ./canvasTree.vx;
 
-// TODO: This is inefficient.
 func tryGetKey(obj, key, fallback) {
   return switch (key in obj:Keys()) {
     true => obj[key];
@@ -9,7 +8,6 @@ func tryGetKey(obj, key, fallback) {
   };
 };
 
-// TODO: This is inefficient.
 func hasKey(obj, key) => key in obj:Keys();
 
 // TODO: This is inefficient.
