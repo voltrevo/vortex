@@ -3,25 +3,14 @@ import ./canvasTree.vx;
 
 // TODO: This is inefficient.
 func tryGetKey(obj, key, fallback) {
-  for (k of obj:Keys()) {
-    if (k == key) {
-      return obj[key];
-    }
-  }
-
-  return fallback;
+  return switch (key in obj:Keys()) {
+    true => obj[key];
+    false => fallback;
+  };
 };
 
 // TODO: This is inefficient.
-func hasKey(obj, key) {
-  for (k of obj:Keys()) {
-    if (k == key) {
-      return true;
-    }
-  }
-
-  return false;
-};
+func hasKey(obj, key) => key in obj:Keys();
 
 // TODO: This is inefficient.
 func arrayContains(array, element) {
@@ -96,7 +85,7 @@ return {
 
         children := [];
 
-        for (key of box:Keys()) {
+        for (key of box:Keys():Values()) {
           if (key == 'text') {
             scale := tryGetKey(box.text, 'scale', 1);
 
