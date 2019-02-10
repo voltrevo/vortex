@@ -1304,7 +1304,13 @@ namespace Vortex {
 
         case STRING: {
           if (right.type != UINT64) {
-            throw TypeError("Attempt to index string with non-u64");
+            if (right.type == INT32 && right.data.INT32 >= 0) {
+              Uint64 newData = right.data.INT32;
+              right.type = UINT64;
+              right.data.UINT64 = newData;
+            } else {
+              throw TypeError("Attempt to index string with non-u64");
+            }
           }
 
           if (right.data.UINT64 >= left.data.STRING->size()) {
