@@ -258,6 +258,7 @@ namespace Syntax {
 
   export type Element = { topExp?: true } & (
     Block |
+    ExpressionBody |
     Statement |
     Expression |
     Arg |
@@ -343,6 +344,7 @@ namespace Syntax {
 
       case 'arg': { return [el.v]; }
       case 'block': { return el.v; }
+      case 'expBody': { return [el.v]; }
       case 'Array': { return el.v; }
       case 'Set': { return el.v; }
 
@@ -421,7 +423,7 @@ namespace Syntax {
         return [
           ...(name ? [name] : []),
           ...args,
-          body.t === 'block' ? body : body.v,
+          body,
         ];
       }
 
@@ -461,6 +463,7 @@ namespace Syntax {
       case 'if':
       case 'for':
       case 'block':
+      case 'expBody':
       case 'DEFAULT':
       case 'IDENTIFIER': // TODO: identifiers are not expressions?
         return null;

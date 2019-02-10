@@ -294,7 +294,7 @@ namespace ByteCoder {
 
           case 'expBody': {
             const [exp] = Expression(innerCoder, hoist.v.body.v);
-            return exp;
+            return [`location '${formatLocation(hoist.v.body.p)}'`, ...exp];
           }
         }
       })();
@@ -742,7 +742,7 @@ namespace ByteCoder {
             case 'expBody': {
               let ll: string[];
               [ll, innerCoder] = Expression(innerCoder, exp.v.body.v);
-              return ll;
+              return [`location '${formatLocation(exp.v.body.p)}'`, ...ll];
             }
           }
         })();
