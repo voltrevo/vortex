@@ -1,0 +1,12 @@
+import p from './parse.vx';
+
+return p.Transform(
+  p.Select([
+    p.Exact('true'),
+    p.Exact('false'),
+  ]),
+  func(str) => ['literal', switch (str) {
+    'true' => true;
+    'false' => false;
+  }],
+);

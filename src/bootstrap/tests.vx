@@ -1,5 +1,6 @@
 import ./Array.vx;
 import ./Identifier.vx;
+import ./Literal.vx;
 import ./Object.vx;
 import p from './parse.vx';
 import ./Program.vx;
@@ -33,6 +34,20 @@ func obj(s) => p.Complete(Object)([s]);
 assert obj('{}')[1] == {};
 assert obj('{a: 1, b: 2}')[1] == {a: 1, b: 2};
 assert obj('{\'a\': 1, a: 2}')[0] == 'invalid';
+
+func lit(s) => p.Complete(Literal)([s])[1];
+
+assert lit('{}') == {};
+
+assert lit('[null, false, 200u8, \'foo\', [], #[], {}]') == [
+  null,
+  false,
+  200u8,
+  'foo',
+  [],
+  #[],
+  {},
+];
 
 assert Program(['13i8']) == [
   {data: ['literal', 13i8], pos: [[0u64, 0u64], [0u64, 4u64]]},

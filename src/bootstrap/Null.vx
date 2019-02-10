@@ -1,0 +1,6 @@
+import p from './parse.vx';
+
+return p.Transform(
+  p.Exact('null'),
+  func(str) => ['literal', null],
+);
