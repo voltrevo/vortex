@@ -12,19 +12,19 @@ Colon := p.Exact(':');
 Key := p.DataPos(p.Select([Identifier, String]));
 
 KeyValuePair := p.Transform(
-  p.Sequence([Key, OW, Colon, OW, DeferLiteral]),
-  func([key, _, _, _, [_, value]]) => ['kvp', [key, value]],
+  p.Sequence([Key, [OW], [Colon], [OW], DeferLiteral]),
+  func([key, [_, value]]) => ['kvp', [key, value]],
 );
 
-RawObject := p.Sequence([
-  p.Exact('{'),
+RawObject := p.SequenceOne([
+  [p.Exact('{')],
   CommaSequence(KeyValuePair),
-  p.Exact('}'),
+  [p.Exact('}')],
 ]);
 
 Object := p.Transform(
   RawObject,
-  func([_, pairs, _]) {
+  func(pairs) {
     res := {};
 
     for ([{data: [_, key], pos}, value] of pairs) {

@@ -35,6 +35,12 @@ return {
     res := [];
 
     for (parser of parsers) {
+      keep := parser:Kind() != 'array';
+
+      if (!keep) {
+        [parser] = parser;
+      }
+
       output := parser(lines, [i, j]);
 
       if (output:Kind() == 'null') {
@@ -44,10 +50,24 @@ return {
       value := null;
       [value, [i, j]] = output;
 
-      res ++= [value];
+      if (keep) {
+        res ++= [value];
+      }
     }
 
     return [res, [i, j]];
+  },
+
+  SequenceOne: func(parsers) => func(lines, [i, j]) {
+    output := parse.Sequence(parsers)(lines, [i, j]);
+
+    if (output:Kind() == 'null') {
+      return null;
+    }
+
+    [output[0]] = output[0];
+
+    return output;
   },
 
   Repeat: func(parser, range) => func(lines, [i, j]) {

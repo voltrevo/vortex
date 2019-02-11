@@ -3,15 +3,15 @@ import p from '@/parse/parse.vx';
 
 import ./DeferLiteral.vx;
 
-RawArray := p.Sequence([
-  p.Exact('['),
+RawArray := p.SequenceOne([
+  [p.Exact('[')],
   CommaSequence(DeferLiteral),
-  p.Exact(']'),
+  [p.Exact(']')],
 ]);
 
 Array := p.Transform(
   RawArray,
-  func([_, value, _]) => ['literal', value],
+  func(value) => ['literal', value],
 );
 
 return Array;

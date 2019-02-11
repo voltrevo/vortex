@@ -6,18 +6,17 @@ Comma := p.Exact(',');
 
 return func(Item) {
   RawList := p.Sequence([
-    p.Many(p.Sequence([
-      OW,
+    p.Many(p.SequenceOne([
+      [OW],
       Item,
-      OW,
-      Comma,
+      [OW],
+      [Comma],
     ])),
-    p.Optional(p.Sequence([OW, Item])),
-    OW,
+    p.Optional(p.SequenceOne([[OW], Item])),
+    [OW],
   ]);
 
-  return p.Transform(RawList, func([vals, lastVals, _]) {
-    func second(x) => x[1];
-    return (vals:map(second) ++ lastVals:map(second)):map(second);
-  });
+  return p.Transform(RawList, func([vals, lastVals]) => (
+    (vals ++ lastVals):map(func(x) => x[1])
+  ));
 };

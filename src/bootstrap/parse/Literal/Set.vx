@@ -3,17 +3,19 @@ import p from '@/parse/parse.vx';
 
 import ./DeferLiteral.vx;
 
-RawSet := p.Sequence([
-  p.Exact('#['),
+RawSet := p.SequenceOne([
+  [p.Exact('#[')],
   CommaSequence(DeferLiteral),
-  p.Exact(']'),
+  [p.Exact(']')],
 ]);
+
+func SetFromArray(arr) => (
+  ([#[]] ++ arr:map(func(x) => #[x])):reduce(|)
+);
 
 Set := p.Transform(
   RawSet,
-  func([_, value, _]) => ['literal',
-    ([#[]] ++ value:map(func(v) => #[v])):reduce(|),
-  ],
+  func(value) => ['literal', SetFromArray(value)],
 );
 
 return Set;

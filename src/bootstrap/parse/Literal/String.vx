@@ -2,16 +2,16 @@ import p from '@/parse/parse.vx';
 
 func second(x) => x[1];
 
-RawString := p.Sequence([
-  p.Exact('\''),
+RawString := p.SequenceOne([
+  [p.Exact('\'')],
   p.Many(p.Select([
     p.Filter(p.Char, func(c) => !(c in #['\'', '\\'])),
     p.Transform(p.Exact('\\\''), second),
   ])),
-  p.Exact('\''),
+  [p.Exact('\'')],
 ]);
 
-String := p.Transform(RawString, func([_, vals, _]) => [
+String := p.Transform(RawString, func(vals) => [
   'literal',
   vals:reduce(++)
 ]);
