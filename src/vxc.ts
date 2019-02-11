@@ -1,4 +1,5 @@
 import * as fs from 'fs';
+import * as path from 'path';
 import * as minimist from 'minimist';
 
 import VasmSyntax from './parser/vasm/Syntax';
@@ -138,12 +139,43 @@ const inputs: { type: 'file', name: string }[] = [];
     stdinText = await getStdin();
   }
 
-  for (let arg of args._) {
-    if (arg === '-') {
-      arg = '(stdin)';
+  let packageRoot = process.cwd();
+
+  while (true) {
+    try {
+      await new Promise((resolve, reject) => fs.readFile(
+        path.join(packageRoot, '.vxpackage'),
+        err => err ? reject(err) : resolve(),
+      ));
+    } catch {
+      const nextPackageRoot = path.join(packageRoot, '..');
+
+      if (nextPackageRoot !== packageRoot) {
+        packageRoot = nextPackageRoot;
+        continue;
+      }
+
+      packageRoot = process.cwd();
+      break;
     }
 
-    inputs.push({ type: 'file', name: arg });
+    break;
+  }
+
+  for (let arg of args._) {
+    let resolvedFile: string;
+
+    if (arg === '-') {
+      resolvedFile = '@/(stdin)';
+    } else {
+      resolvedFile = path.resolve(process.cwd(), arg);
+
+      if (resolvedFile.slice(0, packageRoot.length + 1) !== packageRoot + path.sep) {
+        throw new Error(`File argument: ${arg} is outside package ${packageRoot}`);
+      }
+    }
+
+    inputs.push({ type: 'file', name: resolvedFile.replace(packageRoot, '@') });
   }
 
   if (inputs.length === 0) {
@@ -176,7 +208,7 @@ const inputs: { type: 'file', name: string }[] = [];
     }
 
     try {
-      text = fs.readFileSync(file.slice(2)).toString()
+      text = fs.readFileSync(path.join(packageRoot, file.slice(2))).toString()
     } catch {}
 
     if (text === null) {
@@ -188,7 +220,7 @@ const inputs: { type: 'file', name: string }[] = [];
     return text;
   };
 
-  const files = inputs.map(input => '@/' + input.name);
+  const files = inputs.map(input => input.name);
 
   let [notes, az] = Compiler.compile(
     files,
