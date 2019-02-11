@@ -1,6 +1,7 @@
-import ./CommaSequence.vx;
+import @/CommaSequence.vx;
+import p from '@/parse.vx';
+
 import ./DeferLiteral.vx;
-import p from './parse.vx';
 
 RawSet := p.Sequence([
   p.Exact('#['),

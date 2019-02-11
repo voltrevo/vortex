@@ -163,16 +163,13 @@ const inputs: { type: 'file', name: string }[] = [];
   }
 
   for (let arg of args._) {
-    let resolvedFile: string;
+    let resolvedFile = path.resolve(
+      process.cwd(),
+      arg === '-' ? '(stdin)' : arg,
+    );
 
-    if (arg === '-') {
-      resolvedFile = '@/(stdin)';
-    } else {
-      resolvedFile = path.resolve(process.cwd(), arg);
-
-      if (resolvedFile.slice(0, packageRoot.length + 1) !== packageRoot + path.sep) {
-        throw new Error(`File argument: ${arg} is outside package ${packageRoot}`);
-      }
+    if (resolvedFile.slice(0, packageRoot.length + 1) !== packageRoot + path.sep) {
+      throw new Error(`File argument: ${arg} is outside package ${packageRoot}`);
     }
 
     inputs.push({ type: 'file', name: resolvedFile.replace(packageRoot, '@') });

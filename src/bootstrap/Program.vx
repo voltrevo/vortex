@@ -1,5 +1,5 @@
 import ./Fail.vx;
-import ./Literal.vx;
+import ./Literal/Literal.vx;
 import p from './parse.vx';
 import ./Whitespace.vx;
 

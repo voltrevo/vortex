@@ -1,4 +1,4 @@
-import p from './parse.vx';
+import p from '@/parse.vx';
 
 return p.Transform(
   p.Exact('null'),

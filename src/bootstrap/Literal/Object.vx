@@ -1,9 +1,10 @@
-import ./CommaSequence.vx;
+import @/CommaSequence.vx;
+import @/Identifier.vx;
+import p from '@/parse.vx';
+import @/Whitespace.vx;
+
 import ./DeferLiteral.vx;
-import ./Identifier.vx;
-import p from './parse.vx';
 import ./String.vx;
-import ./Whitespace.vx;
 
 OW := p.Optional(Whitespace);
 Colon := p.Exact(':');

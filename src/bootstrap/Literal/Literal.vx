@@ -1,6 +1,7 @@
+import @/parse.vx;
+
 import ./Array.vx;
 import ./Bool.vx;
-import ./parse.vx;
 import ./Null.vx;
 import ./Number.vx;
 import ./Object.vx;
