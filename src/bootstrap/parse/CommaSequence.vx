@@ -17,9 +17,7 @@ return func(Item) {
   ]);
 
   return p.Transform(RawList, func([vals, lastVals, _]) {
-    func dataSecond(x) => x.data[1];
     func second(x) => x[1];
-
-    return (vals:map(dataSecond) ++ lastVals:map(dataSecond)):map(second);
+    return (vals:map(second) ++ lastVals:map(second)):map(second);
   });
 };

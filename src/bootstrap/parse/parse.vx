@@ -70,11 +70,10 @@ return {
         break;
       }
 
-      [value, ijNext] := output;
+      value := null;
+      [value, [i, j]] = output;
 
-      // TODO: Don't impose {data, pos} format
-      res ++= [{data: value, pos: [[i, j], ijNext]}];
-      [i, j] = ijNext;
+      res ++= [value];
       count++;
 
       // TODO: Short-circuit boolean operators

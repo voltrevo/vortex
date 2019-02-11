@@ -15,7 +15,7 @@ RawIdentifier := p.Sequence([
 
 Identifier := p.Transform(RawIdentifier, func([head, tail]) => [
   'identifier',
-  ([head] ++ tail:map(func(v) => v.data)):reduce(++),
+  ([head] ++ tail):reduce(++),
 ]);
 
 return Identifier;

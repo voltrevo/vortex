@@ -4,9 +4,9 @@ import p from './parse.vx';
 import ./Whitespace.vx;
 
 return p.Complete(
-  p.Many(p.Select([
+  p.Many(p.DataPos(p.Select([
     Literal,
     Whitespace,
     Fail,
-  ]))
+  ])))
 );
