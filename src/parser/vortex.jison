@@ -33,6 +33,7 @@
 'log.error'           return 'LOGERROR'
 'in'                  return 'in'
 [a-zA-Z]\w*           return 'IDENTIFIER'
+'_'                   return 'IGNORE'
 ";"                   return ';'
 [0-9]+("."[0-9]+)?([uif][0-9]*)?\b  return 'NUMBER'
 ['](\\.|[^'])*[']     return 'STRING'
@@ -439,6 +440,8 @@ eop
 
 identifier
     : IDENTIFIER
+        {$$ = { t: 'IDENTIFIER', v: $1, p: L(@$) }}
+    | IGNORE
         {$$ = { t: 'IDENTIFIER', v: $1, p: L(@$) }}
     ;
 

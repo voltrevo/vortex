@@ -1171,6 +1171,10 @@ namespace Analyzer {
       op: '=' | ':=',
       right: Outcome.Value,
     ): [Outcome.Exception | null, Analyzer] {
+      if (leftExp.t === 'IDENTIFIER' && leftExp.v === '_') {
+        return [null, az];
+      }
+
       let mex: Outcome.Exception | null = null;
 
       if (leftExp.t === 'Array' || leftExp.t === 'Object') {

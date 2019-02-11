@@ -216,14 +216,14 @@ namespace ByteCoder {
 
       for (const capture of captures) {
         if (directCaptures.indexOf(capture) !== -1) {
-          captureLines.push(`  set $${capture}`);
+          captureLines.push(`  ${Set(capture)}`);
           relabelledCaptures.push(capture);
         } else {
           // It turns out that scope validation prevents constructing a case
           // that requires this .indirect.* relabelling. However, it makes the
           // generated vasm more readable, so I'm leaving it in for now.
           const relabel = `.indirect.${capture}`;
-          captureLines.push(`  set $${relabel}`);
+          captureLines.push(`  ${Set(relabel)}`);
           relabelledCaptures.push(relabel);
         }
       }
@@ -424,17 +424,17 @@ namespace ByteCoder {
 
               res.push(
                 ...SubExpression(coder, statement.v.control.v[1]),
-                `set $${rangeNames.range}`,
+                Set(rangeNames.range),
               );
 
               [rangeNames.i, coder] = getInternalName(coder, 'i');
 
-              res.push(`0u64 set $${rangeNames.i}`);
+              res.push(`0u64 ${Set(rangeNames.i)}`);
 
               [rangeNames.len, coder] = getInternalName(coder, 'len');
 
               res.push(
-                `get $${rangeNames.range} length set $${rangeNames.len}`
+                `get $${rangeNames.range} length ${Set(rangeNames.len)}`
               );
 
               return res;
@@ -523,7 +523,7 @@ namespace ByteCoder {
               ),
             );
           } else {
-            forLines.push(`  get $${rangeNames.i} inc set $${rangeNames.i}`);
+            forLines.push(`  get $${rangeNames.i} inc ${Set(rangeNames.i)}`);
           }
         } else {
           forLines.push(...blockLines.map(line => '  ' + line));
@@ -703,7 +703,7 @@ namespace ByteCoder {
         }
 
         for (const capture of [...captures, ...gfuncCaptures]) {
-          lines.push(`  set $${capture}`);
+          lines.push(`  ${Set(capture)}`);
         }
 
         for (const arg of exp.v.args) {
@@ -947,7 +947,7 @@ namespace ByteCoder {
         } else if (shouldUseTemporary(testExp)) {
           let switchValN: string;
           [switchValN, coder] = getInternalName(coder, 'switchVal');
-          lines.push(...SubExpression(coder, testExp), `set $${switchValN}`);
+          lines.push(...SubExpression(coder, testExp), Set(switchValN));
           switchValCode = `get $${switchValN}`;
         } else {
           switchValCode = SubExpression(coder, testExp).join(' ');
@@ -1055,7 +1055,7 @@ namespace ByteCoder {
 
         if (leftExp.t === 'IDENTIFIER') {
           return [
-            [...SubExpression(coder, rightExp), `set $${leftExp.v}`],
+            [...SubExpression(coder, rightExp), Set(leftExp.v)],
             coder,
           ];
         }
@@ -1140,7 +1140,7 @@ namespace ByteCoder {
     kind: 'update' | 'insert',
   ): string[] {
     if (exp.t === 'IDENTIFIER') {
-      return [`set $${exp.v}`];
+      return [Set(exp.v)];
     }
 
     if (exp.t === 'Array') {
@@ -1192,7 +1192,7 @@ namespace ByteCoder {
     [destrName, coder] = getInternalName(coder, 'destr');
 
     return [
-      `set $${destrName}`,
+      Set(destrName),
       ...UpdateInsert(
         coder,
         exp,
@@ -1200,6 +1200,14 @@ namespace ByteCoder {
         kind,
       ),
     ];
+  }
+
+  function Set(name: string): string {
+    if (name === '_') {
+      return 'discard';
+    }
+
+    return `set $${name}`;
   }
 
   function UpdateInsert(
@@ -1210,10 +1218,10 @@ namespace ByteCoder {
   ): string[] {
     if (target.t === 'IDENTIFIER') {
       if (rhsCode.length === 1) {
-        return [`${rhsCode} set $${target.v}`];
+        return [`${rhsCode} ${Set(target.v)}`];
       }
 
-      return [...rhsCode, `set $${target.v}`];
+      return [...rhsCode, Set(target.v)];
     }
 
     const prefix: string[] = [];
@@ -1238,7 +1246,7 @@ namespace ByteCoder {
               let tempName: string;
               [tempName, coder] = getInternalName(coder, 'key');
               prefix.unshift(`dup get $${tempName} at`);
-              prefix.unshift(...SubExpression(coder, key), `set $${tempName}`);
+              prefix.unshift(...SubExpression(coder, key), Set(tempName));
               suffix.push(`get $${tempName} swap update`);
             } else {
               const keyCode = SubExpression(coder, key).join(' ');
@@ -1258,7 +1266,7 @@ namespace ByteCoder {
             ...rhsCode,
             kind,
             ...suffix,
-            `set $${nextTarget.v}`,
+            Set(nextTarget.v),
           ];
         }
 

@@ -393,6 +393,10 @@ function validateFunctionScope(
         throw new Error('Shouldn\'t be possible');
       }
 
+      if (origin.v === '_') {
+        continue;
+      }
+
       const preExisting = Scope.get(scope, origin.v);
 
       if (preExisting) {
@@ -695,6 +699,10 @@ function validateFunctionScope(
       item.t === 'IDENTIFIER' ||
       item.t === 'IDENTIFIER-mutationTarget'
     ) {
+      if (item.t === 'IDENTIFIER-mutationTarget' && item.v === '_') {
+        continue;
+      }
+
       const scopeEntry = Scope.get<ST>(scope, item.v);
 
       if (!scopeEntry) {
@@ -704,12 +712,14 @@ function validateFunctionScope(
           tags.push('mutation-target');
         }
 
+        const desc = item.v === '_' ? 'cannot exist' : 'does not exist';
+
         // TODO: Look for typos
         notes.push(Note(
           item.p,
           'error',
           tags,
-          `Variable ${item.v} does not exist`
+          `Variable ${item.v} ${desc}`
         ));
       } else {
         const ident: Syntax.Identifier = {
