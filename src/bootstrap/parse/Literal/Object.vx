@@ -13,7 +13,7 @@ Key := p.DataPos(p.Select([Identifier, String]));
 
 KeyValuePair := p.Transform(
   p.Sequence([Key, OW, Colon, OW, DeferLiteral]),
-  func([key, ws1, colon, ws2, [valueType, value]]) => ['kvp', [key, value]],
+  func([key, _, _, _, [_, value]]) => ['kvp', [key, value]],
 );
 
 RawObject := p.Sequence([
@@ -24,10 +24,10 @@ RawObject := p.Sequence([
 
 Object := p.Transform(
   RawObject,
-  func objTransform([start, pairs, end]) {
+  func([_, pairs, _]) {
     res := {};
 
-    for ([{data: [keyType, key], pos}, value] of pairs) {
+    for ([{data: [_, key], pos}, value] of pairs) {
       if (key in res:Keys()) {
         return [
           'invalid',

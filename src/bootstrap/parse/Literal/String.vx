@@ -11,7 +11,7 @@ RawString := p.Sequence([
   p.Exact('\''),
 ]);
 
-String := p.Transform(RawString, func([start, vals, end]) => [
+String := p.Transform(RawString, func([_, vals, _]) => [
   'literal',
   vals:map(func(v) => v.data):reduce(++)
 ]);

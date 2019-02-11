@@ -11,7 +11,7 @@ RawArray := p.Sequence([
 
 Array := p.Transform(
   RawArray,
-  func([start, value, end]) => ['literal', value],
+  func([_, value, _]) => ['literal', value],
 );
 
 return Array;

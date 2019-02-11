@@ -2,5 +2,5 @@ import p from '@/parse/parse.vx';
 
 return p.Transform(
   p.Exact('null'),
-  func(str) => ['literal', null],
+  func(_) => ['literal', null],
 );

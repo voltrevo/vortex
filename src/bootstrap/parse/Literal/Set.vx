@@ -11,7 +11,7 @@ RawSet := p.Sequence([
 
 Set := p.Transform(
   RawSet,
-  func([start, value, end]) => ['literal',
+  func([_, value, _]) => ['literal',
     ([#[]] ++ value:map(func(v) => #[v])):reduce(|),
   ],
 );
