@@ -1,7 +1,7 @@
-import @/CommaSequence.vx;
-import @/Identifier.vx;
-import p from '@/parse.vx';
-import @/Whitespace.vx;
+import @/parse/CommaSequence.vx;
+import @/parse/Identifier.vx;
+import p from '@/parse/parse.vx';
+import @/parse/Whitespace.vx;
 
 import ./DeferLiteral.vx;
 import ./String.vx;

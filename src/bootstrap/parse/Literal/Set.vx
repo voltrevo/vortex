@@ -1,5 +1,5 @@
-import @/CommaSequence.vx;
-import p from '@/parse.vx';
+import @/parse/CommaSequence.vx;
+import p from '@/parse/parse.vx';
 
 import ./DeferLiteral.vx;
 

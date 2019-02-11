@@ -1,4 +1,4 @@
-import @/parse.vx;
+import @/parse/parse.vx;
 
 import ./tryConvertFromU64.vx;
 
