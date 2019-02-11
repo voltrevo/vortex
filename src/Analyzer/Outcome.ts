@@ -1568,6 +1568,11 @@ namespace Outcome {
         name: 'bind';
         argLength: 1;
       };
+      Kind: {
+        base: Func;
+        name: 'Kind';
+        argLength: 0;
+      };
     };
 
     export type Method = MethodMap[keyof MethodMap];
@@ -1576,6 +1581,10 @@ namespace Outcome {
       bind: {
         args: [Value];
         result: Func | Outcome.Exception;
+      };
+      Kind: {
+        args: [],
+        result: String;
       };
     };
 
@@ -1608,12 +1617,14 @@ namespace Outcome {
 
         return res;
       },
+      Kind: (base, args) => String('func'),
     };
 
     export const methodArgLengths: {
       [name in keyof MethodMap]: MethodMap[name]['argLength'];
     } = {
       bind: 1,
+      Kind: 0,
     };
   }
 
