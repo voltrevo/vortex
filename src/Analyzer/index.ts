@@ -2564,6 +2564,11 @@ namespace Analyzer {
         if (body.t === 'expBody') {
           let nextOut: TailCall | Outcome;
           [nextOut, funcAz] = tailableSubExpression(funcAz, body.v);
+
+          if (typeof nextOut !== 'function' && nextOut.t === 'exception') {
+            nextOut = Outcome.Exception.unwind(nextOut, body.v);
+          }
+
           az = { ...az, modules: funcAz.modules, steps: funcAz.steps };
           return [nextOut, az];
         }
