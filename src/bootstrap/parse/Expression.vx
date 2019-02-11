@@ -5,8 +5,11 @@ import p from '@/parse/parse.vx';
 import @/parse/CommaSequence.vx;
 import @/parse/Identifier.vx;
 import @/parse/Literal/Literal.vx;
+import @/parse/Whitespace.vx;
 
 func Expression(lines, [lineNo, colNo]) {
+  OW := p.Optional(Whitespace);
+
   assignmentOperators := #[
     ':=', '=', '**=', '+=', '++=', '-=', '*=', '/=', '%=', '<<=', '>>=', '&=',
     '|=', '^=', '&&=', '||=', '~='
@@ -116,60 +119,74 @@ func Expression(lines, [lineNo, colNo]) {
     p.Sequence([
       Access,
       p.Many(p.Sequence([
-        p.Repeat(Operator, [1u64, null]),
+        p.Repeat(
+          p.SequenceOne([[OW], Operator]),
+          [1u64, null],
+        ),
+        [OW],
         Access,
       ])),
     ]),
     func([head, tail]) {
-      opLists := tail:map(func([ops, _]) => ops);
-      exps := [head] ++ tail:map(func([_, exp]) => exp);
+      [type, data] := joinUnaries([head, tail]);
 
-      for (i := 0u64; i < opLists:Length(); i++) {
-        j := 0u64;
-
-        for (j < opLists[i]:Length() - 1u64) {
-          op := opLists[i][j];
-
-          if (op in #['++', '--']) {
-            exps[i] = ['unary ' ++ op, exps[i]];
-          } else {
-            break;
-          }
-
-          j++;
-        }
-
-        J := opLists[i]:Length() - 1u64;
-
-        for (j < J) {
-          op := opLists[i][J];
-
-          if (op in #['!', '~', '+', '-']) {
-            exps[i + 1u64] = ['unary ' ++ op, exps[i + 1u64]];
-          } else {
-            break;
-          }
-
-          J--;
-        }
-
-        if (j != J) {
-          return ['invalid', (
-            'could not join operators ' ++
-            opLists[i]:String() ++
-            ' with neighboring expressions'
-          )];
-        }
-
-        opLists[i] = opLists[i][j];
+      if (type == 'invalid') {
+        return [type, data];
       }
 
-      return ['wip', {exps, opLists}];
+      return ['wip', data];
     },
   )(lines, [lineNo, colNo]);
 };
 
+func joinUnaries([head, tail]) {
+  opLists := tail:map(func([ops, _]) => ops);
+  exps := [head] ++ tail:map(func([_, exp]) => exp);
+
+  for (i := 0u64; i < opLists:Length(); i++) {
+    j := 0u64;
+
+    for (j < opLists[i]:Length() - 1u64) {
+      op := opLists[i][j];
+
+      if (op in #['++', '--']) {
+        exps[i] = ['unary ' ++ op, exps[i]];
+      } else {
+        break;
+      }
+
+      j++;
+    }
+
+    J := opLists[i]:Length() - 1u64;
+
+    for (j < J) {
+      op := opLists[i][J];
+
+      if (op in #['!', '~', '+', '-']) {
+        exps[i + 1u64] = ['unary ' ++ op, exps[i + 1u64]];
+      } else {
+        break;
+      }
+
+      J--;
+    }
+
+    if (j != J) {
+      return ['invalid', (
+        'could not join operators ' ++
+        opLists[i]:String() ++
+        ' with neighboring expressions'
+      )];
+    }
+
+    opLists[i] = opLists[i][j];
+  }
+
+  return ['joined', {exps, ops: opLists}];
+};
+
 log.info 'hi';
-log.info p.Complete(Expression)(['1++1']);
+log.info p.Complete(Expression)(['3 * 5 + 1']);
 
 return 'done';
