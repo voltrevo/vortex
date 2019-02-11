@@ -186,7 +186,7 @@ const inputs: { type: 'file', name: string }[] = [];
       return new Error('invalid');
     }
 
-    if (file === '@/(stdin)') {
+    if (path.basename(file) === '(stdin)') {
       if (stdinText === null) {
         throw new Error('Shouldn\'t be possible');
       }
@@ -254,7 +254,7 @@ const inputs: { type: 'file', name: string }[] = [];
       case 'vim-ale': {
         const [file, range] = note.pos;
 
-        if (file !== '@/(stdin)' || range === null) {
+        if (path.basename(file) !== '(stdin)' || range === null) {
           break;
         }
 
