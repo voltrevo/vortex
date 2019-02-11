@@ -1,0 +1,175 @@
+import @/util/reverse.vx;
+
+import p from '@/parse/parse.vx';
+
+import @/parse/CommaSequence.vx;
+import @/parse/Identifier.vx;
+import @/parse/Literal/Literal.vx;
+
+func Expression(lines, [lineNo, colNo]) {
+  assignmentOperators := #[
+    ':=', '=', '**=', '+=', '++=', '-=', '*=', '/=', '%=', '<<=', '>>=', '&=',
+    '|=', '^=', '&&=', '||=', '~='
+  ];
+
+  binaryOperators := [
+    ['right', ['**']],
+    ['left', ['*', '/', '%']],
+    ['left', ['++', '+', '-']],
+    ['left', ['<<', '>>']],
+    ['left', ['<', '>', '<=', '>=']],
+    ['left', ['==', '!=']],
+    ['left', ['~']],
+    ['left', ['&']],
+    ['left', ['^']],
+    ['left', ['|']],
+    ['left', ['&&']],
+    ['left', ['||']],
+    ['left', ['in']],
+    ['right', assignmentOperators:Values()],
+  ];
+
+  operators := binaryOperators:map(func([_, ops]) => ops):reduce(++);
+  Operator := p.Select(operators:map(p.Exact));
+
+  Prefix := p.Select(
+    [
+      '!',
+      '~',
+      '+',
+      '-',
+    ]:map(p.Exact),
+  );
+
+  Postfix := p.Select(
+    [
+      '++',
+      '--',
+    ]:map(p.Exact),
+  );
+
+  ParenExp := p.Transform(
+    p.SequenceOne([
+      [p.Exact('(')],
+      Expression,
+      [p.Exact(')')],
+    ]),
+    func([_, exp, _]) => exp,
+  );
+
+  suffixParsers := {
+    Prop: p.Transform(
+      p.SequenceOne([
+        [p.Exact('.')],
+        Identifier,
+      ]),
+      func([_, name]) => ['.', name],
+    ),
+    Method: p.Transform(
+      p.SequenceOne([
+        [p.Exact(':')],
+        Identifier,
+      ]),
+      func([_, name]) => ['methodLookup', name],
+    ),
+    Sub: p.Transform(
+      p.SequenceOne([
+        [p.Exact('[')],
+        Expression,
+        [p.Exact(']')],
+      ]),
+      func(exp) => ['subscript', exp],
+    ),
+    Call: p.Transform(
+      p.SequenceOne([
+        [p.Exact('(')],
+        CommaSequence(Expression),
+        [p.Exact(')')],
+      ]),
+      func(params) => ['functionCall', params],
+    ),
+  };
+
+  AtomicExp := p.Select([
+    Identifier,
+    Literal,
+    ParenExp,
+  ]);
+
+  Access := p.Transform(
+    p.Sequence([
+      AtomicExp,
+      p.Many(p.Select(suffixParsers:Values())),
+    ]),
+    func([exp, suffixes]) {
+      for ([op, rhs] of suffixes) {
+        exp = [op, [exp, rhs]];
+      }
+
+      return exp;
+    },
+  );
+
+  //log.info p.Complete(Access)(['+foo.bar()']);
+
+  return p.Transform(
+    p.Sequence([
+      Access,
+      p.Many(p.Sequence([
+        p.Repeat(Operator, [1u64, null]),
+        Access,
+      ])),
+    ]),
+    func([head, tail]) {
+      opLists := tail:map(func([ops, _]) => ops);
+      exps := [head] ++ tail:map(func([_, exp]) => exp);
+
+      for (i := 0u64; i < opLists:Length(); i++) {
+        j := 0u64;
+
+        for (j < opLists[i]:Length() - 1u64) {
+          op := opLists[i][j];
+
+          if (op in #['++', '--']) {
+            exps[i] = ['unary ' ++ op, exps[i]];
+          } else {
+            break;
+          }
+
+          j++;
+        }
+
+        J := opLists[i]:Length() - 1u64;
+
+        for (j < J) {
+          op := opLists[i][J];
+
+          if (op in #['!', '~', '+', '-']) {
+            exps[i + 1u64] = ['unary ' ++ op, exps[i + 1u64]];
+          } else {
+            break;
+          }
+
+          J--;
+        }
+
+        if (j != J) {
+          return ['invalid', (
+            'could not join operators ' ++
+            opLists[i]:String() ++
+            ' with neighboring expressions'
+          )];
+        }
+
+        opLists[i] = opLists[i][j];
+      }
+
+      return ['wip', {exps, opLists}];
+    },
+  )(lines, [lineNo, colNo]);
+};
+
+log.info 'hi';
+log.info p.Complete(Expression)(['1++1']);
+
+return 'done';

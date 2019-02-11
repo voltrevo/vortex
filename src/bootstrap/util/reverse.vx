@@ -1,0 +1,12 @@
+return func(arr) {
+  left := 0u64;
+  right := arr:Length() - 1u64;
+
+  for (left < right) {
+    [arr[left], arr[right]] = [arr[right], arr[left]];
+    left++;
+    right--;
+  }
+
+  return arr;
+};
