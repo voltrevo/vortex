@@ -1,0 +1,3 @@
+import ./If.vx;
+
+return func(lines, pos) => If(lines, pos);

@@ -16,8 +16,8 @@ ParenExp := p.SequenceOne([
 ]);
 
 AtomicExp := p.Select([
-  Identifier,
   Primitive,
+  Identifier,
   Array,
   Set,
   Object,

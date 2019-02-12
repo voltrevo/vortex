@@ -1,0 +1,26 @@
+import p from '@/parse/parse.vx';
+
+import @/parse/OW.vx;
+
+import ./DeferStatement.vx;
+
+Block := p.Transform(
+  p.Optional(p.Sequence([
+    DeferStatement,
+    p.Many(p.SequenceOne([
+      [OW],
+      DeferStatement,
+    ])),
+  ])),
+  func(result) {
+    if (result:Length() == 0u64) {
+      return ['block', []];
+    }
+
+    [[head, tail]] := result;
+
+    return ['block', [head] ++ tail];
+  },
+);
+
+return Block;

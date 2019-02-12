@@ -1,0 +1,10 @@
+import p from '@/parse/parse.vx';
+
+import ./Block.vx;
+import ./If.vx;
+
+log.info p.Complete(Block)(['1 + 1; 2 + 2;']);
+
+log.info p.Complete(If)(['if (true) { 1 + 2 * 3; } else {}']);
+
+return 'done';

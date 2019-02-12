@@ -1,0 +1,3 @@
+import ./Statement.vx;
+
+return func(lines, pos) => Statement(lines, pos);

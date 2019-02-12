@@ -1,0 +1,13 @@
+import p from '@/parse/parse.vx';
+
+import @/parse/OW.vx;
+
+import ./Block.vx;
+
+return p.SequenceOne([
+  [p.Exact('{')],
+  [OW],
+  Block,
+  [OW],
+  [p.Exact('}')],
+]);
