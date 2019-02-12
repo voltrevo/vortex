@@ -1,6 +1,6 @@
 import p from '@/util/parse.vx';
 
-import @/parse/Primitive/Primitive.vx;
+import @/parser/Primitive/Primitive.vx;
 
 import ./Array.vx;
 import ./Object.vx;

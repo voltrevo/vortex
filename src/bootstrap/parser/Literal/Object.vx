@@ -1,9 +1,9 @@
 import p from '@/util/parse.vx';
 
-import @/parse/CommaSequence.vx;
-import @/parse/Identifier.vx;
-import @/parse/Invalid.vx;
-import @/parse/Primitive/String.vx;
+import @/parser/CommaSequence.vx;
+import @/parser/Identifier.vx;
+import @/parser/Invalid.vx;
+import @/parser/Primitive/String.vx;
 
 import ./DeferLiteral.vx;
 

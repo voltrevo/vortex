@@ -1,7 +1,7 @@
 import p from '@/util/parse.vx';
 
-import @/parse/CommaSequence.vx;
-import @/parse/Identifier.vx;
+import @/parser/CommaSequence.vx;
+import @/parser/Identifier.vx;
 
 import ./DeferExpression.vx;
 

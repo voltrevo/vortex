@@ -1,6 +1,6 @@
 import p from '@/util/parse.vx';
 
-import @/parse/Expression/Expression.vx;
+import @/parser/Expression/Expression.vx;
 
 import ./BraceBlock.vx;
 import ./DeferIf.vx;

@@ -1,18 +1,18 @@
 import p from '@/util/parse.vx';
 
-import @/parse/CommaSequence.vx;
-import @/parse/Invalid.vx;
+import @/parser/CommaSequence.vx;
+import @/parser/Invalid.vx;
 
 import ./DeferExpression.vx;
 
-RawSet := p.SequenceOne([
-  [p.Exact('#[')],
+RawArray := p.SequenceOne([
+  [p.Exact('[')],
   CommaSequence(DeferExpression),
   [p.Exact(']')],
 ]);
 
-Set := p.Transform(
-  RawSet,
+Array := p.Transform(
+  RawArray,
   func(values) {
     invalid := Invalid(values);
 
@@ -20,8 +20,8 @@ Set := p.Transform(
       return invalid;
     }
 
-    return ['set', values];
+    return ['array', values];
   },
 );
 
-return Set;
+return Array;

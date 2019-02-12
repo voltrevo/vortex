@@ -1,0 +1,28 @@
+import p from '@/util/parse.vx';
+
+import @/parser/CommaSequence.vx;
+import @/parser/Invalid.vx;
+import @/util/SetFromArray.vx;
+
+import ./DeferLiteral.vx;
+
+RawSet := p.SequenceOne([
+  [p.Exact('#[')],
+  CommaSequence(DeferLiteral),
+  [p.Exact(']')],
+]);
+
+Set := p.Transform(
+  RawSet,
+  func(values) {
+    invalid := Invalid(values);
+
+    if (invalid:Kind() != 'null') {
+      return invalid;
+    }
+
+    return ['literal', SetFromArray(values:map(func(v) => v[1]))];
+  },
+);
+
+return Set;

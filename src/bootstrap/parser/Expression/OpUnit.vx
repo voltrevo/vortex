@@ -1,7 +1,7 @@
 import p from '@/util/parse.vx';
 
-import @/parse/Identifier.vx;
-import @/parse/Primitive/Primitive.vx;
+import @/parser/Identifier.vx;
+import @/parser/Primitive/Primitive.vx;
 
 import ./Array.vx;
 import ./DeferExpression.vx;

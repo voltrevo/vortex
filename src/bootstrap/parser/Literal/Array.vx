@@ -1,13 +1,13 @@
 import p from '@/util/parse.vx';
 
-import @/parse/CommaSequence.vx;
-import @/parse/Invalid.vx;
+import @/parser/CommaSequence.vx;
+import @/parser/Invalid.vx;
 
-import ./DeferExpression.vx;
+import ./DeferLiteral.vx;
 
 RawArray := p.SequenceOne([
   [p.Exact('[')],
-  CommaSequence(DeferExpression),
+  CommaSequence(DeferLiteral),
   [p.Exact(']')],
 ]);
 
@@ -20,7 +20,7 @@ Array := p.Transform(
       return invalid;
     }
 
-    return ['array', values];
+    return ['literal', values:map(func(v) => v[1])];
   },
 );
 
