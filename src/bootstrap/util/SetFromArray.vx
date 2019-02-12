@@ -1,0 +1,3 @@
+return func(arr) => (
+  ([#[]] ++ arr:map(func(x) => #[x])):reduce(|)
+);

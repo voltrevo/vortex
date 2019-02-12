@@ -1,5 +1,7 @@
-import @/parse/CommaSequence.vx;
 import p from '@/parse/parse.vx';
+
+import @/parse/CommaSequence.vx;
+import @/util/SetFromArray.vx;
 
 import ./DeferLiteral.vx;
 
@@ -8,10 +10,6 @@ RawSet := p.SequenceOne([
   CommaSequence(DeferLiteral),
   [p.Exact(']')],
 ]);
-
-func SetFromArray(arr) => (
-  ([#[]] ++ arr:map(func(x) => #[x])):reduce(|)
-);
 
 Set := p.Transform(
   RawSet,
