@@ -1,11 +1,16 @@
 import p from '@/parse/parse.vx';
 
-import ./Block.vx;
-import ./If.vx;
+import ./Statement.vx;
 
-log.info p.Complete(Block)(['1 + 1; 2 + 2;']);
+st := p.Complete(Statement);
 
-log.info p.Complete(If)([
+log.info st(['continue;']);
+
+log.info st(['return [1, 2, 5 * 7];']);
+
+log.info st(['for { 1 + 1; 2 + 2; }']);
+
+log.info st([
   'if (true) {',
   '  1 + 2 * 3;',
   '} else if (false) {',

@@ -4,6 +4,9 @@ import @/parse/Expression/Expression.vx;
 import @/parse/OW.vx;
 import @/parse/Whitespace.vx;
 
+import ./If.vx;
+import ./For.vx;
+
 func ExactStatement(str) => p.Transform(
   p.Exact(str),
   func(_) => [str, null],
@@ -34,10 +37,14 @@ SemiStatement := p.Select([
   ExpStatement,
 ]);
 
-Statement := p.SequenceOne([
-  SemiStatement,
-  [OW],
-  [p.Exact(';')],
+Statement := p.Select([
+  If,
+  For,
+  p.SequenceOne([
+    SemiStatement,
+    [OW],
+    [p.Exact(';')],
+  ]),
 ]);
 
 return Statement;
