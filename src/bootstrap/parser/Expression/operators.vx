@@ -31,6 +31,9 @@ precedenceList := [
 // parsed preferentially rather than a shorter one which happens to be a prefix
 // Note: . and : are processed as suffixes rather than operators
 all := [
+  // has to come before '='
+  '==',
+
   // assignment
   ':=', '=', '**=', '+=', '++=', '-=', '*=', '/=', '%=', '<<=', '>>=', '&=',
   '|=', '^=', '&&=', '||=', '~=',
@@ -45,7 +48,7 @@ all := [
   '++', '+', '-',
   '<<', '>>',
   '<', '>', '<=', '>=',
-  '==', '!=',
+  '!=', // '==' needs to be up higher
   '~',
   '&',
   '^',

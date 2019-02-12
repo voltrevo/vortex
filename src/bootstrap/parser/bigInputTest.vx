@@ -8,7 +8,7 @@ nl := '
 
 line := '';
 
-for (i := 0; i < bigInput:Length(); i++) {
+for (i := 0u64; i < bigInput:Length(); i++) {
   c := bigInput[i];
 
   if (c == nl) {
