@@ -20,4 +20,6 @@ log.info st([
   '}',
 ]);
 
+log.info st(['log.error 1 + 1;']);
+
 return 'done';

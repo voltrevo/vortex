@@ -13,23 +13,29 @@ func ExactStatement(str) => p.Transform(
 ExpStatement := p.Transform(
   p.Sequence([
     p.Optional(p.SequenceOne([
-      p.Exact('return'),
+      p.Select([
+        p.Exact('return'),
+        p.Exact('log.info'),
+        p.Exact('log.warn'),
+        p.Exact('log.error'),
+      ]),
       [p.Whitespace],
     ])),
     Expression,
   ]),
-  func([maybeReturn, exp]) {
-    if (maybeReturn:Length() == 0u64) {
+  func([maybePrefix, exp]) {
+    if (maybePrefix:Length() == 0u64) {
       return ['expression', exp];
     }
 
-    assert maybeReturn == ['return'];
+    [prefix] := maybePrefix;
 
-    return ['return', exp];
+    return [prefix, exp];
   },
 );
 
 SemiStatement := p.Select([
+  ExactStatement('breakpoint'),
   ExactStatement('break'),
   ExactStatement('continue'),
   ExpStatement,
