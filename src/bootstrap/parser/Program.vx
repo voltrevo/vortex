@@ -1,11 +1,9 @@
 import p from '@/util/parse.vx';
 
-import ./Literal/Literal.vx;
+import ./Statement/Block.vx;
 
-return p.Complete(
-  p.Many(p.DataPos(p.Select([
-    Literal,
-    p.Whitespace,
-    p.Label('invalid', p.Char),
-  ])))
-);
+return p.Complete(p.SequenceOne([
+  [p.OW],
+  Block,
+  [p.OW],
+]));
