@@ -3,10 +3,10 @@ import p from '@/parse/parse.vx';
 import @/parse/CommaSequence.vx;
 import @/parse/Identifier.vx;
 import @/parse/Invalid.vx;
+import @/parse/Primitive/String.vx;
 import @/parse/Whitespace.vx;
 
 import ./DeferLiteral.vx;
-import ./String.vx;
 
 OW := p.Optional(Whitespace);
 Colon := p.Exact(':');

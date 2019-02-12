@@ -1,18 +1,13 @@
 import @/parse/parse.vx;
 
+import @/parse/Primitive/Primitive.vx;
+
 import ./Array.vx;
-import ./Bool.vx;
-import ./Null.vx;
-import ./Number.vx;
 import ./Object.vx;
 import ./Set.vx;
-import ./String.vx;
 
 return parse.Select([
-  Null,
-  Bool,
-  Number,
-  String,
+  Primitive,
   Array,
   Set,
   Object,

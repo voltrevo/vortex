@@ -4,7 +4,6 @@ import ./Array.vx;
 import ./Literal.vx;
 import ./Object.vx;
 import ./Set.vx;
-import ./String.vx;
 
 func arr(s) => p.Complete(Array)([s])[1];
 
@@ -17,11 +16,6 @@ func set_(s) => p.Complete(Set)([s])[1];
 
 assert set_('#[]') == #[];
 assert set_('#[2, 3, 3, 1]') == #[1, 2, 3];
-
-func str(s) => p.Complete(String)([s])[1];
-
-assert str('\'foo\'') == 'foo';
-assert str('\'fo\\\'o\'') == 'fo\'o';
 
 func obj(s) => p.Complete(Object)([s]);
 

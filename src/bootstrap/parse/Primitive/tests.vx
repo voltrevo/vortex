@@ -1,0 +1,26 @@
+import p from '@/parse/parse.vx';
+
+import ./Primitive.vx;
+import ./String.vx;
+
+func prim(s) => p.Complete(Primitive)([s])[1];
+
+assert prim('null') == null;
+
+assert prim('false') == false;
+assert prim('true') == true;
+
+assert prim('0') == 0;
+assert prim('1') == 1;
+assert prim('12345') == 12345;
+
+// TODO: empty strings
+assert prim('\'x\'') == 'x';
+assert prim('\'foo\'') == 'foo';
+
+func str(s) => p.Complete(String)([s])[1];
+
+assert str('\'foo\'') == 'foo';
+assert str('\'fo\\\'o\'') == 'fo\'o';
+
+return 'done';
