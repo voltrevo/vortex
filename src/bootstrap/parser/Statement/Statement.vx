@@ -1,6 +1,7 @@
 import p from '@/util/parse.vx';
 
 import @/parser/Expression/Expression.vx;
+import @/parser/Expression/Import.vx;
 
 import ./If.vx;
 import ./For.vx;
@@ -35,6 +36,7 @@ ExpStatement := p.Transform(
 );
 
 SemiStatement := p.Select([
+  Import,
   ExactStatement('breakpoint'),
   ExactStatement('break'),
   ExactStatement('continue'),

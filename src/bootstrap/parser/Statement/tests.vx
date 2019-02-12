@@ -22,4 +22,6 @@ log.info st([
 
 log.info st(['log.error 1 + 1;']);
 
+log.info st(['import ./foo.vx;']);
+
 return 'done';

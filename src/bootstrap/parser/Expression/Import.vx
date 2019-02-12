@@ -1,0 +1,43 @@
+import p from '@/util/parse.vx';
+
+import @/parser/Identifier.vx;
+import @/parser/Primitive/String.vx;
+
+Dir := p.Transform(
+  p.SequenceOne([
+    p.Many(
+      p.Filter(p.Char, func(c) => !(c in #['/', '(', ')', ';'])),
+    ),
+    [p.Exact('/')],
+  ]),
+  func(charArray) => (charArray ++ ['/']):reduce(++),
+);
+
+return p.SequenceOne([
+  [p.Exact('import')],
+  [p.Whitespace],
+  p.Select([
+    p.Transform(
+      p.Sequence([
+        Identifier,
+        [p.Whitespace],
+        [p.Exact('from')],
+        [p.OW],
+        String,
+      ]),
+      func([[_, name], [_, source]]) => ['import', {name, source}],
+    ),
+    p.Transform(
+      p.Sequence([
+        Dir,
+        p.Many(Dir),
+        Identifier,
+        [p.Exact('.vx')],
+      ]),
+      func([firstDir, dirs, [_, name]]) => ['import', {
+        name,
+        source: ([firstDir] ++ dirs):reduce(++) ++ name ++ '.vx',
+      }]
+    ),
+  ]),
+]);

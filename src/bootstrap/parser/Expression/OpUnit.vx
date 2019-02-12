@@ -6,13 +6,19 @@ import @/parser/Primitive/Primitive.vx;
 import ./Array.vx;
 import ./DeferExpression.vx;
 import ./Function.vx;
+import ./Import.vx;
 import ./Object.vx;
 import ./Set.vx;
 import ./Suffix.vx;
 
 ParenExp := p.SequenceOne([
   [p.Exact('(')],
-  DeferExpression,
+  [p.OW],
+  p.Select([
+    Import,
+    DeferExpression,
+  ]),
+  [p.OW],
   [p.Exact(')')],
 ]);
 
