@@ -2,6 +2,7 @@ import @/parse/CommaSequence.vx;
 import p from '@/parse/parse.vx';
 
 import ./DeferLiteral.vx;
+import ./Invalid.vx;
 
 RawArray := p.SequenceOne([
   [p.Exact('[')],
@@ -11,7 +12,15 @@ RawArray := p.SequenceOne([
 
 Array := p.Transform(
   RawArray,
-  func(value) => ['literal', value],
+  func(values) {
+    invalid := Invalid(values);
+
+    if (invalid:Kind() != 'null') {
+      return invalid;
+    }
+
+    return ['literal', values:map(func(v) => v[1])];
+  },
 );
 
 return Array;

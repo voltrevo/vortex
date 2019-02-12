@@ -4,6 +4,7 @@ import p from '@/parse/parse.vx';
 import @/parse/Whitespace.vx;
 
 import ./DeferLiteral.vx;
+import ./Invalid.vx;
 import ./String.vx;
 
 OW := p.Optional(Whitespace);
@@ -13,7 +14,7 @@ Key := p.DataPos(p.Select([Identifier, String]));
 
 KeyValuePair := p.Transform(
   p.Sequence([Key, [OW], [Colon], [OW], DeferLiteral]),
-  func([key, [_, value]]) => ['kvp', [key, value]],
+  func([key, value]) => ['kvp', [key, value]],
 );
 
 RawObject := p.SequenceOne([
@@ -25,13 +26,27 @@ RawObject := p.SequenceOne([
 Object := p.Transform(
   RawObject,
   func(pairs) {
+    if (pairs:Length() == 0u64) {
+      return ['literal', {}];
+    }
+
+    allValues := (pairs:map(func(pair) => [pair[1][0].data, pair[1][1]])
+      :reduce(++)
+    );
+
+    invalid := Invalid(allValues);
+
+    if (invalid:Kind() != 'null') {
+      return invalid;
+    }
+
     res := {};
 
-    for ([{data: [_, key], pos}, value] of pairs) {
+    for ([_, [{data: [_, key], pos}, [_, value]]] of pairs) {
       if (key in res:Keys()) {
         return [
           'invalid',
-          'object has duplicate key \'' ++ key ++ '\' at ' ++ pos:String(),
+          ['object has duplicate key \'' ++ key ++ '\' at ' ++ pos:String()],
         ];
       }
 

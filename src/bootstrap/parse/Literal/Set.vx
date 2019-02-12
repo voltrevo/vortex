@@ -4,6 +4,7 @@ import @/parse/CommaSequence.vx;
 import @/util/SetFromArray.vx;
 
 import ./DeferLiteral.vx;
+import ./Invalid.vx;
 
 RawSet := p.SequenceOne([
   [p.Exact('#[')],
@@ -13,7 +14,15 @@ RawSet := p.SequenceOne([
 
 Set := p.Transform(
   RawSet,
-  func(value) => ['literal', SetFromArray(value)],
+  func(values) {
+    invalid := Invalid(values);
+
+    if (invalid:Kind() != 'null') {
+      return invalid;
+    }
+
+    return ['literal', SetFromArray(values:map(func(v) => v[1]))];
+  },
 );
 
 return Set;

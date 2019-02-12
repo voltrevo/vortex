@@ -16,7 +16,5 @@ return func(Item) {
     [OW],
   ]);
 
-  return p.Transform(RawList, func([vals, lastVals]) => (
-    (vals ++ lastVals):map(func(x) => x[1])
-  ));
+  return p.Transform(RawList, func([vals, lastVals]) => vals ++ lastVals);
 };

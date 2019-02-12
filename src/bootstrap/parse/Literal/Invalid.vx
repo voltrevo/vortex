@@ -1,0 +1,15 @@
+return func(sequence) {
+  res := [];
+
+  for (s of sequence) {
+    if (s[0] == 'invalid') {
+      res ++= s[1];
+    }
+  }
+
+  if (res:Length() != 0u64) {
+    return ['invalid', res];
+  }
+
+  return null;
+};

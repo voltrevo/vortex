@@ -236,6 +236,7 @@ func Expression(lines, [lineNo, colNo]) {
   )(lines, [lineNo, colNo]);
 };
 
-log.info p.Complete(Expression)(['foo(1, 2, 3, [] ++ [\'hi\'])']);
+log.info p.Complete(Expression)(['foo(1 + 1)']);
+log.info p.Complete(Expression)(['foo(1, 1)']);
 
 return 'done';
