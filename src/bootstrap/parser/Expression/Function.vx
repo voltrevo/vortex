@@ -1,0 +1,38 @@
+import p from '@/util/parse.vx';
+
+import @/parser/CommaSequence.vx;
+import @/parser/Expression/DeferExpression.vx;
+import @/parser/Identifier.vx;
+import @/parser/Statement/DeferBraceBlock.vx;
+
+Function := p.Transform(
+  p.Sequence([
+    [p.Exact('func')],
+    p.Select([
+      p.SequenceOne([
+        [p.Whitespace],
+        Identifier,
+        [p.OW],
+      ]),
+      p.SequenceOne([
+        p.Nothing,
+        [p.OW],
+      ]),
+    ]),
+    [p.Exact('(')],
+    CommaSequence(DeferExpression),
+    [p.Exact(')')],
+    [p.OW],
+    p.Select([
+      DeferBraceBlock,
+      p.Label('expression', p.SequenceOne([
+        [p.Exact('=>')],
+        [p.OW],
+        DeferExpression,
+      ])),
+    ]),
+  ]),
+  func([name, args, body]) => ['func', {name, args, body}],
+);
+
+return Function;

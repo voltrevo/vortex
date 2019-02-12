@@ -1,0 +1,3 @@
+import ./BraceBlock.vx;
+
+return func(lines, pos) => BraceBlock(lines, pos);
