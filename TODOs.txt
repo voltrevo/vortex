@@ -1,6 +1,7 @@
+TODO: Bootstrap parser
+TODO: Use TypeValue comparison in switch matching
 TODO: Implement maps with non-string keys in VM (keys can be any functionless value)
 TODO: Implement frame guards / handle argument length mismatches
-TODO: Bootstrap parser
 TODO: Bootstrap validator
 TODO: Bootstrap bytecoder
 TODO: Speed up comparisons using structural sharing

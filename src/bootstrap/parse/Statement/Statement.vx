@@ -1,0 +1,43 @@
+import p from '@/parse/parse.vx';
+
+import @/parse/Expression/Expression.vx;
+import @/parse/OW.vx;
+import @/parse/Whitespace.vx;
+
+func ExactStatement(str) => p.Transform(
+  p.Exact(str),
+  func(_) => [str, null],
+);
+
+ExpStatement := p.Transform(
+  p.Sequence([
+    p.Optional(p.SequenceOne([
+      p.Exact('return'),
+      [Whitespace],
+    ])),
+    Expression,
+  ]),
+  func([maybeReturn, exp]) {
+    if (maybeReturn:Length() == 0u64) {
+      return ['expression', exp];
+    }
+
+    assert maybeReturn == ['return'];
+
+    return ['return', exp];
+  },
+);
+
+SemiStatement := p.Select([
+  ExactStatement('break'),
+  ExactStatement('continue'),
+  ExpStatement,
+]);
+
+Statement := p.SequenceOne([
+  SemiStatement,
+  [OW],
+  [p.Exact(';')],
+]);
+
+return Statement;
