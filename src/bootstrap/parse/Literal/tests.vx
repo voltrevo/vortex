@@ -1,0 +1,46 @@
+import p from '@/parse/parse.vx';
+
+import ./Array.vx;
+import ./Literal.vx;
+import ./Object.vx;
+import ./Set.vx;
+import ./String.vx;
+
+func arr(s) => p.Complete(Array)([s])[1];
+
+assert arr('[]') == [];
+assert arr('[1, 2, 3]') == [1, 2, 3];
+assert arr('[1, [2], 3]') == [1, [2], 3];
+assert arr('[1, [2], 3,]') == [1, [2], 3];
+
+func set_(s) => p.Complete(Set)([s])[1];
+
+assert set_('#[]') == #[];
+assert set_('#[2, 3, 3, 1]') == #[1, 2, 3];
+
+func str(s) => p.Complete(String)([s])[1];
+
+assert str('\'foo\'') == 'foo';
+assert str('\'fo\\\'o\'') == 'fo\'o';
+
+func obj(s) => p.Complete(Object)([s]);
+
+assert obj('{}')[1] == {};
+assert obj('{a: 1, b: 2}')[1] == {a: 1, b: 2};
+assert obj('{\'a\': 1, a: 2}')[0] == 'invalid';
+
+func lit(s) => p.Complete(Literal)([s])[1];
+
+assert lit('{}') == {};
+
+assert lit('[null, false, 200u8, \'foo\', [], #[], {}]') == [
+  null,
+  false,
+  200u8,
+  'foo',
+  [],
+  #[],
+  {},
+];
+
+return 'done';

@@ -1,10 +1,11 @@
+import p from '@/parse/parse.vx';
+
 import @/parse/CommaSequence.vx;
 import @/parse/Identifier.vx;
-import p from '@/parse/parse.vx';
+import @/parse/Invalid.vx;
 import @/parse/Whitespace.vx;
 
 import ./DeferLiteral.vx;
-import ./Invalid.vx;
 import ./String.vx;
 
 OW := p.Optional(Whitespace);

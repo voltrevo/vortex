@@ -1,10 +1,10 @@
 import p from '@/parse/parse.vx';
 
 import @/parse/CommaSequence.vx;
+import @/parse/Invalid.vx;
 import @/util/SetFromArray.vx;
 
 import ./DeferLiteral.vx;
-import ./Invalid.vx;
 
 RawSet := p.SequenceOne([
   [p.Exact('#[')],

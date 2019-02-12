@@ -1,8 +1,9 @@
-import @/parse/CommaSequence.vx;
 import p from '@/parse/parse.vx';
 
+import @/parse/CommaSequence.vx;
+import @/parse/Invalid.vx;
+
 import ./DeferLiteral.vx;
-import ./Invalid.vx;
 
 RawArray := p.SequenceOne([
   [p.Exact('[')],
