@@ -1,0 +1,5 @@
+import p from '@/parse/parse.vx';
+
+import ./Whitespace.vx;
+
+return p.Optional(Whitespace);

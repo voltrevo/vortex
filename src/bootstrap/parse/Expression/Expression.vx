@@ -2,12 +2,10 @@ import @/util/SetFromArray.vx;
 
 import p from '@/parse/parse.vx';
 
-import @/parse/Whitespace.vx;
+import @/parse/OW.vx;
 
 import ./operators.vx;
 import ./OpUnit.vx;
-
-OW := p.Optional(Whitespace);
 
 func joinUnaries([head, tail]) {
   opLists := tail:map(func([ops, _]) => ops);

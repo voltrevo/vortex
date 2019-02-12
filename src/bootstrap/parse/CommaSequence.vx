@@ -1,7 +1,7 @@
 import p from './parse.vx';
-import ./Whitespace.vx;
 
-OW := p.Optional(Whitespace);
+import ./OW.vx;
+
 Comma := p.Exact(',');
 
 return func(Item) {
