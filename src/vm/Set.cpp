@@ -59,7 +59,7 @@ namespace Vortex {
 
       int cmp = TypeValueOrderUnchecked(leftItem, rightItem);
 
-      if (cmp == -1) {
+      if (cmp < 0) {
         if (keepInLeftOnly) {
           newValues.push_back(leftItem);
         }
