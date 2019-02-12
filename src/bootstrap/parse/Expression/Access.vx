@@ -1,0 +1,35 @@
+import p from '@/parse/parse.vx';
+
+import @/parse/Identifier.vx;
+import @/parse/Literal/Literal.vx;
+
+import ./DeferExpression.vx;
+import ./Suffix.vx;
+
+ParenExp := p.SequenceOne([
+  [p.Exact('(')],
+  DeferExpression,
+  [p.Exact(')')],
+]);
+
+AtomicExp := p.Select([
+  Identifier,
+  Literal,
+  ParenExp,
+]);
+
+Access := p.Transform(
+  p.Sequence([
+    AtomicExp,
+    p.Many(Suffix),
+  ]),
+  func([exp, suffixes]) {
+    for ([op, rhs] of suffixes) {
+      exp = [op, [exp, rhs]];
+    }
+
+    return exp;
+  },
+);
+
+return Access;

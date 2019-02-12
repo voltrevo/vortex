@@ -1,0 +1,77 @@
+import p from '@/parse/parse.vx';
+
+import @/util/SetFromArray.vx;
+
+assignment := #[
+  ':=', '=', '**=', '+=', '++=', '-=', '*=', '/=', '%=', '<<=', '>>=', '&=',
+  '|=', '^=', '&&=', '||=', '~='
+];
+
+prefix := #['!', '~', '+', '-'];
+postfix := #['++', '--'];
+
+precedenceList := [
+  ['right', ['**']],
+  ['left', ['*', '/', '%']],
+  ['left', ['++', '+', '-']],
+  ['left', ['<<', '>>']],
+  ['left', ['<', '>', '<=', '>=']],
+  ['left', ['==', '!=']],
+  ['left', ['~']],
+  ['left', ['&']],
+  ['left', ['^']],
+  ['left', ['|']],
+  ['left', ['&&']],
+  ['left', ['||']],
+  ['left', ['in']],
+  ['right', assignment:Values()],
+];
+
+// It's important that longer operators always come first so that it is always
+// parsed preferentially rather than a shorter one which happens to be a prefix
+// Note: . and : are processed as suffixes rather than operators
+all := [
+  // assignment
+  ':=', '=', '**=', '+=', '++=', '-=', '*=', '/=', '%=', '<<=', '>>=', '&=',
+  '|=', '^=', '&&=', '||=', '~=',
+
+  // unary
+  '++', '--',
+  '!', '~', '+', '-',
+
+  // remaining binary operators
+  '**',
+  '*', '/', '%',
+  '++', '+', '-',
+  '<<', '>>',
+  '<', '>', '<=', '>=',
+  '==', '!=',
+  '~',
+  '&',
+  '^',
+  '|',
+  '&&',
+  '||',
+  'in',
+];
+
+precedenceOps := precedenceList:map(func([_, ops]) => ops):reduce(++);
+
+assert (
+  (
+    prefix |
+    postfix |
+    SetFromArray(precedenceOps)
+  ) ==
+  SetFromArray(all)
+);
+
+Parse := p.Select(all:map(p.Exact));
+
+return {
+  assignment,
+  prefix,
+  postfix,
+  precedenceList,
+  Parse,
+};

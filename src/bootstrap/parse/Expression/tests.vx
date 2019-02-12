@@ -1,0 +1,8 @@
+import p from '@/parse/parse.vx';
+
+import ./Expression.vx;
+
+log.info p.Complete(Expression)(['foo(1 + 1)']);
+log.info p.Complete(Expression)(['foo(1, 1)']);
+
+return 'done';

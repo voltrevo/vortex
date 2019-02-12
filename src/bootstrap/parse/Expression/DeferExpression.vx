@@ -1,0 +1,3 @@
+import ./Expression.vx;
+
+return func(lines, pos) => Expression(lines, pos);

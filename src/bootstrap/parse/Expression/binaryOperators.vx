@@ -1,0 +1,18 @@
+import ./assignmentOperators.vx;
+
+return [
+  ['right', ['**']],
+  ['left', ['*', '/', '%']],
+  ['left', ['++', '+', '-']],
+  ['left', ['<<', '>>']],
+  ['left', ['<', '>', '<=', '>=']],
+  ['left', ['==', '!=']],
+  ['left', ['~']],
+  ['left', ['&']],
+  ['left', ['^']],
+  ['left', ['|']],
+  ['left', ['&&']],
+  ['left', ['||']],
+  ['left', ['in']],
+  ['right', assignmentOperators:Values()],
+];

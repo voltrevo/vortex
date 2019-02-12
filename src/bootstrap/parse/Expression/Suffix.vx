@@ -1,0 +1,39 @@
+import p from '@/parse/parse.vx';
+
+import @/parse/CommaSequence.vx;
+import @/parse/Identifier.vx;
+
+import ./DeferExpression.vx;
+
+return p.Select([
+  p.Transform(
+    p.SequenceOne([
+      [p.Exact('.')],
+      Identifier,
+    ]),
+    func([_, name]) => ['.', name],
+  ),
+  p.Transform(
+    p.SequenceOne([
+      [p.Exact(':')],
+      Identifier,
+    ]),
+    func([_, name]) => ['methodLookup', name],
+  ),
+  p.Transform(
+    p.SequenceOne([
+      [p.Exact('[')],
+      DeferExpression,
+      [p.Exact(']')],
+    ]),
+    func(exp) => ['subscript', exp],
+  ),
+  p.Transform(
+    p.SequenceOne([
+      [p.Exact('(')],
+      CommaSequence(DeferExpression),
+      [p.Exact(')')],
+    ]),
+    func(params) => ['functionCall', params],
+  ),
+]);
