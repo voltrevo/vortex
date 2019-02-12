@@ -1,11 +1,10 @@
 import ./Literal/Literal.vx;
 import p from './parse.vx';
-import ./Whitespace.vx;
 
 return p.Complete(
   p.Many(p.DataPos(p.Select([
     Literal,
-    Whitespace,
+    p.Whitespace,
     p.Label('invalid', p.Char),
   ])))
 );

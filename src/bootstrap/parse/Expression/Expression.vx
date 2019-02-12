@@ -2,8 +2,6 @@ import @/util/SetFromArray.vx;
 
 import p from '@/parse/parse.vx';
 
-import @/parse/OW.vx;
-
 import ./operators.vx;
 import ./OpUnit.vx;
 
@@ -124,10 +122,10 @@ return p.Transform(
     OpUnit,
     p.Many(p.Sequence([
       p.Repeat(
-        p.SequenceOne([[OW], operators.Parse]),
+        p.SequenceOne([[p.OW], operators.Parse]),
         [1u64, null],
       ),
-      [OW],
+      [p.OW],
       OpUnit,
     ])),
   ]),

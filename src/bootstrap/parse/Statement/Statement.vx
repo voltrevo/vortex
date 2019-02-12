@@ -1,8 +1,6 @@
 import p from '@/parse/parse.vx';
 
 import @/parse/Expression/Expression.vx;
-import @/parse/OW.vx;
-import @/parse/Whitespace.vx;
 
 import ./If.vx;
 import ./For.vx;
@@ -16,7 +14,7 @@ ExpStatement := p.Transform(
   p.Sequence([
     p.Optional(p.SequenceOne([
       p.Exact('return'),
-      [Whitespace],
+      [p.Whitespace],
     ])),
     Expression,
   ]),
@@ -42,7 +40,7 @@ Statement := p.Select([
   For,
   p.SequenceOne([
     SemiStatement,
-    [OW],
+    [p.OW],
     [p.Exact(';')],
   ]),
 ]);

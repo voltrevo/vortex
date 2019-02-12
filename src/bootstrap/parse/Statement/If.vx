@@ -1,8 +1,6 @@
 import p from '@/parse/parse.vx';
 
 import @/parse/Expression/Expression.vx;
-import @/parse/OW.vx;
-import @/parse/Whitespace.vx;
 
 import ./BraceBlock.vx;
 import ./DeferIf.vx;
@@ -10,18 +8,18 @@ import ./DeferIf.vx;
 If := p.Transform(
   p.Sequence([
     [p.Exact('if')],
-    [OW],
+    [p.OW],
     [p.Exact('(')],
     Expression,
     [p.Exact(')')],
-    [OW],
+    [p.OW],
     BraceBlock,
 
     p.Select([
       p.SequenceOne([
-        [OW],
+        [p.OW],
         [p.Exact('else')],
-        [Whitespace],
+        [p.Whitespace],
         p.Select([
           DeferIf,
           BraceBlock,

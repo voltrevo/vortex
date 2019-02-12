@@ -1,17 +1,15 @@
 import p from '@/parse/parse.vx';
 
 import @/parse/Expression/Expression.vx;
-import @/parse/OW.vx;
-import @/parse/Whitespace.vx;
 
 import ./BraceBlock.vx;
 
 Condition := p.Transform(
   p.SequenceOne([
     [p.Exact('(')],
-    [OW],
+    [p.OW],
     Expression,
-    [OW],
+    [p.OW],
     [p.Exact(')')],
   ]),
   func(condition) => ['condition', condition],
@@ -20,17 +18,17 @@ Condition := p.Transform(
 Traditional := p.Transform(
   p.Sequence([
     [p.Exact('(')],
-    [OW],
+    [p.OW],
     Expression,
-    [OW],
+    [p.OW],
     [p.Exact(';')],
-    [OW],
+    [p.OW],
     Expression,
-    [OW],
+    [p.OW],
     [p.Exact(';')],
-    [OW],
+    [p.OW],
     Expression,
-    [OW],
+    [p.OW],
     [p.Exact(')')],
   ]),
   func([setup, condition, next]) => ['traditional', {setup, condition, next}]
@@ -39,13 +37,13 @@ Traditional := p.Transform(
 Range := p.Transform(
   p.Sequence([
     [p.Exact('(')],
-    [OW],
+    [p.OW],
     Expression,
-    [Whitespace],
+    [p.Whitespace],
     [p.Exact('of')],
-    [Whitespace],
+    [p.Whitespace],
     Expression,
-    [OW],
+    [p.OW],
     [p.Exact(')')],
   ]),
   func([element, container]) => ['range', {element, container}],
@@ -61,9 +59,9 @@ ControlClause := p.Select([
 For := p.Transform(
   p.Sequence([
     [p.Exact('for')],
-    [OW],
+    [p.OW],
     ControlClause,
-    [OW],
+    [p.OW],
     BraceBlock,
   ]),
   func([control, body]) => ['for', {control, body}],

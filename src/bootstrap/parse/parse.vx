@@ -231,4 +231,65 @@ return {
   Label: func(name, parser) => (
     parse.Transform(parser, func(res) => [name, res])
   ),
+
+  Whitespace: func(lines, [i, j]) {
+    empty := true;
+
+    if (i >= lines:Length()) {
+      return null;
+    }
+
+    line := lines[i];
+
+    for {
+      for (j >= line:Length()) {
+        empty = false;
+        i++;
+        j = 0u64;
+
+        if (i >= lines:Length()) {
+          return [['whitespace', null], [i, j]];
+        }
+
+        line = lines[i];
+      }
+
+      if (!(line[j] in #[' ', '	'])) {
+        return switch (empty) {
+          true => null;
+          false => [['whitespace', null], [i, j]];
+        };
+      }
+
+      empty = false;
+      j++;
+    }
+  },
+
+  OW: func(lines, [i, j]) {
+    if (i >= lines:Length()) {
+      return [['ow', null], [i, j]];
+    }
+
+    line := lines[i];
+
+    for {
+      for (j >= line:Length()) {
+        i++;
+        j = 0u64;
+
+        if (i >= lines:Length()) {
+          return [['ow', null], [i, j]];
+        }
+
+        line = lines[i];
+      }
+
+      if (!(line[j] in #[' ', '	'])) {
+        return [['ow', null], [i, j]];
+      }
+
+      j++;
+    }
+  },
 };

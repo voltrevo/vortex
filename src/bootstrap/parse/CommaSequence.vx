@@ -1,19 +1,17 @@
 import p from './parse.vx';
 
-import ./OW.vx;
-
 Comma := p.Exact(',');
 
 return func(Item) {
   RawList := p.Sequence([
     p.Many(p.SequenceOne([
-      [OW],
+      [p.OW],
       Item,
-      [OW],
+      [p.OW],
       [Comma],
     ])),
-    p.Optional(p.SequenceOne([[OW], Item])),
-    [OW],
+    p.Optional(p.SequenceOne([[p.OW], Item])),
+    [p.OW],
   ]);
 
   return p.Transform(RawList, func([vals, lastVals]) => vals ++ lastVals);
