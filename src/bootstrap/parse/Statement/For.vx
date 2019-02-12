@@ -1,0 +1,72 @@
+import p from '@/parse/parse.vx';
+
+import @/parse/Expression/Expression.vx;
+import @/parse/OW.vx;
+import @/parse/Whitespace.vx;
+
+import ./BraceBlock.vx;
+
+Condition := p.Transform(
+  p.SequenceOne([
+    [p.Exact('(')],
+    [OW],
+    Expression,
+    [OW],
+    [p.Exact(')')],
+  ]),
+  func(condition) => ['condition', condition],
+);
+
+Traditional := p.Transform(
+  p.Sequence([
+    [p.Exact('(')],
+    [OW],
+    Expression,
+    [OW],
+    [p.Exact(';')],
+    [OW],
+    Expression,
+    [OW],
+    [p.Exact(';')],
+    [OW],
+    Expression,
+    [OW],
+    [p.Exact(')')],
+  ]),
+  func([setup, condition, next]) => ['traditional', {setup, condition, next}]
+);
+
+Range := p.Transform(
+  p.Sequence([
+    [p.Exact('(')],
+    [OW],
+    Expression,
+    [Whitespace],
+    [p.Exact('of')],
+    [Whitespace],
+    Expression,
+    [OW],
+    [p.Exact(')')],
+  ]),
+  func([element, container]) => ['range', {element, container}],
+);
+
+ControlClause := p.Select([
+  Condition,
+  Traditional,
+  Range,
+  p.Nothing,
+]);
+
+For := p.Transform(
+  p.Sequence([
+    [p.Exact('for')],
+    [OW],
+    ControlClause,
+    [OW],
+    BraceBlock,
+  ]),
+  func([control, body]) => ['for', {control, body}],
+);
+
+return For;
