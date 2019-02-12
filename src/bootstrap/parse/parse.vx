@@ -31,6 +31,8 @@ func ExactChar(c) => func(lines, [i, j]) {
 };
 
 return {
+  Nothing: func(_, pos) => [['nothing', null], pos],
+
   Sequence: func(parsers) => func(lines, [i, j]) {
     res := [];
 

@@ -17,15 +17,18 @@ If := p.Transform(
     [OW],
     BraceBlock,
 
-    p.Optional(p.SequenceOne([
-      [OW],
-      [p.Exact('else')],
-      [Whitespace],
-      p.Select([
-        DeferIf,
-        BraceBlock,
+    p.Select([
+      p.SequenceOne([
+        [OW],
+        [p.Exact('else')],
+        [Whitespace],
+        p.Select([
+          DeferIf,
+          BraceBlock,
+        ]),
       ]),
-    ])),
+      p.Nothing,
+    ]),
   ]),
   func([condition, body, tail]) => ['if', {condition, body, tail}],
 );
