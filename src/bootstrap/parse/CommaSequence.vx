@@ -1,4 +1,4 @@
-import p from './parse.vx';
+import p from '@/util/parse.vx';
 
 Comma := p.Exact(',');
 

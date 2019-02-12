@@ -1,6 +1,6 @@
 import @/util/SetFromArray.vx;
 
-import p from '@/parse/parse.vx';
+import p from '@/util/parse.vx';
 
 import ./operators.vx;
 import ./OpUnit.vx;

@@ -1,4 +1,4 @@
-import p from './parse.vx';
+import p from '@/util/parse.vx';
 
 RawIdentifier := p.Sequence([
   p.Filter(p.Char, func(c) => (

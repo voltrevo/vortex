@@ -1,4 +1,4 @@
-import @/parse/parse.vx;
+import p from '@/util/parse.vx';
 
 import ./tryConvertFromU64.vx;
 
@@ -84,7 +84,7 @@ func NumberU64(lines, [i, j]) {
   literal := null;
   [literal, [i, j]] = output;
 
-  suffix := parse.Exact('u64')(lines, [i, j]);
+  suffix := p.Exact('u64')(lines, [i, j]);
 
   if (suffix:Kind() == 'null') {
     return null;
@@ -105,7 +105,7 @@ func NumberConvertedUnsigned(suffix) => func(lines, [i, j]) {
   literal := null;
   [literal, [i, j]] = output;
 
-  suffixParsed := parse.Exact(suffix)(lines, [i, j]);
+  suffixParsed := p.Exact(suffix)(lines, [i, j]);
 
   if (suffixParsed:Kind() == 'null') {
     return null;
@@ -126,7 +126,7 @@ func NumberConvertedUnsigned(suffix) => func(lines, [i, j]) {
 };
 
 func NumberConvertedSigned(lines, [i, j]) {
-  minus := parse.Exact('-')(lines, [i, j]);
+  minus := p.Exact('-')(lines, [i, j]);
   isNegated := false;
 
   if (minus:Kind() != 'null') {
@@ -143,11 +143,11 @@ func NumberConvertedSigned(lines, [i, j]) {
   value := null;
   [value, [i, j]] = raw;
 
-  parsedSuffix := parse.Select([
-    parse.Exact('i8'),
-    parse.Exact('i16'),
-    parse.Exact('i32'),
-    parse.Exact('i64'),
+  parsedSuffix := p.Select([
+    p.Exact('i8'),
+    p.Exact('i16'),
+    p.Exact('i32'),
+    p.Exact('i64'),
   ])(lines, [i, j]);
 
   suffix := 'i32';
@@ -169,7 +169,7 @@ func NumberConvertedSigned(lines, [i, j]) {
   return [value, [i, j]];
 };
 
-return parse.Select([
+return p.Select([
   NumberConvertedUnsigned('u8'),
   NumberConvertedUnsigned('u16'),
   NumberConvertedUnsigned('u32'),

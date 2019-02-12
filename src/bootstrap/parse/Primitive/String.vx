@@ -1,4 +1,4 @@
-import p from '@/parse/parse.vx';
+import p from '@/util/parse.vx';
 
 func second(x) => x[1];
 

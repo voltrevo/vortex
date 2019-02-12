@@ -1,11 +1,11 @@
-import @/parse/parse.vx;
+import p from '@/util/parse.vx';
 
 import ./Bool.vx;
 import ./Null.vx;
 import ./Number.vx;
 import ./String.vx;
 
-return parse.Select([
+return p.Select([
   Null,
   Bool,
   Number,

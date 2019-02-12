@@ -1,4 +1,4 @@
-import @/parse/parse.vx;
+import p from '@/util/parse.vx';
 
 import @/parse/Primitive/Primitive.vx;
 
@@ -6,7 +6,7 @@ import ./Array.vx;
 import ./Object.vx;
 import ./Set.vx;
 
-return parse.Select([
+return p.Select([
   Primitive,
   Array,
   Set,
