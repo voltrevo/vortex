@@ -113,6 +113,12 @@ func joinBinaries({exps, ops}) {
     ops = nextOps;
   }
 
+  assert exps:Length() == ops:Length() + 1u64;
+
+  if (exps:Length() == 1u64) {
+    return ['joined', exps:Front()];
+  }
+
   assert false;
   return null; // TODO: Should be unnecessary
 };

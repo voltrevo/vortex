@@ -1,0 +1,28 @@
+import ./bigInput.vx;
+import ./Program.vx;
+
+lines := [];
+
+nl := '
+';
+
+line := '';
+
+for (i := 0; i < bigInput:Length(); i++) {
+  c := bigInput[i];
+
+  if (c == nl) {
+    lines ++= [line];
+    line = '';
+  } else {
+    line ++= c;
+  }
+}
+
+if (line != '') {
+  lines ++= [line];
+}
+
+log.info Program(lines);
+
+return 'done';

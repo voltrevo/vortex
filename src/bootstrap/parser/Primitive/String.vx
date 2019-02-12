@@ -13,7 +13,7 @@ RawString := p.SequenceOne([
 
 String := p.Transform(RawString, func(vals) => [
   'literal',
-  vals:reduce(++)
+  ([''] ++ vals):reduce(++)
 ]);
 
 return String;
