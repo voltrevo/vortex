@@ -4,8 +4,8 @@ import p from '@/parse/parse.vx';
 
 import @/parse/Whitespace.vx;
 
-import ./Access.vx;
 import ./operators.vx;
+import ./OpUnit.vx;
 
 OW := p.Optional(Whitespace);
 
@@ -123,14 +123,14 @@ func joinBinaries({exps, ops}) {
 
 return p.Transform(
   p.Sequence([
-    Access,
+    OpUnit,
     p.Many(p.Sequence([
       p.Repeat(
         p.SequenceOne([[OW], operators.Parse]),
         [1u64, null],
       ),
       [OW],
-      Access,
+      OpUnit,
     ])),
   ]),
   func([head, tail]) {
