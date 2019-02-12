@@ -1,9 +1,12 @@
 import p from '@/parse/parse.vx';
 
 import @/parse/Identifier.vx;
-import @/parse/Literal/Literal.vx;
+import @/parse/Primitive/Primitive.vx;
 
+import ./Array.vx;
 import ./DeferExpression.vx;
+import ./Object.vx;
+import ./Set.vx;
 import ./Suffix.vx;
 
 ParenExp := p.SequenceOne([
@@ -14,7 +17,10 @@ ParenExp := p.SequenceOne([
 
 AtomicExp := p.Select([
   Identifier,
-  Literal,
+  Primitive,
+  Array,
+  Set,
+  Object,
   ParenExp,
 ]);
 

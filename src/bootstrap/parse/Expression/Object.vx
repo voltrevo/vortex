@@ -1,0 +1,61 @@
+import p from '@/parse/parse.vx';
+
+import @/parse/CommaSequence.vx;
+import @/parse/Identifier.vx;
+import @/parse/Invalid.vx;
+import @/parse/Primitive/String.vx;
+import @/parse/Whitespace.vx;
+
+import ./DeferExpression.vx;
+
+OW := p.Optional(Whitespace);
+Colon := p.Exact(':');
+
+Key := p.DataPos(p.Select([Identifier, String]));
+
+KeyValuePair := p.Transform(
+  p.Sequence([Key, [OW], [Colon], [OW], DeferExpression]),
+  func([key, value]) => ['kvp', [key, value]],
+);
+
+RawObject := p.SequenceOne([
+  [p.Exact('{')],
+  CommaSequence(KeyValuePair),
+  [p.Exact('}')],
+]);
+
+Object := p.Transform(
+  RawObject,
+  func(pairs) {
+    if (pairs:Length() == 0u64) {
+      return ['object', []];
+    }
+
+    allValues := (pairs:map(func(pair) => [pair[1][0].data, pair[1][1]])
+      :reduce(++)
+    );
+
+    invalid := Invalid(allValues);
+
+    if (invalid:Kind() != 'null') {
+      return invalid;
+    }
+
+    res := [];
+
+    for ([_, [{data: [_, key], pos}, value]] of pairs) {
+      if (key in res:Keys()) {
+        return [
+          'invalid',
+          ['object has duplicate key \'' ++ key ++ '\' at ' ++ pos:String()],
+        ];
+      }
+
+      res ++= [[key, value]];
+    }
+
+    return ['object', res];
+  },
+);
+
+return Object;
