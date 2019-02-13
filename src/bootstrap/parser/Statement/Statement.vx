@@ -18,6 +18,7 @@ ExpStatement := p.Transform(
     p.Optional(p.SequenceOne([
       p.Select([
         p.Exact('return'),
+        p.Exact('assert'),
         p.Exact('log.info'),
         p.Exact('log.warn'),
         p.Exact('log.error'),

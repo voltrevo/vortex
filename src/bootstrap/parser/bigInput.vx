@@ -1,7 +1,7 @@
 return '
 import ./Program.vx;
 
-assert + Program([\'13i8;\']) == [\'block\', [
+assert Program([\'13i8;\']) == [\'block\', [
   [\'expression\', [\'literal\', 13i8]],
 ]];
 
@@ -17,7 +17,7 @@ if (0u8:String() == \'0u8\') {
 
   program := Program(sampleLines);
 
-  assert + program == [\'block\', [
+  assert program == [\'block\', [
     [\'expression\', [\'literal\', 123u64]],
     [\'expression\', [\'invalid\', \'u8 overflow\']],
     [\'expression\', [\'literal\', 321u64]],
