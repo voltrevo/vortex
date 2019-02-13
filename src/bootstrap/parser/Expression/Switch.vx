@@ -1,0 +1,43 @@
+import p from '@/util/parse.vx';
+
+import @/parser/W.vx;
+
+import ./Atomic.vx;
+import ./DeferExpression.vx;
+
+return p.Transform(
+  p.Sequence([
+    [p.Exact('switch')],
+    [W.Optional],
+    p.Select([
+      p.SequenceOne([
+        [p.Exact('(')],
+        DeferExpression,
+        [p.Exact(')')],
+      ]),
+      p.Nothing,
+    ]),
+    [W.Optional],
+    [p.Exact('{')],
+    [W.Optional],
+    p.Many(p.Sequence([
+      p.Select([
+        p.Transform(p.DataPos(p.Exact('default')),
+          func({data, pos}) => [data, null, pos],
+        ),
+        Atomic,
+      ]),
+      [W.Optional],
+      [p.Exact('=>')],
+      [W.Optional],
+      DeferExpression,
+      [p.Exact(';')],
+    ])),
+    [W.Optional],
+    [p.Exact('}')],
+  ]),
+  func([test, cases]) => ['switch', {
+    test,
+    cases,
+  }],
+);

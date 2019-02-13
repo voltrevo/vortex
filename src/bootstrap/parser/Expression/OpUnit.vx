@@ -1,43 +1,15 @@
 import p from '@/util/parse.vx';
 
 import @/parser/AppendPos.vx;
-import @/parser/Identifier.vx;
-import @/parser/Primitive/Primitive.vx;
-import @/parser/W.vx;
 
-import ./Array.vx;
-import ./DeferExpression.vx;
+import ./Atomic.vx;
 import ./Function.vx;
-import ./Import.vx;
-import ./Object.vx;
-import ./Set.vx;
 import ./Suffix.vx;
-
-ParenExp := p.SequenceOne([
-  [p.Exact('(')],
-  [W.Optional],
-  p.Select([
-    AppendPos(Import),
-    DeferExpression,
-  ]),
-  [W.Optional],
-  [p.Exact(')')],
-]);
-
-AtomicExp := p.Select([
-  AppendPos(p.Select([
-    Primitive,
-    Identifier,
-    Array,
-    Set,
-    Object,
-  ])),
-  ParenExp,
-]);
+import ./Switch.vx;
 
 Access := p.Transform(
   p.Sequence([
-    AtomicExp,
+    Atomic,
     p.Many(Suffix),
   ]),
   func([exp, suffixes]) {
@@ -49,4 +21,8 @@ Access := p.Transform(
   },
 );
 
-return p.Select([AppendPos(Function), Access]);
+return p.Select([
+  AppendPos(Function),
+  AppendPos(Switch),
+  Access,
+]);

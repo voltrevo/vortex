@@ -1,0 +1,34 @@
+import p from '@/util/parse.vx';
+
+import @/parser/AppendPos.vx;
+import @/parser/Identifier.vx;
+import @/parser/Primitive/Primitive.vx;
+import @/parser/W.vx;
+
+import ./Array.vx;
+import ./DeferExpression.vx;
+import ./Import.vx;
+import ./Object.vx;
+import ./Set.vx;
+
+ParenExp := p.SequenceOne([
+  [p.Exact('(')],
+  [W.Optional],
+  p.Select([
+    AppendPos(Import),
+    DeferExpression,
+  ]),
+  [W.Optional],
+  [p.Exact(')')],
+]);
+
+return p.Select([
+  AppendPos(p.Select([
+    Primitive,
+    Identifier,
+    Array,
+    Set,
+    Object,
+  ])),
+  ParenExp,
+]);

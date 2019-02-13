@@ -14,4 +14,6 @@ log.info p.Complete(Expression)(['1 + (func foo(a, b) { a + 1; }) + 1']);
 
 log.info p.Complete(Expression)(['(import ./foo.vx)']);
 
+log.info p.Complete(Expression)(['switch (n) {1=>1;}']);
+
 return 'done';
