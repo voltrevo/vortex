@@ -1,12 +1,14 @@
 import p from '@/util/parse.vx';
 
+import @/parser/W.vx;
+
 import ./DeferStatement.vx;
 
 Block := p.Transform(
   p.Optional(p.Sequence([
     DeferStatement,
     p.Many(p.SequenceOne([
-      [p.OW],
+      [W.Optional],
       DeferStatement,
     ])),
   ])),

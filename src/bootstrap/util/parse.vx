@@ -310,4 +310,14 @@ return {
 
     return [output[0], pos];
   },
+
+  Not: func(parser) => func(lines, pos) {
+    output := parser(lines, pos);
+
+    if (output:Kind() == 'null') {
+      return [null, pos];
+    }
+
+    return null;
+  },
 };

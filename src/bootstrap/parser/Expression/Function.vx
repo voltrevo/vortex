@@ -4,30 +4,31 @@ import @/parser/CommaSequence.vx;
 import @/parser/Expression/DeferExpression.vx;
 import @/parser/Identifier.vx;
 import @/parser/Statement/DeferBraceBlock.vx;
+import @/parser/W.vx;
 
 Function := p.Transform(
   p.Sequence([
     [p.Exact('func')],
     p.Select([
       p.SequenceOne([
-        [p.Whitespace],
+        [W.Space],
         Identifier,
-        [p.OW],
+        [W.Optional],
       ]),
       p.SequenceOne([
         p.Nothing,
-        [p.OW],
+        [W.Optional],
       ]),
     ]),
     [p.Exact('(')],
     CommaSequence(DeferExpression),
     [p.Exact(')')],
-    [p.OW],
+    [W.Optional],
     p.Select([
       DeferBraceBlock,
       p.Label('expression', p.SequenceOne([
         [p.Exact('=>')],
-        [p.OW],
+        [W.Optional],
         DeferExpression,
       ])),
     ]),

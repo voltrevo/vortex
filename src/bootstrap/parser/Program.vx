@@ -1,5 +1,7 @@
 import p from '@/util/parse.vx';
 
+import @/parser/W.vx;
+
 import ./AppendPos.vx;
 import ./Statement/Statement.vx;
 
@@ -11,13 +13,13 @@ UnmatchedClosingBrace := AppendPos(p.Transform(
 Program := p.Complete(p.Transform(
   p.SequenceOne([
     p.Many(p.SequenceOne([
-      [p.OW],
+      [W.Optional],
       p.Select([
         Statement,
         UnmatchedClosingBrace,
       ]),
     ])),
-    [p.OW],
+    [W.Optional],
   ]),
   func(statements) => ['block', statements],
 ));

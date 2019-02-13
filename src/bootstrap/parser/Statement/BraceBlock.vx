@@ -1,11 +1,13 @@
 import p from '@/util/parse.vx';
 
+import @/parser/W.vx;
+
 import ./Block.vx;
 
 return p.SequenceOne([
   [p.Exact('{')],
-  [p.OW],
+  [W.Optional],
   Block,
-  [p.OW],
+  [W.Optional],
   [p.Exact('}')],
 ]);

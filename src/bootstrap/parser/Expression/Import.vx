@@ -2,6 +2,7 @@ import p from '@/util/parse.vx';
 
 import @/parser/Identifier.vx;
 import @/parser/Primitive/String.vx;
+import @/parser/W.vx;
 
 Dir := p.Transform(
   p.SequenceOne([
@@ -15,14 +16,14 @@ Dir := p.Transform(
 
 return p.SequenceOne([
   [p.Exact('import')],
-  [p.Whitespace],
+  [W.Space],
   p.Select([
     p.Transform(
       p.Sequence([
         Identifier,
-        [p.Whitespace],
+        [W.Space],
         [p.Exact('from')],
-        [p.OW],
+        [W.Optional],
         String,
       ]),
       func([[_, name], [_, source]]) => ['import', {name, source}],

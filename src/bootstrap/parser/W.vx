@@ -1,0 +1,30 @@
+import p from '@/util/parse.vx';
+
+nl := '
+';
+
+LineComment := p.Sequence([
+  p.Exact('//'),
+  p.Many(p.Filter(p.Char, func(c) => c != nl)),
+  p.Exact(nl),
+]);
+
+BlockComment := p.Sequence([
+  p.Exact('/*'),
+  p.Many(p.Sequence([
+    p.Not(p.Exact('*/')),
+    p.Char,
+  ])),
+  p.Exact('*/'),
+]);
+
+Single := p.Select([
+  p.Filter(p.Char, func(c) => c in #[' ', '	', nl]),
+  LineComment,
+  BlockComment,
+]);
+
+return {
+  Optional: p.Many(Single),
+  Space: p.Repeat(Single, [1u64, null]),
+};

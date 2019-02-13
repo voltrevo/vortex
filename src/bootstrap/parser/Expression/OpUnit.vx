@@ -3,6 +3,7 @@ import p from '@/util/parse.vx';
 import @/parser/AppendPos.vx;
 import @/parser/Identifier.vx;
 import @/parser/Primitive/Primitive.vx;
+import @/parser/W.vx;
 
 import ./Array.vx;
 import ./DeferExpression.vx;
@@ -14,12 +15,12 @@ import ./Suffix.vx;
 
 ParenExp := p.SequenceOne([
   [p.Exact('(')],
-  [p.OW],
+  [W.Optional],
   p.Select([
     AppendPos(Import),
     DeferExpression,
   ]),
-  [p.OW],
+  [W.Optional],
   [p.Exact(')')],
 ]);
 

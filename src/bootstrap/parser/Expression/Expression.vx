@@ -2,6 +2,8 @@ import @/util/SetFromArray.vx;
 
 import p from '@/util/parse.vx';
 
+import @/parser/W.vx;
+
 import ./operators.vx;
 import ./OpUnit.vx;
 
@@ -54,6 +56,9 @@ func joinUnaries([head, tail]) {
 
 func joinBinaries({exps, ops}) {
   func combine(op, left, right) {
+    if (right:Length() == 2u64) {
+      log.info right;
+    }
     return [op, [left, right], [left[2][0], right[2][1]]];
   };
 
@@ -132,10 +137,10 @@ return p.Transform(
     OpUnit,
     p.Many(p.Sequence([
       p.Repeat(
-        p.SequenceOne([[p.OW], operators.Parse]),
+        p.SequenceOne([[W.Optional], operators.Parse]),
         [1u64, null],
       ),
-      [p.OW],
+      [W.Optional],
       OpUnit,
     ])),
   ]),

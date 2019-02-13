@@ -3,6 +3,7 @@ import p from '@/util/parse.vx';
 import @/parser/AppendPos.vx;
 import @/parser/Expression/Expression.vx;
 import @/parser/Expression/Import.vx;
+import @/parser/W.vx;
 
 import ./If.vx;
 import ./FailedStatement.vx;
@@ -23,7 +24,7 @@ ExpStatement := p.Transform(
         p.Exact('log.warn'),
         p.Exact('log.error'),
       ]),
-      [p.Whitespace],
+      [W.Space],
     ])),
     Expression,
   ]),
@@ -51,7 +52,7 @@ Statement := AppendPos(p.Select([
   For,
   p.SequenceOne([
     SemiStatement,
-    [p.OW],
+    [W.Optional],
     [p.Exact(';')],
   ]),
   FailedStatement,
