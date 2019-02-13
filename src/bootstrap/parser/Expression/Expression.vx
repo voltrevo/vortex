@@ -56,9 +56,6 @@ func joinUnaries([head, tail]) {
 
 func joinBinaries({exps, ops}) {
   func combine(op, left, right) {
-    if (right:Length() == 2u64) {
-      log.info right;
-    }
     return [op, [left, right], [left[2][0], right[2][1]]];
   };
 

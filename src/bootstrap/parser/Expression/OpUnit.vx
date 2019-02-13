@@ -49,4 +49,4 @@ Access := p.Transform(
   },
 );
 
-return p.Select([Function, Access]);
+return p.Select([AppendPos(Function), Access]);
