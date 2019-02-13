@@ -11,11 +11,16 @@ import ./Object.vx;
 import ./Set.vx;
 import ./Suffix.vx;
 
+func AppendPos(parser) => p.Transform(
+  p.DataPos(parser),
+  func({data, pos}) => data ++ [pos],
+);
+
 ParenExp := p.SequenceOne([
   [p.Exact('(')],
   [p.OW],
   p.Select([
-    Import,
+    AppendPos(Import),
     DeferExpression,
   ]),
   [p.OW],
@@ -23,11 +28,13 @@ ParenExp := p.SequenceOne([
 ]);
 
 AtomicExp := p.Select([
-  Primitive,
-  Identifier,
-  Array,
-  Set,
-  Object,
+  AppendPos(p.Select([
+    Primitive,
+    Identifier,
+    Array,
+    Set,
+    Object,
+  ])),
   ParenExp,
 ]);
 
@@ -37,8 +44,8 @@ Access := p.Transform(
     p.Many(Suffix),
   ]),
   func([exp, suffixes]) {
-    for ([op, rhs] of suffixes) {
-      exp = [op, [exp, rhs]];
+    for ([op, rhs, pos] of suffixes) {
+      exp = [op, [exp, rhs], pos];
     }
 
     return exp;

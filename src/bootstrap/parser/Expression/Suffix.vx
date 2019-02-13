@@ -5,7 +5,7 @@ import @/parser/Identifier.vx;
 
 import ./DeferExpression.vx;
 
-return p.Select([
+RawSuffix := p.Select([
   p.Transform(
     p.SequenceOne([
       [p.Exact('.')],
@@ -37,3 +37,8 @@ return p.Select([
     func(params) => ['functionCall', params],
   ),
 ]);
+
+return p.Transform(
+  p.DataPos(RawSuffix),
+  func({data, pos}) => data ++ [pos],
+);
