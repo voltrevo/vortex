@@ -32,8 +32,8 @@ return p.Transform(
       [W.Optional],
       DeferExpression,
       [p.Exact(';')],
+      [W.Optional],
     ])),
-    [W.Optional],
     [p.Exact('}')],
   ]),
   func([test, cases]) => ['switch', {
