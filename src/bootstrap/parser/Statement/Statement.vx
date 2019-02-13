@@ -5,6 +5,7 @@ import @/parser/Expression/Expression.vx;
 import @/parser/Expression/Import.vx;
 
 import ./If.vx;
+import ./FailedStatement.vx;
 import ./For.vx;
 
 func ExactStatement(str) => p.Transform(
@@ -52,6 +53,7 @@ Statement := AppendPos(p.Select([
     [p.OW],
     [p.Exact(';')],
   ]),
+  FailedStatement,
 ]));
 
 return Statement;

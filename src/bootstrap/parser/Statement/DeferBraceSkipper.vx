@@ -1,0 +1,3 @@
+import ./BraceSkipper.vx;
+
+return func(lines, pos) => BraceSkipper(lines, pos);

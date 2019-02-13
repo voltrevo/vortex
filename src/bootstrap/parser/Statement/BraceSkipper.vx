@@ -1,0 +1,15 @@
+import p from '@/util/parse.vx';
+
+import @/parser/Primitive/String.vx;
+
+import ./DeferBraceSkipper.vx;
+
+return p.Sequence([
+  p.Exact('{'),
+  p.Many(p.Select([
+    DeferBraceSkipper,
+    String,
+    p.Filter(p.Char, func(c) => c != '}'),
+  ])),
+  p.Exact('}'),
+]);

@@ -1,0 +1,25 @@
+import p from '@/util/parse.vx';
+
+import @/parser/AppendPos.vx;
+import @/parser/Primitive/String.vx;
+
+import ./BraceSkipper.vx;
+
+return AppendPos(p.Transform(
+  p.Select([
+    p.Sequence([
+      p.Repeat(p.Select([
+        String,
+        BraceSkipper,
+        p.Filter(p.Char, func(c) => !(c in #[';', '}'])),
+      ]), [1u64, null]),
+      p.Select([
+        p.Exact(';'),
+        p.Peek(p.Exact('}')),
+        p.End,
+      ]),
+    ]),
+    p.Exact(';'),
+  ]),
+  func(_) => ['failedStatement', null],
+));

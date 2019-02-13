@@ -1,9 +1,25 @@
 import p from '@/util/parse.vx';
 
-import ./Statement/Block.vx;
+import ./AppendPos.vx;
+import ./Statement/Statement.vx;
 
-return p.Complete(p.SequenceOne([
-  [p.OW],
-  Block,
-  [p.OW],
-]));
+UnmatchedClosingBrace := AppendPos(p.Transform(
+  p.Exact('}'),
+  func(_) => ['invalid', 'unmatched \'{\''],
+));
+
+Program := p.Complete(p.Transform(
+  p.SequenceOne([
+    p.Many(p.SequenceOne([
+      [p.OW],
+      p.Select([
+        Statement,
+        UnmatchedClosingBrace,
+      ]),
+    ])),
+    [p.OW],
+  ]),
+  func(statements) => ['block', statements],
+));
+
+return Program;

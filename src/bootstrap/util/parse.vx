@@ -292,4 +292,22 @@ return {
       j++;
     }
   },
+
+  End: func(lines, [i, j]) {
+    if (j == 0u64 && i == lines:Length()) {
+      return [['end', null, [[i, j], [i, j]]], [i, j]];
+    }
+
+    return null;
+  },
+
+  Peek: func(parser) => func(lines, pos) {
+    output := parser(lines, pos);
+
+    if (output:Kind() == 'null') {
+      return null;
+    }
+
+    return [output[0], pos];
+  },
 };
