@@ -30,7 +30,7 @@ func joinUnaries([head, tail]) {
       op := opLists[i][J];
 
       if (op in #['!', '~', '+', '-']) {
-        exps[i + 1u64] = ['unary ' ++ op, exps[i + 1u64]];
+        exps[i + 1u64] = ['unary ' ++ op, exps[i + 1u64], exps[i + 1u64][2]];
       } else {
         break;
       }
@@ -53,6 +53,10 @@ func joinUnaries([head, tail]) {
 };
 
 func joinBinaries({exps, ops}) {
+  func combine(op, left, right) {
+    return [op, [left, right], [left[2][0], right[2][1]]];
+  };
+
   for ([direction, dirOps] of operators.precedenceList) {
     nextExps := [];
     nextOps := [];
@@ -72,7 +76,7 @@ func joinBinaries({exps, ops}) {
         op := ops[i];
 
         if (op in dirOpsSet) {
-          currExp = [op, [currExp, exps[i + 1u64]]];
+          currExp = combine(op, currExp, exps[i + 1u64]);
         } else {
           nextExps ++= [currExp];
           currExp = exps[i + 1u64];
@@ -90,7 +94,7 @@ func joinBinaries({exps, ops}) {
         op := ops[i];
 
         if (op in dirOpsSet) {
-          currExp = [op, [exps[i], currExp]];
+          currExp = combine(op, exps[i], currExp);
         } else {
           nextExps = [currExp] ++ nextExps;
           currExp = exps[i];
