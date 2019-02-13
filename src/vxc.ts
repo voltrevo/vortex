@@ -1,13 +1,14 @@
-import * as fs from 'fs';
 import * as path from 'path';
 import * as minimist from 'minimist';
 
 import VasmSyntax from './parser/vasm/Syntax';
 import ByteCoder from './ByteCoder';
 import Compiler from './Compiler';
+import FileReader from './FileReader';
 import getStdin from './getStdin';
 import Note from './Note';
 import Package from './Package';
+import PackageRoot from './PackageRoot';
 import pretty from './pretty';
 import serializeVasmTree from './serializeVasmTree';
 
@@ -139,28 +140,8 @@ const inputs: { type: 'file', name: string }[] = [];
     stdinText = await getStdin();
   }
 
-  let packageRoot = process.cwd();
-
-  while (true) {
-    try {
-      await new Promise((resolve, reject) => fs.readFile(
-        path.join(packageRoot, '.vxpackage'),
-        err => err ? reject(err) : resolve(),
-      ));
-    } catch {
-      const nextPackageRoot = path.join(packageRoot, '..');
-
-      if (nextPackageRoot !== packageRoot) {
-        packageRoot = nextPackageRoot;
-        continue;
-      }
-
-      packageRoot = process.cwd();
-      break;
-    }
-
-    break;
-  }
+  const packageRoot = PackageRoot(process.cwd());
+  const fileReader = FileReader(packageRoot);
 
   for (let arg of args._) {
     let resolvedFile = path.resolve(
@@ -179,8 +160,6 @@ const inputs: { type: 'file', name: string }[] = [];
     throw new Error('no input files');
   }
 
-  const fileCache: { [file: string]: string | Error } = {};
-
   const readFile = (file: string) => {
     if (file === '(compiler)') {
       return new Error('invalid');
@@ -194,27 +173,7 @@ const inputs: { type: 'file', name: string }[] = [];
       return stdinText;
     }
 
-    let text: string | Error | null = null;
-
-    if (file.slice(0, 2) !== '@/') {
-      throw new Error('Expected a local read: ' + file);
-    }
-
-    if (file in fileCache) {
-      return fileCache[file];
-    }
-
-    try {
-      text = fs.readFileSync(path.join(packageRoot, file.slice(2))).toString()
-    } catch {}
-
-    if (text === null) {
-      text = new Error('not found');
-    }
-
-    fileCache[file] = text;
-
-    return text;
+    return fileReader(file);
   };
 
   const files = inputs.map(input => input.name);
