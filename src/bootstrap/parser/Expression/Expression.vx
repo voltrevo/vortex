@@ -158,7 +158,6 @@ return p.Transform(
     };
 
     for (op of trailingOps) {
-      log.info ['trailing op:', op, back];
       if (op in #['++', '--']) {
         back = ['unary ' ++ op, back];
       } else {
