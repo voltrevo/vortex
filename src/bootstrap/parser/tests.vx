@@ -1,7 +1,13 @@
 import ./Program.vx;
 
 assert Program(['13i8;']) == ['block', [
-  ['expression', ['literal', 13i8, [[0u64, 0u64], [0u64, 4u64]]]],
+  ['expression',
+    ['literal',
+      13i8,
+      [[0u64, 0u64], [0u64, 4u64]],
+    ],
+    [[0u64, 0u64], [0u64, 5u64]],
+  ],
 ]];
 
 if (0u8:String() == '0u8') {
@@ -17,10 +23,34 @@ if (0u8:String() == '0u8') {
   program := Program(sampleLines);
 
   assert program == ['block', [
-    ['expression', ['literal', 123u64, [[0u64, 1u64], [0u64, 7u64]]]],
-    ['expression', ['invalid', 'u8 overflow', [[2u64, 0u64], [2u64, 5u64]]]],
-    ['expression', ['literal', 321u64, [[4u64, 2u64], [4u64, 8u64]]]],
-    ['expression', ['array', [], [[5u64, 0u64], [5u64, 2u64]]]]
+    ['expression',
+      ['literal',
+        123u64,
+        [[0u64, 1u64], [0u64, 7u64]],
+      ],
+      [[0u64, 1u64], [0u64, 8u64]],
+    ],
+    ['expression',
+      ['invalid',
+        'u8 overflow',
+        [[2u64, 0u64], [2u64, 5u64]],
+      ],
+      [[2u64, 0u64], [2u64, 6u64]],
+    ],
+    ['expression',
+      ['literal',
+        321u64,
+        [[4u64, 2u64], [4u64, 8u64]],
+      ],
+      [[4u64, 2u64], [4u64, 9u64]],
+    ],
+    ['expression',
+      ['array',
+        [],
+        [[5u64, 0u64], [5u64, 2u64]],
+      ],
+      [[5u64, 0u64], [5u64, 3u64]],
+    ]
   ]];
 }
 
