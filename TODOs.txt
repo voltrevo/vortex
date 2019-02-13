@@ -1,3 +1,5 @@
+TODO: Refactor leading and trailing unary operator joining into main unary joining
+TODO: Fix strangeUnused.vx
 TODO: Bootstrap parser
 TODO: Use TypeValue comparison in switch matching
 TODO: Implement maps with non-string keys in VM (keys can be any functionless value)

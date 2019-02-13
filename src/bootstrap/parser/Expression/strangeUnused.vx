@@ -1,0 +1,187 @@
+import @/util/SetFromArray.vx;
+
+import p from '@/util/parse.vx';
+
+import @/parser/W.vx;
+
+import ./operators.vx;
+import ./OpUnit.vx;
+
+func joinUnaries([head, tail]) {
+  opLists := tail:map(func([ops, _]) => ops);
+  exps := [head] ++ tail:map(func([_, exp]) => exp);
+
+  for (i := 0u64; i < opLists:Length(); i++) {
+    j := 0u64;
+
+    for (j < opLists[i]:Length() - 1u64) {
+      op := opLists[i][j];
+
+      if (op in #['++', '--']) {
+        exps[i] = ['unary ' ++ op, exps[i]];
+      } else {
+        break;
+      }
+
+      j++;
+    }
+
+    J := opLists[i]:Length() - 1u64;
+
+    for (j < J) {
+      op := opLists[i][J];
+
+      if (op in #['!', '~', '+', '-']) {
+        exps[i + 1u64] = ['unary ' ++ op, exps[i + 1u64], exps[i + 1u64][2]];
+      } else {
+        break;
+      }
+
+      J--;
+    }
+
+    if (j != J) {
+      return ['invalid', (
+        'could not join operators ' ++
+        opLists[i]:String() ++
+        ' with neighboring expressions'
+      )];
+    }
+
+    opLists[i] = opLists[i][j];
+  }
+
+  return ['joined', {exps, ops: opLists}];
+};
+
+func joinBinaries({exps, ops}) {
+  func combine(op, left, right) {
+    return [op, [left, right], [left[2][0], right[2][1]]];
+  };
+
+  for ([direction, dirOps] of operators.precedenceList) {
+    nextExps := [];
+    nextOps := [];
+
+    assert exps:Length() == ops:Length() + 1u64;
+
+    if (exps:Length() == 1u64) {
+      return ['joined', exps:Front()];
+    }
+
+    dirOpsSet := SetFromArray(dirOps);
+
+    if (direction == 'left') {
+      currExp := exps:Front();
+
+      for (i := 0u64; i < ops:Length(); i++) {
+        op := ops[i];
+
+        if (op in dirOpsSet) {
+          currExp = combine(op, currExp, exps[i + 1u64]);
+        } else {
+          nextExps ++= [currExp];
+          currExp = exps[i + 1u64];
+          nextOps ++= [op];
+        }
+      }
+
+      nextExps ++= [currExp];
+    } else if (direction == 'right') {
+      currExp := exps:Back();
+
+      i := ops:Length() - 1u64;
+
+      for {
+        op := ops[i];
+
+        if (op in dirOpsSet) {
+          currExp = combine(op, exps[i], currExp);
+        } else {
+          nextExps = [currExp] ++ nextExps;
+          currExp = exps[i];
+          nextOps = [op] ++ nextOps;
+        }
+
+        if (i == 0u64) {
+          break;
+        } else {
+          i--;
+        }
+      }
+
+      nextExps = [currExp] ++ nextExps;
+    } else {
+      assert false;
+    }
+
+    exps = nextExps;
+    ops = nextOps;
+  }
+
+  assert exps:Length() == ops:Length() + 1u64;
+
+  if (exps:Length() == 1u64) {
+    return ['joined', exps:Front()];
+  }
+
+  assert false;
+  return null; // TODO: Should be unnecessary
+};
+
+return p.Transform(
+  p.Sequence([
+    p.Many(p.SequenceOne([operators.Parse, [W.Optional]])),
+    OpUnit,
+    p.Many(p.Sequence([
+      p.Repeat(
+        p.SequenceOne([[W.Optional], operators.Parse]),
+        [1u64, null],
+      ),
+      [W.Optional],
+      OpUnit,
+    ])),
+    p.Many(p.SequenceOne([[W.Optional], operators.Parse])),
+  ]),
+  func([leadingOps, head, tail, trailingOps]) {
+    for (op of leadingOps) {
+      if (op in #['!', '~', '+', '-']) {
+        head = ['unary ' ++ op, head, head[2]];
+      } else {
+        return ['invalid', 'could not join leading operator'];
+      }
+    }
+
+    back := switch (tail:Length()) {
+      0u64 => head;
+      default => tail:Back():Back();
+    };
+
+    for (op of trailingOps) {
+      log.info ['trailing op:', op, back];
+      if (op in #['++', '--']) {
+        back = ['unary ' ++ op, back];
+      } else {
+        return ['invalid', 'could not join trailing operator'];
+      }
+    }
+
+    if (tail:Length() == 0u64) {
+      head = back;
+    } else {
+      last := tail:Length() - 1u64;
+      tail[last][1] = back;
+    }
+
+    [type, data] := joinUnaries([head, tail]);
+
+    if (type == 'invalid') {
+      return [type, data];
+    }
+
+    [type, data] = joinBinaries(data);
+    assert type == 'joined';
+
+    return data;
+  },
+);
