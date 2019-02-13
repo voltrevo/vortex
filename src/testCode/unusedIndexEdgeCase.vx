@@ -1,0 +1,6 @@
+arr := [0];
+
+i := 0;
+arr[i] = 1;
+
+return arr;
