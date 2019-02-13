@@ -1,0 +1,6 @@
+import p from '@/util/parse.vx';
+
+return func(parser) => p.Transform(
+  p.DataPos(parser),
+  func({data, pos}) => data ++ [pos],
+);

@@ -1,5 +1,6 @@
 import p from '@/util/parse.vx';
 
+import @/parser/AppendPos.vx;
 import @/parser/Expression/Expression.vx;
 import @/parser/Expression/Import.vx;
 
@@ -43,7 +44,7 @@ SemiStatement := p.Select([
   ExpStatement,
 ]);
 
-Statement := p.Select([
+Statement := AppendPos(p.Select([
   If,
   For,
   p.SequenceOne([
@@ -51,6 +52,6 @@ Statement := p.Select([
     [p.OW],
     [p.Exact(';')],
   ]),
-]);
+]));
 
 return Statement;

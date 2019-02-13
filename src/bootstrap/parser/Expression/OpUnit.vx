@@ -1,5 +1,6 @@
 import p from '@/util/parse.vx';
 
+import @/parser/AppendPos.vx;
 import @/parser/Identifier.vx;
 import @/parser/Primitive/Primitive.vx;
 
@@ -10,11 +11,6 @@ import ./Import.vx;
 import ./Object.vx;
 import ./Set.vx;
 import ./Suffix.vx;
-
-func AppendPos(parser) => p.Transform(
-  p.DataPos(parser),
-  func({data, pos}) => data ++ [pos],
-);
 
 ParenExp := p.SequenceOne([
   [p.Exact('(')],
