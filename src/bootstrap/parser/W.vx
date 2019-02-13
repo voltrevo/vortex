@@ -6,7 +6,7 @@ nl := '
 LineComment := p.Sequence([
   p.Exact('//'),
   p.Many(p.Filter(p.Char, func(c) => c != nl)),
-  p.Exact(nl),
+  p.Filter(p.Char, func(c) => c == nl),
 ]);
 
 BlockComment := p.Sequence([
