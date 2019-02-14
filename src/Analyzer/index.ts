@@ -2524,6 +2524,7 @@ namespace Analyzer {
         let funcAz = { ...funcDef.v.az,
           modules: az.modules,
           steps: az.steps,
+          stepLimit: az.stepLimit,
           // TODO: Not doing this should break in an interesting way
           // fileStack: az.fileStack,
         };
