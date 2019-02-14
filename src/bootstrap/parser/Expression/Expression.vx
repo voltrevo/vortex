@@ -19,7 +19,7 @@ func joinUnaries([head, tail], pos) {
       op := opLists[i][j];
 
       if (op in #['++', '--']) {
-        exps[i] = ['unary ' ++ op, exps[i], exps[i][2]];
+        exps[i] = ['unary ' ++ op, [exps[i]], exps[i][2]];
       } else {
         break;
       }
@@ -33,7 +33,7 @@ func joinUnaries([head, tail], pos) {
       op := opLists[i][J];
 
       if (op in #['!', '~', '+', '-']) {
-        exps[i + 1u64] = ['unary ' ++ op, exps[i + 1u64], exps[i + 1u64][2]];
+        exps[i + 1u64] = ['unary ' ++ op, [exps[i + 1u64]], exps[i + 1u64][2]];
       } else {
         break;
       }
@@ -153,7 +153,7 @@ Normal := p.Transform(
   func({data: [leadingOps, head, tail, trailingOps], pos}) {
     for (op of leadingOps) {
       if (op in #['!', '~', '+', '-']) {
-        head = ['unary ' ++ op, head, head[2]];
+        head = ['unary ' ++ op, [head], head[2]];
       } else {
         return [
           'note',
@@ -176,7 +176,7 @@ Normal := p.Transform(
 
     for (op of trailingOps) {
       if (op in #['++', '--']) {
-        back = ['unary ' ++ op, back, back[2]];
+        back = ['unary ' ++ op, [back], back[2]];
       } else {
         return [
           'note',
