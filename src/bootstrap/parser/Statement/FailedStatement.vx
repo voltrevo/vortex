@@ -21,5 +21,5 @@ return AppendPos(p.Transform(
     ]),
     p.Exact(';'),
   ]),
-  func(_) => ['failedStatement', null],
+  func(_) => ['invalid', 'failed statement', null],
 ));
