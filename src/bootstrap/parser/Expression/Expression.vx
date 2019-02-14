@@ -2,6 +2,7 @@ import @/util/SetFromArray.vx;
 
 import p from '@/util/parse.vx';
 
+import @/parser/AppendPos.vx;
 import @/parser/W.vx;
 
 import ./operators.vx;
@@ -129,7 +130,7 @@ func joinBinaries({exps, ops}) {
   return null; // TODO: Should be unnecessary
 };
 
-return p.Transform(
+Normal := p.Transform(
   p.Sequence([
     p.Many(p.SequenceOne([operators.Parse, [W.Optional]])),
     OpUnit,
@@ -183,3 +184,8 @@ return p.Transform(
     return data;
   },
 );
+
+return p.Select([
+  Normal,
+  AppendPos(p.Label('op', operators.Parse)),
+]);
