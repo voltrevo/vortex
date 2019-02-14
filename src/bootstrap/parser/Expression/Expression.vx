@@ -19,7 +19,7 @@ func joinUnaries([head, tail]) {
       op := opLists[i][j];
 
       if (op in #['++', '--']) {
-        exps[i] = ['unary ' ++ op, exps[i]];
+        exps[i] = ['unary ' ++ op, exps[i], exps[i][2]];
       } else {
         break;
       }
@@ -160,7 +160,7 @@ Normal := p.Transform(
 
     for (op of trailingOps) {
       if (op in #['++', '--']) {
-        back = ['unary ' ++ op, back];
+        back = ['unary ' ++ op, back, back[2]];
       } else {
         return ['invalid', 'could not join trailing operator', pos];
       }

@@ -1,0 +1,31 @@
+import ./mutationOperators.vx;
+
+validTypes := (
+  mutationOperators |
+  #[
+    'func',
+    'import',
+  ]
+);
+
+return func(expression) {
+  [type, _, pos] := expression;
+
+  if (type == 'invalid') {
+    return [expression, [expression]];
+  }
+
+  notes := [];
+
+  if (!(type in validTypes)) {
+    notes ++= [{
+      level: 'warn',
+      message: 'Unused expression',
+      tags: #['unused', 'top-expression'],
+      pos,
+      subnotes: [],
+    }];
+  }
+
+  return [expression, notes];
+};

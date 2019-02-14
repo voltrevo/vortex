@@ -1,8 +1,18 @@
-return func(statement) {
-  [type, _, _] := statement;
+import ./TopExpression.vx;
 
-  return [statement, switch (type) {
-    'invalid' => [statement];
-    default => [];
-  }];
+return func(statement) {
+  [type, value, pos] := statement;
+  notes := [];
+
+  if (type == 'invalid') {
+    return [statement, [statement]];
+  }
+  
+  if (type == 'expression') {
+    [value, notes] = TopExpression(value);
+    return [[type, value, pos], notes];
+  }
+
+  assert false;
+  return null;
 };
