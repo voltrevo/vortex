@@ -1,0 +1,28 @@
+// TODO: operators are different after parse
+import @/parser/Expression/operators.vx;
+
+import ./mutationOperators.vx;
+
+func Expression(expression) {
+  notes := [];
+
+  [type, data, _] := expression;
+
+  if (type in operators.all) {
+    for ([subType, _, subPos] of data) {
+      if (subType in mutationOperators) {
+        notes ++= [{
+          level: 'error',
+          message: 'Mutating a variable in a subexpression is not allowed',
+          pos: subPos,
+          subnotes: [],
+          tags: #['subexpression-mutation'],
+        }];
+      }
+    }
+  }
+
+  return [expression, notes];
+};
+
+return Expression;

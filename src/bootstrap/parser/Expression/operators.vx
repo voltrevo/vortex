@@ -53,6 +53,8 @@ all := [
   'in',
 ];
 
+allSet := SetFromArray(all);
+
 precedenceOps := precedenceList:map(func([_, ops]) => ops):reduce(++);
 
 assert (
@@ -65,6 +67,7 @@ assert (
 );
 
 return {
+  all: allSet,
   assignment,
   prefix,
   postfix,

@@ -1,3 +1,4 @@
+import ./Expression.vx;
 import ./mutationOperators.vx;
 
 validTypes := (
@@ -26,6 +27,10 @@ return func(expression) {
       subnotes: [],
     }];
   }
+
+  subNotes := null;
+  [expression, subNotes] = Expression(expression);
+  notes ++= subNotes;
 
   return [expression, notes];
 };
