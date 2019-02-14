@@ -5,7 +5,7 @@ import @/parser/Primitive/String.vx;
 import ./BraceSkipper.vx;
 
 return p.Transform(
-  p.Select([
+  p.DataPos(p.Select([
     p.Sequence([
       p.Repeat(p.Select([
         String,
@@ -19,6 +19,12 @@ return p.Transform(
       ]),
     ]),
     p.Exact(';'),
-  ]),
-  func(_) => ['invalid', 'failed statement'],
+  ])),
+  func({data: _, pos}) => ['note', {
+    level: 'error',
+    message: 'failed statement',
+    pos,
+    subnotes: [],
+    tags: #['parser'],
+  }],
 );

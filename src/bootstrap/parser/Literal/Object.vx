@@ -2,7 +2,7 @@ import p from '@/util/parse.vx';
 
 import @/parser/CommaSequence.vx;
 import @/parser/Identifier.vx;
-import @/parser/Invalid.vx;
+import @/parser/Multinote.vx;
 import @/parser/Primitive/String.vx;
 import @/parser/W.vx;
 
@@ -34,10 +34,10 @@ Object := p.Transform(
       :reduce(++)
     );
 
-    invalid := Invalid(allValues);
+    note := Multinote(allValues);
 
-    if (invalid:Kind() != 'null') {
-      return invalid;
+    if (note:Kind() != 'null') {
+      return note;
     }
 
     res := {};

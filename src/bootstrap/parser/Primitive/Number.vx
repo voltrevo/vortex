@@ -56,7 +56,16 @@ func RawU64(lines, [i, j]) {
       res += digit;
 
       if (res < before) {
-        return [['invalid', 'u64 overflow'], [i, j]];
+        return [
+          ['note', {
+            level: 'error',
+            message: 'u64 overflow',
+            pos: [[i, j], [i, j]],
+            subnotes: [],
+            tags: #['parser', 'overflow'],
+          }],
+          [i, j]
+        ];
       }
     }
 
@@ -117,7 +126,16 @@ func NumberConvertedUnsigned(suffix) => func(lines, [i, j]) {
   value = tryConvertFromU64(value, suffix);
 
   if (value:Kind() == 'null') {
-    return [['invalid', suffix ++ ' overflow'], [i, j]];
+    return [
+      ['note', {
+        level: 'error',
+        message: suffix ++ ' overflow',
+        pos: [[i, j], [i, j]],
+        subnotes: [],
+        tags: #['parser', 'overflow'],
+      }],
+      [i, j],
+    ];
   }
 
   literal[1u64] = value;
@@ -159,7 +177,16 @@ func NumberConvertedSigned(lines, [i, j]) {
   value[1u64] = tryConvertFromU64(value[1u64], suffix);
 
   if (value[1u64]:Kind() == 'null') {
-    return [['invalid', suffix ++ ' overflow'], [i, j]];
+    return [
+      ['note', {
+        level: 'error',
+        message: suffix ++ ' overflow',
+        pos: [[i, j], [i, j]],
+        subnotes: [],
+        tags: #['parser', 'overflow'],
+      }],
+      [i, j],
+    ];
   }
 
   if (isNegated) {

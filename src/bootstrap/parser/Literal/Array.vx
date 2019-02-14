@@ -1,7 +1,7 @@
 import p from '@/util/parse.vx';
 
 import @/parser/CommaSequence.vx;
-import @/parser/Invalid.vx;
+import @/parser/Multinote.vx;
 
 import ./DeferLiteral.vx;
 
@@ -14,10 +14,10 @@ RawArray := p.SequenceOne([
 Array := p.Transform(
   RawArray,
   func(values) {
-    invalid := Invalid(values);
+    note := Multinote(values);
 
-    if (invalid:Kind() != 'null') {
-      return invalid;
+    if (note:Kind() != 'null') {
+      return note;
     }
 
     return ['literal', values:map(func(v) => v[1])];

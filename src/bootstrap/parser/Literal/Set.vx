@@ -1,7 +1,7 @@
 import p from '@/util/parse.vx';
 
 import @/parser/CommaSequence.vx;
-import @/parser/Invalid.vx;
+import @/parser/Multinote.vx;
 import @/util/SetFromArray.vx;
 
 import ./DeferLiteral.vx;
@@ -15,10 +15,10 @@ RawSet := p.SequenceOne([
 Set := p.Transform(
   RawSet,
   func(values) {
-    invalid := Invalid(values);
+    note := Multinote(values);
 
-    if (invalid:Kind() != 'null') {
-      return invalid;
+    if (note:Kind() != 'null') {
+      return note;
     }
 
     return ['literal', SetFromArray(values:map(func(v) => v[1]))];

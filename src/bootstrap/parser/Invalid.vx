@@ -2,13 +2,19 @@ return func(sequence) {
   res := [];
 
   for (s of sequence) {
-    if (s[0] == 'invalid') {
+    if (s[0] == 'note') {
       res ++= s[1];
     }
   }
 
   if (res:Length() != 0u64) {
-    return ['invalid', res];
+    return ['note', {
+      level: 'info',
+      message: '(note aggregation)',
+      pos: [[0u64, 0u64], [0u64, 0u64]],
+      subnotes: res,
+      tags: #['aggregation'],
+    }];
   }
 
   return null;

@@ -36,8 +36,14 @@ Object := p.Transform(
     for ([[_, key, pos], value] of pairs) {
       if (key in keySet) {
         return [
-          'invalid',
-          'object has duplicate key \'' ++ key ++ '\' at ' ++ pos:String(),
+          'note',
+          {
+            level: 'error',
+            message: 'object has duplicate key ' ++ key:String(),
+            pos,
+            subnotes: [],
+            tags: #['parser'],
+          },
         ];
       }
 

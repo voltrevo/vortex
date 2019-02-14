@@ -9,10 +9,10 @@ validTypes := (
 );
 
 return func(expression) {
-  [type, _, pos] := expression;
+  [type, value, pos] := expression;
 
-  if (type == 'invalid') {
-    return [expression, [expression]];
+  if (type == 'note') {
+    return [expression, [value]];
   }
 
   notes := [];

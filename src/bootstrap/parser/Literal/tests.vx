@@ -21,7 +21,7 @@ func obj(s) => p.Complete(Object)([s]);
 
 assert obj('{}')[1] == {};
 assert obj('{a: 1, b: 2}')[1] == {a: 1, b: 2};
-assert obj('{\'a\': 1, a: 2}')[0] == 'invalid';
+assert obj('{\'a\': 1, a: 2}')[0] == 'note';
 
 func lit(s) => p.Complete(Literal)([s])[1];
 

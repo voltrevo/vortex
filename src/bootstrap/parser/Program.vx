@@ -2,13 +2,22 @@ import p from '@/util/parse.vx';
 
 import @/parser/W.vx;
 
-import ./AppendPos.vx;
 import ./Statement/Statement.vx;
 
-UnmatchedClosingBrace := AppendPos(p.Transform(
-  p.Exact('}'),
-  func(_) => ['invalid', 'unmatched \'{\''],
-));
+UnmatchedClosingBrace := p.Transform(
+  p.DataPos(p.Exact('}')),
+  func({data: _, pos}) => [
+    'note',
+    {
+      level: 'error',
+      message: 'unmatched \'}\'',
+      pos,
+      subnotes: [],
+      tags: #['parser'],
+    },
+    pos,
+  ],
+);
 
 Program := p.Complete(p.Transform(
   p.SequenceOne([

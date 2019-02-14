@@ -4,10 +4,10 @@ return func(statement) {
   [type, value, pos] := statement;
   notes := [];
 
-  if (type == 'invalid') {
-    return [statement, [statement]];
+  if (type == 'note') {
+    return [statement, [value]];
   }
-  
+
   if (type == 'expression') {
     [value, notes] = TopExpression(value);
     return [[type, value, pos], notes];

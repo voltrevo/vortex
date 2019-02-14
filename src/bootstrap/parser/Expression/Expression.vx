@@ -8,7 +8,7 @@ import @/parser/W.vx;
 import ./operators.vx;
 import ./OpUnit.vx;
 
-func joinUnaries([head, tail]) {
+func joinUnaries([head, tail], pos) {
   opLists := tail:map(func([ops, _]) => ops);
   exps := [head] ++ tail:map(func([_, exp]) => exp);
 
@@ -42,11 +42,17 @@ func joinUnaries([head, tail]) {
     }
 
     if (j != J) {
-      return ['invalid', (
-        'could not join operators ' ++
-        opLists[i]:String() ++
-        ' with neighboring expressions'
-      )];
+      return ['note', {
+        level: 'error',
+        message: (
+          'could not join operators ' ++
+          opLists[i]:String() ++
+          ' with neighboring expressions'
+        ),
+        pos,
+        subnotes: [],
+        tags: #['parser'],
+      }];
     }
 
     opLists[i] = opLists[i][j];
@@ -149,7 +155,17 @@ Normal := p.Transform(
       if (op in #['!', '~', '+', '-']) {
         head = ['unary ' ++ op, head, head[2]];
       } else {
-        return ['invalid', 'could not join leading operator', pos];
+        return [
+          'note',
+          {
+            level: 'error',
+            message: 'could not join leading operator',
+            pos,
+            subnotes: [],
+            tags: #['parser'],
+          },
+          pos,
+        ];
       }
     }
 
@@ -162,7 +178,17 @@ Normal := p.Transform(
       if (op in #['++', '--']) {
         back = ['unary ' ++ op, back, back[2]];
       } else {
-        return ['invalid', 'could not join trailing operator', pos];
+        return [
+          'note',
+          {
+            level: 'error',
+            message: 'could not join trailing operator',
+            pos,
+            subnotes: [],
+            tags: #['parser'],
+          },
+          pos
+        ];
       }
     }
 
@@ -172,9 +198,9 @@ Normal := p.Transform(
       tail[tail:Length() - 1u64][1] = back;
     }
 
-    [type, data] := joinUnaries([head, tail]);
+    [type, data] := joinUnaries([head, tail], pos);
 
-    if (type == 'invalid') {
+    if (type == 'note') {
       return [type, data, pos];
     }
 
