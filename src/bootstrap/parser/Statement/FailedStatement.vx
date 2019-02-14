@@ -5,7 +5,7 @@ import @/parser/Primitive/String.vx;
 
 import ./BraceSkipper.vx;
 
-return AppendPos(p.Transform(
+return p.Transform(
   p.Select([
     p.Sequence([
       p.Repeat(p.Select([
@@ -21,5 +21,5 @@ return AppendPos(p.Transform(
     ]),
     p.Exact(';'),
   ]),
-  func(_) => ['invalid', 'failed statement', null],
-));
+  func(_) => ['invalid', 'failed statement'],
+);
