@@ -1,0 +1,8 @@
+return func(statement) {
+  [type, _, _] := statement;
+
+  return [statement, switch (type) {
+    'invalid' => [statement];
+    default => [];
+  }];
+};
