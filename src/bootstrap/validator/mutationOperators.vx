@@ -1,9 +1,0 @@
-import @/parser/Expression/operators.vx;
-
-return (
-  operators.assignment |
-  #[
-    'unary ++',
-    'unary --',
-  ]
-);

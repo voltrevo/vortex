@@ -1,0 +1,53 @@
+compound := #[
+  '**=', '+=', '++=', '-=', '*=', '/=', '%=', '<<=', '>>=', '&=',
+  '|=', '^=', '&&=', '||=', '~=',
+];
+
+assignment := compound | #[':=', '='];
+
+mutation := assignment | #['unary ++', 'unary --'];
+
+unary := #[
+  'unary +',
+  'unary -',
+  'unary ++',
+  'unary --',
+  'unary !',
+  'unary ~',
+];
+
+vanilla := #[
+  '==', '!=',
+
+  'unary +', 'unary -',
+  'unary !', 'unary ~',
+
+  '**',
+  '*', '/', '%',
+  '++', '+', '-',
+  '<<', '>>',
+  '<=', '>=', '<', '>',
+  '~',
+  '&',
+  '^',
+  '|',
+  '~',
+  '&&',
+  '||',
+  'in',
+];
+
+assert (mutation & vanilla) == #[];
+
+res := {
+  compound,
+  assignment,
+  unary,
+  mutation,
+  vanilla,
+};
+
+all := res:Values():reduce(|);
+assert (mutation | vanilla) == all;
+
+return res ++ {all};

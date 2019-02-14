@@ -1,13 +1,7 @@
 import ./Expression.vx;
-import ./mutationOperators.vx;
+import ./operatorTypes.vx;
 
-validTypes := (
-  mutationOperators |
-  #[
-    'func',
-    'import',
-  ]
-);
+validTypes := operatorTypes.mutation | #['func'];
 
 return func(expression) {
   [type, value, pos] := expression;

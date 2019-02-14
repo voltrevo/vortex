@@ -1,0 +1,8 @@
+import ./operatorTypes.vx;
+
+res := {
+  operator: operatorTypes.all,
+  other: #['func', 'import', 'switch'],
+};
+
+return res ++ {all: res:Values():reduce(|)};

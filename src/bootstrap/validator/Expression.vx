@@ -1,16 +1,14 @@
-// TODO: operators are different after parse
-import @/parser/Expression/operators.vx;
-
-import ./mutationOperators.vx;
+import ./expressionTypes.vx;
+import ./operatorTypes.vx;
 
 func Expression(expression) {
   notes := [];
 
   [type, data, _] := expression;
 
-  if (type in operators.all) {
+  if (type in expressionTypes.operator) {
     for ([subType, _, subPos] of data) {
-      if (subType in mutationOperators) {
+      if (subType in operatorTypes.mutation) {
         notes ++= [{
           level: 'error',
           message: 'Mutating a variable in a subexpression is not allowed',
