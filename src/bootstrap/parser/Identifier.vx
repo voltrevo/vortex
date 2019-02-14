@@ -3,7 +3,8 @@ import p from '@/util/parse.vx';
 RawIdentifier := p.Sequence([
   p.Filter(p.Char, func(c) => (
     ('a' <= c && c <= 'z') ||
-    ('A' <= c && c <= 'Z')
+    ('A' <= c && c <= 'Z') ||
+    c == '_'
   )),
   p.Many(p.Filter(p.Char, func(c) => (
     ('a' <= c && c <= 'z') ||
