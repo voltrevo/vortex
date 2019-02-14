@@ -69,12 +69,12 @@ assert (
   SetFromArray(all)
 );
 
-Parse := p.Select(all:map(p.Exact));
-
 return {
   assignment,
   prefix,
   postfix,
   precedenceList,
-  Parse,
+  Operator: p.Select(all:map(p.Exact)),
+  LeadingOperator: p.Select(prefix:Values():map(p.Exact)),
+  TrailingOperator: p.Select(postfix:Values():map(p.Exact)),
 };

@@ -132,17 +132,17 @@ func joinBinaries({exps, ops}) {
 
 Normal := p.Transform(
   p.Sequence([
-    p.Many(p.SequenceOne([operators.Parse, [W.Optional]])),
+    p.Many(p.SequenceOne([operators.LeadingOperator, [W.Optional]])),
     OpUnit,
     p.Many(p.Sequence([
       p.Repeat(
-        p.SequenceOne([[W.Optional], operators.Parse]),
+        p.SequenceOne([[W.Optional], operators.Operator]),
         [1u64, null],
       ),
       [W.Optional],
       OpUnit,
     ])),
-    p.Many(p.SequenceOne([[W.Optional], operators.Parse])),
+    p.Many(p.SequenceOne([[W.Optional], operators.TrailingOperator])),
   ]),
   func([leadingOps, head, tail, trailingOps]) {
     for (op of leadingOps) {
@@ -187,5 +187,5 @@ Normal := p.Transform(
 
 return p.Select([
   Normal,
-  AppendPos(p.Label('op', operators.Parse)),
+  AppendPos(p.Label('op', operators.Operator)),
 ]);
