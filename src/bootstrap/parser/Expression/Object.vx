@@ -3,7 +3,6 @@ import p from '@/util/parse.vx';
 import @/parser/AppendPos.vx;
 import @/parser/CommaSequence.vx;
 import @/parser/Identifier.vx;
-import @/parser/Invalid.vx;
 import @/parser/Primitive/String.vx;
 import @/parser/W.vx;
 
@@ -31,23 +30,19 @@ Object := p.Transform(
       return ['object', []];
     }
 
-    invalid := Invalid(pairs:reduce(++));
-
-    if (invalid:Kind() != 'null') {
-      return invalid;
-    }
-
     res := [];
+    keySet := #[];
 
     for ([[_, key, pos], value] of pairs) {
-      if (key in res:Keys()) {
+      if (key in keySet) {
         return [
           'invalid',
-          ['object has duplicate key \'' ++ key ++ '\' at ' ++ pos:String()],
+          'object has duplicate key \'' ++ key ++ '\' at ' ++ pos:String(),
         ];
       }
 
       res ++= [[key, value]];
+      keySet |= #[key];
     }
 
     return ['object', res];
