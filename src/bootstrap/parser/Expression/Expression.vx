@@ -131,7 +131,7 @@ func joinBinaries({exps, ops}) {
 };
 
 Normal := p.Transform(
-  p.Sequence([
+  p.DataPos(p.Sequence([
     p.Many(p.SequenceOne([operators.LeadingOperator, [W.Optional]])),
     OpUnit,
     p.Many(p.Sequence([
@@ -143,13 +143,13 @@ Normal := p.Transform(
       OpUnit,
     ])),
     p.Many(p.SequenceOne([[W.Optional], operators.TrailingOperator])),
-  ]),
-  func([leadingOps, head, tail, trailingOps]) {
+  ])),
+  func({data: [leadingOps, head, tail, trailingOps], pos}) {
     for (op of leadingOps) {
       if (op in #['!', '~', '+', '-']) {
         head = ['unary ' ++ op, head, head[2]];
       } else {
-        return ['invalid', 'could not join leading operator'];
+        return ['invalid', 'could not join leading operator', pos];
       }
     }
 
@@ -162,7 +162,7 @@ Normal := p.Transform(
       if (op in #['++', '--']) {
         back = ['unary ' ++ op, back];
       } else {
-        return ['invalid', 'could not join trailing operator'];
+        return ['invalid', 'could not join trailing operator', pos];
       }
     }
 
@@ -175,7 +175,7 @@ Normal := p.Transform(
     [type, data] := joinUnaries([head, tail]);
 
     if (type == 'invalid') {
-      return [type, data];
+      return [type, data, pos];
     }
 
     [type, data] = joinBinaries(data);
