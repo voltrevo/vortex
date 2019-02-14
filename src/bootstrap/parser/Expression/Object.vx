@@ -1,5 +1,6 @@
 import p from '@/util/parse.vx';
 
+import @/parser/AppendPos.vx;
 import @/parser/CommaSequence.vx;
 import @/parser/Identifier.vx;
 import @/parser/Invalid.vx;
@@ -10,12 +11,12 @@ import ./DeferExpression.vx;
 
 Colon := p.Exact(':');
 
-Key := p.DataPos(p.Select([Identifier, String]));
+Key := AppendPos(p.Select([Identifier, String]));
 
-KeyValuePair := p.Transform(
+KeyValuePair := p.Select([
   p.Sequence([Key, [W.Optional], [Colon], [W.Optional], DeferExpression]),
-  func([key, value]) => ['kvp', [key, value]],
-);
+  p.Transform(AppendPos(Identifier), func(key) => [key, key]),
+]);
 
 RawObject := p.SequenceOne([
   [p.Exact('{')],
@@ -30,11 +31,7 @@ Object := p.Transform(
       return ['object', []];
     }
 
-    allValues := (pairs:map(func(pair) => [pair[1][0].data, pair[1][1]])
-      :reduce(++)
-    );
-
-    invalid := Invalid(allValues);
+    invalid := Invalid(pairs:reduce(++));
 
     if (invalid:Kind() != 'null') {
       return invalid;
@@ -42,7 +39,7 @@ Object := p.Transform(
 
     res := [];
 
-    for ([_, [{data: [_, key], pos}, value]] of pairs) {
+    for ([[_, key, pos], value] of pairs) {
       if (key in res:Keys()) {
         return [
           'invalid',

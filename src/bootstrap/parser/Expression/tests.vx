@@ -4,6 +4,9 @@ import ./Expression.vx;
 
 exp := p.Complete(Expression);
 
+log.info exp(['{x}']);
+log.info exp(['{x:x}']);
+
 log.info exp(['foo(1 + 1)']);
 log.info exp(['foo(1, 1)']);
 

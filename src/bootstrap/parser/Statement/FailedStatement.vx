@@ -1,6 +1,5 @@
 import p from '@/util/parse.vx';
 
-import @/parser/AppendPos.vx;
 import @/parser/Primitive/String.vx;
 
 import ./BraceSkipper.vx;
