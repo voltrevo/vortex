@@ -2,38 +2,46 @@ import @/util/aan.vx;
 
 import ./expressionTypes.vx;
 import ./operatorTypes.vx;
+import ./SubExpression.vx;
 
 func Expression(expression) {
   notes := [];
+  naming := [];
 
   [type, data, pos] := expression;
 
-  if (type in expressionTypes.operator) {
-    for ([subType, _, subPos] of data) {
-      if (subType in operatorTypes.mutation) {
-        notes ++= [{
-          level: 'error',
-          message: 'Mutating a variable in a subexpression is not allowed',
-          pos: subPos,
-          subnotes: [],
-          tags: #['subexpression-mutation'],
-        }];
-      }
+  if (type == 'identifier') {
+    naming ++= [NameOp('use', expression)];
+  } else if (type in expressionTypes.operator) {
+    for (subExp of data) {
+      notes ++= SubExpression(subExp);
     }
 
     if (type in operatorTypes.mutation) {
-      mutation := Mutation(data[0], pos);
+      [left, right] := data;
 
+      style := switch (type) {
+        ':=' => 'create';
+        default => 'mutate';
+      };
+
+      mutation := Mutation(left, style, pos);
       notes ++= mutation.notes;
+      naming ++= mutation.naming;
 
-      nameTargets := mutation.nameTargets;
+      valRight := Expression(right);
+
+      notes ++= valRight.notes;
+      naming ++= valRight.naming;
     }
   }
 
-  return [expression, notes];
+  return {notes, naming};
 };
 
-func Mutation(target, pos) {
+func Mutation(target, style, pos) {
+  func recurse(sub) => Mutation(sub, style, pos);
+
   [type, data, _] := target;
 
   if (!(type in expressionTypes.mutable)) {
@@ -45,18 +53,16 @@ func Mutation(target, pos) {
         subnotes: [],
         tags: #['mutation-target'],
       }],
-      nameTargets: [],
-      valid: false,
+      naming: [],
     };
   }
 
   if (type == 'identifier') {
-    return {notes: [], nameTargets: [data]};
+    return {notes: [], naming: [NameOp(style, target)]};
   }
 
   notes := [];
-  nameTargets := [];
-  valid := true;
+  naming := [];
 
   if (type in #['.', 'subscript']) {
     subTarget := data[0];
@@ -76,30 +82,31 @@ func Mutation(target, pos) {
         subnotes: [],
         tags: #['mutation-target'],
       }];
-
-      valid = false;
     } else {
-      subMutation := Mutation(subTarget);
+      subMutation := recurse(subTarget);
       notes ++= subMutation.notes;
-      nameTargets ++= subMutation.nameTargets;
-      valid &&= subMutation.valid;
+      naming ++= subMutation.naming;
     }
 
-    return {notes, nameTargets, valid};
+    return {notes, naming};
   }
 
   subMutations := switch (type) {
-    'array' => data:map(Mutation);
-    'object' => data:map(func([_, subTarget]) => Mutation(subTarget));
+    'array' => data:map(recurse);
+    'object' => data:map(func([_, subTarget]) => recurse(subTarget));
   };
 
   for (subMutation of subMutations) {
     notes ++= subMutation.notes;
-    nameTargets ++= subMutation.nameTargets;
-    valid &&= subMutation.valid;
+    naming ++= subMutation.naming;
   }
 
-  return {notes, nameTargets, valid};
+  return {notes, naming};
+};
+
+func NameOp(style, identifier) {
+  identifier[0] = style;
+  return identifier;
 };
 
 return Expression;

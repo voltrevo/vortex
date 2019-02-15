@@ -1,0 +1,10 @@
+import PProgram from './parser/Program.vx';
+import VProgram from './validator/Program.vx';
+
+func prog(lines) => VProgram(PProgram(lines));
+
+log.info prog(['']);
+log.info prog(['1.b += 1;']);
+log.info prog(['a += b;']);
+
+return 'done';

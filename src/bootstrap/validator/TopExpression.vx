@@ -7,13 +7,13 @@ return func(expression) {
   [type, value, pos] := expression;
 
   if (type == 'note') {
-    return [expression, [value]];
+    return {notes: [value], naming: []};
   }
 
-  notes := [];
+  valInfo := Expression(expression);
 
   if (!(type in validTypes)) {
-    notes ++= [{
+    valInfo.notes ++= [{
       level: 'warn',
       message: 'Unused expression',
       tags: #['unused', 'top-expression'],
@@ -22,9 +22,5 @@ return func(expression) {
     }];
   }
 
-  subNotes := null;
-  [expression, subNotes] = Expression(expression);
-  notes ++= subNotes;
-
-  return [expression, notes];
+  return valInfo;
 };

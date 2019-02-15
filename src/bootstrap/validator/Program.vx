@@ -12,5 +12,5 @@ return func([type, statements]) {
     notes ++= ns;
   }
 
-  return [['block', vStatements], notes];
+  return {tree: ['block', vStatements], notes};
 };

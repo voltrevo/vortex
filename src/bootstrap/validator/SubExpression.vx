@@ -1,0 +1,15 @@
+import ./operatorTypes.vx;
+
+return func([type, _, pos]) {
+  if (type in operatorTypes.mutation) {
+    return [{
+      level: 'error',
+      message: 'Mutating a variable in a subexpression is not allowed',
+      pos,
+      subnotes: [],
+      tags: #['subexpression-mutation'],
+    }];
+  }
+
+  return [];
+};
