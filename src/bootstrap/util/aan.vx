@@ -1,0 +1,4 @@
+return func(str) => switch {
+  (str[0] in #['a', 'e', 'i', 'o', 'u']) => 'an ' ++ str;
+  default => 'a ' ++ str;
+};

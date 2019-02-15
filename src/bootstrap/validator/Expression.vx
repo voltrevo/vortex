@@ -1,3 +1,5 @@
+import @/util/aan.vx;
+
 import ./expressionTypes.vx;
 import ./operatorTypes.vx;
 
@@ -32,7 +34,7 @@ func Expression(expression) {
 };
 
 func Mutation(target, pos) {
-  [type, _, _] := target;
+  [type, data, targetPos] := target;
 
   if (!(type in expressionTypes.mutable)) {
     return {
@@ -44,7 +46,46 @@ func Mutation(target, pos) {
         tags: #['mutation-target'],
       }],
       nameTargets: [],
+      valid: false,
     };
+  }
+
+  if (type == 'identifier') {
+    return {notes: [], nameTargets: [data]};
+  }
+
+  notes := [];
+  nameTargets := [];
+  valid := true;
+
+  if (type in #['.', 'subscript']) {
+    subTarget := data[0];
+    subType := subTarget[0];
+
+    if (!(subType in #['identifier', '.', 'subscript'])) {
+      notes ++= [{
+        level: 'error',
+        message: (
+          'In a mutation target, the left side of ' ++
+          aan(type) ++
+          ' expression cannot be ' ++
+          aan(subType) ++
+          ' expression'
+        ),
+        pos: subTarget[2],
+        subnotes: [],
+        tags: #['mutation-target'],
+      }];
+
+      valid = false;
+    } else {
+      subMutation := Mutation(subTarget);
+      notes ++= subMutation.notes;
+      nameTargets ++= subMutation.nameTargets;
+      valid = subMutation.valid;
+    }
+
+    return {notes, nameTargets, valid};
   }
 
   // TODO
