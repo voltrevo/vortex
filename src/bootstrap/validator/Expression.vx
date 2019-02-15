@@ -34,7 +34,7 @@ func Expression(expression) {
 };
 
 func Mutation(target, pos) {
-  [type, data, targetPos] := target;
+  [type, data, _] := target;
 
   if (!(type in expressionTypes.mutable)) {
     return {
@@ -82,14 +82,24 @@ func Mutation(target, pos) {
       subMutation := Mutation(subTarget);
       notes ++= subMutation.notes;
       nameTargets ++= subMutation.nameTargets;
-      valid = subMutation.valid;
+      valid &&= subMutation.valid;
     }
 
     return {notes, nameTargets, valid};
   }
 
-  // TODO
-  return {notes: [], nameTargets: []};
+  subMutations := switch (type) {
+    'array' => data:map(Mutation);
+    'object' => data:map(func([_, subTarget]) => Mutation(subTarget));
+  };
+
+  for (subMutation of subMutations) {
+    notes ++= subMutation.notes;
+    nameTargets ++= subMutation.nameTargets;
+    valid &&= subMutation.valid;
+  }
+
+  return {notes, nameTargets, valid};
 };
 
 return Expression;
