@@ -42,8 +42,13 @@ func Expression(expression) {
     subExps ++= [left];
   } else if (type == 'note') {
     notes ++= [data];
-  } else if (type in #['func', 'import', 'switch']) {
-    log.warn 'Unimplemented: validating ' ++ type ++ ' expression';
+  } else if (type == 'switch') {
+    [test, cases] := data;
+    subExps ++= [test] ++ cases:reduce(++);
+  } else if (type in #['import', 'default']) {
+    // Nothing to do for these types
+  } else if (type == 'func') {
+    log.warn 'Unimplemented: validating func expression';
   } else {
     assert false;
   }
