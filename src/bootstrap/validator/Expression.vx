@@ -33,6 +33,11 @@ func Expression(expression) {
 
       notes ++= valRight.notes;
       naming ++= valRight.naming;
+    } else {
+      for ({notes: subNotes, naming: subNaming} of data:map(Expression)) {
+        notes ++= subNotes;
+        naming ++= subNaming;
+      }
     }
   }
 
@@ -104,9 +109,6 @@ func Mutation(target, style, pos) {
   return {notes, naming};
 };
 
-func NameOp(style, identifier) {
-  identifier[0] = style;
-  return identifier;
-};
+func NameOp(style, [_, name, pos]) => [style, name, pos];
 
 return Expression;
