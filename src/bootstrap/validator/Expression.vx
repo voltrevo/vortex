@@ -4,7 +4,7 @@ import ./operatorTypes.vx;
 func Expression(expression) {
   notes := [];
 
-  [type, data, _] := expression;
+  [type, data, pos] := expression;
 
   if (type in expressionTypes.operator) {
     for ([subType, _, subPos] of data) {
@@ -18,9 +18,37 @@ func Expression(expression) {
         }];
       }
     }
+
+    if (type in operatorTypes.mutation) {
+      mutation := Mutation(data[0], pos);
+
+      notes ++= mutation.notes;
+
+      nameTargets := mutation.nameTargets;
+    }
   }
 
   return [expression, notes];
+};
+
+func Mutation(target, pos) {
+  [type, _, _] := target;
+
+  if (!(type in expressionTypes.mutable)) {
+    return {
+      notes: [{
+        level: 'error',
+        message: type ++ ' expression is not a valid mutation target',
+        pos,
+        subnotes: [],
+        tags: #['mutation-target'],
+      }],
+      nameTargets: [],
+    };
+  }
+
+  // TODO
+  return {notes: [], nameTargets: []};
 };
 
 return Expression;

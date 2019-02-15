@@ -1,8 +1,13 @@
 import ./operatorTypes.vx;
 
+nameAccess := #['.', 'methodLookup'];
+
 res := {
   operator: operatorTypes.all,
-  other: #['func', 'import', 'switch'],
+  other: #['func', 'import', 'switch', 'literal'],
+  nameAccess,
+  container: #['array', 'set', 'object'],
+  mutable: #['identifier', '.', 'subscript', 'array', 'object'],
 };
 
 return res ++ {all: res:Values():reduce(|)};
