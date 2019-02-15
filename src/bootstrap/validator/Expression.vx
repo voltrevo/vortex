@@ -10,13 +10,11 @@ func Expression(expression) {
 
   [type, data, pos] := expression;
 
+  subExps := [];
+
   if (type == 'identifier') {
     naming ++= [NameOp('use', expression)];
   } else if (type in expressionTypes.operator) {
-    for (subExp of data) {
-      notes ++= SubExpression(subExp);
-    }
-
     if (type in operatorTypes.mutation) {
       [left, right] := data;
 
@@ -29,27 +27,32 @@ func Expression(expression) {
       notes ++= mutation.notes;
       naming ++= mutation.naming;
 
-      valRight := Expression(right);
-
-      notes ++= valRight.notes;
-      naming ++= valRight.naming;
+      subExps ++= [right];
     } else {
-      for ({notes: subNotes, naming: subNaming} of data:map(Expression)) {
-        notes ++= subNotes;
-        naming ++= subNaming;
-      }
+      subExps ++= data;
     }
   } else if (type in expressionTypes.container) {
-    subs := switch (type) {
+    subExps ++= switch (type) {
       'array' => data;
       'set' => data;
       'object' => data:map(func([_, exp]) => exp);
     };
+  } else if (type in expressionTypes.nameAccess) {
+    [left, _] := data;
+    subExps ++= [left];
+  } else if (type == 'note') {
+    notes ++= [data];
+  } else if (type in #['func', 'import', 'switch']) {
+    log.warn 'Unimplemented: validating ' ++ type ++ ' expression';
+  } else {
+    assert false;
+  }
 
-    for ({notes: subNotes, naming: subNaming} of subs:map(Expression)) {
-      notes ++= subNotes;
-      naming ++= subNaming;
-    }
+  notes ++= subExps:map(SubExpression):reduce(++);
+
+  for ({notes: subNotes, naming: subNaming} of subExps:map(Expression)) {
+    notes ++= subNotes;
+    naming ++= subNaming;
   }
 
   return {notes, naming};
