@@ -830,6 +830,10 @@ namespace Analyzer {
                 let container: Outcome | null;
                 [container, az] = subExpression(az, containerExp);
 
+                if (container.t === 'exception') {
+                  return [container, az];
+                }
+
                 if (container.t !== 'Array') {
                   // TODO: handle Unknown
 
