@@ -28,6 +28,9 @@ func Expression(expression) {
       naming ++= mutation.naming;
 
       subExps ++= [right];
+    } else if (type == 'functionCall') {
+      [base, args] := data;
+      subExps ++= [base] ++ args;
     } else {
       subExps ++= data;
     }
@@ -50,7 +53,6 @@ func Expression(expression) {
   } else if (type == 'func') {
     log.warn 'Unimplemented: validating func expression';
   } else {
-    log.error ['Unexpected type: ', type];
     assert false;
   }
 
