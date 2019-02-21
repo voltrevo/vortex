@@ -77,8 +77,6 @@ if (entryFunc.t !== 'Func') {
 
   const lines = Outcome.Array(stdinText.split('\n').map(Outcome.String));
 
-  debugger;
-
   let output: Outcome;
   [output, az] = Analyzer.analyze.functionCallValue(
     {...az, steps: 0, stepLimit: null},
@@ -87,7 +85,27 @@ if (entryFunc.t !== 'Func') {
     [lines],
   );
 
-  console.log(Outcome.LongString(output));
+  if (output.t === 'exception' && 'level' in output.v) {
+    console.log();
+
+    for (const note of Note.flatten([output.v])) {
+      pretty.print(note, readFile(note.pos[0]));
+    }
+  } else {
+    console.log(Outcome.LongString(output));
+  }
+
+  for (const file of Object.keys(az.modules)) {
+    const mod = az.modules[file];
+
+    if (!mod || !mod.loaded) {
+      continue;
+    }
+
+    for (const note of Note.flatten(mod.notes)) {
+      pretty.print(note, readFile(note.pos[0]));
+    }
+  }
 })().catch(e => {
   setTimeout(() => { throw e; });
 });
