@@ -1,17 +1,11 @@
 import ./TopExpression.vx;
 
 return func(statement) {
-  [type, data, pos] := statement;
-  notes := [];
-  naming := [];
+  [type, data, _] := statement;
 
   if (type == 'note') {
-    notes ++= [data];
-  } else if (type == 'expression') {
-    valData := TopExpression(data);
-    naming ++= valData.naming;
-    notes ++= valData.notes;
+    return [data];
   }
 
-  return [{type, data, naming, pos}, notes];
+  return TopExpression(data);
 };

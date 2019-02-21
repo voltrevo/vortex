@@ -1,4 +1,4 @@
 import PProgram from './parser/Program.vx';
 import VProgram from './validator/Program.vx';
 
-return func(lines) => VProgram(PProgram(lines)).tree;
+return func(lines) => VProgram(PProgram(lines));

@@ -2,15 +2,5 @@ import ./Statement.vx;
 
 return func([type, statements]) {
   assert type == 'block'; // TODO: Destructure exact matches using literals
-
-  vStatements := [];
-  notes := [];
-
-  for (statement of statements) {
-    [vs, ns] := Statement(statement);
-    vStatements ++= [vs];
-    notes ++= ns;
-  }
-
-  return {tree: ['block', vStatements], notes};
+  return ([[]] ++ statements:map(Statement)):reduce(++);
 };

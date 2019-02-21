@@ -6,26 +6,16 @@ import ./SubExpression.vx;
 
 func Expression(expression) {
   notes := [];
-  naming := [];
 
   [type, data, pos] := expression;
 
   subExps := [];
 
-  if (type == 'identifier') {
-    naming ++= [NameOp('use', expression)];
-  } else if (type in expressionTypes.operator) {
+  if (type in expressionTypes.operator) {
     if (type in operatorTypes.mutation) {
       [left, right] := data;
 
-      style := switch (type) {
-        ':=' => 'create';
-        default => 'mutate';
-      };
-
-      mutation := Mutation(left, style, pos);
-      notes ++= mutation.notes;
-      naming ++= mutation.naming;
+      notes ++= Mutation(left, pos);
 
       subExps ++= [right];
     } else if (type == 'functionCall') {
@@ -48,7 +38,7 @@ func Expression(expression) {
   } else if (type == 'switch') {
     [test, cases] := data;
     subExps ++= [test] ++ cases:reduce(++);
-  } else if (type in #['import', 'default', 'literal']) {
+  } else if (type in #['import', 'default', 'literal', 'identifier']) {
     // Nothing to do for these types
   } else if (type == 'func') {
     log.warn 'Unimplemented: validating func expression';
@@ -56,40 +46,33 @@ func Expression(expression) {
     assert false;
   }
 
-  notes ++= ([[]] ++ subExps:map(SubExpression)):reduce(++);
+  notes ++= (
+    [[]] ++ subExps:map(func(se) => SubExpression(se) ++ Expression(se))
+  ):reduce(++);
 
-  for ({notes: subNotes, naming: subNaming} of subExps:map(Expression)) {
-    notes ++= subNotes;
-    naming ++= subNaming;
-  }
-
-  return {notes, naming};
+  return notes;
 };
 
-func Mutation(target, style, pos) {
-  func recurse(sub) => Mutation(sub, style, pos);
+func Mutation(target, pos) {
+  func recurse(sub) => Mutation(sub, pos);
 
   [type, data, _] := target;
 
   if (!(type in expressionTypes.mutable)) {
-    return {
-      notes: [{
-        level: 'error',
-        message: type ++ ' expression is not a valid mutation target',
-        pos,
-        subnotes: [],
-        tags: #['mutation-target'],
-      }],
-      naming: [],
-    };
+    return [{
+      level: 'error',
+      message: type ++ ' expression is not a valid mutation target',
+      pos,
+      subnotes: [],
+      tags: #['mutation-target'],
+    }];
   }
 
   if (type == 'identifier') {
-    return {notes: [], naming: [NameOp(style, target)]};
+    return [];
   }
 
   notes := [];
-  naming := [];
 
   if (type in #['.', 'subscript']) {
     subTarget := data[0];
@@ -110,12 +93,10 @@ func Mutation(target, style, pos) {
         tags: #['mutation-target'],
       }];
     } else {
-      subMutation := recurse(subTarget);
-      notes ++= subMutation.notes;
-      naming ++= subMutation.naming;
+      notes ++= recurse(subTarget);
     }
 
-    return {notes, naming};
+    return notes;
   }
 
   subMutations := switch (type) {
@@ -123,14 +104,9 @@ func Mutation(target, style, pos) {
     'object' => data:map(func([_, subTarget]) => recurse(subTarget));
   };
 
-  for (subMutation of subMutations) {
-    notes ++= subMutation.notes;
-    naming ++= subMutation.naming;
-  }
+  notes = ([notes] ++ subMutations):reduce(++);
 
-  return {notes, naming};
+  return notes;
 };
-
-func NameOp(style, [_, name, pos]) => [style, name, pos];
 
 return Expression;
