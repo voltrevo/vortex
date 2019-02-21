@@ -45,15 +45,16 @@ func Expression(expression) {
   } else if (type == 'switch') {
     [test, cases] := data;
     subExps ++= [test] ++ cases:reduce(++);
-  } else if (type in #['import', 'default']) {
+  } else if (type in #['import', 'default', 'literal']) {
     // Nothing to do for these types
   } else if (type == 'func') {
     log.warn 'Unimplemented: validating func expression';
   } else {
+    log.error ['Unexpected type: ', type];
     assert false;
   }
 
-  notes ++= subExps:map(SubExpression):reduce(++);
+  notes ++= ([[]] ++ subExps:map(SubExpression)):reduce(++);
 
   for ({notes: subNotes, naming: subNaming} of subExps:map(Expression)) {
     notes ++= subNotes;
