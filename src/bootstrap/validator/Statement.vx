@@ -65,7 +65,8 @@ return func Statement(inLoop, statement) {
   }
 
   return switch (type) {
-    'note' => [data];
     'expression' => TopExpression(data);
+    'note' => [data];
+    'import' => [];
   };
 };
