@@ -1,8 +1,13 @@
+import ./Expression.vx;
 import ./operatorTypes.vx;
 
-return func([type, _, pos]) {
+return func(expression) {
+  notes := [];
+
+  [type, _, pos] := expression;
+
   if (type in operatorTypes.mutation) {
-    return [{
+    notes ++= [{
       level: 'error',
       message: 'Mutating a variable in a subexpression is not allowed',
       pos,
@@ -11,5 +16,7 @@ return func([type, _, pos]) {
     }];
   }
 
-  return [];
+  notes ++= Expression(expression);
+
+  return notes;
 };

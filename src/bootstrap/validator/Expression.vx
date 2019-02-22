@@ -51,16 +51,14 @@ func Expression(expression) {
     [bodyType, bodyData] := body;
 
     notes ++= switch (bodyType) {
-      'expression' => Expression(bodyData);
+      'expression' => SubExpression(bodyData);
       'block' => Program(body);
     };
   } else {
     assert false;
   }
 
-  notes ++= (
-    [[]] ++ subExps:map(func(se) => SubExpression(se) ++ Expression(se))
-  ):reduce(++);
+  notes ++= ([[]] ++ subExps:map(SubExpression)):reduce(++);
 
   return notes;
 };

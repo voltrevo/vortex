@@ -1,4 +1,3 @@
-import ./Expression.vx;
 import ./SubExpression.vx;
 import ./TopExpression.vx;
 
@@ -6,7 +5,7 @@ return func(statement) {
   [type, data, _] := statement;
 
   if (type in #['return', 'assert', 'log.info', 'log.warn', 'log.error']) {
-    return SubExpression(data) ++ Expression(data);
+    return SubExpression(data);
   }
 
   return switch (type) {
