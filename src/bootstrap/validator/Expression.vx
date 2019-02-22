@@ -2,12 +2,13 @@ import @/util/aan.vx;
 
 import ./expressionTypes.vx;
 import ./operatorTypes.vx;
+import ./Program.vx;
 import ./SubExpression.vx;
 
 func Expression(expression) {
   notes := [];
 
-  [type, data, pos] := expression;
+  [type, data, _] := expression;
 
   subExps := [];
 
@@ -15,7 +16,7 @@ func Expression(expression) {
     if (type in operatorTypes.mutation) {
       [left, right] := data;
 
-      notes ++= Mutation(left, pos);
+      notes ++= Mutation(left);
 
       subExps ++= [right];
     } else if (type == 'functionCall') {
@@ -41,7 +42,18 @@ func Expression(expression) {
   } else if (type in #['import', 'default', 'literal', 'identifier']) {
     // Nothing to do for these types
   } else if (type == 'func') {
-    log.warn 'Unimplemented: validating func expression';
+    {name: _, args, body} := data;
+
+    for (arg of args) {
+      notes ++= Argument(arg);
+    }
+
+    [bodyType, bodyData] := body;
+
+    notes ++= switch (bodyType) {
+      'expression' => Expression(bodyData);
+      'block' => Program(body);
+    };
   } else {
     assert false;
   }
@@ -53,10 +65,8 @@ func Expression(expression) {
   return notes;
 };
 
-func Mutation(target, pos) {
-  func recurse(sub) => Mutation(sub, pos);
-
-  [type, data, _] := target;
+func Mutation(target) {
+  [type, data, pos] := target;
 
   if (!(type in expressionTypes.mutable)) {
     return [{
@@ -93,20 +103,45 @@ func Mutation(target, pos) {
         tags: #['mutation-target'],
       }];
     } else {
-      notes ++= recurse(subTarget);
+      notes ++= Mutation(subTarget);
     }
 
     return notes;
   }
 
   subMutations := switch (type) {
-    'array' => data:map(recurse);
-    'object' => data:map(func([_, subTarget]) => recurse(subTarget));
+    'array' => data:map(Mutation);
+    'object' => data:map(func([_, subTarget]) => Mutation(subTarget));
   };
 
   notes = ([notes] ++ subMutations):reduce(++);
 
   return notes;
+};
+
+func Argument(target) {
+  [type, data, pos] := target;
+
+  if (type == 'identifier') {
+    return [];
+  }
+
+  if (type in #['array', 'object']) {
+    subArgs := switch (type) {
+      'array' => data:map(Argument);
+      'object' => data:map(func([_, subTarget]) => Argument(subTarget));
+    };
+
+    return ([[]] ++ subArgs):reduce(++);
+  }
+
+  return [{
+    level: 'error',
+    message: type ++ ' expression is not a valid argument',
+    pos,
+    subnotes: [],
+    tags: #['argument'],
+  }];
 };
 
 return Expression;
