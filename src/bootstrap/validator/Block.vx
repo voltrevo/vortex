@@ -1,0 +1,6 @@
+import ./Statement.vx;
+
+return func(inLoop, [type, statements]) {
+  assert type == 'block'; // TODO: Destructure exact matches using literals
+  return ([[]] ++ statements:map(Statement:bind(inLoop))):reduce(++);
+};

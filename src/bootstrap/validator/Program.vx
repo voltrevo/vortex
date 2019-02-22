@@ -1,6 +1,5 @@
-import ./Statement.vx;
+import ./Block.vx;
 
-return func([type, statements]) {
-  assert type == 'block'; // TODO: Destructure exact matches using literals
-  return ([[]] ++ statements:map(Statement)):reduce(++);
+return func(block) {
+  return Block(false, block);
 };
