@@ -3,7 +3,7 @@ import ./Block.vx;
 import ./SubExpression.vx;
 import ./TopExpression.vx;
 
-return func Statement(inLoop, statement) {
+func Statement(inLoop, statement) {
   [type, data, pos] := statement;
 
   if (type in #['return', 'assert', 'log.info', 'log.warn', 'log.error']) {
@@ -41,8 +41,21 @@ return func Statement(inLoop, statement) {
       {element, container} := controlData;
       notes ++= Argument(element);
       notes ++= SubExpression(container);
+    } else if (controlType == 'nothing') {
+      if (!BodyHasEscape(body)) {
+        notes ++= [{
+          level: 'error',
+          message: (
+            'Loop without control clause is infinite because it doesn\'t ' ++
+            'have any break or return statements'
+          ),
+          pos,
+          subnotes: [],
+          tags: #['infinite-loop'],
+        }];
+      }
     } else {
-      assert controlType == 'nothing';
+      assert false;
     }
 
     notes ++= Block(true, body);
@@ -69,3 +82,39 @@ return func Statement(inLoop, statement) {
     'import' => [];
   };
 };
+
+func BodyHasEscape([_, statements, _]) {
+  for ([type, data, _] of statements) {
+    if (type in #['break', 'return']) {
+      return true;
+    }
+
+    if (type == 'for') {
+      if (BodyHasEscape(data.body)) {
+        return true;
+      }
+    }
+
+    if (type == 'if') {
+      func IfHasEscape({condition: _, body, tail}) {
+        if (BodyHasEscape(body)) {
+          return true;
+        }
+
+        return switch (tail[0]) {
+          'nothing' => false;
+          'block' => BodyHasEscape(tail);
+          'if' => IfHasEscape(tail);
+        };
+      };
+
+      if (IfHasEscape(data)) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+};
+
+return Statement;
