@@ -1,0 +1,24 @@
+return func Argument(target) {
+  [type, data, pos] := target;
+
+  if (type == 'identifier') {
+    return [];
+  }
+
+  if (type in #['array', 'object']) {
+    subArgs := switch (type) {
+      'array' => data:map(Argument);
+      'object' => data:map(func([_, subTarget]) => Argument(subTarget));
+    };
+
+    return ([[]] ++ subArgs):reduce(++);
+  }
+
+  return [{
+    level: 'error',
+    message: type ++ ' expression is not a valid argument',
+    pos,
+    subnotes: [],
+    tags: #['argument'],
+  }];
+};

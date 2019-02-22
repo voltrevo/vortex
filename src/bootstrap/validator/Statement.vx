@@ -1,3 +1,4 @@
+import ./Argument.vx;
 import ./Program.vx;
 import ./SubExpression.vx;
 import ./TopExpression.vx;
@@ -20,6 +21,31 @@ return func Statement(statement) {
       'block' => Program(tail);
       'if' => Statement(tail);
     };
+
+    return notes;
+  }
+
+  if (type == 'for') {
+    {control: [controlType, controlData, _], body} := data;
+
+    notes := [];
+
+    if (controlType == 'condition') {
+      notes ++= SubExpression(controlData);
+    } else if (controlType == 'traditional') {
+      {setup, condition, next} := controlData;
+      notes ++= TopExpression(setup);
+      notes ++= SubExpression(condition);
+      notes ++= TopExpression(next);
+    } else if (controlType == 'range') {
+      {element, container} := controlData;
+      notes ++= Argument(element);
+      notes ++= SubExpression(container);
+    } else {
+      assert controlType == 'nothing';
+    }
+
+    notes ++= Program(body);
 
     return notes;
   }

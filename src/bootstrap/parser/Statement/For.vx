@@ -1,5 +1,6 @@
 import p from '@/util/parse.vx';
 
+import @/parser/AppendPos.vx;
 import @/parser/Expression/Expression.vx;
 import @/parser/W.vx;
 
@@ -51,9 +52,11 @@ Range := p.Transform(
 );
 
 ControlClause := p.Select([
-  Condition,
-  Traditional,
-  Range,
+  AppendPos(p.Select([
+    Condition,
+    Traditional,
+    Range,
+  ])),
   p.Nothing,
 ]);
 
