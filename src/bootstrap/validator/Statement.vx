@@ -1,6 +1,5 @@
 import ./Argument.vx;
 import ./Block.vx;
-import ./Program.vx;
 import ./SubExpression.vx;
 import ./TopExpression.vx;
 
@@ -15,7 +14,7 @@ return func Statement(inLoop, statement) {
     {condition, body, tail} := data;
 
     notes := SubExpression(condition);
-    notes ++= Program(body);
+    notes ++= Block(inLoop, body);
 
     notes ++= switch (tail[0]) {
       'nothing' => [];
