@@ -2,5 +2,29 @@ import ./Statement.vx;
 
 return func(inLoop, [type, statements]) {
   assert type == 'block'; // TODO: Destructure exact matches using literals
-  return ([[]] ++ statements:map(Statement:bind(inLoop))):reduce(++);
+
+  notes := [];
+  reachable := true;
+
+  for ([sType, _, pos] of statements) {
+    if (!reachable) {
+      notes ++= [{
+        level: 'warn',
+        message: 'Statement is unreachable',
+        pos,
+        subnotes: [],
+        tags: #['control-flow', 'unreachable'],
+      }];
+
+      continue;
+    }
+
+    if (sType in #['return', 'break', 'continue']) {
+      reachable = false;
+    }
+  }
+
+  notes = ([notes] ++ statements:map(Statement:bind(inLoop))):reduce(++);
+
+  return notes;
 };
