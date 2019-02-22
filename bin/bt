@@ -2,4 +2,5 @@
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 
-exec vxc-lines "$DIR/../src/bootstrap/test.vx"
+#exec vxc-lines "$DIR/../src/bootstrap/test.vx"
+exec runLines "$DIR/../build/bt.code"

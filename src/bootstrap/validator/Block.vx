@@ -15,12 +15,10 @@ return func(inLoop, [type, statements, _]) {
         subnotes: [],
         tags: #['control-flow', 'unreachable'],
       }];
-
-      continue;
-    }
-
-    if (sType in #['return', 'break', 'continue']) {
-      reachable = false;
+    } else {
+      if (sType in #['return', 'break', 'continue']) {
+        reachable = false;
+      }
     }
   }
 
