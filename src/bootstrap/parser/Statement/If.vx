@@ -1,5 +1,6 @@
 import p from '@/util/parse.vx';
 
+import @/parser/AppendPos.vx;
 import @/parser/Expression/Expression.vx;
 import @/parser/W.vx;
 
@@ -22,7 +23,7 @@ If := p.Transform(
         [p.Exact('else')],
         [W.Space],
         p.Select([
-          DeferIf,
+          AppendPos(DeferIf),
           BraceBlock,
         ]),
       ]),

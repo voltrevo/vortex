@@ -1,11 +1,27 @@
+import ./Program.vx;
 import ./SubExpression.vx;
 import ./TopExpression.vx;
 
-return func(statement) {
+return func Statement(statement) {
   [type, data, _] := statement;
 
   if (type in #['return', 'assert', 'log.info', 'log.warn', 'log.error']) {
     return SubExpression(data);
+  }
+
+  if (type == 'if') {
+    {condition, body, tail} := data;
+
+    notes := SubExpression(condition);
+    notes ++= Program(body);
+
+    notes ++= switch (tail[0]) {
+      'nothing' => [];
+      'block' => Program(tail);
+      'if' => Statement(tail);
+    };
+
+    return notes;
   }
 
   return switch (type) {
