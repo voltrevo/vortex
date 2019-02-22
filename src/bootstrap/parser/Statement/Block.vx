@@ -1,10 +1,11 @@
 import p from '@/util/parse.vx';
 
+import @/parser/AppendPos.vx;
 import @/parser/W.vx;
 
 import ./DeferStatement.vx;
 
-Block := p.Transform(
+Block := AppendPos(p.Transform(
   p.Optional(p.Sequence([
     DeferStatement,
     p.Many(p.SequenceOne([
@@ -21,6 +22,6 @@ Block := p.Transform(
 
     return ['block', [head] ++ tail];
   },
-);
+));
 
 return Block;

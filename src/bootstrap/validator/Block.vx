@@ -1,6 +1,6 @@
 import ./Statement.vx;
 
-return func(inLoop, [type, statements]) {
+return func(inLoop, [type, statements, _]) {
   assert type == 'block'; // TODO: Destructure exact matches using literals
 
   notes := [];

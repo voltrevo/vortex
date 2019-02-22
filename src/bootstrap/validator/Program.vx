@@ -1,5 +1,92 @@
 import ./Block.vx;
 
+func Breaks([_, statements, _]) {
+  breaks := [];
+
+  for (statement of statements) {
+    [type, data, _] := statement;
+
+    if (type == 'break') {
+      breaks ++= [statement];
+    }
+
+    if (type == 'if') {
+      func IfBreaks(ifStatement) {
+        {condition: _, body, tail} := ifStatement;
+
+        return Breaks(body) ++ switch (tail[0]) {
+          'nothing' => [];
+          'block' => Breaks(tail);
+          'if' => IfBreaks(tail);
+        };
+      };
+
+      breaks ++= IfBreaks(data);
+    }
+
+    if (type == 'for') {
+      breaks ++= Breaks(data.body);
+    }
+  }
+
+  return breaks;
+};
+
+func ReturnAnalysis([_, statements, pos]) {
+  func Error() => {
+    level: 'error',
+    message: 'Control might reach end of block without returning a value',
+    pos: [pos[1], pos[1]],
+    subnotes: [],
+    tags: #['control-flow', 'return-analysis'],
+  };
+
+  if (statements:Length() == 0u64) {
+    return [Error()];
+  }
+
+  lastStatement := statements:Back();
+
+  if (lastStatement[0] == 'return') {
+    return [];
+  }
+
+  if (lastStatement[0] == 'for') {
+    [_, {control, body}, _] := lastStatement;
+
+    if (control[0] != 'nothing') {
+      return [Error()];
+    }
+
+    return Breaks(body):map(func(brk) => {
+      level: 'error',
+      message: 'break statement prevents return',
+      pos: brk[2],
+      subnotes: [],
+      tags: #['control-flow', 'return-analysis', 'break-prevents-return'],
+    });
+  }
+
+  if (lastStatement[0] == 'if') {
+    func IfReturnAnalysis([_, {condition: _, body, tail}, _]) {
+      return ReturnAnalysis(body) ++ switch (tail[0]) {
+        'nothing' => [{
+          level: 'error',
+          message: 'if statement lacks else clause needed to guarantee return',
+          pos: tail[2],
+        }];
+
+        'block' => ReturnAnalysis(tail);
+        'if' => IfReturnAnalysis(tail);
+      };
+    };
+
+    return IfReturnAnalysis(lastStatement);
+  }
+
+  return [Error()];
+};
+
 return func(block) {
-  return Block(false, block);
+  return Block(false, block) ++ ReturnAnalysis(block);
 };

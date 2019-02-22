@@ -2,6 +2,7 @@ import p from '@/util/parse.vx';
 
 import @/parser/W.vx;
 
+import ./AppendPos.vx;
 import ./Statement/Statement.vx;
 
 UnmatchedClosingBrace := p.Transform(
@@ -19,18 +20,20 @@ UnmatchedClosingBrace := p.Transform(
   ],
 );
 
-Program := p.Complete(p.Transform(
-  p.SequenceOne([
-    p.Many(p.SequenceOne([
+Program := p.Complete(AppendPos(
+  p.Transform(
+    p.SequenceOne([
+      p.Many(p.SequenceOne([
+        [W.Optional],
+        p.Select([
+          Statement,
+          UnmatchedClosingBrace,
+        ]),
+      ])),
       [W.Optional],
-      p.Select([
-        Statement,
-        UnmatchedClosingBrace,
-      ]),
-    ])),
-    [W.Optional],
-  ]),
-  func(statements) => ['block', statements],
+    ]),
+    func(statements) => ['block', statements]
+  ),
 ));
 
 return Program;

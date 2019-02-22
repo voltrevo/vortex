@@ -49,7 +49,7 @@ func Expression(expression) {
       notes ++= Argument(arg);
     }
 
-    [bodyType, bodyData] := body;
+    [bodyType, bodyData, _] := body;
 
     notes ++= switch (bodyType) {
       'expression' => SubExpression(bodyData);
