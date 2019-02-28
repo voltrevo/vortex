@@ -38,9 +38,9 @@ func Expression(expression) {
   } else if (type == 'note') {
     notes ++= [data];
   } else if (type == 'switch') {
-    [test, cases] := data;
+    {test, cases} := data;
     subExps ++= [test] ++ cases:reduce(++);
-  } else if (type in #['import', 'default', 'literal', 'identifier']) {
+  } else if (type in #['import', 'default', 'literal', 'identifier', 'op']) {
     // Nothing to do for these types
   } else if (type == 'func') {
     {name: _, args, body} := data;

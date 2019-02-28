@@ -4,7 +4,7 @@ nameAccess := #['.', 'methodLookup'];
 
 res := {
   operator: operatorTypes.all,
-  other: #['func', 'import', 'switch', 'literal', 'note', 'default'],
+  other: #['func', 'import', 'switch', 'literal', 'note', 'default', 'op'],
   nameAccess,
   container: #['array', 'set', 'object'],
   mutable: #['identifier', '.', 'subscript', 'array', 'object'],

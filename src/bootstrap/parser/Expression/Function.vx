@@ -1,5 +1,6 @@
 import p from '@/util/parse.vx';
 
+import @/parser/AppendPos.vx;
 import @/parser/CommaSequence.vx;
 import @/parser/Expression/DeferExpression.vx;
 import @/parser/Identifier.vx;
@@ -26,11 +27,11 @@ Function := p.Transform(
     [W.Optional],
     p.Select([
       DeferBraceBlock,
-      p.Label('expression', p.SequenceOne([
+      AppendPos(p.Label('expression', p.SequenceOne([
         [p.Exact('=>')],
         [W.Optional],
         DeferExpression,
-      ])),
+      ]))),
     ]),
   ]),
   func([name, args, body]) => ['func', {name, args, body}],
