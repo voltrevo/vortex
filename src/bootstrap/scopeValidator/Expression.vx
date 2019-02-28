@@ -1,0 +1,104 @@
+import @/parser/expressionTypes.vx;
+import @/parser/operatorTypes.vx;
+
+import ./Function.vx;
+
+func Expression(expression) {
+  events := [];
+
+  [type, data, _] := expression;
+
+  subExps := [];
+
+  if (type == 'identifier') {
+    events ++= [['use', expression]];
+  } else if (type in expressionTypes.operator) {
+    if (type in operatorTypes.mutation) {
+      [left, right] := data;
+      rightEvents := Expression(right);
+
+      events ++= Mutation(
+        switch (type) {
+          ':=' => 'create';
+          default => 'mutate';
+        },
+        left,
+        rightEvents,
+      );
+
+      events ++= rightEvents;
+    } else if (type == 'functionCall') {
+      [base, args] := data;
+      subExps ++= [base] ++ args;
+    } else {
+      subExps ++= data;
+    }
+  } else if (type in expressionTypes.container) {
+    subExps ++= switch (type) {
+      'array' => data;
+      'set' => data;
+      'object' => data:map(func([_, exp]) => exp);
+    };
+  } else if (type in expressionTypes.nameAccess) {
+    [left, _] := data;
+    subExps ++= [left];
+  } else if (type == 'switch') {
+    {test, cases} := data;
+    subExps ++= [test] ++ cases:reduce(++);
+  } else if (type in #['import', 'default', 'literal', 'identifier', 'op', 'note']) {
+    // Nothing to do for these types
+  } else if (type == 'func') {
+    events ++= Function(expression);
+  } else {
+    assert false;
+  }
+
+  events ++= ([[]] ++ subExps:map(Expression)):reduce(++);
+
+  return events;
+};
+
+func Mutation(mutationType, left, rightEvents) {
+  [type, data, _] := left;
+
+  if (!(type in expressionTypes.mutable)) {
+    return [];
+  }
+
+  if (type == 'identifier') {
+    return [[mutationType, left, rightEvents]];
+  }
+
+  events := [];
+
+  if (type in #['.', 'subscript']) {
+    subTarget := data[0];
+    subType := subTarget[0];
+
+    if (!(subType in #['identifier', '.', 'subscript'])) {
+      // Nothing to do (issue caught elsewhere)
+    } else {
+      events ++= Mutation(mutationType, subTarget, rightEvents);
+    }
+
+    return events;
+  }
+
+  subMutations := switch (type) {
+    'array' => data:map(func(subTarget) => Mutation(
+      mutationType,
+      subTarget,
+      rightEvents,
+    ));
+
+    'object' => data:map(func([_, subTarget]) => Mutation(
+      mutationType,
+      subTarget,
+      rightEvents,
+    ));
+  };
+
+  return subMutations:reduce(++);
+};
+
+return Expression;

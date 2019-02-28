@@ -1,10 +1,18 @@
+import p from '@/util/parse.vx';
+
 import PProgram from './parser/Program.vx';
 import VProgram from './validator/Program.vx';
 
+import PExpr from './parser/Expression/Expression.vx';
+import VSExpr from './scopeValidator/Expression.vx';
+
 func prog(lines) => VProgram(PProgram(lines));
+func vsExpr(str) => VSExpr(p.Complete(PExpr)([str]));
 
 log.info prog(['']);
 log.info prog(['1.b += 1;']);
 log.info prog(['a += b;']);
+
+log.info vsExpr('c := a + b + 1');
 
 return 'done';

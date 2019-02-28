@@ -1,0 +1,4 @@
+return func([type, _, _]) {
+  assert type == 'func';
+  return [];
+};
