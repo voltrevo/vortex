@@ -24,12 +24,36 @@ namespace Vortex {
       pos = func.def.begin();
     }
 
+    Decoder(const Decoder& copySrc) {
+      func = copySrc.func;
+      pos = func.def.begin() + copySrc.location();
+    }
+
+    Decoder(Decoder&& moveSrc) {
+      int location = moveSrc.location();
+      func = std::move(moveSrc.func);
+      pos = func.def.begin() + location;
+    }
+
+    Decoder& operator=(const Decoder& copySrc) {
+      func = copySrc.func;
+      pos = func.def.begin() + copySrc.location();
+      return *this;
+    }
+
+    Decoder& operator=(Decoder&& moveSrc) {
+      int location = moveSrc.location();
+      func = std::move(moveSrc.func);
+      pos = func.def.begin() + location;
+      return *this;
+    }
+
     Decoder() {}
 
     Code get() { return (Code)(*pos++); };
     byte getByte() { return *pos++; }
 
-    int location() { return pos - func.def.begin(); }
+    int location() const { return pos - func.def.begin(); }
 
     Code peek() { return (Code)(*pos); };
     Code peekBehind() { return (Code)(*(pos - 1)); }
