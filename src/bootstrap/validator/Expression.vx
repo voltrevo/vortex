@@ -1,8 +1,9 @@
 import @/util/aan.vx;
 
+import @/parser/expressionTypes.vx;
+import @/parser/operatorTypes.vx;
+
 import ./Argument.vx;
-import ./expressionTypes.vx;
-import ./operatorTypes.vx;
 import ./Program.vx;
 import ./SubExpression.vx;
 

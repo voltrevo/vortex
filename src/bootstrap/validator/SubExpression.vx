@@ -1,5 +1,6 @@
+import @/parser/operatorTypes.vx;
+
 import ./Expression.vx;
-import ./operatorTypes.vx;
 
 return func(expression) {
   notes := [];
