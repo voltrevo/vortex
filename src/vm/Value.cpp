@@ -386,9 +386,34 @@ namespace Vortex {
     right.data = tmpData;
   }
 
-  std::ostream& operator<<(std::ostream& os, const Value& value) {
-    // TODO: Indentation
+  bool isStringAtomic(const Value& value) {
+    switch (value.type) {
+      case ARRAY:
+      case SET:
+      case OBJECT:
+        return false;
 
+      default:
+        return true;
+    }
+  }
+
+  template <typename C>
+  bool containsOnlyStringAtomics(const C& container) {
+    for (const auto& v: container) {
+      if (!isStringAtomic(v)) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  std::ostream& StreamLongString(
+    std::ostream& os,
+    std::string indent,
+    const Value& value
+  ) {
     switch (value.type) {
       case NULL_: {
         os << "null";
@@ -462,15 +487,27 @@ namespace Vortex {
       case ARRAY: {
         os << '[';
 
-        bool notFirst = false;
+        if (containsOnlyStringAtomics(value.data.ARRAY->values)) {
+          bool notFirst = false;
 
-        for (auto& v: (value.data.ARRAY->values)) {
-          if (notFirst) {
-            os << ", ";
+          for (auto& v: (value.data.ARRAY->values)) {
+            if (notFirst) {
+              os << ", ";
+            }
+
+            os << v;
+            notFirst = true;
+          }
+        } else {
+          os << std::endl;
+
+          for (auto& v: (value.data.ARRAY->values)) {
+            os << indent << "  ";
+            StreamLongString(os, indent + "  ", v);
+            os << ',' << std::endl;
           }
 
-          os << v;
-          notFirst = true;
+          os << indent;
         }
 
         os << ']';
@@ -483,13 +520,25 @@ namespace Vortex {
 
         bool notFirst = false;
 
-        for (auto& v: (value.data.SET->values)) {
-          if (notFirst) {
-            os << ", ";
+        if (containsOnlyStringAtomics(value.data.SET->values)) {
+          for (auto& v: (value.data.SET->values)) {
+            if (notFirst) {
+              os << ", ";
+            }
+
+            os << v;
+            notFirst = true;
+          }
+        } else {
+          os << std::endl;
+
+          for (auto& v: (value.data.SET->values)) {
+            os << indent << "  ";
+            StreamLongString(os, indent + "  ", v);
+            os << ',' << std::endl;
           }
 
-          os << v;
-          notFirst = true;
+          os << indent;
         }
 
         os << ']';
@@ -518,21 +567,41 @@ namespace Vortex {
       case OBJECT: {
         os << '{';
 
-        bool notFirst = false;
+        if (containsOnlyStringAtomics(value.data.OBJECT->values.values)) {
+          bool notFirst = false;
 
-        const Object& obj = *value.data.OBJECT;
-        Uint64 sz = obj.keys.Length();
+          const Object& obj = *value.data.OBJECT;
+          Uint64 sz = obj.keys.Length();
 
-        for (Uint64 pos = 0; pos < sz; pos++) {
-          if (notFirst) {
-            os << ", ";
+          for (Uint64 pos = 0; pos < sz; pos++) {
+            if (notFirst) {
+              os << ", ";
+            }
+
+            auto key = obj.keys.at(pos);
+            auto value = obj.values.at(pos);
+
+            os << key << ": " << value;
+            notFirst = true;
+          }
+        } else {
+          os << std::endl;
+
+          const Object& obj = *value.data.OBJECT;
+          Uint64 sz = obj.keys.Length();
+
+          for (Uint64 pos = 0; pos < sz; pos++) {
+            auto key = obj.keys.at(pos);
+            auto value = obj.values.at(pos);
+
+            os << indent << "  ";
+            StreamLongString(os, indent + "  ", key);
+            os << ": ";
+            StreamLongString(os, indent + "  ", value);
+            os << ',' << std::endl;
           }
 
-          auto key = obj.keys.at(pos);
-          auto value = obj.values.at(pos);
-
-          os << key << ": " << value;
-          notFirst = true;
+          os << indent;
         }
 
         os << '}';
@@ -550,6 +619,10 @@ namespace Vortex {
     }
 
     return os;
+  }
+
+  std::ostream& operator<<(std::ostream& os, const Value& value) {
+    return StreamLongString(os, "", value);
   }
 
   std::string Value::LongString() {
