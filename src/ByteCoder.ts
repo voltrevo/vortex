@@ -694,8 +694,10 @@ namespace ByteCoder {
 
         if (exp.v.name !== null) {
           if (captures.length + gfuncCaptures.length > 0) {
+            lines.push(`hoist $.captureless.${exp.v.name.v}`);
             lines.push(`gfunc $.captureless.${exp.v.name.v} {`);
           } else {
+            lines.push(`hoist $${exp.v.name.v}`);
             lines.push(`gfunc $${exp.v.name.v} {`);
           }
         } else {

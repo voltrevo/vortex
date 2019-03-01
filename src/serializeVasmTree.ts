@@ -135,8 +135,6 @@ namespace serializeAsmTree {
       }
 
       case 'gfunc': {
-        clearLabel(ctx.gfuncLabels, statement.v.nlabel);
-
         ctx.gfuncs.push(
           `gfunc ${getLabel(ctx.gfuncLabels, statement.v.nlabel)} {`,
           ...Program(
