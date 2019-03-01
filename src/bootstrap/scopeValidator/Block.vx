@@ -4,6 +4,24 @@ import ./Statement.vx;
 return func(preEvents, [type, statements, _]) {
   assert type == 'block'; // TODO: Destructure exact matches using literals
 
+  sLen := statements:Length();
+
+  for (i := 0u64; i < sLen; i++) {
+    [stype, sdata, _] := statements[i];
+
+    if (stype == 'expression') {
+      if (sdata[0] == 'func') { // TODO: Short-circuit &&
+        name := sdata[1].name;
+        [ntype, _, npos] := name;
+
+        if (ntype != 'nothing') {
+          preEvents ++= [['create', name, []]];
+          statements[i][1][1].name = ['nothing', null, npos];
+        }
+      }
+    }
+  }
+
   {scope, events} := applyScopeEvents({}, preEvents);
 
   for (statement of statements) {
