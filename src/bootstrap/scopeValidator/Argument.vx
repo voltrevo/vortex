@@ -2,7 +2,7 @@ return func Argument(target) {
   [type, data, _] := target;
 
   if (type == 'identifier') {
-    return ['create', target, []];
+    return [['create', target, []]];
   }
 
   if (type in #['array', 'object']) {

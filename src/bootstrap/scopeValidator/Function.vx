@@ -1,4 +1,18 @@
-return func([type, _, _]) {
+import ./Argument.vx;
+import ./Block.vx;
+
+return func([type, {name, args, body}, _]) {
   assert type == 'func';
-  return [];
+
+  preEvents := [];
+
+  if (name[0] != 'nothing') {
+    preEvents ++= [['create', name, []]];
+  }
+
+  for (arg of args) {
+    preEvents ++= Argument(arg);
+  }
+
+  return Block(preEvents, body);
 };

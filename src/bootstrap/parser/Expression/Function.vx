@@ -13,7 +13,7 @@ Function := p.Transform(
     p.Select([
       p.SequenceOne([
         [W.Space],
-        Identifier,
+        AppendPos(Identifier),
         [W.Optional],
       ]),
       p.SequenceOne([
