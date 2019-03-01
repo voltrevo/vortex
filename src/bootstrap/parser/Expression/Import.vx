@@ -1,5 +1,6 @@
 import p from '@/util/parse.vx';
 
+import @/parser/AppendPos.vx;
 import @/parser/Identifier.vx;
 import @/parser/Primitive/String.vx;
 import @/parser/W.vx;
@@ -20,24 +21,24 @@ return p.SequenceOne([
   p.Select([
     p.Transform(
       p.Sequence([
-        Identifier,
+        AppendPos(Identifier),
         [W.Space],
         [p.Exact('from')],
         [W.Optional],
         String,
       ]),
-      func([[_, name], [_, source]]) => ['import', {name, source}],
+      func([name, [_, source]]) => ['import', {name, source}],
     ),
     p.Transform(
       p.Sequence([
         Dir,
         p.Many(Dir),
-        Identifier,
+        AppendPos(Identifier),
         [p.Exact('.vx')],
       ]),
-      func([firstDir, dirs, [_, name]]) => ['import', {
+      func([firstDir, dirs, name]) => ['import', {
         name,
-        source: ([firstDir] ++ dirs):reduce(++) ++ name ++ '.vx',
+        source: ([firstDir] ++ dirs):reduce(++) ++ name[1] ++ '.vx',
       }]
     ),
   ]),

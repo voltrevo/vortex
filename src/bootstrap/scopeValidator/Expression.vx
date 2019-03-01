@@ -50,9 +50,7 @@ func Expression(expression) {
   } else if (type == 'switch') {
     {test, cases} := data;
     subExps ++= [test] ++ cases:reduce(++);
-  } else if (type == 'import') {
-    events ++= [['create', data.name, []]];
-  } else if (type in #['default', 'literal', 'identifier', 'op', 'note']) {
+  } else if (type in #['import', 'default', 'literal', 'identifier', 'op', 'note']) {
     // Nothing to do for these types
   } else if (type == 'func') {
     events ++= Function(expression);
