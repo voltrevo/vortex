@@ -1,0 +1,13 @@
+x := func foo(flag) => switch (flag) {
+  true => 42;
+  false => foo(true);
+};
+
+y := func foo(flag) => switch (flag) {
+  true => 37;
+  false => foo(true);
+};
+
+assert x(false) + y(false) == 42 + 37;
+
+return 'done';
