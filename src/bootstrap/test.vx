@@ -1,4 +1,8 @@
 import PProgram from './parser/Program.vx';
 import VProgram from './validator/Program.vx';
+import SVProgram from './scopeValidator/Program.vx';
 
-return func(lines) { return VProgram(PProgram(lines)); };
+return func(lines) {
+  tree := PProgram(lines);
+  return VProgram(tree) ++ SVProgram(tree);
+};

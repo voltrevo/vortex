@@ -17,6 +17,8 @@ func Expression(expression) {
       [left, right] := data;
       rightEvents := Expression(right);
 
+      events ++= rightEvents;
+
       events ++= Mutation(
         switch (type) {
           ':=' => 'create';
@@ -25,8 +27,6 @@ func Expression(expression) {
         left,
         rightEvents,
       );
-
-      events ++= rightEvents;
     } else if (type == 'functionCall') {
       [base, args] := data;
       subExps ++= [base] ++ args;
@@ -45,7 +45,9 @@ func Expression(expression) {
   } else if (type == 'switch') {
     {test, cases} := data;
     subExps ++= [test] ++ cases:reduce(++);
-  } else if (type in #['import', 'default', 'literal', 'identifier', 'op', 'note']) {
+  } else if (type == 'import') {
+    events ++= [['create', data.name, []]];
+  } else if (type in #['default', 'literal', 'identifier', 'op', 'note']) {
     // Nothing to do for these types
   } else if (type == 'func') {
     events ++= Function(expression);

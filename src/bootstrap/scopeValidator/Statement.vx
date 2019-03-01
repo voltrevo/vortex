@@ -1,0 +1,62 @@
+import ./Argument.vx;
+import ./Block.vx;
+import ./Expression.vx;
+
+func Statement(statement) {
+  [type, data, _] := statement;
+
+  if (type in #['return', 'assert', 'log.info', 'log.warn', 'log.error']) {
+    return Expression(data);
+  }
+
+  if (type == 'if') {
+    {condition, body, tail} := data;
+
+    events := Expression(condition);
+    events ++= Block({}, body);
+
+    events ++= switch (tail[0]) {
+      'nothing' => [];
+      'block' => Block({}, tail);
+      'if' => Statement(tail);
+    };
+
+    return events;
+  }
+
+  if (type == 'for') {
+    {control: [controlType, controlData, _], body} := data;
+
+    events := [];
+
+    if (controlType == 'condition') {
+      events ++= Expression(controlData);
+    } else if (controlType == 'traditional') {
+      {setup, condition, next} := controlData;
+      events ++= Expression(setup);
+      events ++= Expression(condition);
+      events ++= Expression(next);
+    } else if (controlType == 'range') {
+      {element, container} := controlData;
+      events ++= Argument(element);
+      events ++= Expression(container);
+    } else if (controlType == 'nothing') {
+      // Nothing to do
+    } else {
+      assert false;
+    }
+
+    return Block(events, body);
+  }
+
+  if (type in #['break', 'continue']) {
+    return [];
+  }
+
+  return switch (type) {
+    'expression' => Expression(data);
+    'note' => [statement];
+  };
+};
+
+return Statement;

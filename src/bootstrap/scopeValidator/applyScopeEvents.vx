@@ -1,0 +1,57 @@
+return func(scope, events) {
+  newEvents := [];
+
+  for (evt of events) {
+    evtType := evt[0];
+
+    if (evtType in #['create', 'shadow']) {
+      [identifierType, name, pos] := evt[1];
+      assert identifierType == 'identifier';
+
+      if (name in scope:Keys()) {
+        newEvents ++= [['note', {
+          level: 'error',
+          message: 'Can\'t create variable that already exists',
+          pos,
+          subnotes: [{
+            level: 'info',
+            message: (
+              'There is an attempt to create {' ++
+              name ++
+              '} again at ' ++
+              pos:String()
+            ),
+            pos: scope[name],
+            subnotes: [],
+            tags: #['scope', 'is-duplicated'],
+          }],
+          tags: #['scope', 'duplicate-create'],
+        }]];
+      } else if (evtType == 'create') {
+        scope[name] := {pos, used: false};
+      }
+
+      newEvents ++= [['shadow', evt[1]]];
+    } else if (evtType == 'use') {
+      [_, name, _] := evt[1];
+
+      if (name in scope:Keys()) {
+        scope[name].used = true;
+      } else {
+        newEvents ++= [evt];
+      }
+    } else if (evtType == 'mutate') {
+      [_, name, _] := evt[1];
+
+      if (!(name in scope:Keys())) {
+        newEvents ++= [evt];
+      }
+    } else if (evtType == 'note') {
+      newEvents ++= [evt];
+    } else {
+      assert false;
+    }
+  }
+
+  return {scope, events: newEvents};
+};

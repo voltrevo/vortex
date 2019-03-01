@@ -1,0 +1,28 @@
+import ./applyScopeEvents.vx;
+import ./Statement.vx;
+
+return func(preEvents, [type, statements, _]) {
+  assert type == 'block'; // TODO: Destructure exact matches using literals
+
+  {scope, events} := applyScopeEvents({}, preEvents);
+
+  for (statement of statements) {
+    next := applyScopeEvents(scope, Statement(statement));
+    scope = next.scope;
+    events ++= next.events;
+  }
+
+  for ([name, {pos, used}] of scope:Entries()) {
+    if (!used) {
+      events ++= [['note', {
+        level: 'warn',
+        message: 'Variable {' ++ name ++ '} is not used',
+        pos,
+        subnotes: [],
+        tags: #['scope', 'no-effect', 'unused'],
+      }]];
+    }
+  }
+
+  return events;
+};

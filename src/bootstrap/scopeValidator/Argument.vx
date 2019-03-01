@@ -1,0 +1,18 @@
+return func Argument(target) {
+  [type, data, _] := target;
+
+  if (type == 'identifier') {
+    return ['create', target, []];
+  }
+
+  if (type in #['array', 'object']) {
+    subArgs := switch (type) {
+      'array' => data:map(Argument);
+      'object' => data:map(func([_, subTarget]) => Argument(subTarget));
+    };
+
+    return ([[]] ++ subArgs):reduce(++);
+  }
+
+  return [];
+};

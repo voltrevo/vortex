@@ -1,0 +1,29 @@
+import ./Block.vx;
+
+return func(block) {
+  notes := [];
+
+  for (evt of Block([], block)) {
+    type := evt[0];
+
+    if (type in #['use', 'mutate']) {
+      [_, name, pos] := evt[1];
+
+      notes ++= [{
+        level: 'error',
+        message: 'Variable {' ++ name ++ '} does not exist',
+        pos,
+        subnotes: [],
+        tags: #['scope', 'not-found'],
+      }];
+    } else if (type == 'note') {
+      notes ++= [evt[1]];
+    } else if (type == 'shadow') {
+      // Nothing to do
+    } else {
+      assert false;
+    }
+  }
+
+  return notes;
+};

@@ -79,7 +79,6 @@ func Statement(inLoop, statement) {
   return switch (type) {
     'expression' => TopExpression(data);
     'note' => [data];
-    'import' => [];
   };
 };
 
