@@ -16,11 +16,14 @@ func Expression(expression) {
 
   if (type in expressionTypes.operator) {
     if (type in operatorTypes.mutation) {
-      [left, right] := data;
-
-      notes ++= Mutation(left);
-
-      subExps ++= [right];
+      if (type in #['unary ++', 'unary --']) {
+        [left] := data;
+        notes ++= Mutation(left);
+      } else {
+        [left, right] := data;
+        notes ++= Mutation(left);
+        subExps ++= [right];
+      }
     } else if (type == 'functionCall') {
       [base, args] := data;
       subExps ++= [base] ++ args;

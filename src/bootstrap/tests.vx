@@ -19,5 +19,6 @@ log.info prog(['1.b += 1;']);
 log.info prog(['a += b;']);
 
 log.info prog(['c := a + b + 1; c = 1;']);
+log.info prog(['x++;']);
 
 return 'done';

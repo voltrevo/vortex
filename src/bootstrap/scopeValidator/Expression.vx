@@ -14,19 +14,24 @@ func Expression(expression) {
     events ++= [['use', expression]];
   } else if (type in expressionTypes.operator) {
     if (type in operatorTypes.mutation) {
-      [left, right] := data;
-      rightEvents := Expression(right);
+      if (type in #['unary ++', 'unary --']) {
+        [left] := data;
+        events ++= Mutation('mutate', left, []);
+      } else {
+        [left, right] := data;
+        rightEvents := Expression(right);
 
-      events ++= rightEvents;
+        events ++= rightEvents;
 
-      events ++= Mutation(
-        switch (type) {
-          ':=' => 'create';
-          default => 'mutate';
-        },
-        left,
-        rightEvents,
-      );
+        events ++= Mutation(
+          switch (type) {
+            ':=' => 'create';
+            default => 'mutate';
+          },
+          left,
+          rightEvents,
+        );
+      }
     } else if (type == 'functionCall') {
       [base, args] := data;
       subExps ++= [base] ++ args;
