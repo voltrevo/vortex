@@ -30,14 +30,66 @@ return func(preEvents, [type, statements, _]) {
     events ++= next.events;
   }
 
-  for ([name, {pos, used}] of scope:Entries()) {
-    if (!used) {
+  for ([name, {pos, use, capture, mutate}] of scope:Entries()) {
+    if (use:Length() + capture:Length() == 0u64) {
       events ++= [['note', {
         level: 'warn',
         message: 'Variable {' ++ name ++ '} is not used',
         pos,
         subnotes: [],
         tags: #['scope', 'no-effect', 'unused'],
+      }]];
+    }
+
+    if (capture:Length() > 0u64 && mutate:Length() > 0u64) {
+      tags := #['scope', 'capture-mutation'];
+
+      subnotes := [{
+        level: 'info',
+        message: (
+          '{' ++
+          name ++
+          '} is captured at ' ++
+          capture[0][2]:String() ++
+          ' and mutated at ' ++
+          mutate[0][2]:String()
+        ),
+        pos,
+        subnotes: [],
+        tags,
+      }];
+
+      for (i := 1u64; i < mutate:Length(); i++) {
+        [_, _, mPos] := mutate[i];
+
+        subnotes ++= [{
+          level: 'error',
+          message: 'Can\'t mutate captured variable {' ++ name ++ '}',
+          pos: mPos,
+          subnotes: [],
+          tags,
+        }];
+      }
+
+      subnotes ++= capture:map(func([_, _, cPos]) => {
+        level: 'info',
+        message: (
+          'Capturing {' ++
+          name ++
+          '} here prevents mutation at ' ++
+          mutate[0][2]:String()
+        ),
+        pos: cPos,
+        subnotes: [],
+        tags,
+      });
+
+      events ++= [['note', {
+        level: 'error',
+        message: 'Can\'t mutate captured variable {' ++ name ++ '}',
+        pos: mutate[0][2],
+        subnotes,
+        tags,
       }]];
     }
   }

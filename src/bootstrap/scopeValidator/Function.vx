@@ -14,5 +14,20 @@ return func([type, {name, args, body}, _]) {
     preEvents ++= Argument(arg);
   }
 
-  return Block(preEvents, body);
+  events := Block(preEvents, body);
+  extraEvents := [];
+
+  len := events:Length();
+
+  for (i := 0u64; i < len; i++) {
+    if (events[i][0] == 'use') {
+      events[i][0] = 'capture';
+    } else if (events[i][0] == 'mutate') {
+      extraEvents ++= [['capture', events[i][1]]];
+    }
+  }
+
+  events ++= extraEvents;
+
+  return events;
 };
