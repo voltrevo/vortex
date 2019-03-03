@@ -14,7 +14,16 @@ return func([type, {name, args, body}, _]) {
     preEvents ++= Argument(arg);
   }
 
-  events := Block(preEvents, body);
+  events := Block(
+    preEvents,
+    switch (body[0]) {
+      'block' => body;
+      'expression' => ['block', [
+        ['return', body[1], body[2]]
+      ], body[2]];
+    },
+  );
+
   extraEvents := [];
 
   len := events:Length();
