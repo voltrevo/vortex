@@ -16,14 +16,20 @@ func Block(preEvents, [type, statements, _]) {
 
         if (name[0] != 'nothing' && !(name[1] in hoistCaptures:Keys())) {
           preEvents = [['create', name, []]] ++ preEvents;
-          statements[i][1][1].name = ['nothing', null, statements[i][1][1].name[2]];
+
+          statements[i][1][1].name = [
+            'nothing',
+            null,
+            statements[i][1][1].name[2]
+          ];
+
           captures := [];
           sEvents = Statement(statements[i]);
 
           // TODO: array:filter
           for (evt of sEvents) {
             if (evt[0] == 'capture') {
-              captures ++= [evt];
+              captures ++= [evt[1]];
             }
           }
 
@@ -63,8 +69,41 @@ func Block(preEvents, [type, statements, _]) {
   }
 
   for ([hoistName, captures] of hoistCaptures:Entries()) {
+    capturesToProcess := captures;
+    processIdx := 0u64;
+    processed := #[hoistName];
+    capturesExt := [];
+
+    regularCaptures := #[];
+    transitiveCaptures := #[];
+
+    for ([_, name, _] of captures) {
+      regularCaptures |= #[name];
+    }
+
+    for (processIdx < capturesToProcess:Length()) {
+      capture := capturesToProcess[processIdx];
+      name := capture[1];
+
+      if (!(name in processed)) {
+        processed |= #[name];
+
+        if (name in hoistCaptures:Keys()) {
+          capturesToProcess ++= hoistCaptures[name];
+        } else {
+          capturesExt ++= [capture];
+
+          if (!(name in regularCaptures)) {
+            transitiveCaptures |= #[name];
+          }
+        }
+      }
+
+      processIdx++;
+    }
+
     for ([_, _, usePos] of scope[hoistName].use) {
-      for ([_, [_, captureName, capturePos]] of captures) {
+      for ([_, captureName, capturePos] of capturesExt) {
         captureCreationPos := scope[captureName].pos;
 
         if (usePos < captureCreationPos) {
@@ -77,6 +116,7 @@ func Block(preEvents, [type, statements, _]) {
               name: captureName,
               pos: capturePos,
               creationPos: captureCreationPos,
+              transitive: captureName in transitiveCaptures,
             }
           })]];
         }
@@ -142,6 +182,10 @@ func CaptureMutationNote({name, pos, capture, mutate}) {
 func IncompleteClosureNote({hoist, capture}) {
   tags := #['scope', 'incomplete-closure'];
 
+  if (capture.transitive) {
+    tags |= #['transitive-closure'];
+  }
+
   return {
     level: 'error',
     message: (
@@ -181,6 +225,7 @@ func IncompleteClosureNote({hoist, capture}) {
         tags,
       },
     ],
+    tags,
   };
 };
 
