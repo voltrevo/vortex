@@ -6,7 +6,7 @@ return func(block) {
   for (evt of Block([], block)) {
     type := evt[0];
 
-    if (type in #['use', 'mutate']) {
+    if (type in #['use', 'mutate', 'capture']) {
       [_, name, pos] := evt[1];
 
       notes ++= [{
