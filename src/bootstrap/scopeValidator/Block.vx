@@ -104,21 +104,23 @@ func Block(preEvents, [type, statements, _]) {
 
     for ([_, _, usePos] of scope[hoistName].use) {
       for ([_, captureName, capturePos] of capturesExt) {
-        captureCreationPos := scope[captureName].pos;
+        if (captureName in scope:Keys()) { // TODO: implement continue here
+          captureCreationPos := scope[captureName].pos;
 
-        if (usePos < captureCreationPos) {
-          events ++= [['note', IncompleteClosureNote({
-            hoist: {
-              name: hoistName,
-              usePos,
-            },
-            capture: {
-              name: captureName,
-              pos: capturePos,
-              creationPos: captureCreationPos,
-              transitive: captureName in transitiveCaptures,
-            }
-          })]];
+          if (usePos < captureCreationPos) {
+            events ++= [['note', IncompleteClosureNote({
+              hoist: {
+                name: hoistName,
+                usePos,
+              },
+              capture: {
+                name: captureName,
+                pos: capturePos,
+                creationPos: captureCreationPos,
+                transitive: captureName in transitiveCaptures,
+              }
+            })]];
+          }
         }
       }
     }
