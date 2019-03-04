@@ -1,6 +1,92 @@
 import ./applyScopeEvents.vx;
 import ./Statement.vx;
 
+func Block(preEvents, [type, statements, _]) {
+  assert type == 'block'; // TODO: Destructure exact matches using literals
+
+  hoistCaptures := {};
+  sLen := statements:Length();
+
+  for (i := 0u64; i < sLen; i++) {
+    sEvents := null;
+
+    if (statements[i][0] == 'expression') {
+      if (statements[i][1][0] == 'func') {
+        name := statements[i][1][1].name;
+
+        if (name[0] != 'nothing' && !(name[1] in hoistCaptures:Keys())) {
+          preEvents = [['create', name, []]] ++ preEvents;
+          statements[i][1][1].name = ['nothing', null, statements[i][1][1].name[2]];
+          captures := [];
+          sEvents = Statement(statements[i]);
+
+          // TODO: array:filter
+          for (evt of sEvents) {
+            if (evt[0] == 'capture') {
+              captures ++= [evt];
+            }
+          }
+
+          hoistCaptures[name[1]] := captures;
+        }
+      }
+    }
+
+    if (sEvents in #[null]) {
+      sEvents = Statement(statements[i]);
+    }
+
+    preEvents ++= sEvents;
+  }
+
+  {scope, events} := applyScopeEvents({}, preEvents);
+
+  for ([name, {pos, use, capture, mutate}] of scope:Entries()) {
+    if (use:Length() + capture:Length() == 0u64) {
+      events ++= [['note', {
+        level: 'warn',
+        message: 'Variable {' ++ name ++ '} is not used',
+        pos,
+        subnotes: [],
+        tags: #['scope', 'no-effect', 'unused'],
+      }]];
+    }
+
+    if (capture:Length() > 0u64 && mutate:Length() > 0u64) {
+      events ++= [['note', CaptureMutationNote({
+        name,
+        pos,
+        capture,
+        mutate
+      })]];
+    }
+  }
+
+  for ([hoistName, captures] of hoistCaptures:Entries()) {
+    for ([_, _, usePos] of scope[hoistName].use) {
+      for ([_, [_, captureName, capturePos]] of captures) {
+        captureCreationPos := scope[captureName].pos;
+
+        if (usePos < captureCreationPos) {
+          events ++= [['note', IncompleteClosureNote({
+            hoist: {
+              name: hoistName,
+              usePos,
+            },
+            capture: {
+              name: captureName,
+              pos: capturePos,
+              creationPos: captureCreationPos,
+            }
+          })]];
+        }
+      }
+    }
+  }
+
+  return events;
+};
+
 func CaptureMutationNote({name, pos, capture, mutate}) {
   tags := #['scope', 'capture-mutation'];
 
@@ -98,88 +184,4 @@ func IncompleteClosureNote({hoist, capture}) {
   };
 };
 
-return func(preEvents, [type, statements, _]) {
-  assert type == 'block'; // TODO: Destructure exact matches using literals
-
-  hoistCaptures := {};
-  sLen := statements:Length();
-
-  for (i := 0u64; i < sLen; i++) {
-    sEvents := null;
-
-    if (statements[i][0] == 'expression') {
-      if (statements[i][1][0] == 'func') {
-        name := statements[i][1][1].name;
-
-        if (name[0] != 'nothing' && !(name[1] in hoistCaptures:Keys())) {
-          preEvents = [['create', name, []]] ++ preEvents;
-          statements[i][1][1].name = ['nothing', null, statements[i][1][1].name[2]];
-          captures := [];
-          sEvents = Statement(statements[i]);
-
-          // TODO: array:filter
-          for (evt of sEvents) {
-            if (evt[0] == 'capture') {
-              captures ++= [evt];
-            }
-          }
-
-          hoistCaptures[name[1]] := captures;
-        }
-      }
-    }
-
-    if (sEvents in #[null]) {
-      sEvents = Statement(statements[i]);
-    }
-
-    preEvents ++= sEvents;
-  }
-
-  {scope, events} := applyScopeEvents({}, preEvents);
-
-  for ([name, {pos, use, capture, mutate}] of scope:Entries()) {
-    if (use:Length() + capture:Length() == 0u64) {
-      events ++= [['note', {
-        level: 'warn',
-        message: 'Variable {' ++ name ++ '} is not used',
-        pos,
-        subnotes: [],
-        tags: #['scope', 'no-effect', 'unused'],
-      }]];
-    }
-
-    if (capture:Length() > 0u64 && mutate:Length() > 0u64) {
-      events ++= [['note', CaptureMutationNote({
-        name,
-        pos,
-        capture,
-        mutate
-      })]];
-    }
-  }
-
-  for ([hoistName, captures] of hoistCaptures:Entries()) {
-    for ([_, _, usePos] of scope[hoistName].use) {
-      for ([_, [_, captureName, capturePos]] of captures) {
-        captureCreationPos := scope[captureName].pos;
-
-        if (usePos < captureCreationPos) {
-          events ++= [['note', IncompleteClosureNote({
-            hoist: {
-              name: hoistName,
-              usePos,
-            },
-            capture: {
-              name: captureName,
-              pos: capturePos,
-              creationPos: captureCreationPos,
-            }
-          })]];
-        }
-      }
-    }
-  }
-
-  return events;
-};
+return Block;
