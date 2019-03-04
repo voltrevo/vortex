@@ -16,7 +16,12 @@ func Block(preEvents, [type, statements, _]) {
         name := statements[i][1][1].name;
 
         if (name[0] != 'nothing' && !(name[1] in hoistCaptures:Keys())) {
-          preEvents = [['create', name, []]] ++ preEvents;
+          createEvt := ['create', name, {
+            rightEvents: [],
+            source: statements[i][0],
+          }];
+
+          preEvents = [createEvt] ++ preEvents;
 
           statements[i][1][1].name = [
             'nothing',
@@ -123,9 +128,9 @@ func Block(preEvents, [type, statements, _]) {
     for ([_, _, usePos] of scope[hoistName].use) {
       for ([_, captureName, capturePos] of capturesExt) {
         if (captureName in scope:Keys()) { // TODO: implement continue here
-          captureCreationPos := scope[captureName].pos;
+          captureCreationPos := scope[captureName].sourcePos;
 
-          if (usePos < captureCreationPos) {
+          if (usePos[0] <= captureCreationPos[1]) {
             events ++= [['note', IncompleteClosureNote({
               hoist: {
                 name: hoistName,
@@ -135,6 +140,7 @@ func Block(preEvents, [type, statements, _]) {
                 name: captureName,
                 pos: capturePos,
                 creationPos: captureCreationPos,
+                creationIdentifierPos: scope[captureName].pos,
                 transitive: captureName in transitiveCaptures,
               }
             })]];

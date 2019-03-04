@@ -28,7 +28,13 @@ return func(scope, events) {
           tags: #['scope', 'duplicate-create'],
         }]];
       } else if (evtType == 'create') {
-        scope[name] := {pos, use: [], capture: [], mutate: []};
+        scope[name] := {
+          pos,
+          sourcePos: evt[2].source[2],
+          use: [],
+          capture: [],
+          mutate: [],
+        };
       }
 
       newEvents ++= [['shadow', evt[1]]];

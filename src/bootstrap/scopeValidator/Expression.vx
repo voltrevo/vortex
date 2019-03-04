@@ -16,7 +16,7 @@ func Expression(expression) {
     if (type in operatorTypes.mutation) {
       if (type in #['unary ++', 'unary --']) {
         [left] := data;
-        events ++= Mutation('mutate', left, []);
+        events ++= Mutation('mutate', left, [], expression);
       } else {
         [left, right] := data;
         rightEvents := Expression(right);
@@ -30,6 +30,7 @@ func Expression(expression) {
           },
           left,
           rightEvents,
+          expression,
         );
       }
     } else if (type == 'functionCall') {
@@ -63,7 +64,7 @@ func Expression(expression) {
   return events;
 };
 
-func Mutation(mutationType, left, rightEvents) {
+func Mutation(mutationType, left, rightEvents, source) {
   [type, data, _] := left;
 
   if (!(type in expressionTypes.mutable)) {
@@ -71,7 +72,7 @@ func Mutation(mutationType, left, rightEvents) {
   }
 
   if (type == 'identifier') {
-    return [[mutationType, left, rightEvents]];
+    return [[mutationType, left, {rightEvents, source}]];
   }
 
   events := [];
@@ -83,7 +84,7 @@ func Mutation(mutationType, left, rightEvents) {
     if (!(subType in #['identifier', '.', 'subscript'])) {
       // Nothing to do (issue caught elsewhere)
     } else {
-      events ++= Mutation(mutationType, subTarget, rightEvents);
+      events ++= Mutation(mutationType, subTarget, rightEvents, source);
     }
 
     return events;

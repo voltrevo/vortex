@@ -1,13 +1,14 @@
 import ./Argument.vx;
 import ./Block.vx;
 
-return func([type, {name, args, body}, _]) {
+return func(funcExp) {
+  [type, {name, args, body}, _] := funcExp;
   assert type == 'func';
 
   preEvents := [];
 
   if (name[0] != 'nothing') {
-    preEvents ++= [['create', name, []]];
+    preEvents ++= [['create', name, {rightEvents: [], source: funcExp}]];
   }
 
   for (arg of args) {

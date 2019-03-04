@@ -56,7 +56,7 @@ func Statement(statement) {
   return switch (type) {
     'expression' => Expression(data);
     'note' => [statement];
-    'import' => [['create', data.name]];
+    'import' => [['create', data.name, {rightEvents: [], source: statement}]];
   };
 };
 
