@@ -61,6 +61,10 @@ namespace Vortex {
   }
 
   Value Array::at(Uint64 i) const {
+    if (i >= values.size()) {
+      throw BadIndexError("Attempt to index past the end of an array");
+    }
+
     return values[i];
   }
 
