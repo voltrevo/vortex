@@ -1,0 +1,11 @@
+import ./bar.vx;
+
+func foo(n) {
+  if (n % 2 == 0) {
+    return bar(n);
+  }
+
+  return 'odd';
+};
+
+return foo;

@@ -1,0 +1,11 @@
+import ./foo.vx;
+
+func bar(n) {
+  if (n % 2 == 1) {
+    return foo(n);
+  }
+
+  return 'even';
+};
+
+return bar;
