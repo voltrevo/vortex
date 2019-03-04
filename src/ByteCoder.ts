@@ -116,6 +116,8 @@ namespace ByteCoder {
     for (const statement of program.v) {
       if (statement.t === 'e' && statement.v.t === 'Func') {
         hoists.push(statement.v);
+      } else if (statement.t === 'import') {
+        [, coder] = Statement(coder, statement);
       } else {
         statements.push(statement);
       }
@@ -130,7 +132,19 @@ namespace ByteCoder {
         continue;
       }
 
-      hoistCaptureMap[hoist.v.name.v] = CapturedNames(hoist);
+      hoistCaptureMap[hoist.v.name.v] = (CapturedNames(hoist)
+        .filter(capName => {
+          const entry = coder.names[capName];
+
+          if (entry && entry.t === 'mfunc') {
+            // mfunc captures are compiled as simply mcall and don\'t need the
+            // usual capture treatment
+            return false;
+          }
+
+          return true;
+        })
+      );
     }
 
     const hoistNames = Object.keys(hoistCaptureMap)
