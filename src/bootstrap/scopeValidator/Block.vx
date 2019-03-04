@@ -5,6 +5,7 @@ func Block(preEvents, [type, statements, _]) {
   assert type == 'block'; // TODO: Destructure exact matches using literals
 
   hoistCaptures := {};
+  usesFromCaptures := [];
   sLen := statements:Length();
 
   for (i := 0u64; i < sLen; i++) {
@@ -40,12 +41,29 @@ func Block(preEvents, [type, statements, _]) {
 
     if (sEvents in #[null]) {
       sEvents = Statement(statements[i]);
+
+      for (evt of sEvents) {
+        if (evt[0] == 'capture') {
+          // Capture must have come from a function not hoisted in this scope,
+          // adding this capture as a use is important in the case that the
+          // capture turns out to be a hoisted function in this scope. In that
+          // case, it will make sure all of that functions captures are
+          // available at this location, which is what we want.
+          usesFromCaptures ++= [[evt[1][1], evt]];
+        }
+      }
     }
 
     preEvents ++= sEvents;
   }
 
   {scope, events} := applyScopeEvents({}, preEvents);
+
+  for ([name, capture] of usesFromCaptures) {
+    if (name in hoistCaptures:Keys()) {
+      scope[name].use ++= [capture[1]];
+    }
+  }
 
   for ([name, {pos, use, capture, mutate}] of scope:Entries()) {
     if (use:Length() + capture:Length() == 0u64) {
