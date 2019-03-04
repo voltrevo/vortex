@@ -1,10 +1,10 @@
+TODO: Fix objectFnEdgeCase in bootstrapped validator
+TODO: Test all of testCode against bootstrapped validator
 TODO: Refactor leading and trailing unary operator joining into main unary joining
 TODO: Fix unused index warning edge case
-TODO: Bootstrap parser
 TODO: Use TypeValue comparison in switch matching
 TODO: Implement maps with non-string keys in VM (keys can be any functionless value)
 TODO: Implement frame guards / handle argument length mismatches
-TODO: Bootstrap validator
 TODO: Bootstrap bytecoder
 TODO: Speed up comparisons using structural sharing
 TODO: Add exec command to vm to create nested vm from vortex byte array
