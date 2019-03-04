@@ -50,7 +50,12 @@ func Expression(expression) {
     subExps ++= [left];
   } else if (type == 'switch') {
     {test, cases} := data;
-    subExps ++= [test] ++ cases:reduce(++);
+
+    if (test[0] != 'nothing') {
+      subExps ++= [test];
+    }
+
+    subExps ++= cases:reduce(++);
   } else if (type in #['import', 'default', 'literal', 'identifier', 'op', 'note']) {
     // Nothing to do for these types
   } else if (type == 'func') {

@@ -1,4 +1,3 @@
-TODO: Fix objectFnEdgeCase in bootstrapped validator
 TODO: Test all of testCode against bootstrapped validator
 TODO: Refactor leading and trailing unary operator joining into main unary joining
 TODO: Fix unused index warning edge case
