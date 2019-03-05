@@ -17,7 +17,7 @@ func Statement(statement) {
 
     events ++= switch (tail[0]) {
       'nothing' => [];
-      'block' => Block({}, tail);
+      'block' => Block([], tail);
       'if' => Statement(tail);
     };
 
