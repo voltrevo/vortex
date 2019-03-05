@@ -18,7 +18,7 @@ func Block(preEvents, [type, statements, _]) {
         if (name[0] != 'nothing' && !(name[1] in hoistCaptures:Keys())) {
           createEvt := ['create', name, {
             rightEvents: [],
-            source: statements[i][0],
+            source: statements[i][1],
           }];
 
           preEvents = [createEvt] ++ preEvents;
@@ -70,7 +70,7 @@ func Block(preEvents, [type, statements, _]) {
     }
   }
 
-  for ([name, {pos, use, capture, mutate}] of scope:Entries()) {
+  for ([name, {pos, source, use, capture, mutate}] of scope:Entries()) {
     if (use:Length() + capture:Length() == 0u64) {
       events ++= [['note', {
         level: 'warn',
@@ -88,6 +88,18 @@ func Block(preEvents, [type, statements, _]) {
         capture,
         mutate
       })]];
+    }
+
+    if (source[0] == 'func') {
+      for ([_, _, mutatePos] of mutate) {
+        events ++= [['note', {
+          level: 'error',
+          message: 'Mutating function {' ++ name ++ '} is not allowed',
+          pos: mutatePos,
+          subnotes: [],
+          tags: #['function-mutation'],
+        }]];
+      }
     }
   }
 
@@ -128,7 +140,7 @@ func Block(preEvents, [type, statements, _]) {
     for ([_, _, usePos] of scope[hoistName].use) {
       for ([_, captureName, capturePos] of capturesExt) {
         if (captureName in scope:Keys()) { // TODO: implement continue here
-          captureCreationPos := scope[captureName].sourcePos;
+          captureCreationPos := scope[captureName].source[2];
 
           if (usePos[0] <= captureCreationPos[1]) {
             events ++= [['note', IncompleteClosureNote({

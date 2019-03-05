@@ -5,6 +5,7 @@ TODO: Use TypeValue comparison in switch matching
 TODO: Implement maps with non-string keys in VM (keys can be any functionless value)
 TODO: Implement frame guards / handle argument length mismatches
 TODO: Bootstrap bytecoder
+TODO: Compiled code should check for object destructuring mismatches
 TODO: Speed up comparisons using structural sharing
 TODO: Add exec command to vm to create nested vm from vortex byte array
 TODO: Implement exception recovery / defaults

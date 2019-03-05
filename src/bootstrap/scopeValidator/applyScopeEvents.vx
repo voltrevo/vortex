@@ -31,7 +31,7 @@ return func(scope, events) {
         if (name != '_') {
           scope[name] := {
             pos,
-            sourcePos: evt[2].source[2],
+            source: evt[2].source,
             use: [],
             capture: [],
             mutate: [],

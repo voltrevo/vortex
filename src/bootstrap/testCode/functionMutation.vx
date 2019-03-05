@@ -1,9 +1,0 @@
-func foo() => 37;
-foo = func() => 42; // #error #validation TODO:function-mutation
-
-x := func bar() {
-  bar = func() => 101; // #error #validation TODO:function-mutation
-  return bar();
-};
-
-return x() + foo();
