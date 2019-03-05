@@ -89,7 +89,7 @@ func Mutation(mutationType, left, rightEvents, source) {
     if (!(subType in #['identifier', '.', 'subscript'])) {
       // Nothing to do (issue caught elsewhere)
     } else {
-      events ++= Mutation(mutationType, subTarget, rightEvents, source);
+      events ++= Mutation('mutate', subTarget, rightEvents, source);
     }
 
     return events;
