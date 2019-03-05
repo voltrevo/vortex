@@ -196,7 +196,50 @@ func NumberConvertedSigned(lines, [i, j]) {
   return [value, [i, j]];
 };
 
+DigitChar := p.Filter(p.Char, func(c) => '0' <= c && c <= '9');
+
+Float := p.Transform(
+  p.Sequence([
+    p.Repeat(DigitChar, [1u64, null]),
+    [p.Exact('.')],
+    p.Repeat(DigitChar, [1u64, null]),
+  ]),
+  func([leftDigits, rightDigits]) {
+    // TODO: Investigate whether IEEE defines decimal deserialization or if
+    // there is a strong convention and do it exactly that way.
+    // (Current method generally be accurate but maybe not consistent with a
+    // precise convention.)
+
+    res := 0.0;
+
+    for (c of leftDigits ++ rightDigits) {
+      d := switch (c) {
+        '0' => 0.0;
+        '1' => 1.0;
+        '2' => 2.0;
+        '3' => 3.0;
+        '4' => 4.0;
+        '5' => 5.0;
+        '6' => 6.0;
+        '7' => 7.0;
+        '8' => 8.0;
+        '9' => 9.0;
+      };
+
+      res *= 10.0;
+      res += d;
+    }
+
+    for (_ of rightDigits) {
+      res *= 0.1;
+    }
+
+    return ['literal', res];
+  },
+);
+
 return p.Select([
+  Float,
   NumberConvertedUnsigned('u8'),
   NumberConvertedUnsigned('u16'),
   NumberConvertedUnsigned('u32'),
