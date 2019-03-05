@@ -1,4 +1,0 @@
-a := 0; // #warn #unused
-{x: a} = {y: 1}; // #error #destructuring-mismatch #key-not-found
-
-return 'done';

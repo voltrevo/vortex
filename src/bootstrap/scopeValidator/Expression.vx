@@ -100,12 +100,14 @@ func Mutation(mutationType, left, rightEvents, source) {
       mutationType,
       subTarget,
       rightEvents,
+      source,
     ));
 
     'object' => data:map(func([_, subTarget]) => Mutation(
       mutationType,
       subTarget,
       rightEvents,
+      source,
     ));
   };
 
