@@ -6,7 +6,13 @@ RawString := p.SequenceOne([
   [p.Exact('\'')],
   p.Many(p.Select([
     p.Filter(p.Char, func(c) => !(c in #['\'', '\\'])),
-    p.Transform(p.Exact('\\\''), second),
+    p.Transform(
+      p.Select([
+        p.Exact('\\\''),
+        p.Exact('\\\\'),
+      ]),
+      second,
+    ),
   ])),
   [p.Exact('\'')],
 ]);
