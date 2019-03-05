@@ -72,7 +72,19 @@ return {
   prefix,
   postfix,
   precedenceList,
-  Operator: p.Select(all:map(p.Exact)),
+  Operator: p.Select(all:map(func(op) {
+    if (op == 'in') {
+      identChar := p.Filter(p.Char, func(c) => (
+        ('a' <= c && c <= 'z') ||
+        ('A' <= c && c <= 'Z') ||
+        c == '_'
+      ));
+
+      return p.SequenceOne([p.Exact('in'), [p.Peek(p.Not(identChar))]]);
+    }
+
+    return p.Exact(op);
+  })),
   LeadingOperator: p.Select(prefix:Values():map(p.Exact)),
   TrailingOperator: p.Select(postfix:Values():map(p.Exact)),
 };
