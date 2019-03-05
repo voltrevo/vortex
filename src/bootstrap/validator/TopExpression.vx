@@ -17,10 +17,20 @@ return func(expression) {
     notes ++= [{
       level: 'warn',
       message: 'Unused expression',
-      tags: #['unused', 'top-expression'],
       pos,
       subnotes: [],
+      tags: #['unused', 'top-expression'],
     }];
+  } else if (type == 'func') {
+    if (value.name[0] == 'nothing') {
+      notes ++= [{
+        level: 'warn',
+        message: 'Unused expression',
+        pos,
+        subnotes: [],
+        tags: #['unused', 'top-expression'],
+      }];
+    }
   }
 
   return notes;
