@@ -20,6 +20,8 @@ namespace Vortex {
     {"logInfo", LOG_INFO},
     {"location", LOCATION},
     {"discard", DISCARD},
+    {"guard", GUARD},
+    {"unguard", UNGUARD},
 
     // TOP_TYPE
     //{"", NULL_},

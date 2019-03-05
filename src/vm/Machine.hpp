@@ -199,6 +199,23 @@ namespace Vortex {
                   break;
                 }
 
+                case GUARD: {
+                  calc.emplace_back();
+                  break;
+                }
+
+                case UNGUARD: {
+                  Value guard = pop();
+
+                  if (guard.type != INVALID) {
+                    throw InternalError(
+                      "Unguard failure (arguments mismatch?)"
+                    );
+                  }
+
+                  break;
+                }
+
                 default:
                   throw InternalError("Unrecognized SPECIAL instruction");
               }

@@ -914,14 +914,14 @@ namespace ByteCoder {
           }
         }
 
-        const lines: string[] = [];
+        const lines: string[] = ['guard'];
 
         for (let i = args.length - 1; i >= 0; i--) {
           const arg = args[i];
           lines.push(...SubExpression(coder, arg));
         }
 
-        lines.push(...SubExpression(coder, fn), 'call');
+        lines.push(...SubExpression(coder, fn), 'call swap unguard');
 
         return [lines, coder];
       }

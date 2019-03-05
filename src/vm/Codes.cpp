@@ -14,6 +14,8 @@ namespace Vortex {
       case LOG_INFO:
       case LOCATION:
       case DISCARD:
+      case GUARD:
+      case UNGUARD:
         return SPECIAL;
 
       case NULL_:
