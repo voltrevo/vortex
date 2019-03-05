@@ -57,6 +57,7 @@ func Statement(statement) {
     'expression' => Expression(data);
     'note' => [statement];
     'import' => [['create', data.name, {rightEvents: [], source: statement}]];
+    'breakpoint' => [];
   };
 };
 
