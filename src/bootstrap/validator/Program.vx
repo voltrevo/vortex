@@ -1,36 +1,5 @@
 import ./Block.vx;
-
-func Breaks([_, statements, _]) {
-  breaks := [];
-
-  for (statement of statements) {
-    [type, data, _] := statement;
-
-    if (type == 'break') {
-      breaks ++= [statement];
-    }
-
-    if (type == 'if') {
-      func IfBreaks(ifStatement) {
-        {condition: _, body, tail} := ifStatement;
-
-        return Breaks(body) ++ switch (tail[0]) {
-          'nothing' => [];
-          'block' => Breaks(tail);
-          'if' => IfBreaks(tail);
-        };
-      };
-
-      breaks ++= IfBreaks(data);
-    }
-
-    if (type == 'for') {
-      breaks ++= Breaks(data.body);
-    }
-  }
-
-  return breaks;
-};
+import ./Breaks.vx;
 
 func ReturnAnalysis([_, statements, pos]) {
   func Error() => {

@@ -12,7 +12,7 @@ func foo() {
     }
   }
 
-  return sum; // TODO-easy:unreachable
+  return sum; // TODO-easy:unreachable (implemented in bootstrapped version)
 };
 
 return foo();
