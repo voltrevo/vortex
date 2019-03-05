@@ -1,0 +1,18 @@
+func foo() {
+  sum := 0;
+
+  i := 0;
+
+  for {
+    sum += i;
+    i++;
+
+    if (i == 10) {
+      return sum;
+    }
+  }
+
+  return sum; // TODO-easy:unreachable
+};
+
+return foo();

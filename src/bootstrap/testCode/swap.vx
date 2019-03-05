@@ -1,0 +1,10 @@
+a := 1;
+b := 2;
+
+assert [a, b] == [1, 2];
+
+[a, b] = [b, a];
+
+assert [a, b] == [2, 1];
+
+return 0;

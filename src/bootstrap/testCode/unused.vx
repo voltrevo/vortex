@@ -1,0 +1,4 @@
+func foo() => 37; // #warn #unused
+func() => 42; // #warn #top-expression #no-effect #unused
+
+return 'done';
