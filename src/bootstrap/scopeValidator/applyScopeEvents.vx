@@ -28,23 +28,27 @@ return func(scope, events) {
           tags: #['scope', 'duplicate-create'],
         }]];
       } else if (evtType == 'create') {
-        scope[name] := {
-          pos,
-          sourcePos: evt[2].source[2],
-          use: [],
-          capture: [],
-          mutate: [],
-        };
+        if (name != '_') {
+          scope[name] := {
+            pos,
+            sourcePos: evt[2].source[2],
+            use: [],
+            capture: [],
+            mutate: [],
+          };
+        }
       }
 
       newEvents ++= [['shadow', evt[1]]];
     } else if (evtType in #['use', 'capture', 'mutate']) {
       [_, name, _] := evt[1];
 
-      if (name in scope:Keys()) {
-        scope[name][evtType] ++= [evt[1]];
-      } else {
-        newEvents ++= [evt];
+      if (name != '_') {
+        if (name in scope:Keys()) {
+          scope[name][evtType] ++= [evt[1]];
+        } else {
+          newEvents ++= [evt];
+        }
       }
     } else if (evtType == 'note') {
       newEvents ++= [evt];
