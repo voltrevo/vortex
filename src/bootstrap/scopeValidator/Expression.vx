@@ -111,7 +111,7 @@ func Mutation(mutationType, left, rightEvents, source) {
     ));
   };
 
-  return subMutations:reduce(++);
+  return ([[]] ++ subMutations):reduce(++);
 };
 
 return Expression;
