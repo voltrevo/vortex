@@ -1,0 +1,15 @@
+return func(op, values, pos) {
+  // TODO: binary operators
+  [oldValue] := values;
+
+  newValue := switch (op) {
+    // TODO: Need to check these are deeply arithmetic not just their kind
+    'unary +' => +oldValue;
+    'unary -' => -oldValue;
+
+    'unary !' => !oldValue;
+    'unary ~' => ~oldValue;
+  };
+
+  return ['literal', newValue, pos];
+};

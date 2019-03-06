@@ -31,7 +31,7 @@ vanilla := #[
   '&',
   '^',
   '|',
-  '~',
+  '~', // TODO: Partial evaluator should emit warning about duplicate
   '&&',
   '||',
   'in',

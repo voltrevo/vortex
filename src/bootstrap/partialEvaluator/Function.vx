@@ -1,0 +1,13 @@
+import ./Block.vx;
+import ./Expression.vx;
+
+return func([type, {name, args, body}, pos]) {
+  assert type == 'func';
+
+  body = switch (body[0]) {
+    'block' => Block(body);
+    'expression' => ['expression', Expression(body[1]), body[2]];
+  };
+
+  return ['func', {name, args, body}, pos];
+};

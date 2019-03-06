@@ -1,0 +1,681 @@
+import @/parser/expressionTypes.vx;
+import @/parser/operatorTypes.vx;
+
+import ./Eval.vx;
+import ./Function.vx;
+
+allKinds := #[
+  'null',
+  'bool',
+  'u8',
+  'u16',
+  'u32',
+  'u64',
+  'i8',
+  'i16',
+  'i32',
+  'i64',
+  'f32',
+  'f64',
+  'string',
+  'array',
+  'set',
+  'object',
+  'func',
+];
+
+numberKinds := #[
+  'u8',
+  'u16',
+  'u32',
+  'u64',
+  'i8',
+  'i16',
+  'i32',
+  'i64',
+  'f32',
+  'f64',
+];
+
+arithKinds := numberKinds | #['array', 'object'];
+
+func KindSet([type, data, _]) {
+  if (type in #['import', 'identifier']) {
+    return allKinds;
+  }
+
+  if (type in #['default', 'note']) {
+    // Is it ok to call KindSet with 'note'? Maybe caller should always be
+    // bubbling note instead.
+    return #[];
+  }
+
+  if (type == 'op') {
+    return #['func'];
+  }
+
+  if (type == #['literal']) {
+    return #[data:Kind()];
+  }
+
+  if (type in expressionTypes.operator) {
+    return switch {
+      (type in operatorTypes.mutation) => #[];
+      (type in #['functionCall', 'subscript']) => allKinds;
+
+      (type in #[
+        '==',
+        '!=',
+        '<=',
+        '>=',
+        '<',
+        '>',
+        '&&',
+        '||',
+        'in',
+        'unary !',
+      ]) => (
+        #['bool']
+      );
+
+      (type in #['%', '<<', '>>', 'unary ~']) => numberKinds;
+      (type == '++') => #['array', 'object'];
+
+      (type in #['unary +', 'unary -', '**', '*', '/', '+', '-']) => (
+        arithKinds
+      );
+
+      (type in #['~', '&', '^', '|']) => #['set'] | numberKinds;
+    };
+  }
+
+  if (type in expressionTypes.container) {
+    return #[type];
+  }
+
+  if (type in expressionTypes.nameAccess) {
+    return allKinds;
+  }
+
+  if (type == 'switch') {
+    {test: _, cases} := data;
+
+    res := #[];
+
+    for ([_, rhs] of cases) {
+      res |= KindSet(rhs);
+    }
+
+    return res;
+  }
+
+  if (type == 'func') {
+    return #['func'];
+  }
+
+  assert false;
+  return null;
+};
+
+func Expression(expression) {
+  [type, data, pos] := expression;
+
+  if (type in #['import', 'default', 'literal', 'identifier', 'op', 'note']) {
+    return expression;
+  }
+
+  if (type in expressionTypes.operator) {
+    if (type in operatorTypes.mutation) {
+      if (type in #['unary ++', 'unary --']) {
+        [left] := data;
+        left = Expression(left);
+
+        assert left[0] != 'literal';
+
+        if (left[0] == 'note') {
+          return left;
+        }
+
+        leftKinds := KindSet(left);
+
+        if ((leftKinds & numberKinds) == #[]) {
+          return ['note', {
+            level: 'error',
+            message: (
+              'operand of ' ++ type ++ ' is one of ' ++ leftKinds:String()
+            ),
+            pos,
+            subnotes: [],
+            tags: #['type-error'],
+          }];
+        }
+
+        return [type, [left], pos];
+      }
+
+      [left, right] := data;
+      left = Expression(left);
+      right = Expression(right);
+
+      assert left[0] != 'literal';
+
+      if (left[0] == 'note') {
+        return left;
+      }
+
+      if (right[0] == 'note') {
+        return right;
+      }
+
+      if (type in #['+=', '-=']) {
+        func MaybeNote(subLeft, subRight) {
+          leftKinds := KindSet(subLeft);
+          rightKinds := KindSet(subRight);
+
+          if ((leftKinds & rightKinds) == #[]) {
+            return {
+              level: 'error',
+              message: (
+                'operands of ' ++
+                type ++
+                ' need to be the same kind, but the left side is one of ' ++
+                leftKinds:String() ++
+                ' and the right side is one of ' ++
+                rightKinds:String()
+              ),
+              pos,
+              subnotes: [],
+              tags: #['type-error'],
+            };
+          }
+
+          if (subLeft[0] == 'array') {
+            if (subRight[0] in #['literal', 'array']) {
+              if (subLeft[1]:Length() != subRight[1]:Length()) {
+                return {
+                  level: 'error',
+                  message: 'length mismatch for + operands',
+                  pos,
+                  subnotes: [],
+                  tags: #['type-error', 'length-mismatch'],
+                };
+              }
+
+              for ([ssLeft, ssRight] of [subLeft[1], subRight[1]]:Transpose()) {
+                if (subRight[0] == 'literal') {
+                  ssRight = ['literal', ssRight];
+                }
+
+                maybeNote := MaybeNote(ssLeft, ssRight);
+
+                if (maybeNote:Kind() != 'null') {
+                  return maybeNote;
+                }
+              }
+            }
+          }
+
+          if (subLeft[0] == 'object') {
+            // TODO
+          }
+
+          return null;
+        };
+
+        maybeNote := MaybeNote(left, right);
+
+        if (maybeNote:Kind() != 'null') {
+          return ['note', maybeNote];
+        }
+
+        return [type, [left, right], pos];
+      }
+
+      if (type in #['**=', '*=', '/=']) {
+        // TODO
+        return [type, [left, right], pos];
+      }
+
+      // TODO:
+      // '++=',
+      // '%=', '<<=', '>>=',
+      // '&=', '|=', '^=', '~=',
+      // '&&=', '||=',
+
+      return [type, [left, right], pos];
+    }
+
+    if (type == 'functionCall') {
+      [base, args] := data;
+
+      base = Expression(base);
+      args = args:map(Expression);
+
+      baseKinds := KindSet(base);
+
+      if (!('func' in baseKinds)) {
+        return ['note', {
+          level: 'error',
+          message: (
+            'Left side of function call is not a function (one of ' ++
+            baseKinds:String() ++
+            ')'
+          ),
+          pos,
+          subnotes: [],
+          tags: #['type-error'],
+        }];
+      }
+
+      return ['functionCall', [base, args], pos];
+    }
+
+    if (type in operatorTypes.unary) {
+      [target] := data;
+
+      target = Expression(target);
+
+      if (target[0] == 'literal') {
+        return Eval(type, [target[1]], pos);
+      }
+
+      targetKinds := KindSet(target);
+
+      requiredKinds := switch {
+        (type in #['unary +', 'unary -']) => arithKinds;
+        (type == 'unary !') => #['bool'];
+        (type == 'unary ~') => numberKinds; // TODO: including floats?
+      };
+
+      if ((requiredKinds & targetKinds) == #[]) {
+        return ['note', {
+          level: 'error',
+          message: (
+            type ++
+            ' requires a target that is one of ' ++
+            requiredKinds:String() ++
+            ', but instead target is one of ' ++
+            targetKinds:String()
+          ),
+          pos,
+          subnotes: [],
+          tags: #['type-error'],
+        }];
+      }
+
+      return [type, [target], pos];
+    }
+
+    [left, right] := data;
+
+    left = Expression(left);
+    right = Expression(right);
+
+    if (left[0] == 'literal' && right[0] == 'literal') {
+      return Eval(type, [left[1], right[1]], pos);
+    }
+
+    leftKinds := KindSet(left);
+    rightKinds := KindSet(right);
+
+    // symmetric type requirements
+    if (type in #[
+      '==', '!=', '%', '++', '+', '-', '<<', '>>', '<=', '>=', '<', '>', '~',
+      '&', '^', '|', '&&', '||',
+    ]) {
+      if ((leftKinds & rightKinds) == #[]) {
+        return ['note', {
+          level: 'error',
+          message: (
+            type ++
+            ' requires its operands to be the same type, but the left ' ++
+            'operand is one of ' ++
+            leftKinds:String() ++
+            ' and the right operand is one of ' ++
+            rightKinds:String()
+          ),
+          pos,
+          subnotes: [],
+          tags: #['type-error'],
+        }];
+      }
+
+      requiredKinds := switch {
+        // TODO: short-circuiting relaxes this
+        (type in #['&&', '||']) => #['bool'];
+
+        (type in #['==', '!=', '<', '>', '<=', '>=']) => allKinds ~ #['func'];
+        (type in #['%', '<<', '>>']) => numberKinds;
+        (type in #['~', '&', '^', '|']) => numberKinds | #['set'];
+        (type in #['++']) => #['array', 'object'];
+        (type in #['+', '-']) => arithKinds;
+      };
+
+      leftOk := (leftKinds & requiredKinds) != #[];
+      rightOk := (rightKinds & requiredKinds) != #[];
+
+      if (!leftOk || !rightOk) {
+        side := switch {
+          (!leftOk) => 'left';
+          (!rightOk) => 'right';
+        };
+
+        return ['note', {
+          level: 'error',
+          message: (
+            type ++
+            ' requires an operand that is one of ' ++
+            requiredKinds:String() ++
+            ' but the ' ++
+            side ++
+            ' operand is one of ' ++
+            leftKinds:String()
+          ),
+          pos,
+          subnotes: [],
+          tags: #['type-error'],
+        }];
+      }
+
+      return [type, [left, right], pos];
+    }
+
+    if (type in #['**', '*', '/']) {
+      leftOk := (leftKinds & arithKinds) != #[];
+      rightOk := (rightKinds & arithKinds) != #[];
+
+      if (!leftOk || !rightOk) {
+        [side, kinds] := switch {
+          (!leftOk) => ['left', leftKinds];
+          (!rightOk) => ['right', rightKinds];
+        };
+
+        return {
+          level: 'error',
+          message: (
+            'Operands of ' ++
+            type ++
+            'need to be arithmetic types, but the ' ++
+            side ++
+            ' operand is one of ' ++
+            kinds:String()
+          ),
+          pos,
+          subnotes: [],
+          tags: #['type-error'],
+        };
+      }
+    }
+
+    if (type == '**') {
+      if ((leftKinds | #['array', 'object']) == #['array', 'object']) {
+        if ((rightKinds | numberKinds) != numberKinds) {
+          return ['note', {
+            level: 'error',
+            message: (
+              'Because the left operand of ** is an array/object, the ' ++
+              'right operand needs to be a number, but it is instead one ' ++
+              'of ' ++
+              numberKinds:String()
+            ),
+            pos,
+            subnotes: [],
+            tags: #['type-error'],
+          }];
+        }
+      }
+    }
+
+    if (type == 'in') {
+      if (!('set' in rightKinds)) {
+        return ['note', {
+          level: 'error',
+          message: (
+            'The right operand of {in} needs to be a set, but instead it ' ++
+            'is one of ' ++
+            rightKinds:String()
+          ),
+          pos,
+          subnotes: [],
+          tags: #['type-error'],
+        }];
+      }
+
+      if (leftKinds == #['func']) {
+        return ['note', {
+          level: 'error',
+          message: 'The left operand of {in} cannot be a func',
+          pos,
+          subnotes: [],
+          tags: #['type-error'],
+        }];
+      }
+    }
+
+    if (type == 'subscript') {
+      if ((leftKinds & #['array', 'object']) == #[]) {
+        return ['note', {
+          level: 'error',
+          message: (
+            'The left operand of a subscript needs to be an array/object, ' ++
+            'but instead it is one of ' ++
+            leftKinds:String()
+          ),
+          pos,
+          subnotes: [],
+          tags: #['type-error'],
+        }];
+      }
+
+      requiredRightKinds := #[];
+
+      if ('array' in leftKinds) {
+        requiredRightKinds |= #['i32', 'u64'];
+      }
+
+      if ('object' in rightKinds) {
+        requiredRightKinds |= #['string'];
+      }
+
+      if ((rightKinds & requiredRightKinds) == #[]) {
+        return ['note', {
+          level: 'error',
+          message: (
+            'Subscript needs to be one of ' ++
+            requiredRightKinds:String() ++
+            ' but instead it is one of ' ++
+            rightKinds:String()
+          ),
+          pos,
+          subnotes: [],
+          tags: #['type-error'],
+        }];
+      }
+    }
+
+    return [type, [left, right], pos];
+  }
+
+  if (type in expressionTypes.container) {
+    if (type == 'object') {
+      data = data:map(func([key, value]) => [key, Expression(value)]);
+
+      literalValue := {};
+
+      for ([[_, keyStr, _], [valueType, valueData, _]] of data) {
+        if (valueType == 'literal') {
+          // Parser prevents possibility of key duplicates (TODO: should it?)
+          literalValue[keyStr] := valueData;
+        } else {
+          return [type, data, pos];
+        }
+      }
+
+      return ['literal', literalValue, pos];
+    }
+
+    if (type == 'set') {
+      data = data:map(Expression);
+      literals := #[];
+      allLiterals := true;
+
+      for ([elType, elData, elPos] of data) {
+        kinds := KindSet([elType, elData, elPos]);
+
+        if (kinds == #['func']) {
+          return ['note', {
+            level: 'error',
+            message: 'Element of set cannot be a func',
+            pos: elPos,
+            subnotes: [],
+            tags: #['type-error'],
+          }];
+        }
+
+        if (elType == 'literal') {
+          if (elData in literals) {
+            // TODO: How to warn about this?
+          } else {
+            literals |= #[elData];
+          }
+        } else {
+          allLiterals = false;
+        }
+      }
+
+      if (allLiterals) {
+        return ['literal', literals, pos];
+      }
+
+      return [type, data, pos];
+    }
+
+    if (type == 'array') {
+      data = data:map(Expression);
+      literals := [];
+      allLiterals := true;
+
+      for ([elType, elData, _] of data) {
+        if (elType == 'literal') {
+          literals ++= [elData];
+        } else {
+          allLiterals = false;
+        }
+      }
+
+      if (allLiterals) {
+        return ['literal', literals, pos];
+      }
+
+      return [type, data, pos];
+    }
+
+    assert false;
+  }
+
+  if (type in expressionTypes.nameAccess) {
+    [left, right] := data;
+    left = Expression(left);
+
+    if (left[0] == 'literal') {
+      key := right[1];
+      assert key:Kind() == 'string';
+      availableKeys := left[1]:Keys();
+
+      // TODO: Should be able to detect key existence in more situations than
+      // just literals.
+
+      if (!(key in availableKeys)) {
+        return ['note', {
+          level: 'error',
+          message: (
+            'Key not found: ' ++
+            key ++
+            ', available keys: ' ++
+            availableKeys:String()
+          ),
+          pos,
+          subnotes: [],
+          tags: #['bad-index', 'type-error'],
+        }];
+      }
+    }
+
+    return [type, [left, right], data];
+  }
+
+  if (type == 'switch') {
+    {test, cases} := data;
+
+    if (test[0] != 'nothing') {
+      test = Expression(test);
+    }
+
+    newCases := [];
+
+    for ([left, right] of cases) {
+      if (left[0] == 'default') {
+        newCases ++= [left, Expression(right)];
+
+        // TODO: Errors from unreachable cases might still be valuable. How
+        // should they be surfaced?
+        break;
+      }
+
+      left = Expression(left);
+      right = Expression(right);
+
+      specOutcome := switch (test[0]) {
+        'nothing' => left;
+        default => Expression(['==', [test, left], pos]);
+      };
+
+      specOutcomeKinds := KindSet(specOutcome);
+
+      if (!('bool' in specOutcomeKinds)) {
+        return ['note', {
+          level: 'error',
+          message: (
+            'Switch case test outcome needs to be a bool but instead it ' ++
+            'is one of ' ++
+            specOutcomeKinds:String()
+          ),
+          pos: left[2],
+          subnotes: [],
+          tags: #['type-error'],
+        }];
+      }
+
+      if (specOutcome[0] == 'literal') {
+        if (specOutcome[1]) {
+          newCases ++= [['default', null, left[2]], right];
+          break;
+        } else {
+          // Don't include unreachable case (TODO: warn?)
+        }
+      } else {
+        newCases ++= [left, right];
+      }
+    }
+
+    cases = newCases;
+
+    if (cases:Length() == 1u64) {
+      [[[leftType, _, _], right]] := cases;
+      if (leftType == 'default') {
+        return right;
+      }
+    }
+
+    return [type, {test, cases}, pos];
+  }
+
+  if (type == 'func') {
+    return Function(expression);
+  }
+
+  assert false;
+  return null;
+};
+
+return Expression;
