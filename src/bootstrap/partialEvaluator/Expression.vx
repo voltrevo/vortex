@@ -20,7 +20,7 @@ func KindSet([type, data, _]) {
     return #['func'];
   }
 
-  if (type == #['literal']) {
+  if (type == 'literal') {
     return #[data:Kind()];
   }
 
