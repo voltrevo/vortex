@@ -478,7 +478,7 @@ func Expression(expression) {
 
       literalValue := {};
 
-      for ([[_, keyStr, _], [valueType, valueData, _]] of data) {
+      for ([keyStr, [valueType, valueData, _]] of data) {
         if (valueType == 'literal') {
           // Parser prevents possibility of key duplicates (TODO: should it?)
           literalValue[keyStr] := valueData;

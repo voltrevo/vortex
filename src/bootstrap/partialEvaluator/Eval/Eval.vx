@@ -130,7 +130,7 @@ func Eval(op, values, pos) {
           return TypeError(pos, (
             'Cannot apply ++ operator between objects because they have ' ++
             'the following overlapping keys: ' ++
-            sharedKeys:String()
+            sharedKeys:Values():reduce(func(a, b) => a ++ ', ' ++ b)
           ));
         }
 
