@@ -1,0 +1,22 @@
+return func Argument(target) {
+  if (target[0] == 'note') {
+    return [target];
+  }
+
+  [type, data, _] := target;
+
+  if (type == 'identifier') {
+    return [];
+  }
+
+  if (type in #['array', 'object']) {
+    subArgs := switch (type) {
+      'array' => data:map(Argument);
+      'object' => data:map(func([_, subTarget]) => Argument(subTarget));
+    };
+
+    return ([[]] ++ subArgs):reduce(++);
+  }
+
+  return [];
+};

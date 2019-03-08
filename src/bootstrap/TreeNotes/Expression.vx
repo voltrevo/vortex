@@ -1,0 +1,66 @@
+import @/parser/expressionTypes.vx;
+import @/parser/operatorTypes.vx;
+
+import ./Argument.vx;
+import ./Program.vx;
+
+return func Expression(expression) {
+  if (expression[0] == 'note') {
+    return [expression];
+  }
+
+  notes := [];
+
+  [type, data, _] := expression;
+
+  subExps := [];
+
+  if (type in expressionTypes.operator) {
+    if (type in operatorTypes.mutation) {
+      subExps ++= data;
+    } else if (type == 'functionCall') {
+      [base, args] := data;
+      subExps ++= [base] ++ args;
+    } else {
+      subExps ++= data;
+    }
+  } else if (type in expressionTypes.container) {
+    subExps ++= switch (type) {
+      'array' => data;
+      'set' => data;
+      'object' => data:map(func([_, exp]) => exp);
+    };
+  } else if (type in expressionTypes.nameAccess) {
+    [left, _] := data;
+    subExps ++= [left];
+  } else if (type == 'switch') {
+    {test, cases} := data;
+
+    if (test[0] != 'nothing') {
+      subExps ++= [test];
+    }
+
+    subExps ++= cases:reduce(++);
+  } else if (type in #['import', 'default', 'literal', 'identifier', 'op']) {
+    // Nothing to do for these types
+  } else if (type == 'func') {
+    {name: _, args, body} := data;
+
+    for (arg of args) {
+      notes ++= Argument(arg);
+    }
+
+    [bodyType, bodyData, _] := body;
+
+    notes ++= switch (bodyType) {
+      'expression' => Expression(bodyData);
+      'block' => Program(body);
+    };
+  } else {
+    assert false;
+  }
+
+  notes ++= ([[]] ++ subExps:map(Expression)):reduce(++);
+
+  return notes;
+};

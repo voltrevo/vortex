@@ -1,0 +1,9 @@
+import ./Statement.vx;
+
+return func(input) {
+  if (input[0] == 'note') {
+    return [input];
+  }
+
+  return ([[]] ++ input[1]:map(Statement)):reduce(++);
+};
