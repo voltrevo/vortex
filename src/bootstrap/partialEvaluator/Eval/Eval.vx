@@ -185,7 +185,7 @@ func Eval(op, values, pos) {
     }
 
     if (op == 'subscript') {
-      if (!(left in #['array', 'object'])) {
+      if (!(left:Kind() in #['array', 'object'])) {
         return KindError('left');
       }
 
