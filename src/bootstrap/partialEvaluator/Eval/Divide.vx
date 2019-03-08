@@ -1,0 +1,57 @@
+import @/util/kinds.vx;
+
+import @/partialEvaluator/TypeError.vx;
+
+import ./isVector.vx;
+
+func Divide(left, right, pos) {
+  if (isVector(right)) {
+    return TypeError(pos, 'Cannot divide by ' ++ right:Kind());
+  }
+
+  if (isVector(left)) {
+    return VectorDivide(left, right, pos);
+  }
+
+  return RegularDivide(left, right, pos);
+};
+
+func RegularDivide(left, right, pos) {
+  if (left:Kind() != right:Kind()) {
+    return TypeError(
+      'Cannot do regular division on different types: ' ++
+      left:Kind() ++
+      ', ' ++
+      right:Kind()
+    );
+  }
+
+  if (!(left:Kind() in kinds.number)) {
+    return TypeError(pos, (
+      'Cannot do regular division on type: ' ++ left:Kind()
+    ));
+  }
+
+  return ['literal', left / right, pos];
+};
+
+// TODO: Vector division has an unhandled edge case where an empty vector
+// can be divided by anything. Instead, the other operand needs to be
+// checked that it is valid for *some* form of division.
+// (e.g. other operand cannot be a string)
+
+func VectorDivide(left, right, pos) {
+  for (k of left:Keys()) {
+    quotient := Divide(left[k], right, pos);
+
+    if (quotient[0] == 'note') {
+      return quotient;
+    }
+
+    left[k] = quotient[1];
+  }
+
+  return left;
+};
+
+return Divide;

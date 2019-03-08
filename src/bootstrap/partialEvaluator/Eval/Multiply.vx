@@ -1,0 +1,196 @@
+import @/util/kinds.vx;
+
+import @/partialEvaluator/TypeError.vx;
+
+import ./Eval.vx;
+import ./isVector.vx;
+
+func Multiply(left, right, pos) {
+  return switch ([left, right]:map(isVector)) {
+    [true, true] => MatrixMultiply(left, right, pos);
+    [true, false] => LeftVectorMultiply(left, right, pos);
+    [false, true] => RightVectorMultiply(left, right, pos);
+    [false, false] => RegularMultiply(left, right, pos);
+  };
+};
+
+func MatrixMultiply(left, right, pos) {
+  func InnerKeys(mat) {
+    keys := mat:Keys():Values();
+
+    if (keys:Length() == 0u64) {
+      return null;
+    }
+
+    func MaybeKeys(x) => switch (x:Kind()) {
+      'array' => ['array', x:Keys():Values()];
+      'object' => ['object', x:Keys():Values()];
+      default => null;
+    };
+
+    innerKeys := MaybeKeys(mat[keys[0]]);
+
+    if (innerKeys:Kind() == 'null') {
+      return null;
+    }
+
+    keyLen := keys:Length();
+
+    for (i := 1u64; i < keyLen; i++) {
+      nestedKeys := MaybeKeys(mat[keys[i]]);
+
+      if (nestedKeys:Kind() == 'null') {
+        return null;
+      }
+
+      if (nestedKeys != innerKeys) {
+        return null;
+      }
+    }
+
+    return innerKeys;
+  };
+
+  leftInnerKeys := InnerKeys(left);
+  rightInnerKeys := InnerKeys(right);
+
+  if (leftInnerKeys:Kind() == 'null' || rightInnerKeys:Kind() == 'null') {
+    side := switch {
+      (leftInnerKeys:Kind() == 'null') => 'left';
+      (rightInnerKeys:Kind() == 'null') => 'right';
+    };
+
+    return TypeError(pos, (
+      'Matrix multiplication failed because the ' ++
+      side ++
+      ' operand is not a matrix'
+    ));
+  }
+
+  leftOuterKeys := [left:Kind(), left:Keys():Values()];
+  rightOuterKeys := [right:Kind(), right:Keys():Values()];
+
+  if (leftInnerKeys != rightOuterKeys) {
+    return TypeError(pos, (
+      'Matrix multiplication failed because the dimensions are not ' ++
+      'compatible. Left inner keys: ' ++
+      leftInnerKeys:String() ++
+      ', right outer keys: ' ++
+      rightOuterKeys:String() ++
+      '.'
+    ));
+  }
+
+  sharedKeys := leftInnerKeys;
+
+  func AssignKey(container, key, value) {
+    kind := container:Kind();
+
+    if (kind == 'array') {
+      assert key == container:Length();
+      return container ++ [value];
+    }
+
+    if (kind == 'object') {
+      container[key] := value;
+    }
+
+    assert false;
+    return null;
+  };
+
+  res := switch (left:Kind()) {
+    'array' => [];
+    'object' => {};
+  };
+
+  innerProto := switch (rightInnerKeys[0]) {
+    'array' => [];
+    'object' => {};
+  };
+
+  for (i of leftOuterKeys[1]) {
+    row := innerProto;
+
+    for (j of rightInnerKeys[1]) {
+      product := (sharedKeys[1]
+        :map(func(k) => Multiply(left[i][k], right[k][j], pos))
+        :reduce(func(a, b) {
+          if (a[0] == 'note') {
+            return a;
+          }
+
+          if (b[0] == 'note') {
+            return b;
+          }
+
+          return Eval('+', a[1], b[1], pos);
+        })
+      );
+
+      if (product[0] == 'note') {
+        return product;
+      }
+
+      row = AssignKey(row, j, product[1]);
+    }
+
+    res = AssignKey(res, i, row);
+  }
+
+  return ['literal', res, pos];
+};
+
+func RegularMultiply(left, right, pos) {
+  if (left:Kind() != right:Kind()) {
+    return TypeError(
+      'Cannot do regular multiplication on different types: ' ++
+      left:Kind() ++
+      ', ' ++
+      right:Kind()
+    );
+  }
+
+  if (!(left:Kind() in kinds.number)) {
+    return TypeError(pos, (
+      'Cannot do regular multiplication on type: ' ++ left:Kind()
+    ));
+  }
+
+  return ['literal', left * right, pos];
+};
+
+// TODO: Vector multiplication has an unhandled edge case where an empty vector
+// can be multiplied by anything. Instead, the other operand needs to be
+// checked that it is valid for *some* form of multiplication.
+// (e.g. other operand cannot be a string)
+
+func LeftVectorMultiply(left, right, pos) {
+  for (k of left:Keys()) {
+    product := Multiply(left[k], right, pos);
+
+    if (product[0] == 'note') {
+      return product;
+    }
+
+    left[k] = product[1];
+  }
+
+  return left;
+};
+
+func RightVectorMultiply(left, right, pos) {
+  for (k of right:Keys()) {
+    product := Multiply(left, right[k], pos);
+
+    if (product[0] == 'note') {
+      return product;
+    }
+
+    right[k] = product[1];
+  }
+
+  return right;
+};
+
+return Multiply;

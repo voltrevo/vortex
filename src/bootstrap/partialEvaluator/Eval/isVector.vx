@@ -1,0 +1,1 @@
+return func(x) => x:Kind() in #['array', 'object'];

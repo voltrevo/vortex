@@ -1,0 +1,430 @@
+import @/util/kinds.vx;
+import @/partialEvaluator/TypeError.vx;
+
+import ./Divide.vx;
+import ./Multiply.vx;
+import ./U64FromPositiveI32.vx;
+
+func Eval(op, values, pos) {
+  if (values:Length() == 1u64) {
+    [oldValue] := values;
+
+    if (op in #['unary +', 'unary -']) {
+      maybeNote := CheckLayout({
+        location: [],
+        op,
+        value: oldValue,
+        allowedKinds: kinds.arithmetic,
+        pos,
+      });
+
+      if (maybeNote:Kind() != 'null') {
+        return maybeNote;
+      }
+    } else if (op == 'unary !') {
+      if (oldValue:Kind() != 'bool') {
+        return TypeError(pos, 'Can\'t apply unary ! to ' ++ oldValue:Kind());
+      }
+    } else if (op == 'unary ~') {
+      if (!(oldValue:Kind() in (kinds.number | #['set']))) {
+        return TypeError(pos, 'Can\'t apply unary ~ to ' ++ oldValue:Kind());
+      }
+    } else {
+      assert false;
+    }
+
+    newValue := switch (op) {
+      'unary +' => +oldValue;
+      'unary -' => -oldValue;
+      'unary !' => !oldValue;
+      'unary ~' => ~oldValue;
+    };
+
+    return ['literal', newValue, pos];
+  }
+
+  if (values:Length() == 2u64) {
+    [left, right] := values;
+
+    func KindError(side) => TypeError(pos, (
+      'Cannot apply ' ++
+      op ++
+      ' with ' ++
+      switch (side) {
+        'left' => left:Kind();
+        'right' => right:Kind();
+      } ++
+      ' ' ++
+      side ++
+      ' operand'
+    ));
+
+    func DifferentKindsError() => TypeError(pos, (
+      'Cannot apply ' ++
+      op ++
+      ' operator between different kinds ' ++
+      left:Kind() ++
+      ', ' ++
+      right:Kind()
+    ));
+
+    func SameKindsError() => TypeError(pos, (
+      'Cannot apply ' ++
+      op ++
+      ' operator between ' ++
+      left:Kind() ++
+      ' operands'
+    ));
+
+    if (op in #['==', '!=', '<', '>', '<=', '>=', '+', '-']) {
+      maybeNote := CheckSameLayout({
+        location: [],
+        op,
+        left,
+        right,
+        allowedKinds: switch {
+          (op in #['+', '-']) => kinds.arithmetic;
+          default => kinds.all ~ #['func'];
+        },
+        pos
+      });
+
+      if (maybeNote:Kind() != 'null') {
+        return maybeNote;
+      }
+
+      result := switch (op) {
+        '==' => left == right;
+        '!=' => left != right;
+        '<' => left < right;
+        '>' => left > right;
+        '<=' => left <= right;
+        '>=' => left >= right;
+        '+' => left + right;
+        '-' => left - right;
+      };
+
+      return ['literal', result, pos];
+    }
+
+    if (op == '++') {
+      if (left:Kind() != right:Kind()) {
+        return DifferentKindsError();
+      }
+
+      if (!(left:Kind() in #['array', 'object'])) {
+        return SameKindsError();
+      }
+
+      if (left:Kind() == 'array') {
+        return ['literal', left ++ right, pos];
+      }
+
+      if (left:Kind() == 'object') {
+        sharedKeys := left:Keys() & right:Keys();
+
+        if (sharedKeys != #[]) {
+          return TypeError(pos, (
+            'Cannot apply ++ operator between objects because they have ' ++
+            'the following overlapping keys: ' ++
+            sharedKeys:String()
+          ));
+        }
+
+        return ['literal', left ++ right, pos];
+      }
+
+      assert false;
+      return null;
+    }
+
+    if (op in #['&&', '||']) {
+      if (left:Kind() != 'bool') {
+        return KindError('left');
+      }
+
+      shortCircuitValue := switch (op) {
+        '&&' => false;
+        '||' => true;
+      };
+
+      if (left == shortCircuitValue) {
+        return ['literal', left, pos];
+      }
+
+      if (right:Kind() != 'bool') {
+        return KindError('right');
+      }
+
+      result := switch (op) {
+        '&&' => left && right;
+        '||' => left || right;
+      };
+
+      return ['literal', result, pos];
+    }
+
+    if (op == 'functionCall') {
+      assert left:Kind() != 'func';
+      return KindError('left');
+    }
+
+    if (op == 'in') {
+      if (left:Kind() == 'func') {
+        return KindError('left');
+      }
+
+      if (right:Kind() != 'set') {
+        return KindError('right');
+      }
+
+      return ['literal', left in right, pos];
+    }
+
+    if (op == 'subscript') {
+      if (!(left in #['array', 'object'])) {
+        return KindError('left');
+      }
+
+      // TODO: TypeError -> BadIndexError?
+
+      if (left:Kind() == 'array') {
+        if (!(right:Kind() in #['i32', 'u64'])) {
+          return TypeError(pos, (
+            'Cannot subscript array with kind ' ++
+            right:Kind()
+          ));
+        }
+
+        index := right;
+
+        if (index:Kind() == 'i32') {
+          if (index < 0) {
+            // TODO: BadIndexError?
+            return TypeError(pos, (
+              'Cannot subscript array with negative index ' ++
+              index:String()
+            ));
+          }
+
+          index = U64FromPositiveI32(index);
+        }
+
+        if (index >= left:Length()) {
+          // TODO: BadIndexError?
+          return TypeError(pos, (
+            'Index ' ++
+            index:String() ++
+            ' doesn\'t exist in array of only length ' ++
+            left:Length():String()
+          ));
+        }
+
+        return ['literal', left[right], pos];
+      }
+
+      if (left:Kind() == 'object') {
+        if (right:Kind() != 'string') {
+          return TypeError(pos, (
+            'Cannot subscript object with kind ' ++
+            right:Kind()
+          ));
+        }
+
+        if (!(right in left:Keys())) {
+          return TypeError(pos, 'Key not found: ' ++ right);
+        }
+
+        return ['literal', left[right], pos];
+      }
+
+      assert false;
+    }
+
+    func SameKindsImpl(fn, allowedKinds) {
+      if (left:Kind() != right:Kind()) {
+        return TypeError(pos, (
+          'Cannot apply ' ++
+          op ++
+          ' with operands of different kinds: ' ++
+          left:Kind() ++
+          ', ' ++
+          right:Kind()
+        ));
+      }
+
+      if (!(left:Kind() in allowedKinds)) {
+        return TypeError(pos, (
+          'Cannot apply ' ++
+          op ++
+          ' with ' ++
+          left:Kind() ++
+          ' operands'
+        ));
+      }
+
+      return ['literal', fn(left, right), pos];
+    };
+
+    return switch (op) {
+      '**' => Exp(left, right, pos);
+      '*' => Multiply(left, right, pos);
+      '/' => Divide(left, right, pos);
+      '%' => SameKindsImpl(%, kinds.number);
+      '<<' => SameKindsImpl(<<, kinds.number);
+      '>>' => SameKindsImpl(>>, kinds.number);
+      '~' => SameKindsImpl(~, kinds.number | #['set']);
+      '&' => SameKindsImpl(&, kinds.number | #['set']);
+      '^' => SameKindsImpl(^, kinds.number | #['set']);
+      '|' => SameKindsImpl(|, kinds.number | #['set']);
+    };
+  }
+
+  assert false;
+  return null;
+};
+
+func CheckSameLayout({
+  location,
+  op,
+  left,
+  right,
+  allowedKinds,
+  pos,
+}) {
+  func Prefix() {
+    if (location:Length() == 0u64) {
+      return '';
+    }
+
+    return 'At location ' ++ location:String() ++ ': ';
+  };
+
+  if (left:Kind() != right:Kind()) {
+    return TypeError(pos, (
+      Prefix() ++
+      'Can\'t apply ' ++
+      op ++
+      ' between different kinds ' ++
+      left:Kind() ++
+      ', ' ++
+      right:Kind()
+    ));
+  }
+
+  if (!(left:Kind() in allowedKinds)) {
+    return TypeError(pos, (
+      Prefix() ++
+      'Can\'t apply ' ++
+      op ++
+      ' with ' ++
+      left:Kind() ++
+      ' operands'
+    ));
+  }
+
+  if (left:Kind() in #['array', 'object']) {
+    leftKeys := left:Keys();
+    rightKeys := right:Keys();
+
+    if (leftKeys != rightKeys) {
+      return TypeError(pos, (
+        Prefix() ++
+        'Can\'t apply ' ++
+        op ++
+        ' between containers with different keys ' ++
+        leftKeys:String() ++
+        ', ' ++
+        rightKeys:String()
+      ));
+    }
+
+    for (key of leftKeys:Values()) {
+      res := CheckSameLayout({
+        location: location ++ [key],
+        op,
+        left: left[key],
+        right: right[key],
+        allowedKinds,
+        pos,
+      });
+
+      if (res[0] == 'note') {
+        return res;
+      }
+    }
+
+    return null;
+  }
+
+  return null;
+};
+
+func CheckLayout({
+  location,
+  op,
+  value,
+  allowedKinds,
+  pos,
+}) {
+  func Prefix() {
+    if (location:Length() == 0u64) {
+      return '';
+    }
+
+    return 'At location ' ++ location:String() ++ ': ';
+  };
+
+  if (!(value:Kind() in allowedKinds)) {
+    return TypeError(pos, (
+      Prefix() ++
+      'Can\'t apply ' ++
+      op ++
+      ' with ' ++
+      value:Kind() ++
+      ' operands'
+    ));
+  }
+
+  if (value:Kind() in #['array', 'object']) {
+    keys := value:Keys();
+
+    for (key of keys:Values()) {
+      res := CheckLayout({
+        location: location ++ [key],
+        op,
+        value: value[key],
+        allowedKinds,
+        pos,
+      });
+
+      if (res[0] == 'note') {
+        return res;
+      }
+    }
+
+    return null;
+  }
+
+  return null;
+};
+
+func Exp(left, right, pos) {
+  if (left:Kind() != right:Kind()) {
+    return TypeError(pos, (
+      'Exponentiation between different kinds ' ++
+      left:Kind() ++
+      ', ' ++
+      right:Kind()
+    ));
+  }
+
+  // TODO: Matrices, integers?
+  if (!(left:Kind() in #['f32', 'f64'])) {
+    return TypeError(pos, 'Exponentiation with ' ++ left:Kind());
+  }
+
+  return ['literal', left ** right, pos];
+};
+
+return Eval;

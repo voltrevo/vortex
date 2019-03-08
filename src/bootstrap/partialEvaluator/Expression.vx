@@ -1,47 +1,13 @@
 import @/parser/expressionTypes.vx;
 import @/parser/operatorTypes.vx;
+import @/util/kinds.vx;
 
-import ./Eval.vx;
+import ./Eval/Eval.vx;
 import ./Function.vx;
-
-allKinds := #[
-  'null',
-  'bool',
-  'u8',
-  'u16',
-  'u32',
-  'u64',
-  'i8',
-  'i16',
-  'i32',
-  'i64',
-  'f32',
-  'f64',
-  'string',
-  'array',
-  'set',
-  'object',
-  'func',
-];
-
-numberKinds := #[
-  'u8',
-  'u16',
-  'u32',
-  'u64',
-  'i8',
-  'i16',
-  'i32',
-  'i64',
-  'f32',
-  'f64',
-];
-
-arithKinds := numberKinds | #['array', 'object'];
 
 func KindSet([type, data, _]) {
   if (type in #['import', 'identifier']) {
-    return allKinds;
+    return kinds.all;
   }
 
   if (type in #['default', 'note']) {
@@ -61,7 +27,7 @@ func KindSet([type, data, _]) {
   if (type in expressionTypes.operator) {
     return switch {
       (type in operatorTypes.mutation) => #[];
-      (type in #['functionCall', 'subscript']) => allKinds;
+      (type in #['functionCall', 'subscript']) => kinds.all;
 
       (type in #[
         '==',
@@ -78,14 +44,14 @@ func KindSet([type, data, _]) {
         #['bool']
       );
 
-      (type in #['%', '<<', '>>', 'unary ~']) => numberKinds;
+      (type in #['%', '<<', '>>', 'unary ~']) => kinds.number;
       (type == '++') => #['array', 'object'];
 
       (type in #['unary +', 'unary -', '**', '*', '/', '+', '-']) => (
-        arithKinds
+        kinds.arithmetic
       );
 
-      (type in #['~', '&', '^', '|']) => #['set'] | numberKinds;
+      (type in #['~', '&', '^', '|']) => #['set'] | kinds.number;
     };
   }
 
@@ -94,7 +60,7 @@ func KindSet([type, data, _]) {
   }
 
   if (type in expressionTypes.nameAccess) {
-    return allKinds;
+    return kinds.all;
   }
 
   if (type == 'switch') {
@@ -138,7 +104,7 @@ func Expression(expression) {
 
         leftKinds := KindSet(left);
 
-        if ((leftKinds & numberKinds) == #[]) {
+        if ((leftKinds & kinds.number) == #[]) {
           return ['note', {
             level: 'error',
             message: (
@@ -282,9 +248,9 @@ func Expression(expression) {
       targetKinds := KindSet(target);
 
       requiredKinds := switch {
-        (type in #['unary +', 'unary -']) => arithKinds;
+        (type in #['unary +', 'unary -']) => kinds.arithmetic;
         (type == 'unary !') => #['bool'];
-        (type == 'unary ~') => numberKinds; // TODO: including floats?
+        (type == 'unary ~') => kinds.number; // TODO: including floats?
       };
 
       if ((requiredKinds & targetKinds) == #[]) {
@@ -344,11 +310,11 @@ func Expression(expression) {
         // TODO: short-circuiting relaxes this
         (type in #['&&', '||']) => #['bool'];
 
-        (type in #['==', '!=', '<', '>', '<=', '>=']) => allKinds ~ #['func'];
-        (type in #['%', '<<', '>>']) => numberKinds;
-        (type in #['~', '&', '^', '|']) => numberKinds | #['set'];
+        (type in #['==', '!=', '<', '>', '<=', '>=']) => kinds.all ~ #['func'];
+        (type in #['%', '<<', '>>']) => kinds.number;
+        (type in #['~', '&', '^', '|']) => kinds.number | #['set'];
         (type in #['++']) => #['array', 'object'];
-        (type in #['+', '-']) => arithKinds;
+        (type in #['+', '-']) => kinds.arithmetic;
       };
 
       leftOk := (leftKinds & requiredKinds) != #[];
@@ -381,11 +347,11 @@ func Expression(expression) {
     }
 
     if (type in #['**', '*', '/']) {
-      leftOk := (leftKinds & arithKinds) != #[];
-      rightOk := (rightKinds & arithKinds) != #[];
+      leftOk := (leftKinds & kinds.arithmetic) != #[];
+      rightOk := (rightKinds & kinds.arithmetic) != #[];
 
       if (!leftOk || !rightOk) {
-        [side, kinds] := switch {
+        [side, sideKinds] := switch {
           (!leftOk) => ['left', leftKinds];
           (!rightOk) => ['right', rightKinds];
         };
@@ -398,7 +364,7 @@ func Expression(expression) {
             'need to be arithmetic types, but the ' ++
             side ++
             ' operand is one of ' ++
-            kinds:String()
+            sideKinds:String()
           ),
           pos,
           subnotes: [],
@@ -409,14 +375,14 @@ func Expression(expression) {
 
     if (type == '**') {
       if ((leftKinds | #['array', 'object']) == #['array', 'object']) {
-        if ((rightKinds | numberKinds) != numberKinds) {
+        if ((rightKinds | kinds.number) != kinds.number) {
           return ['note', {
             level: 'error',
             message: (
               'Because the left operand of ** is an array/object, the ' ++
               'right operand needs to be a number, but it is instead one ' ++
               'of ' ++
-              numberKinds:String()
+              kinds.number:String()
             ),
             pos,
             subnotes: [],
@@ -520,9 +486,9 @@ func Expression(expression) {
       allLiterals := true;
 
       for ([elType, elData, elPos] of data) {
-        kinds := KindSet([elType, elData, elPos]);
+        elKinds := KindSet([elType, elData, elPos]);
 
-        if (kinds == #['func']) {
+        if (elKinds == #['func']) {
           return ['note', {
             level: 'error',
             message: 'Element of set cannot be a func',

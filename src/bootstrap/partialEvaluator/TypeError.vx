@@ -1,0 +1,7 @@
+return func(pos, message) => ['note', {
+  level: 'error',
+  message,
+  pos,
+  subnotes: [],
+  tags: #['type-error'],
+}];
