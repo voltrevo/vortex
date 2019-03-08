@@ -83,6 +83,20 @@ func KindSet([type, data, _]) {
   return null;
 };
 
+func KindsString(kindSet) {
+  kindValues := kindSet:Values();
+
+  if (kindValues:Length() == 0u64) {
+    return 'never';
+  }
+
+  if (kindValues:Length() == 1u64) {
+    return kindValues[0];
+  }
+
+  return '(' ++ kindValues:reduce(func(a, b) => a ++ ' | ' ++ b) ++ ')';
+};
+
 func Expression(expression) {
   [type, data, pos] := expression;
 
@@ -108,7 +122,7 @@ func Expression(expression) {
           return ['note', {
             level: 'error',
             message: (
-              'operand of ' ++ type ++ ' is one of ' ++ leftKinds:String()
+              'operand of ' ++ type ++ ' is a ' ++ KindsString(leftKinds)
             ),
             pos,
             subnotes: [],
@@ -144,10 +158,10 @@ func Expression(expression) {
               message: (
                 'operands of ' ++
                 type ++
-                ' need to be the same kind, but the left side is one of ' ++
-                leftKinds:String() ++
-                ' and the right side is one of ' ++
-                rightKinds:String()
+                ' need to be the same kind, but the left side is a ' ++
+                KindsString(leftKinds) ++
+                ' and the right side is a ' ++
+                KindsString(rightKinds)
               ),
               pos,
               subnotes: [],
@@ -222,11 +236,7 @@ func Expression(expression) {
       if (!('func' in baseKinds)) {
         return ['note', {
           level: 'error',
-          message: (
-            'Left side of function call is not a function (one of ' ++
-            baseKinds:String() ++
-            ')'
-          ),
+          message: 'Cannot call expression of type ' ++ KindsString(baseKinds),
           pos,
           subnotes: [],
           tags: #['type-error'],
@@ -258,10 +268,10 @@ func Expression(expression) {
           level: 'error',
           message: (
             type ++
-            ' requires a target that is one of ' ++
-            requiredKinds:String() ++
-            ', but instead target is one of ' ++
-            targetKinds:String()
+            ' requires a target that is a ' ++
+            KindsString(requiredKinds) ++
+            ', but instead target is a ' ++
+            KindsString(targetKinds)
           ),
           pos,
           subnotes: [],
@@ -295,10 +305,10 @@ func Expression(expression) {
           message: (
             type ++
             ' requires its operands to be the same type, but the left ' ++
-            'operand is one of ' ++
-            leftKinds:String() ++
-            ' and the right operand is one of ' ++
-            rightKinds:String()
+            'operand is a ' ++
+            KindsString(leftKinds) ++
+            ' and the right operand is a ' ++
+            KindsString(rightKinds)
           ),
           pos,
           subnotes: [],
@@ -330,12 +340,12 @@ func Expression(expression) {
           level: 'error',
           message: (
             type ++
-            ' requires an operand that is one of ' ++
-            requiredKinds:String() ++
+            ' requires an operand that is a ' ++
+            KindsString(requiredKinds) ++
             ' but the ' ++
             side ++
-            ' operand is one of ' ++
-            leftKinds:String()
+            ' operand is a ' ++
+            KindsString(leftKinds)
           ),
           pos,
           subnotes: [],
@@ -361,10 +371,10 @@ func Expression(expression) {
           message: (
             'Operands of ' ++
             type ++
-            'need to be arithmetic types, but the ' ++
+            ' need to be arithmetic types, but the ' ++
             side ++
-            ' operand is one of ' ++
-            sideKinds:String()
+            ' operand is a ' ++
+            KindsString(sideKinds)
           ),
           pos,
           subnotes: [],
@@ -398,8 +408,8 @@ func Expression(expression) {
           level: 'error',
           message: (
             'The right operand of {in} needs to be a set, but instead it ' ++
-            'is one of ' ++
-            rightKinds:String()
+            'is a ' ++
+            KindsString(rightKinds)
           ),
           pos,
           subnotes: [],
@@ -424,8 +434,8 @@ func Expression(expression) {
           level: 'error',
           message: (
             'The left operand of a subscript needs to be an array/object, ' ++
-            'but instead it is one of ' ++
-            leftKinds:String()
+            'but instead it is a ' ++
+            KindsString(leftKinds)
           ),
           pos,
           subnotes: [],
@@ -447,10 +457,10 @@ func Expression(expression) {
         return ['note', {
           level: 'error',
           message: (
-            'Subscript needs to be one of ' ++
-            requiredRightKinds:String() ++
-            ' but instead it is one of ' ++
-            rightKinds:String()
+            'Subscript needs to be a ' ++
+            KindsString(requiredRightKinds) ++
+            ' but instead it is a ' ++
+            KindsString(rightKinds)
           ),
           pos,
           subnotes: [],
@@ -603,8 +613,8 @@ func Expression(expression) {
           level: 'error',
           message: (
             'Switch case test outcome needs to be a bool but instead it ' ++
-            'is one of ' ++
-            specOutcomeKinds:String()
+            'is ' ++
+            KindsString(specOutcomeKinds)
           ),
           pos: left[2],
           subnotes: [],
