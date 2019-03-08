@@ -124,7 +124,7 @@ func MatrixMultiply(left, right, pos) {
             return b;
           }
 
-          return Eval('+', a[1], b[1], pos);
+          return Eval('+', [a[1], b[1]], pos);
         })
       );
 
