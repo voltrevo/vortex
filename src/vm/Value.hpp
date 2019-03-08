@@ -154,6 +154,7 @@ namespace Vortex {
 
   namespace UnaryOperators {
     void length(Value& value);
+    void uplus(Value& value);
     void negate(Value& value);
     void inc(Value& value);
     void dec(Value& value);

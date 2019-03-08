@@ -14,7 +14,10 @@ func Eval(op, values, pos) {
         location: [],
         op,
         value: oldValue,
-        allowedKinds: kinds.arithmetic,
+        allowedKinds: switch (op) {
+          'unary +' => kinds.arithmetic;
+          'unary -' => kinds.arithmetic ~ #['u8', 'u16', 'u32', 'u64'];
+        },
         pos,
       });
 

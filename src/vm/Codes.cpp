@@ -85,6 +85,7 @@ namespace Vortex {
       case METHOD_LOOKUP:
         return BINARY_OPERATOR;
 
+      case UPLUS:
       case NEGATE:
       case BIT_NEGATE:
       case NOT:

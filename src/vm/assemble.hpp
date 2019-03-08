@@ -91,6 +91,7 @@ namespace Vortex {
     {"methodLookup", METHOD_LOOKUP},
 
     // UNARY_OPERATOR
+    {"uplus", UPLUS},
     {"negate", NEGATE},
     {"bitNegate", BIT_NEGATE},
     {"!", NOT},

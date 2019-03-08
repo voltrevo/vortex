@@ -602,6 +602,7 @@ namespace Vortex {
           os << indent;
 
           switch (code) {
+            case UPLUS: os << "uplus" << std::endl; return;
             case NEGATE: os << "negate" << std::endl; return;
             case BIT_NEGATE: os << "~" << std::endl; return;
             case NOT: os << "!" << std::endl; return;

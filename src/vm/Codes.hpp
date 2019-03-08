@@ -97,6 +97,7 @@ namespace Vortex {
     METHOD_LOOKUP,
 
     // UNARY_OPERATOR
+    UPLUS,
     NEGATE,
     BIT_NEGATE,
     NOT,

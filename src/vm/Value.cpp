@@ -1542,6 +1542,37 @@ namespace Vortex {
       }
     }
 
+    void uplus(Value& value) {
+      switch (value.type) {
+        case UINT8: value.data.UINT8 = +value.data.UINT8; return;
+        case UINT16: value.data.UINT16 = +value.data.UINT16; return;
+        case UINT32: value.data.UINT32 = +value.data.UINT32; return;
+        case UINT64: value.data.UINT64 = +value.data.UINT64; return;
+
+        case INT8: value.data.INT8 = +value.data.INT8; return;
+        case INT16: value.data.INT16 = +value.data.INT16; return;
+        case INT32: value.data.INT32 = +value.data.INT32; return;
+        case INT64: value.data.INT64 = +value.data.INT64; return;
+
+        case FLOAT32: value.data.FLOAT32 = +value.data.FLOAT32; return;
+        case FLOAT64: value.data.FLOAT64 = +value.data.FLOAT64; return;
+
+        case NULL_:
+        case BOOL:
+        case STRING:
+        case FUNC:
+        case ARRAY:
+        case VSET:
+        case OBJECT: {
+          throw TypeError(
+            "uplus on null, bool, string, func, array, set, or object"
+          );
+        }
+
+        default: throw InternalError("Unrecognized value type");
+      }
+    }
+
     void negate(Value& value) {
       switch (value.type) {
         case UINT8:
@@ -1676,6 +1707,7 @@ namespace Vortex {
     switch (op) {
       case LENGTH: UnaryOperators::length(value); break;
 
+      case UPLUS: UnaryOperators::uplus(value); break;
       case NEGATE: UnaryOperators::negate(value); break;
       case BIT_NEGATE: UnaryOperators::bitNegate(value); break;
 
