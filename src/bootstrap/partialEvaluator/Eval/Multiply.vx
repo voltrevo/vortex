@@ -143,12 +143,12 @@ func MatrixMultiply(left, right, pos) {
 
 func RegularMultiply(left, right, pos) {
   if (left:Kind() != right:Kind()) {
-    return TypeError(
+    return TypeError(pos, (
       'Cannot do regular multiplication on different types: ' ++
       left:Kind() ++
       ', ' ++
       right:Kind()
-    );
+    ));
   }
 
   if (!(left:Kind() in kinds.number)) {
