@@ -389,7 +389,7 @@ namespace Vortex {
   bool isStringAtomic(const Value& value) {
     switch (value.type) {
       case ARRAY:
-      case SET:
+      case VSET:
       case OBJECT:
         return false;
 

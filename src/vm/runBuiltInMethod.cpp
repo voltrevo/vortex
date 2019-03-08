@@ -523,6 +523,25 @@ namespace Vortex {
         return res;
       }
 
+      case VSET: {
+        auto res = String{'#', '['};
+
+        bool notFirst = false;
+
+        for (auto& v: value.data.SET->values) {
+          if (notFirst) {
+            res = res.push_back(',');
+          }
+
+          res = res + toString(v);
+          notFirst = true;
+        }
+
+        res = res.push_back(']');
+
+        return res;
+      }
+
       case STRING: {
         auto res = String{'\''};
         auto len = value.data.STRING->size();
