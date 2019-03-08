@@ -651,11 +651,13 @@ namespace ByteCoder {
         ];
       }
 
+      case 'unary +':
       case 'unary -':
       case 'unary !':
       case 'unary ~': {
         const opString = (() => {
           switch (exp.t) {
+            case 'unary +': return 'uplus';
             case 'unary -': return 'negate';
             case 'unary !': return '!';
             case 'unary ~': return 'bitNegate';
@@ -665,11 +667,6 @@ namespace ByteCoder {
         let ll;
         [ll] = Expression(coder, exp.v);
         return [[...ll, opString], coder];
-      }
-
-      // TODO: Should this operator even exist?
-      case 'unary +': {
-        return [[`'Not implemented: unary + expression' throw`], coder];
       }
 
       case 'Func': {
