@@ -409,6 +409,52 @@ namespace Vortex {
     return true;
   }
 
+  std::ostream& StreamKey(std::ostream& os, const Value& key) {
+    if (key.type != STRING) {
+      return os << key;
+    }
+
+    const auto& str = *key.data.STRING;
+    bool first = true;
+    bool validIdentifier = true;
+
+    for (char c: str) {
+      if (first) {
+        if (
+          c == '_' ||
+          ('a' <= c && c <= 'z') ||
+          ('A' <= c && c <= 'Z')
+        ) {
+          first = false;
+          continue;
+        } else {
+          validIdentifier = false;
+          break;
+        }
+      }
+
+      if (!(
+        c == '_' ||
+        ('a' <= c && c <= 'z') ||
+        ('A' <= c && c <= 'Z') ||
+        ('0' <= c && c <= '9')
+      )) {
+        validIdentifier = false;
+        break;
+      }
+    }
+
+    if (!validIdentifier) {
+      return os << key;
+    }
+
+    for (char c: str) {
+      os << c;
+    }
+
+    return os;
+  }
+
   std::ostream& StreamLongString(
     std::ostream& os,
     std::string indent,
@@ -581,7 +627,7 @@ namespace Vortex {
             auto key = obj.keys.at(pos);
             auto value = obj.values.at(pos);
 
-            os << key << ": " << value;
+            StreamKey(os, key) << ": " << value;
             notFirst = true;
           }
         } else {
@@ -595,8 +641,7 @@ namespace Vortex {
             auto value = obj.values.at(pos);
 
             os << indent << "  ";
-            StreamLongString(os, indent + "  ", key);
-            os << ": ";
+            StreamKey(os, key) << ": ";
             StreamLongString(os, indent + "  ", value);
             os << ',' << std::endl;
           }
