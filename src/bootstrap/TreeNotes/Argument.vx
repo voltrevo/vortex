@@ -1,6 +1,6 @@
 return func Argument(target) {
   if (target[0] == 'note') {
-    return [target];
+    return [target[1]];
   }
 
   [type, data, _] := target;

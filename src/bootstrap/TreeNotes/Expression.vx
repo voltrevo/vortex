@@ -6,7 +6,7 @@ import ./Program.vx;
 
 return func Expression(expression) {
   if (expression[0] == 'note') {
-    return [expression];
+    return [expression[1]];
   }
 
   notes := [];
