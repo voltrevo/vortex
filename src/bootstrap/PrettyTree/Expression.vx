@@ -1,0 +1,210 @@
+import @/parser/expressionTypes.vx;
+import @/parser/operatorTypes.vx;
+
+import ./Block.vx;
+import ./indent.vx;
+import ./oneLine.vx;
+
+func SubExpression(expression) {
+  line := oneLine(Expression(expression));
+
+  if (expression[0] in expressionTypes.operator) {
+    line = '(' ++ line ++ ')';
+  }
+
+  return line;
+};
+
+func Expression(expression) {
+  [type, data, _] := expression;
+
+  if (type in expressionTypes.operator) {
+    if (type in operatorTypes.unary) {
+      [target] := data;
+      targetLine := SubExpression(target);
+
+      return [switch (type) {
+        'unary +' => '+' ++ targetLine;
+        'unary -' => '-' ++ targetLine;
+        'unary ++' => targetLine ++ '++';
+        'unary --' => targetLine ++ '--';
+        'unary !' => '!' ++ targetLine;
+        'unary ~' => '~' ++ targetLine;
+      }];
+    }
+
+    if (type == 'subscript') {
+      [container, index] := data;
+
+      return [
+        SubExpression(container) ++
+        '[' ++
+        oneLine(Expression(index)) ++
+        ']'
+      ];
+    }
+
+    if (type == 'functionCall') {
+      [base, args] := data;
+
+      if (args:Length() == 0u64) {
+        return [SubExpression(base) ++ '()'];
+      }
+
+      return [
+        SubExpression(base) ++
+        '(' ++
+        (args
+          :map(func(a) => oneLine(Expression(a)))
+          :reduce(func(a, b) => a ++ ', ' ++ b)
+        ) ++
+        ')'
+      ];
+    }
+
+    [left, right] := data;
+
+    return [SubExpression(left) ++ ' ' ++ type ++ ' ' ++ SubExpression(right)];
+  }
+
+  if (type in expressionTypes.container) {
+    if (type == 'array') {
+      if (data:Length() == 0u64) {
+        return ['[]'];
+      }
+
+      return [
+        '[' ++
+        oneLine(data
+          :map(func(el) => oneLine(Expression(el)))
+          :reduce(func(a, b) => a ++ ', ' ++ b)
+        ) ++
+        ']'
+      ];
+    }
+
+    if (type == 'set') {
+      if (data:Length() == 0u64) {
+        return ['#[]'];
+      }
+
+      return [
+        '#[' ++
+        oneLine(data
+          :map(func(el) => oneLine(Expression(el)))
+          :reduce(func(a, b) => a ++ ', ' ++ b)
+        ) ++
+        ']'
+      ];
+    }
+
+    if (type == 'object') {
+      if (data:Length() == 0u64) {
+        return ['{}'];
+      }
+
+      return [
+        '{' ++
+        oneLine(data
+          :map(func([key, value]) => (
+            oneLine(Expression(key)) ++
+            ': ' ++
+            oneLine(Expression(value))
+          ))
+          :reduce(func(a, b) => a ++ ', ' ++ b)
+        ) ++
+        '}'
+      ];
+    }
+
+    assert false;
+    return null;
+  }
+
+  if (type in expressionTypes.nameAccess) {
+    [base, name] := data;
+    return [oneLine(Expression(base)) ++ '.' ++ name[1]];
+  }
+
+  if (type == 'switch') {
+    {test, cases} := data;
+
+    header := switch (test[0]) {
+      'nothing' => 'switch {';
+      default => 'switch (' ++ oneLine(Expression(test)) ++ ') {';
+    };
+
+    if (cases:Length() == 0u64) {
+      return [header ++ '}'];
+    }
+
+    return [header] ++ indent(cases:map(func([left, right]) => (
+      '(' ++
+      oneLine(Expression(left)) ++
+      ') => ' ++
+      oneLine(Expression(right))
+    ))) ++ ['}'];
+  }
+
+  if (type == 'default') {
+    return ['default'];
+  }
+
+  if (type == 'import') {
+    // TODO: Prefer short syntax
+    {name, source} := data;
+    return ['import ' ++ name[1] ++ ' from ' ++ source];
+  }
+
+  if (type == 'literal') {
+    // TODO: Formatting
+    return [data:String()];
+  }
+
+  if (type == 'identifier') {
+    return [data];
+  }
+
+  if (type == 'op') {
+    return ['(' ++ data ++ ')'];
+  }
+
+  if (type == 'func') {
+    {name, args, body} := data;
+
+    topLine := 'func ';
+
+    if (name[0] != 'nothing') {
+      topLine ++= name[1];
+    }
+
+    topLine ++= '(';
+
+    for (arg of args) {
+      topLine ++= oneLine(Expression(arg));
+    }
+
+    topLine ++= ')';
+
+    [bodyType, bodyData, _] := body;
+
+    if (bodyType == 'expression') {
+      topLine ++= ' => ';
+      eLines := Expression(bodyData);
+      eLines[0] = topLine ++ eLines[0];
+      return eLines;
+    }
+
+    if (bodyType == 'block') {
+      topLine ++= ' {';
+      return [topLine, indent(Block(body)), '}'];
+    }
+
+    assert false;
+  }
+
+  assert false;
+  return null;
+};
+
+return Expression;

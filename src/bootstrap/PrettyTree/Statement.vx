@@ -1,0 +1,118 @@
+import ./Block.vx;
+import ./Expression.vx;
+import ./indent.vx;
+import ./oneLine.vx;
+
+return func Statement(statement) {
+  [type, data, _] := statement;
+
+  if (type in #[
+    'return', 'assert', 'log.info', 'log.warn', 'log.error', 'expression',
+  ]) {
+    eLines := Expression(data);
+
+    if (type != 'expression') {
+      eLines[0] = type ++ ' ' ++ eLines[0];
+    }
+
+    last := eLines:Length() - 1u64;
+
+    eLines[last] ++= ';';
+
+    return eLines;
+  }
+
+  if (type == 'if') {
+    {condition, body, tail} := data;
+
+    res := Expression(condition);
+    res[0] = 'if (' ++ res[0];
+
+    last := res:Length() - 1u64; // TODO: fix incorrect unused warning
+    res[last] ++= ') {';
+
+    res ++= indent(Block(body));
+
+    tailType := tail[0];
+
+    if (tailType == 'nothing') {
+      res ++= ['}'];
+      return res;
+    }
+
+    if (tailType == 'block') {
+      res ++= ['} else {'];
+      res ++= indent(Block(tail));
+      res ++= ['}'];
+      return res;
+    }
+
+    if (tailType == 'if') {
+      tailLines := Statement(tail);
+      tailLines[0] = '} else ' ++ tailLines[0];
+      res ++= tailLines;
+      return res;
+    }
+
+    assert false;
+    return null;
+  }
+
+  if (type == 'for') {
+    {control: [controlType, controlData, _], body} := data;
+
+    res := [];
+
+    if (controlType == 'condition') {
+      res = ['for (' ++ oneLine(Expression(controlData)) ++ ') {'];
+    } else if (controlType == 'traditional') {
+      {setup, condition, next} := controlData;
+
+      parts := oneLine(
+        [setup, condition, next]:map(func(e) => oneLine(Expression(e)))
+      );
+
+      res = ['for (' ++ parts ++ ') {'];
+    } else if (controlType == 'range') {
+      {element, container} := controlData;
+
+      parts := (
+        oneLine(Expression(element)) ++
+        ' of ' ++
+        oneLine(Expression(container))
+      );
+
+      res = ['for (' ++ parts ++ ') {'];
+    } else if (controlType == 'nothing') {
+      res = ['for {'];
+    } else {
+      assert false;
+    }
+
+    res ++= indent(Block(body));
+    res ++= ['}'];
+
+    return res;
+  }
+
+  if (type in #['break', 'continue', 'breakpoint']) {
+    return [type ++ ';'];
+  }
+
+  if (type == 'import') {
+    res := Expression(statement);
+    last := res:Length() - 1u64;
+    res[last] = res[last] ++ ';';
+    return res;
+  }
+
+  if (type == 'expression') {
+    res := Expression(data);
+    last := res:Length() - 1u64;
+    res[last] = res[last] ++ ';';
+    return res;
+  }
+
+  assert false;
+  return null;
+};

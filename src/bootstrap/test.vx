@@ -1,8 +1,9 @@
 import parse from './parser/Program.vx';
-import validate from './validator/Program.vx';
-import scopeValidate from './scopeValidator/Program.vx';
 import partiallyEvaluate from './partialEvaluator/Program.vx';
+import PrettyTree from './PrettyTree/Program.vx';
+import scopeValidate from './scopeValidator/Program.vx';
 import TreeNotes from './TreeNotes/Program.vx';
+import validate from './validator/Program.vx';
 
 func HasError(notes) {
   for (note of notes) {
@@ -52,5 +53,5 @@ return func(lines) {
     return {notes, tree: null};
   }
 
-  return {notes, tree};
+  return {notes, prettyTree: PrettyTree(tree)};
 };
