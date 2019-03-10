@@ -457,36 +457,21 @@ namespace Vortex {
       // TODO: Use a shared stack for locals and use an offset?
       // TODO: Check number of arguments?
       cc.emplace_back();
-      run(decoder); // TODO: Why can't I use std::move here?
-      cc.pop_back();
-    }
 
-    Value eval(Func code) {
       auto prevSize = cc.size();
 
-      cc.emplace_back();
-      auto pos = Decoder(code);
-      pos = run(pos);
-
-      auto instr = pos.peekBehind();
-
-      if (instr != RETURN) {
-        throw InternalError("Unexpected instruction before eval completion");
-      }
-
-      auto res = pop();
-
-      if (calc.size() != 0) {
-        throw InternalError("Excess values left on stack");
-      }
-
-      cc.pop_back();
+      run(decoder); // TODO: Why can't I use std::move here?
 
       if (cc.size() != prevSize)  {
         throw InternalError("Context stack length does not match eval start");
       }
 
-      return res;
+      cc.pop_back();
+    }
+
+    Value eval(Func code) {
+      callFunc(code);
+      return pop();
     }
   };
 }

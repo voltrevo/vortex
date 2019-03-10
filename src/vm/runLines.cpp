@@ -26,6 +26,10 @@ int main(int argc, char** argv) {
   auto machine = Vortex::Machine();
   Vortex::Value program = machine.eval(codeBlock);
 
+  if (machine.calc.size() != 0) {
+    throw Vortex::InternalError("Excess values left on stack");
+  }
+
   if (program.type != Vortex::FUNC) {
     std::cerr << "Function expected from initial eval" << std::endl;
     return 1;
@@ -57,6 +61,10 @@ int main(int argc, char** argv) {
   machine.push(Vortex::Value(new Vortex::Array{.values = lines.persistent()}));
 
   Vortex::Value result = machine.eval(*program.data.FUNC);
+
+  if (machine.calc.size() != 0) {
+    throw Vortex::InternalError("Excess values left on stack");
+  }
 
   if (result.type == Vortex::STRING) {
     for (char c: *result.data.STRING) {

@@ -17,5 +17,9 @@ int main() {
   Vortex::Value result = machine.eval(codeBlock);
   std::cout << result << std::endl;
 
+  if (machine.calc.size() != 0) {
+    throw Vortex::InternalError("Excess values left on stack");
+  }
+
   return 0;
 }
