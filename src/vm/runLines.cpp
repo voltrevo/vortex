@@ -58,7 +58,13 @@ int main(int argc, char** argv) {
 
   Vortex::Value result = machine.eval(*program.data.FUNC);
 
-  std::cout << result << std::endl;
+  if (result.type == Vortex::STRING) {
+    for (char c: *result.data.STRING) {
+      std::cout << c;
+    }
+  } else {
+    std::cout << result << std::endl;
+  }
 
   return 0;
 }

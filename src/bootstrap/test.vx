@@ -5,6 +5,9 @@ import scopeValidate from './scopeValidator/Program.vx';
 import TreeNotes from './TreeNotes/Program.vx';
 import validate from './validator/Program.vx';
 
+nl := '
+';
+
 func HasError(notes) {
   for (note of notes) {
     if (note.level == 'error') {
@@ -53,5 +56,11 @@ return func(lines) {
     return {notes, tree: null};
   }
 
-  return {notes, prettyTree: PrettyTree(tree)};
+  prettyTree := PrettyTree(tree);
+
+  if (notes:Length() == 0u64) {
+    return prettyTree:map(func(line) => line ++ nl):reduce(++);
+  }
+
+  return {notes, prettyTree};
 };
