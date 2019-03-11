@@ -172,10 +172,10 @@ func Expression(expression) {
   if (type == 'func') {
     {name, args, body} := data;
 
-    topLine := 'func ';
+    topLine := 'func';
 
     if (name[0] != 'nothing') {
-      topLine ++= name[1];
+      topLine ++= ' ' ++ name[1];
     }
 
     topLine ++= '(';
