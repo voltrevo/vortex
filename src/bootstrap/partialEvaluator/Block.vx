@@ -2,5 +2,16 @@ import ./Statement.vx;
 
 return func([type, statements, pos]) {
   assert type == 'block'; // TODO: Destructure exact matches using literals
-  return [type, statements:map(Statement), pos];
+
+  newStatements := [];
+
+  for (statement of statements:map(Statement)) {
+    newStatements ++= [statement];
+
+    if (statement[0] in #['break', 'continue', 'return']) {
+      break;
+    }
+  }
+
+  return [type, newStatements, pos];
 };
