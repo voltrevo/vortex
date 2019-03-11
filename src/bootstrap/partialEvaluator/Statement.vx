@@ -1,5 +1,7 @@
 import ./Block.vx;
 import ./Expression.vx;
+import ./KindSet.vx;
+import ./KindsString.vx;
 
 func Statement([type, data, pos]) {
   if (type in #['return', 'assert', 'log.info', 'log.warn', 'log.error']) {
@@ -10,6 +12,40 @@ func Statement([type, data, pos]) {
     {condition, body, tail} := data;
 
     condition = Expression(condition);
+
+    conditionKinds := KindSet(condition);
+
+    if (!('bool' in conditionKinds)) {
+      return ['note', {
+        level: 'error',
+        message: (
+          'Condition needs to be a bool but instead is a ' ++
+          KindsString(conditionKinds)
+        ),
+        pos: condition[2],
+        subnotes: [],
+        tags: #['type-error', 'non-bool-condition'],
+      }];
+    }
+
+    if (condition[0] == 'literal' && condition[1]:Kind() == 'bool') {
+      if (condition[1]) {
+        // TODO: Still analyze tail? Warn about unreachable code?
+        tail = ['nothing', null, tail[2]];
+      } else {
+        return switch (tail[0]) {
+          'block' => ['if', {
+            condition: ['literal', true, condition[2]],
+            body: Block(tail),
+            tail: ['nothing', null, condition[2]],
+          }, tail[2]];
+
+          'nothing' => tail;
+          'if' => Statement(tail);
+        };
+      }
+    }
+
     body = Block(body);
 
     tail = switch (tail[0]) {

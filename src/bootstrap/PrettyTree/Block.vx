@@ -4,15 +4,18 @@ return func([_, statements, _]) {
   res := [];
   prevMultiline := false;
 
-  for (sLines of statements:map(Statement)) {
-    multiline := sLines:Length() > 1u64;
+  for (statement of statements) {
+    if (statement[0] != 'nothing') { // TODO: Need to implement continue
+      sLines := Statement(statement);
+      multiline := sLines:Length() > 1u64;
 
-    if (res:Length() > 0u64 && (multiline || prevMultiline)) {
-      res ++= [''];
+      if (res:Length() > 0u64 && (multiline || prevMultiline)) {
+        res ++= [''];
+      }
+
+      res ++= sLines;
+      prevMultiline = multiline;
     }
-
-    res ++= sLines;
-    prevMultiline = multiline;
   }
 
   return res;

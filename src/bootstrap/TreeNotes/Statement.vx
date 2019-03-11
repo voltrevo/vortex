@@ -65,5 +65,6 @@ return func Statement(statement) {
     'expression' => Expression(data);
     'import' => [];
     'breakpoint' => [];
+    'nothing' => [];
   };
 };

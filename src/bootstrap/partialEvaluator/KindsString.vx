@@ -1,0 +1,13 @@
+return func(kindSet) {
+  kindValues := kindSet:Values();
+
+  if (kindValues:Length() == 0u64) {
+    return 'never';
+  }
+
+  if (kindValues:Length() == 1u64) {
+    return kindValues[0];
+  }
+
+  return '(' ++ kindValues:reduce(func(a, b) => a ++ ' | ' ++ b) ++ ')';
+};
