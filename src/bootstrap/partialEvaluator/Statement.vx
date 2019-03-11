@@ -16,16 +16,7 @@ func Statement([type, data, pos]) {
     conditionKinds := KindSet(condition);
 
     if (!('bool' in conditionKinds)) {
-      return ['note', {
-        level: 'error',
-        message: (
-          'Condition needs to be a bool but instead is a ' ++
-          KindsString(conditionKinds)
-        ),
-        pos: condition[2],
-        subnotes: [],
-        tags: #['type-error', 'non-bool-condition'],
-      }];
+      return NonBoolConditionNote(condition, conditionKinds);
     }
 
     if (condition[0] == 'literal' && condition[1]:Kind() == 'bool') {
@@ -62,6 +53,22 @@ func Statement([type, data, pos]) {
 
     if (controlType == 'condition') {
       controlData = Expression(controlData);
+      condition := controlData;
+
+      conditionKinds := KindSet(condition);
+
+      if (!('bool' in conditionKinds)) {
+        return NonBoolConditionNote(condition, conditionKinds);
+      }
+
+      if (condition[0] == 'literal' && condition[1]:Kind() == 'bool') {
+        if (condition[1]) {
+          controlType = 'nothing';
+          controlData = null;
+        } else {
+          return ['nothing', null, pos];
+        }
+      }
     } else if (controlType == 'traditional') {
       {setup, condition, next} := controlData;
       setup = Expression(setup);
@@ -93,6 +100,19 @@ func Statement([type, data, pos]) {
 
   assert type in #['break', 'continue', 'note', 'import', 'breakpoint'];
   return [type, data, pos];
+};
+
+func NonBoolConditionNote(condition, conditionKinds) {
+  return ['note', {
+    level: 'error',
+    message: (
+      'Condition needs to be a bool but instead is a ' ++
+      KindsString(conditionKinds)
+    ),
+    pos: condition[2],
+    subnotes: [],
+    tags: #['type-error', 'non-bool-condition'],
+  }];
 };
 
 return Statement;
