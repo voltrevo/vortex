@@ -75,7 +75,7 @@ func Expression(expression) {
 
       return [
         '[' ++
-        oneLine(data
+        (data
           :map(func(el) => oneLine(Expression(el)))
           :reduce(func(a, b) => a ++ ', ' ++ b)
         ) ++
