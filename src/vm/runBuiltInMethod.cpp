@@ -495,7 +495,7 @@ namespace Vortex {
       }
 
       case FLOAT64: {
-        auto res = toStreamString(value.data.FLOAT64) + String{'f', '6', '4'};
+        auto res = toStreamString(value.data.FLOAT64);
 
         if (value.data.FLOAT64 == std::floor(value.data.FLOAT64)) {
           res = res + String{'.', '0'};
