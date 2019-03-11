@@ -1,0 +1,273 @@
+import ./Type.vx;
+
+// literal, kinds, array, array-uniform, set, object, func, never
+
+func Join(str) => func(a, b) => a ++ str ++ b;
+
+return {
+  String: func([cat, data]) => switch (cat) {
+    'literal' => data:String();
+    'kinds' => '(' ++ data:Values():reduce(Join(' | ')) ++ ')';
+    'array' => '[' ++ data:map(Type.String):reduce(Join(', ')) ++ ']';
+    'array-uniform' => Type.String(data) ++ '[]';
+    'set' => Type.String(data) ++ '#[]';
+
+    'object' => (
+      '{' ++
+      data:Entries():map(Join(': ')):reduce(Join(', ')) ++
+      '}'
+    );
+
+    'func' => (
+      'func(' ++
+      data.args:map(Type.String):reduce(Join(', ')) ++
+      ')' ++
+      Type.String(data.output)
+    );
+
+    'never' => 'never';
+  },
+
+  Union: func(typeA, typeB) {
+    if (typeA in #[typeB]) {
+      return typeA;
+    }
+
+    if (typeA[0] == 'never') {
+      return typeB;
+    }
+
+    if (typeB[0] == 'never') {
+      return typeA;
+    }
+
+    cats := #[typeA[0], typeB[0]];
+
+    if ('kinds' in cats) {
+      return ['kinds', Type.Kinds(typeA) | Type.Kinds(typeB)];
+    }
+
+    if ('literal' in cats) {
+      [typeLiteral, typeOther] := switch (typeA[0]) {
+        'literal' => [typeA, typeB];
+        default => [typeB, typeA];
+      };
+
+      if (typeOther[0] == 'literal') {
+        if (typeA[1]:Kind() != typeB[1]:Kind()) {
+          return ['kinds', #[typeA[1]:Kind(), typeB[1]:Kind()]];
+        }
+
+        sameKind := typeA[1]:Kind();
+
+        if (!(sameKind in #['array', 'set', 'object', 'func'])) {
+          assert typeA[1] != typeB[1]; // Should be handled earlier
+          return ['kinds', #[sameKind]];
+        }
+
+        if (sameKind == 'array') {
+          if (typeA[1]:Length() != typeB[1]:Length()) {
+            return [
+              'array-uniform',
+              ((typeA[1] ++ typeB[1])
+                :map(func(v) => ['literal', v])
+                :reduce(Type.Union)
+              ),
+            ];
+          }
+
+          return [
+            'array',
+            ([typeA[1], typeB[1]]
+              :Transpose()
+              :map(func([left, right]) => Type.Union(left, right))
+            ),
+          ];
+        }
+
+        if (sameKind == 'set') {
+          return ['set', (typeA[1] | typeB[1]):Values():reduce(Type.Union)];
+        }
+
+        if (sameKind == 'object') {
+          if (typeA[1]:Keys() != typeB[1]:Keys()) {
+            return ['kinds', #['object']];
+          }
+
+          newData := {};
+
+          for (key of typeA[1]:Keys()) {
+            newData[key] := Type.Union(typeA[1][key], typeB[1][key]);
+          }
+
+          return ['object', newData];
+        }
+      }
+
+      if (typeOther[0] == 'kinds') {
+        return ['kinds', Type.Kinds(typeLiteral) | typeOther[1]];
+      }
+
+      if (typeOther[0] == 'array') {
+        if (typeLiteral[1]:Kind() != 'array') {
+          return ['kinds', #['array', typeLiteral[1]:Kind()]];
+        }
+
+        if (typeLiteral[1]:Length() != typeOther[1]:Length()) {
+          return [
+            'array-uniform',
+            (
+              typeLiteral:map(func(v) => ['literal', v]) ++
+              typeOther[1]
+            ):reduce(Type.Union),
+          ];
+        }
+
+        return [
+          'array',
+          ([typeLiteral[1], typeOther[1]]
+            :Transpose()
+            :map(func([left, right]) => Type.Union(['literal', left], right))
+          ),
+        ];
+      }
+
+      if (typeOther[0] == 'array-uniform') {
+        if (typeLiteral[1]:Kind() != 'array') {
+          return ['kinds', #['array', typeLiteral[1]:Kind()]];
+        }
+
+        return [
+          'array-uniform',
+          (
+            typeLiteral:map(func(v) => ['literal', v]) ++
+            [typeOther[1]]
+          ):reduce(Type.Union),
+        ];
+      }
+
+      if (typeOther[0] == 'set') {
+        if (typeLiteral[1]:Kind() != 'set') {
+          return ['kinds', #['set', typeLiteral[1]:Kind()]];
+        }
+
+        return [
+          'set',
+          (
+            typeLiteral[1]:Values():map(func(v) => ['literal', v]) ++
+            [typeOther[1]]
+          ):reduce(Type.Union)
+        ];
+      }
+
+      if (typeOther[0] == 'object') {
+        if (typeLiteral[1]:Kind() != 'object') {
+          return ['kinds', #['object', typeLiteral[1]:Kind()]];
+        }
+
+        if (typeLiteral[1]:Keys() != typeOther[1]:Keys()) {
+          return ['kinds', #['object']];
+        }
+
+        newData := {};
+
+        for (key of typeLiteral[1]:Keys()) {
+          newData[key] := Type.Union(
+            ['literal', typeLiteral[1][key]],
+            typeOther[1][key],
+          );
+        }
+
+        return ['object', newData];
+      }
+
+      if (typeOther[0] == 'func') {
+        return ['kinds', #['func', typeLiteral[1]:Kind()]];
+      }
+
+      assert false;
+      return null;
+    }
+
+    if ((cats & #['array', 'array-uniform']) != #[]) {
+      if ((cats & #['set', 'object', 'func']) != #[]) {
+        return ['kinds', Type.Kinds(typeA) | Type.Kinds(typeB)];
+      }
+
+      if (typeA[0] == 'array' && typeB[0] == 'array') {
+        if (typeA[1]:Length() == typeB[1]:Length()) {
+          return [
+            'array',
+            ([typeA[1], typeB[1]]
+              :Transpose()
+              :map(func([left, right]) => Type.Union(left, right))
+            ),
+          ];
+        }
+      }
+
+      if (typeA[0] == 'array') {
+        typeA = ['array-unfirom', typeA[1]:reduce(Type.Union)];
+      }
+
+      if (typeB[0] == 'array') {
+        typeB = ['array-unfirom', typeB[1]:reduce(Type.Union)];
+      }
+
+      assert #[typeA[0], typeB[0]] == #['array-uniform'];
+
+      return ['array-uniform', Type.Union(typeA[1], typeB[1])];
+    }
+
+    if (typeA[0] != typeB[0]) {
+      return ['kinds', Type.Kinds(typeA) | Type.Kinds(typeB)];
+    }
+
+    sameCat := typeA[0];
+
+    if (sameCat == 'set') {
+      return ['set', Type.Union(typeA[1], typeB[1])];
+    }
+
+    if (sameCat == 'object') {
+      if (typeA[1]:Keys() != typeB[1]:Keys()) {
+        return ['kinds', #['object']];
+      }
+
+      newData := {};
+
+      for (key of typeA[1]:Keys()) {
+        newData[key] := Type.Union(typeA[1][key], typeB[1][key]);
+      }
+
+      return ['object', newData];
+    }
+
+    if (sameCat == 'func') {
+      if (typeA[1].args:Length() != typeB[1].args:Length()) {
+        return ['kinds', #['func']];
+      }
+
+      return ['func', {
+        args: ([typeA[1].args, typeB[1].args]
+          :Transpose()
+          :map(func([left, right]) => Type.Union(left, right))
+        ),
+        output: Type.Union(typeA[1].output, typeB[1].output),
+      }];
+    }
+
+    assert false;
+    return null;
+  },
+
+  Kinds: func([cat, data]) => switch (cat) {
+    'literal' => #[data:Kind()];
+    'kinds' => data;
+    'array' => #['array'];
+    'array-uniform' => #['array'];
+    'set' => #['set'];
+    'object' => #['object'];
+    'func' => #['func'];
+  },
+};

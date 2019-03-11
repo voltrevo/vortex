@@ -1,0 +1,34 @@
+import ./Scope.vx;
+
+return {
+  create: func() => { parent: null, variables: {} },
+
+  add: func(scope, name, data) {
+    scope.variables[name] := data;
+    return scope;
+  },
+
+  lookup: func(scope, name) {
+    if (name in scope.variables:Keys()) {
+      return scope.variables[name];
+    }
+
+    if (scope.parent:Kind() != 'null') {
+      return Scope.lookup(scope.parent, name);
+    }
+
+    return null;
+  },
+
+  update: func(scope, name, data) {
+    if (name in scope.variables:Keys()) {
+      scope.variables[name] = data;
+    } else {
+      scope.variables[name] := data;
+    }
+
+    return scope;
+  },
+
+  push: func(scope) => { parent: scope, variables: {} },
+};
