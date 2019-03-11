@@ -25,12 +25,7 @@ func Statement([type, data, pos]) {
         tail = ['nothing', null, tail[2]];
       } else {
         return switch (tail[0]) {
-          'block' => ['if', {
-            condition: ['literal', true, condition[2]],
-            body: Block(tail),
-            tail: ['nothing', null, condition[2]],
-          }, tail[2]];
-
+          'block' => ScopeBlock(tail[1]);
           'nothing' => tail;
           'if' => Statement(tail);
         };
@@ -71,13 +66,53 @@ func Statement([type, data, pos]) {
       }
     } else if (controlType == 'traditional') {
       {setup, condition, next} := controlData;
-      setup = Expression(setup);
+
       condition = Expression(condition);
+      conditionKinds := KindSet(condition);
+
+      if (!('bool' in conditionKinds)) {
+        return NonBoolConditionNote(condition, conditionKinds);
+      }
+
+      if (condition[0] == 'literal' && condition[1]:Kind() == 'bool') {
+        if (!condition[1]) {
+          // Only interested in the possibility of this being an exception
+          return ScopeBlock([['expression', setup, setup[2]]]);
+        }
+      }
+
+      setup = Expression(setup);
       next = Expression(next);
       controlData = {setup, condition, next};
     } else if (controlType == 'range') {
       {element, container} := controlData;
       container = Expression(container);
+
+      containerKinds := KindSet(container);
+
+      if (!('array' in containerKinds)) {
+        return ['note', {
+          level: 'error',
+          message: (
+            'Container of for control clause needs to be an array but ' ++
+            'instead is a ' ++
+            KindsString(containerKinds)
+          ),
+          pos: container[2],
+          subnotes: [],
+          tags: #['type-error', 'non-array-container'],
+        }];
+      }
+
+      if (container[0] == 'literal' && container[1]:Kind() == 'array') {
+        if (container[1]:Length() == 0u64) {
+          return ['nothing', null, pos];
+        }
+
+        // TODO: Loop unrolling for small arrays? Includes array expressions,
+        // not just literals.
+      }
+
       controlData = {element, container};
     } else if (controlType == 'nothing') {
       // Nothing to do
@@ -113,6 +148,18 @@ func NonBoolConditionNote(condition, conditionKinds) {
     subnotes: [],
     tags: #['type-error', 'non-bool-condition'],
   }];
+};
+
+func ScopeBlock(statements) {
+  assert statements:Length() > 0u64;
+
+  pos := [statements:Front()[2][0], statements:Back()[2][1]];
+
+  return ['if', {
+    condition: ['literal', true, pos],
+    body: Block(['block', statements, pos]),
+    tail: ['nothing', null, pos],
+  }, pos];
 };
 
 return Statement;
