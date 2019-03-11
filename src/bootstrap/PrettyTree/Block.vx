@@ -1,3 +1,19 @@
 import ./Statement.vx;
 
-return func(input) => ([[]] ++ input[1]:map(Statement)):reduce(++);
+return func([_, statements, _]) {
+  res := [];
+  prevMultiline := false;
+
+  for (sLines of statements:map(Statement)) {
+    multiline := sLines:Length() > 1u64;
+
+    if (res:Length() > 0u64 && (multiline || prevMultiline)) {
+      res ++= [''];
+    }
+
+    res ++= sLines;
+    prevMultiline = multiline;
+  }
+
+  return res;
+};
