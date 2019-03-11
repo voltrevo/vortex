@@ -1,13 +1,16 @@
 import ./Type.vx;
 
-// literal, kinds, array, array-uniform, set, object, func, never
-
 func Join(str) => func(a, b) => a ++ str ++ b;
 
 return {
   String: func([cat, data]) => switch (cat) {
     'literal' => data:String();
-    'kinds' => '(' ++ data:Values():reduce(Join(' | ')) ++ ')';
+
+    'kinds' => switch (data:Values():Length()) {
+      1u64 => data:Values()[0];
+      default => '(' ++ data:Values():reduce(Join(' | ')) ++ ')';
+    };
+
     'array' => '[' ++ data:map(Type.String):reduce(Join(', ')) ++ ']';
     'array-uniform' => Type.String(data) ++ '[]';
     'set' => Type.String(data) ++ '#[]';
@@ -26,6 +29,16 @@ return {
     );
 
     'never' => 'never';
+  },
+
+  Kinds: func([cat, data]) => switch (cat) {
+    'literal' => #[data:Kind()];
+    'kinds' => data;
+    'array' => #['array'];
+    'array-uniform' => #['array'];
+    'set' => #['set'];
+    'object' => #['object'];
+    'func' => #['func'];
   },
 
   Union: func(typeA, typeB) {
@@ -207,11 +220,11 @@ return {
       }
 
       if (typeA[0] == 'array') {
-        typeA = ['array-unfirom', typeA[1]:reduce(Type.Union)];
+        typeA = ['array-uniform', typeA[1]:reduce(Type.Union)];
       }
 
       if (typeB[0] == 'array') {
-        typeB = ['array-unfirom', typeB[1]:reduce(Type.Union)];
+        typeB = ['array-uniform', typeB[1]:reduce(Type.Union)];
       }
 
       assert #[typeA[0], typeB[0]] == #['array-uniform'];
@@ -261,13 +274,236 @@ return {
     return null;
   },
 
-  Kinds: func([cat, data]) => switch (cat) {
-    'literal' => #[data:Kind()];
-    'kinds' => data;
-    'array' => #['array'];
-    'array-uniform' => #['array'];
-    'set' => #['set'];
-    'object' => #['object'];
-    'func' => #['func'];
+  Intersection: func(typeA, typeB) {
+    if (typeA in #[typeB]) {
+      return typeA;
+    }
+
+    cats := #[typeA[0], typeB[0]];
+
+    if ('never' in cats) {
+      return ['never', null];
+    }
+
+    if ('kinds' in cats) {
+      if (typeA[0] == typeB[0]) {
+        newKinds := typeA[1] & typeB[1];
+
+        if (newKinds == #[]) {
+          return ['never', null];
+        }
+
+        return ['kinds', newKinds];
+      }
+
+      [typeKinds, typeOther] := switch (typeA[0]) {
+        'kinds' => [typeA, typeB];
+        default => [typeB, typeA];
+      };
+
+      if ((Type.Kinds(typeOther) & typeKinds[1]) == #[]) {
+        return ['never', null];
+      }
+
+      return typeOther;
+    }
+
+    if (typeA[0] == typeB[0]) {
+      cat := typeA[0];
+
+      if (cat == 'literal') {
+        return ['never', null]; // Same value caught earlier
+      }
+
+      if (cat == 'array') {
+        if (typeA[1]:Length() != typeB[1]:Length()) {
+          return ['never', null];
+        }
+
+        newData := [];
+
+        for ([left, right] of [typeA[1], typeB[1]]:Transpose()) {
+          subType := Type.Intersection(left, right);
+
+          if (subType[0] == 'never') {
+            return ['never', null];
+          }
+
+          newData ++= [subType];
+        }
+
+        return ['array', newData];
+      }
+
+      if (cat in #['array-uniform', 'set']) {
+        uniformType := Type.Intersection(typeA[1], typeB[1]);
+
+        if (uniformType[0] == 'never') {
+          return ['never', null];
+        }
+
+        return [cat, uniformType];
+      }
+
+      if (cat == 'object') {
+        if (typeA[1]:Keys() != typeB[1]:Keys()) {
+          return ['never', null];
+        }
+
+        newData := [];
+
+        for (key of typeA[1]:Keys()) {
+          subType := Type.Intersection(typeA[1][key], typeB[1][key]);
+
+          if (subType[0] == 'never') {
+            return ['never', null];
+          }
+
+          newData[key] := subType;
+        }
+
+        return ['object', newData];
+      }
+
+      if (cat == 'func') {
+        outputType := Type.Intersection(typeA[1].output, typeB[1].output);
+
+        if (outputType[0] == 'never') {
+          return ['never', null];
+        }
+
+        if (typeA[1].args:Length() != typeB[1].args:Length()) {
+          return ['never', null];
+        }
+
+        argTypes := [];
+
+        for (i := 0u64; i < typeA[1].args:Length(); i++) {
+          argType := Type.Intersection(typeA[1].args[i], typeB[1].args[i]);
+
+          if (argType[0] == 'never') {
+            return ['never', null];
+          }
+
+          argType ++= [argType];
+        }
+
+        return ['func', {
+          args: argTypes,
+          output: outputType,
+        }];
+      }
+
+      assert false;
+    }
+
+    if ('literal' in cats) {
+      [typeLiteral, typeOther] := switch (typeA[0]) {
+        'literal' => [typeA, typeB];
+        default =>  [typeB, typeA];
+      };
+
+      if (!(typeLiteral[1] in Type.Kinds(typeOther))) {
+        return ['never', null];
+      }
+
+      if (typeOther[0] == 'kinds') {
+        return typeLiteral;
+      }
+
+      if (typeOther[0] == 'array') {
+        if (typeLiteral[1]:Length() != typeOther[1]:Length()) {
+          return ['never', null];
+        }
+
+        for (i := 0; i < typeLiteral[1]:Length(); i++) {
+          elType := Type.Intersection(['literal', typeLiteral[1][i]], typeOther[1][i]);
+
+          if (elType[0] == 'never') {
+            return ['never', null];
+          }
+        }
+
+        return typeLiteral;
+      }
+
+      if (typeOther[0] == 'array-uniform') {
+        for (el of typeLiteral[1]) {
+          elType := Type.Intersection(['literal', el], typeOther[1]);
+
+          if (elType[0] == 'never') {
+            return ['never', null];
+          }
+        }
+
+        return typeLiteral;
+      }
+
+      if (typeOther[0] == 'set') {
+        for (el of typeLiteral[1]:Values()) {
+          elType := Type.Intersection(['literal', el], typeOther[1]);
+
+          if (elType[0] == 'never') {
+            return ['never', null];
+          }
+        }
+
+        return typeLiteral;
+      }
+
+      if (typeOther[0] == 'object') {
+        if (typeLiteral[1]:Keys() != typeOther[1]:Keys()) {
+          return ['never', null];
+        }
+
+        for (key of typeLiteral[1]:Keys()) {
+          elType := Type.Intersection(
+            ['literal', typeLiteral[1][key]],
+            typeOther[1][key],
+          );
+
+          if (elType[0] == 'never') {
+            return ['never', null];
+          }
+        }
+
+        return typeLiteral;
+      }
+
+      if (typeOther[0] == 'func') {
+        return ['never', null];
+      }
+
+      assert false;
+    }
+
+    if ((cats ~ #['array', 'array-uniform']) == #[]) {
+      if ((cats & #['set', 'object', 'func']) != #[]) {
+        return ['never', null];
+      }
+
+      [typeArray, typeUniform] := switch ([typeA[0], typeB[0]]) {
+        ['array', 'array-uniform'] => [typeA, typeB];
+        ['array-uniform', 'array'] => [typeB, typeA];
+      };
+
+      newTypes := [];
+
+      for (elType of typeArray[1]) {
+        newElType := Type.Intersection(elType, typeUniform[1]);
+
+        if (newElType[0] == 'never') {
+          return ['never', null];
+        }
+
+        newTypes ++= [newElType];
+      }
+
+      return ['array', newTypes];
+    }
+
+    assert cats ~ #['set', 'object', 'func'] == #[];
+
+    return ['never', null];
   },
 };
