@@ -1,13 +1,16 @@
-import ./Type.vx;
+import @/util/kinds.vx;
+import @/util/mapValues.vx;
+import @/util/Join.vx;
 
-func Join(str) => func(a, b) => a ++ str ++ b;
+import ./Type.vx;
 
 return {
   String: func([cat, data]) => switch (cat) {
     'literal' => data:String();
 
-    'kinds' => switch (data:Values():Length()) {
-      1u64 => data:Values()[0];
+    'kinds' => switch {
+      (data:Values():Length() == 1u64) => data:Values()[0];
+      (data == kinds.all) => 'any';
       default => '(' ++ data:Values():reduce(Join(' | ')) ++ ')';
     };
 
@@ -17,7 +20,11 @@ return {
 
     'object' => (
       '{' ++
-      data:Entries():map(Join(': ')):reduce(Join(', ')) ++
+      (data
+        :Entries()
+        :map(func([key, keyData]) => key ++ ': ' ++ Type.String(keyData))
+        :reduce(Join(', '))
+      ) ++
       '}'
     );
 
@@ -506,4 +513,306 @@ return {
 
     return ['never', null];
   },
+
+  Literal: func(value) => ['literal', value],
+
+  DemoteArrayLiteral: func(type) {
+    return ['array', type[1]:map(Type.Literal)];
+  },
+
+  DemoteObjectLiteral: func(type) => [
+    'object',
+    mapValues(type[1], Type.Literal),
+  ],
+
+  Shape: func([cat, data]) => switch (cat) {
+    'literal' => switch (data:Kind()) {
+      'array' => ['array', data:map(Type.Literal):map(Type.Shape)];
+
+      'set' => ['set', switch (data) {
+        // TODO: Remove need for these parentheses: (#[...]) => rhs
+        (#[]) => ['never', null];
+
+        default => Type.Shape(data
+          :Values()
+          :map(Type.Literal)
+          :reduce(Type.ShapeUnion)
+        );
+      }];
+
+      'object' => ['object', mapValues(data, Type.Shape)];
+
+      default => ['kinds', #[data:Kind()]];
+    };
+
+    'kinds' => [cat, data];
+    'array' => ['array', data:map(Type.Shape)];
+    'array-uniform' => ['array-uniform', Type.Shape(data)];
+    'set' => ['set', Type.Shape(data)];
+    'object' => ['object', mapValues(data, Type.Shape)];
+
+    'func' => ['func', {
+      args: data.args:map(Type.Shape),
+      output: Type.Shape(data.output)
+    }];
+  },
+
+  ShapeUnion: func(typeA, typeB) {
+    // TODO: Decide whether an optimizing this the same way as
+    // ShapeIntersection is needed (and whether ShapeIntersection should be
+    // just this simple version).
+    return Type.Union(Type.Shape(typeA), Type.Shape(typeB));
+  },
+
+  ShapeIntersection: func(typeA, typeB) {
+    // Equivalent to Type.Intersection(Type.Shape(typeA), Type.Shape(typeB))
+    // except that never can have location information
+
+    vectorKinds := (
+      #['array', 'object'] &
+      Type.Kinds(typeA) &
+      Type.Kinds(typeB)
+    );
+
+    if (vectorKinds == #[]) {
+      // TODO: Optimize more of these cases?
+      return Type.Intersection(Type.Shape(typeA), Type.Shape(typeB));
+    }
+
+    if ('kinds' in #[typeA[0], typeB[0]]) {
+      return Type.Intersection(Type.Shape(typeA), Type.Shape(typeB));
+    }
+
+    // The only way there could be multiple shape kinds is if both typeA
+    // and typeB were 'kinds', which was handled earlier
+    [vectorKind] := vectorKinds:Values();
+
+    if (vectorKind == 'object') {
+      aKeys := typeA[1]:Keys();
+      bKeys := typeB[1]:Keys();
+
+      if (aKeys != bKeys) {
+        return ['never', ['key mismatch']];
+      }
+
+      if (typeA[0] == 'literal') {
+        typeA = Type.DemoteObjectLiteral(typeA);
+      }
+
+      if (typeB[0] == 'literal') {
+        typeB = Type.DemoteObjectLiteral(typeB);
+      }
+
+      newData := {};
+      entries := [typeA[1], typeB[1]]:Transpose():Entries();
+
+      for ([key, [subTypeA, subTypeB]] of entries) {
+        subType := Type.ShapeIntersection(subTypeA, subTypeB);
+
+        if (subType[0] == 'never') {
+          return Type.NeverPath(key, subType);
+        }
+
+        newData[key] := subType;
+      }
+
+      return ['object', newData];
+    }
+
+    if (vectorKind == 'array') {
+      if ('array-uniform' in #[typeA[0], typeB[0]]) {
+        if (typeA[0] == typeB[0]) {
+          return ['array-uniform', Type.ShapeIntersection(typeA[1], typeB[1])];
+        }
+
+        [typeUniform, typeArray] := switch (typeA[0]) {
+          'array-uniform' => [typeA[0], typeB];
+          default => [typeB[0], typeA];
+        };
+
+        if (typeArray[0] == 'literal') {
+          typeArray = Type.DemoteArrayLiteral(typeArray);
+        }
+
+        newData := [];
+
+        for (i := 0u64; i < typeArray[1]:Length(); i++) {
+          subType := Type.ShapeIntersection(typeArray[1][i], typeUniform);
+
+          if (subType[0] == 'never') {
+            return Type.NeverPath(i, subType);
+          }
+
+          newData ++= [subType];
+        }
+
+        return ['array', newData];
+      }
+
+      assert (
+        typeA[0] == 'array' &&
+        typeB[0] == 'array'
+      );
+
+      len := typeA[1]:Length();
+
+      if (typeB[1]:Length() != len) {
+        return ['never', null];
+      }
+
+      newData := [];
+
+      for (i := 0u64; i < len; i++) {
+        subType := Type.ShapeIntersection(typeA[1][i], typeB[1][i]);
+
+        if (subType[0] == 'never') {
+          return Type.NeverPath(i, subType);
+        }
+      }
+
+      return ['array', newData];
+    }
+
+    assert false;
+    return null;
+  },
+
+  IntersectKindsDeep: func(type, allowedKinds) {
+    kindSet := Type.KindSet(type);
+    kindSetAllowed := kindSet & allowedKinds;
+
+    if (kindSetAllowed == #[]) {
+      return ['never', ['kind not allowed']];
+    }
+
+    // deal with: literal, array, array-uniform, set, object, func
+
+    if (type[0] == 'kinds') {
+      return ['kinds', kindSetAllowed];
+    }
+
+    [kind] := kindSet:Values();
+
+    if (kind == 'array') {
+      if (type[0] == 'array-uniform') {
+        uniformType := Type.IntersectKindsDeep(type[1], allowedKinds);
+
+        if (uniformType[0] == 'never') {
+          // TODO: Need to re-think many array-uniform cases like this one
+          // that actually might be ok due to the empty array possibility.
+          return Type.NeverPath('u64', uniformType);
+        }
+
+        return ['array-uniform', uniformType];
+      }
+
+      typeArray := switch (type[0]) {
+        'array' => type;
+        'literal' => Type.DemoteArrayLiteral(type);
+      };
+
+      newData := [];
+
+      for (i := 0u64; i < typeArray[1]:Length(); i++) {
+        subType := Type.IntersectKindsDeep(typeArray[1][i], allowedKinds);
+
+        if (subType[0] == 'never') {
+          return Type.NeverPath(i, subType);
+        }
+
+        newData ++= [subType];
+      }
+
+      return switch (type[0]) {
+        'array' => ['array', newData];
+        'literal' => type;
+      };
+    }
+
+    if (kind == 'object') {
+      typeObject := switch (type[0]) {
+        'object' => type;
+        'literal' => Type.DemoteObjectLiteral(type);
+      };
+
+      newData := {};
+
+      for (key of type[1]:Keys()) {
+        subType := Type.IntersectKindsDeep(typeObject[1][key], allowedKinds);
+
+        if (subType[0] == 'never') {
+          return Type.NeverPath(key, subType);
+        }
+
+        newData[key] := subType;
+      }
+
+      return switch (type[0]) {
+        'object' => ['object', newData];
+        'literal' => type;
+      };
+    }
+
+    if (kind == 'set') {
+      if (type[0] == 'literal') {
+        for (el of type[1]:Values()) {
+          subType := Type.IntersectKindsDeep(['literal', el], allowedKinds);
+
+          if (subType[0] == 'never') {
+            return Type.NeverPath('set element', subType);
+          }
+        }
+
+        return type;
+      }
+
+      if (type[0] == 'set') {
+        subType := Type.IntersectKindsDeep(type[1], allowedKinds);
+
+        if (subType[0] == 'never') {
+          // TODO: Empty set literal instead?
+          return Type.NeverPath('set elements', subType);
+        }
+
+        return ['set', subType];
+      }
+
+      assert false;
+      return null;
+    }
+
+    if (kind == 'func') {
+      assert type[0] == 'func';
+
+      type[1].output = Type.IntersectKindsDeep(type[1].output, allowedKinds);
+
+      if (type[1].output[0] == 'never') {
+        return Type.NeverPath('output', type[1].output);
+      }
+
+      for (i := 0u64; i < type[1].args:Length(); i++) {
+        type[1].args[i] = Type.IntersectKindsDeep(
+          type[1].args[i],
+          allowedKinds,
+        );
+
+        if (type[1].args[i][0] == 'never') {
+          return Type.NeverPath('args', Type.NeverPath(i, type[1].args[i]));
+        }
+      }
+
+      return type;
+    }
+
+    return type;
+  },
+
+  NeverPath: func(key, typeNever) {
+    return ['never', switch (typeNever[1]:Kind()) {
+      'null' => [key];
+      'array' => [key] ++ typeNever[1];
+    }];
+  },
+
+  Any: ['kinds', kinds.all],
 };

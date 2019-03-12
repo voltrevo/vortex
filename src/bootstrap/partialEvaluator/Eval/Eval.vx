@@ -1,140 +1,178 @@
 import @/util/kinds.vx;
+import @/util/Join.vx;
+import @/partialEvaluator/Type.vx;
 import @/partialEvaluator/TypeError.vx;
 
-import ./Divide.vx;
-import ./Multiply.vx;
-import ./U64FromPositiveI32.vx;
-
-func Eval(op, values, pos) {
-  if (values:Length() == 1u64) {
-    [oldValue] := values;
+func Eval(op, inputs) {
+  if (inputs:Length() == 1u64) {
+    [input] := inputs;
 
     if (op in #['unary +', 'unary -']) {
-      maybeNote := CheckLayout({
-        location: [],
-        op,
-        value: oldValue,
-        allowedKinds: switch (op) {
-          'unary +' => kinds.arithmetic;
-          'unary -' => kinds.arithmetic ~ #['u8', 'u16', 'u32', 'u64'];
-        },
-        pos,
+      input = Type.IntersectKindsDeep(input, switch (op) {
+        'unary +' => kinds.arithmetic;
+        'unary -' => kinds.arithmetic ~ #['u8', 'u16', 'u32', 'u64'];
       });
-
-      if (maybeNote:Kind() != 'null') {
-        return maybeNote;
-      }
     } else if (op == 'unary !') {
-      if (oldValue:Kind() != 'bool') {
-        return TypeError(pos, 'Can\'t apply unary ! to ' ++ oldValue:Kind());
-      }
+      input = Type.Intersection(input, ['kinds', #['bool']]);
     } else if (op == 'unary ~') {
-      if (!(oldValue:Kind() in (kinds.number | #['set']))) {
-        return TypeError(pos, 'Can\'t apply unary ~ to ' ++ oldValue:Kind());
-      }
+      input = Type.Intersection(input, ['kinds', kinds.number | #['set']]);
     } else {
       assert false;
     }
 
-    newValue := switch (op) {
-      'unary +' => +oldValue;
-      'unary -' => -oldValue;
-      'unary !' => !oldValue;
-      'unary ~' => ~oldValue;
+    output := switch (input[0]) {
+      'literal' => ['literal', switch (op) {
+        'unary +' => +input[1];
+        'unary -' => -input[1];
+        'unary !' => !input[1];
+        'unary ~' => ~input[1];
+      }];
+
+      default => input;
     };
 
-    return ['literal', newValue, pos];
+    return {inputs: [input], output};
   }
 
-  if (values:Length() == 2u64) {
-    [left, right] := values;
-
-    func KindError(side) => TypeError(pos, (
-      'Cannot apply ' ++
-      op ++
-      ' with ' ++
-      switch (side) {
-        'left' => left:Kind();
-        'right' => right:Kind();
-      } ++
-      ' ' ++
-      side ++
-      ' operand'
-    ));
-
-    func DifferentKindsError() => TypeError(pos, (
-      'Cannot apply ' ++
-      op ++
-      ' operator between different kinds ' ++
-      left:Kind() ++
-      ', ' ++
-      right:Kind()
-    ));
-
-    func SameKindsError() => TypeError(pos, (
-      'Cannot apply ' ++
-      op ++
-      ' operator between ' ++
-      left:Kind() ++
-      ' operands'
-    ));
-
+  if (inputs:Length() == 2u64) {
     if (op in #['==', '!=', '<', '>', '<=', '>=', '+', '-']) {
-      maybeNote := CheckSameLayout({
-        location: [],
-        op,
-        left,
-        right,
-        allowedKinds: switch {
-          (op in #['+', '-']) => kinds.arithmetic;
-          default => kinds.all ~ #['func'];
-        },
-        pos
-      });
+      [left, right] := inputs;
 
-      if (maybeNote:Kind() != 'null') {
-        return maybeNote;
-      }
-
-      result := switch (op) {
-        '==' => left == right;
-        '!=' => left != right;
-        '<' => left < right;
-        '>' => left > right;
-        '<=' => left <= right;
-        '>=' => left >= right;
-        '+' => left + right;
-        '-' => left - right;
+      allowedKinds := switch {
+        (op in #['+', '-']) => kinds.arithmetic;
+        default => kinds.all ~ #['func'];
       };
 
-      return ['literal', result, pos];
+      left = Type.IntersectKindsDeep(left, allowedKinds);
+      right = Type.IntersectKindsDeep(right, allowedKinds);
+
+      shape := Type.ShapeIntersection(left, right);
+
+      if (shape[0] == 'never') {
+        return {inputs: [shape, shape], output: shape};
+      }
+
+      // TODO: Should these be generated during ShapeIntersection?
+      left = Type.Intersection(left, shape);
+      right = Type.Intersection(right, shape);
+
+      assert !('never' in #[left[0], right[0]]);
+
+      output := switch ([left[0], right[0]]) {
+        ['literal', 'literal'] => ['literal', switch (op) {
+          '==' => left[1] == right[1];
+          '!=' => left[1] != right[1];
+          '<' => left[1] < right[1];
+          '>' => left[1] > right[1];
+          '<=' => left[1] <= right[1];
+          '>=' => left[1] >= right[1];
+          '+' => left[1] + right[1];
+          '-' => left[1] - right[1];
+        }];
+
+        default => switch (op in #['+', '-']) {
+          // TODO: Handle partial literals e.g. [1, x] + [2, y] => [3, (shape)]
+          true => shape;
+
+          // TODO: Handle partial literals e.g. [1, x] == [2, y] => false
+          false => ['kinds', #['bool']];
+        };
+      };
+
+      return {inputs: [left, right], output};
     }
 
     if (op == '++') {
-      if (left:Kind() != right:Kind()) {
-        return DifferentKindsError();
+      [left, right] := inputs;
+
+      kindSet := #['array', 'object'] & Type.Kinds(left) & Type.Kinds(right);
+
+      if (kindSet == #[]) {
+        type := ['never', ['++ between incompatible kinds']];
+        return {inputs: [type, type], output: type};
       }
 
-      if (!(left:Kind() in #['array', 'object'])) {
-        return SameKindsError();
+      kindValues := kindSet:Values();
+
+      if (kindValues:Length() > 1u64) {
+        assert #[left[0], right[0]] == #['kinds'];
+        assert kindSet == #['array', 'object'];
+        type := ['kinds', #['array', 'object']];
+        return {inputs: [type, type], output: type};
       }
 
-      if (left:Kind() == 'array') {
-        return ['literal', left ++ right, pos];
-      }
+      [kind] := kindValues;
 
-      if (left:Kind() == 'object') {
-        sharedKeys := left:Keys() & right:Keys();
-
-        if (sharedKeys != #[]) {
-          return TypeError(pos, (
-            'Cannot apply ++ operator between objects because they have ' ++
-            'the following overlapping keys: ' ++
-            sharedKeys:Values():reduce(func(a, b) => a ++ ', ' ++ b)
-          ));
+      if (kind == 'object') {
+        if ('kinds' in #[left[0], right[0]]) {
+          return {inputs: [left, right], output: ['kinds', #['object']]};
         }
 
-        return ['literal', left ++ right, pos];
+        leftKeys := left[1]:Keys();
+        rightKeys := right[1]:Keys();
+
+        sharedKeys := leftKeys & rightKeys;
+
+        if (sharedKeys != #[]) {
+          type := ['never', [
+            '++ between objects with shared keys: ' ++
+            sharedKeys:Values():reduce(Join(', '))
+          ]];
+
+          return {inputs: [type, type], output: type};
+        }
+
+        if (left[0] == 'literal' && right[0] == 'literal') {
+          return {
+            inputs: [left, right],
+            output: ['literal', left[1] ++ right[1]],
+          };
+        }
+
+        func SubTypes(type) => switch (type[0]) {
+          'literal' => Type.DemoteObjectLiteral(type)[1];
+          'object' => type[1];
+        };
+
+        return {
+          inputs: [left, right],
+          output: ['object', SubTypes(left) ++ SubTypes(right)],
+        };
+      }
+
+      if (kind == 'array') {
+        if ('kinds' in #[left[0], right[0]]) {
+          return {inputs: [left, right], output: ['kinds', #['array']]};
+        }
+
+        if (left[0] == 'literal' && right[0] == 'literal') {
+          return {
+            inputs: [left, right],
+            output: ['literal', left[1] ++ right[1]],
+          };
+        }
+
+        func SubTypes(type) => switch (type[0]) {
+          'literal' => Type.DemoteArrayLiteral(type)[1];
+          'array' => type[1];
+          'array-uniform' => [type[1]];
+        };
+
+        subTypes := SubTypes(left) ++ SubTypes(right);
+
+        if ('array-uniform' in #[left[0], right[0]]) {
+          subType := subTypes:reduce(Type.Union);
+
+          return {
+            inputs: [left, right],
+            output: ['array-uniform', subType],
+          };
+        }
+
+        return {
+          inputs: [left, right],
+          output: ['array', subTypes],
+        };
       }
 
       assert false;
@@ -142,8 +180,12 @@ func Eval(op, values, pos) {
     }
 
     if (op in #['&&', '||']) {
-      if (left:Kind() != 'bool') {
-        return KindError('left');
+      [left, right] := inputs;
+
+      left = Type.Intsersect(left, ['kinds', #['bool']]);
+
+      if (left[0] == 'never') {
+        return {inputs: [left, left], output: left};
       }
 
       shortCircuitValue := switch (op) {
@@ -151,140 +193,204 @@ func Eval(op, values, pos) {
         '||' => true;
       };
 
-      if (left == shortCircuitValue) {
-        return ['literal', left, pos];
+      if (left[0] == 'literal') {
+        if (left[1] == shortCircuitValue) {
+          return {inputs: [left, right], output: left};
+        }
+
+        right = Type.Intersect(right, ['kinds', #['bool']]);
+
+        if (right[0] == 'never') {
+          return {inputs: [right, right], output: right};
+        }
+
+        return {inputs: [left, right], output: right};
       }
 
-      if (right:Kind() != 'bool') {
-        return KindError('right');
+      if (Type.Intersect(right, ['kinds', #['bool']])[0] == 'never') {
+        left = ['literal', shortCircuitValue];
+        return {inputs: [left, right], output: left};
       }
 
-      result := switch (op) {
-        '&&' => left && right;
-        '||' => left || right;
-      };
-
-      return ['literal', result, pos];
+      return {inputs: [left, right], output: ['kinds', #['bool']]};
     }
 
     if (op == 'functionCall') {
-      assert left:Kind() != 'func';
-      return KindError('left');
+      [fn, args] := inputs;
+
+      fn = Type.Intersection(fn, ['kinds', #['func']]);
+      args2 := args; // hmm
+
+      func Nevers(type) => {
+        inputs: [type, args2:map(func(_) => type)],
+        output: type,
+      };
+
+      if (fn[0] == 'never') {
+        return Nevers(fn);
+      }
+
+      if (fn[0] != 'func') {
+        return {inputs: [fn, args], output: Type.Any};
+      }
+
+      if (fn[1].args:Length() != args:Length()) {
+        type := ['never', [
+          'arg length mismatch: ' ++
+          args:Length():String() ++
+          ' provided but ' ++
+          fn[1].args:Length():String() ++
+          ' needed'
+        ]];
+
+        return Nevers(type);
+      }
+
+      for (i := 0u64; i < args:Length(); i++) {
+        args[i] = Type.Intersection(args[i], fn[1].args[i]);
+
+        if (args[i][0] == 'never') {
+          return Nevers(Type.NeverPath(['arg', i], args[i]));
+        }
+      }
+
+      return {inputs: [fn, args], output: fn[1].output};
     }
 
     if (op == 'in') {
-      if (left:Kind() == 'func') {
-        return KindError('left');
+      [element, container] := inputs;
+
+      element = Type.IntersectKindsDeep(element, kinds.all ~ #['func']);
+
+      if (element[0] == 'never') {
+        return {inputs: [element, element], output: element};
       }
 
-      if (right:Kind() != 'set') {
-        return KindError('right');
+      container = Type.Intersect(container, ['kinds', #['set']]);
+
+      if (container[0] == 'never') {
+        return {inputs: [container, container], output: container};
       }
 
-      return ['literal', left in right, pos];
+      if (container[0] == 'literal') {
+        if (element[0] == 'literal') {
+          return {
+            inputs: [element, container],
+            output: ['literal', element[1] in container[1]],
+          };
+        }
+
+        possible := false;
+
+        for (el of container[1]:Values()) {
+          if (Type.Intersect(element, ['literal', el])[0] != 'never') {
+            possible = true;
+          }
+        }
+
+        return {
+          inputs: [element, container],
+          output: switch (possible) {
+            true => ['kinds', #['bool']];
+            false => ['literal', false];
+          },
+        };
+      }
+
+      if (container[0] == 'set') {
+        possible := Type.Intersect(element, container[1]) != 'never';
+
+        return {
+          inputs: [element, container],
+          output: switch (possible) {
+            true => ['kinds', #['bool']];
+            false => ['literal', false];
+          },
+        };
+      }
+
+      return {
+        inputs: [element, container],
+        output: ['kinds', #['bool']],
+      };
     }
 
     if (op == 'subscript') {
-      if (!(left:Kind() in #['array', 'object'])) {
-        return KindError('left');
+      [container, index] := inputs;
+      containerKinds := Type.Kinds(container) & #['array', 'object'];
+
+      if (containerKinds == #[]) {
+        type := ['never', [
+          'subscript container cannot be ' ++
+          Type.String(container)
+        ]];
+
+        return {inputs: [type, type], output: type};
       }
 
-      // TODO: TypeError -> BadIndexError?
+      if (containerKinds == #['array', 'object']) {
+        index = Type.Intersection(index, ['kinds', #['i32', 'u64', 'string']]);
 
-      if (left:Kind() == 'array') {
-        if (!(right:Kind() in #['i32', 'u64'])) {
-          return TypeError(pos, (
-            'Cannot subscript array with kind ' ++
-            right:Kind()
-          ));
+        if (index[0] == 'never') {
+          return {inputs: [index, index], output: index};
         }
 
-        index := right;
+        indexKinds := Type.Kinds(index);
 
-        if (index:Kind() == 'i32') {
-          if (index < 0) {
-            // TODO: BadIndexError?
-            return TypeError(pos, (
-              'Cannot subscript array with negative index ' ++
-              index:String()
-            ));
-          }
+        containerKinds = #[];
 
-          index = U64FromPositiveI32(index);
+        if ((#['i32', 'u64'] & indexKinds) != #[]) {
+          containerKinds |= #['array'];
         }
 
-        if (index >= left:Length()) {
-          // TODO: BadIndexError?
-          return TypeError(pos, (
-            'Index ' ++
-            index:String() ++
-            ' doesn\'t exist in array of only length ' ++
-            left:Length():String()
-          ));
+        if ('string' in indexKinds) {
+          containerKinds |= #['object'];
         }
 
-        return ['literal', left[right], pos];
+        container = ['kinds', containerKinds];
+
+        return {inputs: [container, index], output: Type.Any};
       }
 
-      if (left:Kind() == 'object') {
-        if (right:Kind() != 'string') {
-          return TypeError(pos, (
-            'Cannot subscript object with kind ' ++
-            right:Kind()
-          ));
+      [containerKind] := containerKinds:Values();
+
+      if (container[0] == 'kinds') {
+        index = Type.Intersection(index, ['kinds', switch (containerKind) {
+          'array' => #['i32', 'u64'];
+          'object' => #['string'];
+        }]);
+
+        if (index[0] == 'never') {
+          return {inputs: [index, index], output: index};
         }
 
-        if (!(right in left:Keys())) {
-          return TypeError(pos, 'Key not found: ' ++ right);
-        }
-
-        return ['literal', left[right], pos];
+        return {inputs: [container, index], output: Type.Any};
       }
 
-      assert false;
+      if (container[0] == 'array-uniform') {
+        index = Type.Intersection(index, ['kinds', #['i32', 'u64']]);
+
+        if (index[0] == 'never') {
+          return {inputs: [index, index], output: index};
+        }
+
+        return {inputs: [container, index], output: container[1]};
+      }
+
+      if (container[0] in #['array', 'object', 'literal']) {
+        // TODO: This is unfinished, there are definitely more intersections
+        // available here.
+        return {inputs: [container, index], output: Type.Any};
+      }
+
+      return switch{};
     }
 
-    func SameKindsImpl(fn, allowedKinds) {
-      if (left:Kind() != right:Kind()) {
-        return TypeError(pos, (
-          'Cannot apply ' ++
-          op ++
-          ' with operands of different kinds: ' ++
-          left:Kind() ++
-          ', ' ++
-          right:Kind()
-        ));
-      }
-
-      if (!(left:Kind() in allowedKinds)) {
-        return TypeError(pos, (
-          'Cannot apply ' ++
-          op ++
-          ' with ' ++
-          left:Kind() ++
-          ' operands'
-        ));
-      }
-
-      return ['literal', fn(left, right), pos];
-    };
-
-    return switch (op) {
-      '**' => Exp(left, right, pos);
-      '*' => Multiply(left, right, pos);
-      '/' => Divide(left, right, pos);
-      '%' => SameKindsImpl(%, kinds.number);
-      '<<' => SameKindsImpl(<<, kinds.number);
-      '>>' => SameKindsImpl(>>, kinds.number);
-      '~' => SameKindsImpl(~, kinds.number | #['set']);
-      '&' => SameKindsImpl(&, kinds.number | #['set']);
-      '^' => SameKindsImpl(^, kinds.number | #['set']);
-      '|' => SameKindsImpl(|, kinds.number | #['set']);
-    };
+    // TODO: '**', '*', '/', '%', '<<', '>>', '~', '&', '^', '|'
+    return {inputs, output: Type.Any};
   }
 
-  assert false;
-  return null;
+  return switch{};
 };
 
 func CheckSameLayout({
@@ -303,7 +409,9 @@ func CheckSameLayout({
     return 'At location ' ++ location:String() ++ ': ';
   };
 
-  if (left:Kind() != right:Kind()) {
+  commonKinds := Type.Kinds(left) & Type.Kinds(right);
+
+  if (commonKinds == #[]) {
     return TypeError(pos, (
       Prefix() ++
       'Can\'t apply ' ++
@@ -315,39 +423,56 @@ func CheckSameLayout({
     ));
   }
 
-  if (!(left:Kind() in allowedKinds)) {
+  commonAllowedKinds := commonKinds & allowedKinds;
+
+  if (commonAllowedKinds == #[]) {
     return TypeError(pos, (
       Prefix() ++
       'Can\'t apply ' ++
       op ++
       ' with ' ++
-      left:Kind() ++
+      Type.String(['kinds', commonKinds]) ++
       ' operands'
     ));
   }
 
-  if (left:Kind() in #['array', 'object']) {
-    leftKeys := left:Keys();
-    rightKeys := right:Keys();
+  if (left[0] == right[0]) {
+    if (left[0] in #['array', 'object']) {
+      leftKeys := left[1]:Keys();
+      rightKeys := right[1]:Keys();
 
-    if (leftKeys != rightKeys) {
-      return TypeError(pos, (
-        Prefix() ++
-        'Can\'t apply ' ++
-        op ++
-        ' between containers with different keys ' ++
-        leftKeys:String() ++
-        ', ' ++
-        rightKeys:String()
-      ));
-    }
+      if (leftKeys != rightKeys) {
+        return TypeError(pos, (
+          Prefix() ++
+          'Can\'t apply ' ++
+          op ++
+          ' between containers with different keys ' ++
+          leftKeys:String() ++
+          ', ' ++
+          rightKeys:String()
+        ));
+      }
 
-    for (key of leftKeys:Values()) {
+      for (key of leftKeys:Values()) {
+        res := CheckSameLayout({
+          location: location ++ [key],
+          op,
+          left: left[1][key],
+          right: right[1][key],
+          allowedKinds,
+          pos,
+        });
+
+        if (res[0] == 'note') {
+          return res;
+        }
+      }
+    } else if (left[0] == 'array-uniform') {
       res := CheckSameLayout({
-        location: location ++ [key],
+        location: location ++ ['u64'],
         op,
-        left: left[key],
-        right: right[key],
+        left: left[1],
+        right: right[1],
         allowedKinds,
         pos,
       });
@@ -356,8 +481,6 @@ func CheckSameLayout({
         return res;
       }
     }
-
-    return null;
   }
 
   return null;
@@ -366,7 +489,7 @@ func CheckSameLayout({
 func CheckLayout({
   location,
   op,
-  value,
+  type,
   allowedKinds,
   pos,
 }) {
@@ -378,25 +501,25 @@ func CheckLayout({
     return 'At location ' ++ location:String() ++ ': ';
   };
 
-  if (!(value:Kind() in allowedKinds)) {
+  if ((Type.Kinds(type) & allowedKinds) == #[]) {
     return TypeError(pos, (
       Prefix() ++
       'Can\'t apply ' ++
       op ++
       ' with ' ++
-      value:Kind() ++
+      Type.String(type) ++
       ' operands'
     ));
   }
 
-  if (value:Kind() in #['array', 'object']) {
-    keys := value:Keys();
+  if (type[0] in #['array', 'object']) {
+    keys := type[1]:Keys();
 
     for (key of keys:Values()) {
       res := CheckLayout({
         location: location ++ [key],
         op,
-        value: value[key],
+        type: type[1][key],
         allowedKinds,
         pos,
       });
@@ -409,25 +532,21 @@ func CheckLayout({
     return null;
   }
 
+  if (type[0] == 'array-uniform') {
+    res := CheckLayout({
+      location: location ++ ['u64'],
+      op,
+      type: type[1],
+      allowedKinds,
+      pos,
+    });
+
+    if (res[0] == 'note') {
+      return res;
+    }
+  }
+
   return null;
-};
-
-func Exp(left, right, pos) {
-  if (left:Kind() != right:Kind()) {
-    return TypeError(pos, (
-      'Exponentiation between different kinds ' ++
-      left:Kind() ++
-      ', ' ++
-      right:Kind()
-    ));
-  }
-
-  // TODO: Matrices, integers?
-  if (!(left:Kind() in #['f32', 'f64'])) {
-    return TypeError(pos, 'Exponentiation with ' ++ left:Kind());
-  }
-
-  return ['literal', left ** right, pos];
 };
 
 return Eval;

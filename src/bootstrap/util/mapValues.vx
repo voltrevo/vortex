@@ -1,0 +1,7 @@
+return func(obj, mapper) {
+  for (key of obj:Keys():Values()) {
+    obj[key] := mapper(obj[key]);
+  }
+
+  return obj;
+};

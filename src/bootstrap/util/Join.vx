@@ -1,0 +1,1 @@
+return func(str) => func(a, b) => a ++ str ++ b;
