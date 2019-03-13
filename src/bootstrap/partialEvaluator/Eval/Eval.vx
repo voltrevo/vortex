@@ -85,7 +85,11 @@ func Eval(op, inputs) {
     if (op == '++') {
       [left, right] := inputs;
 
-      kindSet := #['array', 'object'] & Type.Kinds(left) & Type.Kinds(right);
+      kindSet := (
+        #['array', 'object', 'string'] &
+        Type.Kinds(left) &
+        Type.Kinds(right)
+      );
 
       if (kindSet == #[]) {
         type := ['never', ['++ between incompatible kinds']];
@@ -96,8 +100,7 @@ func Eval(op, inputs) {
 
       if (kindValues:Length() > 1u64) {
         assert #[left[0], right[0]] == #['kinds'];
-        assert kindSet == #['array', 'object'];
-        type := ['kinds', #['array', 'object']];
+        type := ['kinds', kindSet];
         return {inputs: [type, type], output: type};
       }
 
@@ -172,6 +175,20 @@ func Eval(op, inputs) {
         return {
           inputs: [left, right],
           output: ['array', subTypes],
+        };
+      }
+
+      if (kind == 'string') {
+        if (left[0] == 'literal' && right[0] == 'literal') {
+          return {
+            inputs: [left, right],
+            output: ['literal', left[1] ++ right[1]],
+          };
+        }
+
+        return {
+          inputs: [left, right],
+          output: ['kinds', #['string']],
         };
       }
 
