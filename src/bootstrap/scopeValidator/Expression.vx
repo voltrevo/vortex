@@ -85,13 +85,17 @@ func Mutation(mutationType, left, rightEvents, source) {
   events := [];
 
   if (type in #['.', 'subscript']) {
-    subTarget := data[0];
+    [subTarget, index] := data;
     subType := subTarget[0];
 
     if (!(subType in #['identifier', '.', 'subscript'])) {
       // Nothing to do (issue caught elsewhere)
     } else {
       events ++= Mutation('mutate', subTarget, rightEvents, source);
+    }
+
+    if (type == 'subscript') {
+      events ++= Expression(index);
     }
 
     return events;

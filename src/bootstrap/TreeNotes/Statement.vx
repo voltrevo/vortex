@@ -25,6 +25,7 @@ return func Statement(statement) {
       'nothing' => [];
       'block' => Block(tail);
       'if' => Statement(tail);
+      'note' => [tail[1]];
     };
 
     return notes;
