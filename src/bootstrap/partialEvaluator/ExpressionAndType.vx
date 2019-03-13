@@ -73,6 +73,14 @@ return func ExpressionAndType(expression) {
         return right;
       }
 
+      if (xType in #[':=', '=']) {
+        // TODO: Destructure type checking
+        return {
+          exp: [xType, [target, right.exp], pos],
+          type: ['na', null],
+        };
+      }
+
       assert target[0] != 'literal';
 
       op := switch (xType) {

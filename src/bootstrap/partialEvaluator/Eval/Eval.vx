@@ -182,7 +182,7 @@ func Eval(op, inputs) {
     if (op in #['&&', '||']) {
       [left, right] := inputs;
 
-      left = Type.Intsersect(left, ['kinds', #['bool']]);
+      left = Type.Intsersection(left, ['kinds', #['bool']]);
 
       if (left[0] == 'never') {
         return {inputs: [left, left], output: left};
@@ -198,7 +198,7 @@ func Eval(op, inputs) {
           return {inputs: [left, right], output: left};
         }
 
-        right = Type.Intersect(right, ['kinds', #['bool']]);
+        right = Type.Intersection(right, ['kinds', #['bool']]);
 
         if (right[0] == 'never') {
           return {inputs: [right, right], output: right};
@@ -207,7 +207,7 @@ func Eval(op, inputs) {
         return {inputs: [left, right], output: right};
       }
 
-      if (Type.Intersect(right, ['kinds', #['bool']])[0] == 'never') {
+      if (Type.Intersection(right, ['kinds', #['bool']])[0] == 'never') {
         left = ['literal', shortCircuitValue];
         return {inputs: [left, right], output: left};
       }
@@ -266,7 +266,7 @@ func Eval(op, inputs) {
         return {inputs: [element, element], output: element};
       }
 
-      container = Type.Intersect(container, ['kinds', #['set']]);
+      container = Type.Intersection(container, ['kinds', #['set']]);
 
       if (container[0] == 'never') {
         return {inputs: [container, container], output: container};
@@ -283,7 +283,7 @@ func Eval(op, inputs) {
         possible := false;
 
         for (el of container[1]:Values()) {
-          if (Type.Intersect(element, ['literal', el])[0] != 'never') {
+          if (Type.Intersection(element, ['literal', el])[0] != 'never') {
             possible = true;
           }
         }
@@ -298,7 +298,7 @@ func Eval(op, inputs) {
       }
 
       if (container[0] == 'set') {
-        possible := Type.Intersect(element, container[1]) != 'never';
+        possible := Type.Intersection(element, container[1])[0] != 'never';
 
         return {
           inputs: [element, container],
