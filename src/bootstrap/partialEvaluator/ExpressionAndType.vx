@@ -507,7 +507,7 @@ return func ExpressionAndType(expression) {
 
         return {
           exp: ['methodLookup', [base.exp, name], pos],
-          type: ['kinds', #['array']],
+          type: ['func', {args: [], output: ['kinds', #['array']]}],
         };
       }
 
