@@ -29,7 +29,7 @@ return func DestructureType([xType, data, _]) {
     typeData := {};
     literal := {};
 
-    for ([[_, key, _], value] of data) {
+    for ([key, value] of data) {
       subType := DestructureType(value);
 
       if (subType[0] != 'literal') {

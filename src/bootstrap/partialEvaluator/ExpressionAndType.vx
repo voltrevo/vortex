@@ -262,7 +262,7 @@ return func ExpressionAndType(expression) {
       literal := {};
 
       // TODO: fix incorrect unused warning
-      for ([i, [[_, key, _], value]] of data:Entries()) {
+      for ([i, [key, value]] of data:Entries()) {
         {exp, type} := ExpressionAndType(value);
 
         if (type[0] == 'never') {
