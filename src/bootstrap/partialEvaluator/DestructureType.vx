@@ -1,0 +1,51 @@
+import ./Type.vx;
+
+return func DestructureType([xType, data, _]) {
+  if (xType == 'identifier') {
+    return Type.Any;
+  }
+
+  if (xType == 'array') {
+    typeData := [];
+    literal := [];
+
+    for (subType of data:map(DestructureType)) {
+      if (subType[0] != 'literal') {
+        literal = null;
+      } else if (literal:Kind() != 'null') {
+        literal ++= [subType[1]];
+      }
+
+      typeData ++= [subType];
+    }
+
+    return switch (literal:Kind()) {
+      'array' => ['literal', literal];
+      'null' => ['array', typeData];
+    };
+  }
+
+  if (xType == 'object') {
+    typeData := {};
+    literal := {};
+
+    for ([[_, key, _], value] of data) {
+      subType := DestructureType(value);
+
+      if (subType[0] != 'literal') {
+        literal = null;
+      } else if (literal:Kind() != 'null') {
+        literal[key] := subType[1];
+      }
+
+      typeData[key] := subType;
+    }
+
+    return switch (literal:Kind()) {
+      'object' => ['literal', literal];
+      'null' => ['object', typeData];
+    };
+  }
+
+  return switch{};
+};
