@@ -678,7 +678,7 @@ return {
   },
 
   IntersectKindsDeep: func(type, allowedKinds) {
-    kindSet := Type.KindSet(type);
+    kindSet := Type.Kinds(type);
     kindSetAllowed := kindSet & allowedKinds;
 
     if (kindSetAllowed == #[]) {

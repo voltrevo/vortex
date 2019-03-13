@@ -10,10 +10,20 @@ import ./Type.vx;
 return func ExpressionAndType(expression) {
   [xType, data, pos] := expression;
 
+  if (xType == 'literal') {
+    return {
+      exp: expression,
+      type: ['literal', expression[1]],
+    };
+  }
+
   if (xType in #[
-    'import', 'default', 'literal', 'identifier', 'op', 'note'
+    'import', 'default', 'identifier', 'op',
   ]) {
-    return expression;
+    return {
+      exp: expression,
+      type: Type.Any, // TODO: More inference here
+    };
   }
 
   if (xType in expressionTypes.operator) {
@@ -201,7 +211,7 @@ return func ExpressionAndType(expression) {
 
     [left, right] := data:map(ExpressionAndType);
 
-    resType := Eval(xType, [left.type, right.type]);
+    resType := Eval(xType, [left.type, right.type]).output;
 
     if (resType[0] == 'never') {
       return {
