@@ -105,12 +105,8 @@ func Expression(expression) {
 
       return [
         '{' ++
-        oneLine(data
-          :map(func([key, value]) => (
-            oneLine(Expression(key)) ++
-            ': ' ++
-            oneLine(Expression(value))
-          ))
+        (data
+          :map(func([key, value]) => key ++ ': ' ++ oneLine(Expression(value)))
           :reduce(func(a, b) => a ++ ', ' ++ b)
         ) ++
         '}'

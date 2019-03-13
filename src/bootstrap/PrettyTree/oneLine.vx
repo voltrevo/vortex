@@ -1,1 +1,10 @@
-return func(lines) => lines:reduce(func(a, b) => a ++ ' ' ++ b);
+import @/util/Join.vx;
+
+return func(lines) {
+  if (lines:Kind() != 'array') {
+    log.info {lines};
+    return switch{};
+  }
+
+  return Join(' ')(lines);
+};
