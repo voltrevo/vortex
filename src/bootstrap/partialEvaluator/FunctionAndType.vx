@@ -21,7 +21,7 @@ return func([xType, {name, args, body}, pos]) {
     bodyPos := body[2];
     body = ExpressionAndType(body[1]);
 
-    if (body[0] == 'never') {
+    if (body.type[0] == 'never') {
       return body;
     }
 
