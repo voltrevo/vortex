@@ -197,7 +197,7 @@ func Expression(expression) {
 
     if (bodyType == 'block') {
       topLine ++= ' {';
-      return [topLine, indent(Block(body)), '}'];
+      return [topLine] ++ indent(Block(body)) ++ ['}'];
     }
 
     assert false;
