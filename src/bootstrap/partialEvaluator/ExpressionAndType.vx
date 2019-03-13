@@ -437,6 +437,13 @@ return func ExpressionAndType(expression) {
         }],
       };
 
+      if (name == 'Kind') {
+        return {
+          exp: ['methodLookup', [base.exp, name], pos],
+          type: ['func', {args: [], output: ['kinds', #['string']]}],
+        };
+      }
+
       if (name == 'String') {
         if (baseKinds == #['func']) {
           return BadMethod();
