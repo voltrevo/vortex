@@ -182,7 +182,7 @@ func Eval(op, inputs) {
     if (op in #['&&', '||']) {
       [left, right] := inputs;
 
-      left = Type.Intsersection(left, ['kinds', #['bool']]);
+      left = Type.Intersection(left, ['kinds', #['bool']]);
 
       if (left[0] == 'never') {
         return {inputs: [left, left], output: left};
