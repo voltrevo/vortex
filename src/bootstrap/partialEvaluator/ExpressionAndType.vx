@@ -178,7 +178,7 @@ return func ExpressionAndType(expression) {
       }
 
       return {
-        exp: ['functionCall', [fn, args:map(func(a) => a.exp)], pos],
+        exp: ['functionCall', [fn.exp, args:map(func(a) => a.exp)], pos],
         type: resType,
       };
     }
