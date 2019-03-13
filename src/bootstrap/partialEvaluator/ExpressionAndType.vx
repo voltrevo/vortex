@@ -221,6 +221,14 @@ return func ExpressionAndType(expression) {
 
     [left, right] := data:map(ExpressionAndType);
 
+    if (left.type[0] == 'never') {
+      return left;
+    }
+
+    if (right.type[0] == 'never') {
+      return right;
+    }
+
     resType := Eval(xType, [left.type, right.type]).output;
 
     if (resType[0] == 'never') {
