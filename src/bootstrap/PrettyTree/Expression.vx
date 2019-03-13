@@ -119,7 +119,11 @@ func Expression(expression) {
 
   if (type in expressionTypes.nameAccess) {
     [base, name] := data;
-    return [oneLine(Expression(base)) ++ '.' ++ name[1]];
+
+    return switch (type) {
+      '.' => [oneLine(Expression(base)) ++ '.' ++ name];
+      'methodLookup' => [oneLine(Expression(base)) ++ ':' ++ name];
+    };
   }
 
   if (type == 'switch') {

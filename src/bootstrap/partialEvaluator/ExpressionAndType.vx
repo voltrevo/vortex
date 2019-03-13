@@ -374,7 +374,7 @@ return func ExpressionAndType(expression) {
   }
 
   if (xType in expressionTypes.nameAccess) {
-    [base, right] := data;
+    [base, name] := data;
     base = ExpressionAndType(base);
 
     if (base.type[0] == 'never') {
@@ -382,7 +382,6 @@ return func ExpressionAndType(expression) {
     }
 
     if (xType == '.') {
-      name := right[1];
       resType := Eval('subscript', [base.type, ['literal', name]]).output;
 
       if (resType[0] == 'never') {
@@ -404,13 +403,12 @@ return func ExpressionAndType(expression) {
       }
 
       return {
-        exp: ['.', [base.exp, right], pos],
+        exp: ['.', [base.exp, name], pos],
         type: resType,
       };
     }
 
     if (xType == 'methodLookup') {
-      name := right;
       baseKinds := Type.Kinds(base.type);
 
       baseCapture := base;
@@ -447,7 +445,7 @@ return func ExpressionAndType(expression) {
         };
 
         return {
-          exp: ['methodLookup', [base.exp, right], pos],
+          exp: ['methodLookup', [base.exp, name], pos],
           type: ['func', {args: [], output: outputType}],
         };
       }
@@ -460,7 +458,7 @@ return func ExpressionAndType(expression) {
         // TODO: more return type inference
 
         return {
-          exp: ['methodLookup', [base.exp, right], pos],
+          exp: ['methodLookup', [base.exp, name], pos],
           type: ['func', {args: [], output: ['kinds', #['u64']]}],
         };
       }
@@ -480,7 +478,7 @@ return func ExpressionAndType(expression) {
         };
 
         return {
-          exp: ['methodLookup', [base.exp, right], pos],
+          exp: ['methodLookup', [base.exp, name], pos],
           type: ['func', {args: [], output: ['kinds', #[outputKind]]}],
         };
       }
@@ -493,7 +491,7 @@ return func ExpressionAndType(expression) {
         // TODO: more return type inference
 
         return {
-          exp: ['methodLookup', [base.exp, right], pos],
+          exp: ['methodLookup', [base.exp, name], pos],
           type: ['kinds', #['array']],
         };
       }
@@ -506,7 +504,7 @@ return func ExpressionAndType(expression) {
         // TODO: more return type inference
 
         return {
-          exp: ['methodLookup', [base.exp, right], pos],
+          exp: ['methodLookup', [base.exp, name], pos],
           type: Type.Any,
         };
       }
