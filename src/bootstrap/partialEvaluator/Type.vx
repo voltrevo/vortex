@@ -45,6 +45,7 @@ return {
     'set' => #['set'];
     'object' => #['object'];
     'func' => #['func'];
+    'never' => #[];
   },
 
   Union: func(typeA, typeB) {
@@ -554,6 +555,8 @@ return {
       args: data.args:map(Type.Shape),
       output: Type.Shape(data.output)
     }];
+
+    'never' => [cat, data];
   },
 
   ShapeUnion: func(typeA, typeB) {

@@ -522,6 +522,10 @@ return func ExpressionAndType(expression) {
 
     if (test[0] != 'nothing') {
       test = ExpressionAndType(test);
+
+      if (test.type[0] == 'never') {
+        return test;
+      }
     } else {
       test = {
         exp: test,
@@ -617,7 +621,10 @@ return func ExpressionAndType(expression) {
       }
     }
 
-    return ['switch', {test: test.exp, cases}, pos];
+    return {
+      exp: ['switch', {test: test.exp, cases}, pos],
+      type: resType,
+    };
   }
 
   if (xType == 'func') {

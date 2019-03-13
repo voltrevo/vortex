@@ -3,7 +3,7 @@ import ./ExpressionAndType.vx;
 return func(expression) {
   {exp, type} := ExpressionAndType(expression);
 
-  if (type[0] == 'never') {
+  if (exp:Kind() == 'null' && type[0] == 'never') {
     assert type[1]:Kind() != 'null';
     return ['note', type[1]];
   }

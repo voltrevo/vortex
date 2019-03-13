@@ -13,6 +13,10 @@ func Statement([type, data, pos]) {
 
     condition = Expression(condition);
 
+    if (condition[0] == 'note') {
+      return condition;
+    }
+
     conditionKinds := KindSet(condition);
 
     if (!('bool' in conditionKinds)) {
