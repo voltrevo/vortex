@@ -408,7 +408,7 @@ return func ExpressionAndType(expression) {
     }
 
     if (xType == 'methodLookup') {
-      name := right[1];
+      name := right;
       baseKinds := Type.Kinds(base.type);
 
       baseCapture := base;
@@ -417,7 +417,12 @@ return func ExpressionAndType(expression) {
         exp: null,
         type: ['never', {
           level: 'error',
-          message: Type.String(baseCapture.type) ++ ' does not have :' ++ name,
+          message: (
+            'Type ' ++
+            Type.String(baseCapture.type) ++
+            ' does not have method :' ++
+            name
+          ),
           pos,
           subNotes: [],
           tags: #['type-error'],
