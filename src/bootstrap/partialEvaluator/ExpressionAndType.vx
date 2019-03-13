@@ -348,7 +348,7 @@ return func ExpressionAndType(expression) {
         if (type[0] != 'literal') {
           literal = null;
         } else if (literal:Kind() != 'null') {
-          literal ++= type[1];
+          literal ++= [type[1]];
         }
 
         data[i] = exp;
