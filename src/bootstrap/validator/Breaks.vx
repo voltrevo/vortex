@@ -9,13 +9,11 @@ return func Breaks([_, statements, _]) {
     }
 
     if (type == 'if') {
-      func IfBreaks(ifStatement) {
-        {condition: _, body, tail} := ifStatement;
-
+      func IfBreaks({condition: _, body, tail}) {
         return Breaks(body) ++ switch (tail[0]) {
           'nothing' => [];
           'block' => Breaks(tail);
-          'if' => IfBreaks(tail);
+          'if' => IfBreaks(tail[1]);
         };
       };
 

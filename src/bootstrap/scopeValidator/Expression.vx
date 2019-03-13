@@ -55,7 +55,9 @@ func Expression(expression) {
       subExps ++= [test];
     }
 
-    subExps ++= cases:reduce(++);
+    if (subExps:Length() > 0u64) {
+      subExps ++= cases:reduce(++);
+    }
   } else if (type in #['import', 'default', 'literal', 'identifier', 'op', 'note']) {
     // Nothing to do for these types
   } else if (type == 'func') {
