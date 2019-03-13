@@ -143,9 +143,11 @@ return func ExpressionAndType(expression) {
         }
       }
 
+      argTypes := args:map(func(a) => a.type);
+
       resType := Eval('functionCall', [
         fn.type,
-        args:map(func(a) => a.type),
+        argTypes,
       ]).output;
 
       if (resType[0] == 'never') {
@@ -155,17 +157,17 @@ return func ExpressionAndType(expression) {
             level: 'error',
             message: (
               'Invalid functionCall: left: ' ++
-              Type.String(fn) ++
+              Type.String(fn.type) ++
               ', args: ' ++
               switch (args:Length()) {
                 0u64 => '(none)';
-                default => args:map(Type.String):reduce(Join(', '));
+                default => Join(', ')(argTypes:map(Type.String));
               }
             ),
+            pos,
+            subNotes: [],
+            tags: #['type-error'],
           }],
-          pos,
-          subNotes: [],
-          tags: #['type-error'],
         };
       }
 

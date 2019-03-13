@@ -116,7 +116,7 @@ func Eval(op, inputs) {
         if (sharedKeys != #[]) {
           type := ['never', [
             '++ between objects with shared keys: ' ++
-            sharedKeys:Values():reduce(Join(', '))
+            Join(', ')(sharedKeys:Values())
           ]];
 
           return {inputs: [type, type], output: type};

@@ -1,1 +1,8 @@
-return func(str) => func(a, b) => a ++ str ++ b;
+return func(sep) => func(parts) => switch (parts:Length()) {
+  0u64 => switch (sep:Kind()) {
+    'array' => [];
+    'string' => '';
+  };
+
+  default => parts:reduce(func(a, b) => a ++ sep ++ b);
+};

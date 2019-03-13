@@ -11,26 +11,25 @@ return {
     'kinds' => switch {
       (data:Values():Length() == 1u64) => data:Values()[0];
       (data == kinds.all) => 'any';
-      default => '(' ++ data:Values():reduce(Join(' | ')) ++ ')';
+      default => '(' ++ Join(' | ')(data:Values()) ++ ')';
     };
 
-    'array' => '[' ++ data:map(Type.String):reduce(Join(', ')) ++ ']';
+    'array' => '[' ++ Join(', ')(data:map(Type.String)) ++ ']';
     'array-uniform' => Type.String(data) ++ '[]';
     'set' => Type.String(data) ++ '#[]';
 
     'object' => (
       '{' ++
-      (data
+      Join(', ')(data
         :Entries()
         :map(func([key, keyData]) => key ++ ': ' ++ Type.String(keyData))
-        :reduce(Join(', '))
       ) ++
       '}'
     );
 
     'func' => (
       'func(' ++
-      data.args:map(Type.String):reduce(Join(', ')) ++
+      Join(', ')(data.args:map(Type.String)) ++
       ')' ++
       Type.String(data.output)
     );
