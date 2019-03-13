@@ -1,0 +1,605 @@
+import @/parser/expressionTypes.vx;
+import @/parser/operatorTypes.vx;
+import @/util/kinds.vx;
+import @/util/Join.vx;
+
+import ./Eval/Eval.vx;
+import ./FunctionAndType.vx;
+import ./Type.vx;
+
+return func ExpressionAndType(expression) {
+  [xType, data, pos] := expression;
+
+  if (xType in #[
+    'import', 'default', 'literal', 'identifier', 'op', 'note'
+  ]) {
+    return expression;
+  }
+
+  if (xType in expressionTypes.operator) {
+    if (xType in operatorTypes.mutation) {
+      if (xType in #['unary ++', 'unary --']) {
+        [target] := data;
+        left := ExpressionAndType(target);
+
+        if (left.type[0] == 'never') {
+          return left;
+        }
+
+        // Preserve the original target
+        left.exp = target;
+
+        assert left.exp[0] != 'literal';
+
+        leftType := left.type;
+        left.type = Type.Intersection(left.type, ['kinds', kinds.number]);
+
+        if (left.type[0] == 'never') {
+          return {
+            exp: null,
+            type: ['never', {
+              level: 'error',
+              message: (
+                'operand of ' ++ xType ++ ' is a ' ++ Type.String(leftType)
+              ),
+              pos,
+              subnotes: [],
+              tags: #['type-error'],
+            }],
+          };
+        }
+
+        return {exp: [xType, [left.exp], pos], type: left.type};
+      }
+
+      target := data[0];
+      [left, right] := data:map(ExpressionAndType);
+
+      if (left.type[0] == 'never') {
+        return left;
+      }
+
+      if (right.type[0] == 'never') {
+        return right;
+      }
+
+      assert target[0] != 'literal';
+
+      op := switch (xType) {
+        '**=' => '**';
+        '+=' => '+';
+        '++=' => '++';
+        '-=' => '-';
+        '*=' => '*';
+        '/=' => '/';
+        '%=' => '%';
+        '<<=' => '<<';
+        '>>=' => '>>';
+        '&=' => '&';
+        '|=' => '|';
+        '^=' => '^';
+        '&&=' => '&&';
+        '||=' => '||';
+        '~=' => '~';
+      };
+
+      resType := Eval(op, [left.type, right.type]).output;
+
+      if (resType[0] == 'never') {
+        return {
+          exp: null,
+          type: ['never', {
+            level: 'error',
+            message: (
+              'Invalid operands of ' ++
+              xType ++
+              ': left is ' ++
+              Type.String(left.type) ++
+              ', right is ' ++
+              Type.String(right.type)
+            ),
+            pos,
+            subnotes: [],
+            tags: #['type-error'],
+          }],
+        };
+      }
+
+      // TODO: Scope update for lhs -> resType
+
+      return {
+        exp: [xType, [target, right.exp], pos],
+        type: ['na', null],
+      };
+    }
+
+    if (xType == 'functionCall') {
+      [fn, args] := data;
+
+      fn = ExpressionAndType(fn);
+      args = args:map(ExpressionAndType);
+
+      for (input of [fn] ++ args) {
+        if (input.type[0] == 'never') {
+          return input;
+        }
+      }
+
+      resType := Eval('functionCall', [
+        fn.type,
+        args:map(func(a) => a.type),
+      ]).output;
+
+      if (resType[0] == 'never') {
+        return {
+          exp: null,
+          type: ['never', {
+            level: 'error',
+            message: (
+              'Invalid functionCall: left: ' ++
+              Type.String(fn) ++
+              ', args: ' ++
+              switch (args:Length()) {
+                0u64 => '(none)';
+                default => args:map(Type.String):reduce(Join(', '));
+              }
+            ),
+          }],
+          pos,
+          subNotes: [],
+          tags: #['type-error'],
+        };
+      }
+
+      for (i := 0u64; i < args:Length(); i++) {
+        if (args[i].type[0] == 'literal') {
+          args[i].exp = ['literal', args[i].type[1], args[i].exp[2]];
+        }
+      }
+
+      return {
+        exp: ['functionCall', [fn, args:map(func(a) => a.exp)], pos],
+        type: resType,
+      };
+    }
+
+    if (xType in operatorTypes.unary) {
+      [target] := data:map(ExpressionAndType);
+
+      resType := Eval(xType, [target.type]).output;
+
+      if (resType[0] == 'never') {
+        return {
+          exp: null,
+          type: ['never', {
+            level: 'error',
+            message: (
+              'Invalid operand of ' ++
+              xType ++
+              ': ' ++
+              Type.String(target.type)
+            ),
+            pos,
+            subNotes: [],
+            tags: #['type-error'],
+          }],
+        };
+      }
+
+      if (resType[0] == 'literal') {
+        return {
+          exp: ['literal', resType[1], pos],
+          type: resType,
+        };
+      }
+
+      return {
+        exp: [xType, [target.exp], pos],
+        type: resType,
+      };
+    }
+
+    [left, right] := data:map(ExpressionAndType);
+
+    resType := Eval(xType, [left.type, right.type]);
+
+    if (resType[0] == 'never') {
+      return {
+        exp: null,
+        type: ['never', {
+          level: 'error',
+          message: (
+            'Invalid operands of ' ++
+            xType ++
+            ': left: ' ++
+            Type.String(left.type) ++
+            ', right: ' ++
+            Type.String(right.type)
+          ),
+          pos,
+          subNotes: [],
+          tags: #['type-error'],
+        }],
+      };
+    }
+
+    if (resType[0] == 'literal') {
+      return {
+        exp: ['literal', resType[1], pos],
+        type: resType,
+      };
+    }
+
+    return {
+      exp: [xType, [left.exp, right.exp], pos],
+      type: resType,
+    };
+  }
+
+  if (xType in expressionTypes.container) {
+    if (xType == 'object') {
+      typeData := {};
+      literal := {};
+
+      // TODO: fix incorrect unused warning
+      for ([i, [key, value]] of data:Entries()) {
+        {exp, type} := ExpressionAndType(value);
+
+        if (type[0] == 'never') {
+          return {exp: null, type};
+        }
+
+        if (type[0] != 'literal') {
+          literal = null;
+        } else if (literal:Kind() != 'null') {
+          literal[key] := type[1];
+        }
+
+        data[i][1] = exp;
+        typeData[key] := type;
+      }
+
+      return switch (literal:Kind()) {
+        'object' => {
+          exp: ['literal', literal, pos],
+          type: ['literal', literal],
+        };
+
+        'null' => {
+          exp: ['object', data, pos],
+          type: ['object', typeData],
+        };
+      };
+    }
+
+    if (xType == 'set') {
+      literal := #[];
+
+      elType := ['never', null];
+
+      for ([i, {exp, type}] of data:map(ExpressionAndType):Entries()) {
+        if (type[0] == 'never') {
+          return {exp: null, type};
+        }
+
+        if (Type.Kinds(type) == #['func']) {
+          return {
+            exp: null,
+            type: ['never', {
+              level: 'error',
+              message: 'Invalid set element type: ' ++ Type.String(type),
+              pos: exp[2],
+              subNotes: [],
+              tags: #['type-error'],
+            }],
+          };
+        }
+
+        if (type[0] != 'literal') {
+          literal = null;
+        } else if (literal:Kind() != 'null') {
+          literal |= #[type[1]];
+        }
+
+        data[i] = exp;
+        elType = Type.Union(elType, type);
+      }
+
+      return switch (literal:Kind()) {
+        'set' => {
+          exp: ['literal', literal, pos],
+          type: ['literal', literal],
+        };
+
+        'null' => {
+          exp: ['set', data, pos],
+          type: ['set', elType],
+        };
+      };
+    }
+
+    if (xType == 'array') {
+      literal := [];
+      typeData := [];
+
+      for ([i, {exp, type}] of data:map(ExpressionAndType):Entries()) {
+        if (type[0] == 'never') {
+          return {exp: null, type};
+        }
+
+        if (type[0] != 'literal') {
+          literal = null;
+        } else if (literal:Kind() != 'null') {
+          literal ++= type[1];
+        }
+
+        data[i] = exp;
+        typeData ++= [type];
+      }
+
+      return switch (literal:Kind()) {
+        'array' => {
+          exp: ['literal', literal, pos],
+          type: ['literal', literal],
+        };
+
+        'null' => {
+          exp: ['array', data, pos],
+          type: ['array', typeData],
+        };
+      };
+    }
+
+    return switch{};
+  }
+
+  if (xType in expressionTypes.nameAccess) {
+    [base, right] := data;
+    base = ExpressionAndType(base);
+
+    if (base.type[0] == 'never') {
+      return base;
+    }
+
+    if (xType == '.') {
+      name := right[1];
+      resType := Eval('subscript', [base.type, ['literal', name]]).output;
+
+      if (resType[0] == 'never') {
+        return {
+          exp: null,
+          type: ['never', {
+            level: 'error',
+            message: (
+              '.' ++
+              name ++
+              ' failed on type ' ++
+              Type.String(base.type)
+            ),
+            pos,
+            subNotes: [],
+            tags: #['type-error'],
+          }],
+        };
+      }
+
+      return {
+        exp: ['.', [base.exp, right], pos],
+        type: resType,
+      };
+    }
+
+    if (xType == 'methodLookup') {
+      name := right[1];
+      baseKinds := Type.Kinds(base.type);
+
+      baseCapture := base;
+
+      func BadMethod() => {
+        exp: null,
+        type: ['never', {
+          level: 'error',
+          message: Type.String(baseCapture.type) ++ ' does not have :' ++ name,
+          pos,
+          subNotes: [],
+          tags: #['type-error'],
+        }],
+      };
+
+      if (name == 'String') {
+        if (baseKinds == #['func']) {
+          return BadMethod();
+        }
+
+        hasFunc := (
+          Type.IntersectKindsDeep(base.type, kinds.all ~ #['func'])[0] ==
+          'never'
+        );
+
+        outputType := switch (hasFunc) {
+          true => ['never', null];
+          false => ['kinds', #['string']];
+        };
+
+        return {
+          exp: ['methodLookup', [base.exp, right], pos],
+          type: ['func', {args: [], output: outputType}],
+        };
+      }
+
+      if (name == 'Length') {
+        if ((baseKinds & #['string', 'array']) == #[]) {
+          return BadMethod();
+        }
+
+        // TODO: more return type inference
+
+        return {
+          exp: ['methodLookup', [base.exp, right], pos],
+          type: ['func', {args: [], output: ['kinds', #['u64']]}],
+        };
+      }
+
+      if (name in #[
+        'Keys', 'Entries', 'Row', 'Column', 'Transpose',
+      ]) {
+        if ((baseKinds & #['array', 'object']) == #[]) {
+          return BadMethod();
+        }
+
+        // TODO: more return type inference
+
+        outputKind := switch (name) {
+          'Keys' => 'set';
+          default => 'array';
+        };
+
+        return {
+          exp: ['methodLookup', [base.exp, right], pos],
+          type: ['func', {args: [], output: ['kinds', #[outputKind]]}],
+        };
+      }
+
+      if (name == 'Values') {
+        if ((baseKinds & #['array', 'object', 'set']) == #[]) {
+          return BadMethod();
+        }
+
+        // TODO: more return type inference
+
+        return {
+          exp: ['methodLookup', [base.exp, right], pos],
+          type: ['kinds', #['array']],
+        };
+      }
+
+      if (name in #['Front', 'Back', 'map', 'reduce']) {
+        if (!('array' in baseKinds)) {
+          return BadMethod();
+        }
+
+        // TODO: more return type inference
+
+        return {
+          exp: ['methodLookup', [base.exp, right], pos],
+          type: Type.Any,
+        };
+      }
+
+      return BadMethod();
+    }
+
+    return switch{};
+  }
+
+  if (xType == 'switch') {
+    {test, cases} := data;
+
+    resType := ['never', null];
+
+    if (test[0] != 'nothing') {
+      test = ExpressionAndType(test);
+    } else {
+      test = {
+        exp: test,
+        type: null,
+      };
+    }
+
+    newCases := [];
+
+    for ([left, right] of cases) {
+      right = ExpressionAndType(right);
+
+      if (right.type[0] == 'never') {
+        return right;
+      }
+
+      if (left[0] == 'default') {
+        newCases ++= [left, right.exp];
+        resType = Type.Union(resType, right.type);
+
+        // TODO: Errors from unreachable cases might still be valuable. How
+        // should they be surfaced?
+        break;
+      }
+
+      left = ExpressionAndType(left);
+
+      if (left.type[0] == 'never') {
+        return left;
+      }
+
+      specType := switch (test.exp[0]) {
+        'nothing' => left.type;
+        default => Eval('==', [test.type, left.type]).output;
+      };
+
+      if (specType[0] == 'never') {
+        return {
+          exp: null,
+          type: ['never', {
+            level: 'error',
+            message: (
+              'Incompatible types in switch comparison: test: ' ++
+              Type.String(test.type) ++
+              ', case: ' ++
+              Type.String(left.type)
+            ),
+            pos: left.exp[2],
+            subNotes: [],
+            tags: #['type-error'],
+          }],
+        };
+      }
+
+      if (!('bool' in Type.Kinds(specType))) {
+        return {
+          exp: null,
+          type: ['never', {
+            level: 'error',
+            message: 'Non-bool test case: ' ++ Type.String(specType),
+            pos: left.exp[2],
+            subNotes: [],
+            tags: #['type-error'],
+          }],
+        };
+      }
+
+      if (specType[0] == 'literal') {
+        if (specType[1]) {
+          newCases ++= [
+            ['default', null, left.exp[2]],
+            right.exp,
+          ];
+
+          resType = Type.Union(resType, right.type);
+
+          break;
+        } else {
+          // Don't include unreachable case (TODO: warn?)
+        }
+      } else {
+        newCases ++= [[left.exp, right.exp]];
+        resType = Type.Union(resType, right.type);
+      }
+    }
+
+    cases = newCases;
+
+    if (cases:Length() == 1u64) {
+      [[[leftType, _, _], right]] := cases;
+      if (leftType == 'default') {
+        return {exp: right, type: resType};
+      }
+    }
+
+    return ['switch', {test: test.exp, cases}, pos];
+  }
+
+  if (xType == 'func') {
+    return FunctionAndType(expression);
+  }
+
+  return switch{};
+};
