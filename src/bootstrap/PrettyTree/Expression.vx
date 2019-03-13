@@ -1,5 +1,6 @@
 import @/parser/expressionTypes.vx;
 import @/parser/operatorTypes.vx;
+import @/util/Join.vx;
 
 import ./Block.vx;
 import ./indent.vx;
@@ -68,53 +69,27 @@ func Expression(expression) {
   }
 
   if (type in expressionTypes.container) {
-    if (type == 'array') {
-      if (data:Length() == 0u64) {
-        return ['[]'];
-      }
-
-      return [
+    return switch (type) {
+      'array' => [
         '[' ++
-        (data
-          :map(func(el) => oneLine(Expression(el)))
-          :reduce(func(a, b) => a ++ ', ' ++ b)
-        ) ++
+        Join(', ')(data:map(func(el) => oneLine(Expression(el)))) ++
         ']'
       ];
-    }
 
-    if (type == 'set') {
-      if (data:Length() == 0u64) {
-        return ['#[]'];
-      }
-
-      return [
+      'set' => [
         '#[' ++
-        oneLine(data
-          :map(func(el) => oneLine(Expression(el)))
-          :reduce(func(a, b) => a ++ ', ' ++ b)
-        ) ++
+        Join(', ')(data:map(func(el) => oneLine(Expression(el)))) ++
         ']'
       ];
-    }
 
-    if (type == 'object') {
-      if (data:Length() == 0u64) {
-        return ['{}'];
-      }
-
-      return [
+      'object' => [
         '{' ++
-        (data
+        Join(', ')(data
           :map(func([key, value]) => key ++ ': ' ++ oneLine(Expression(value)))
-          :reduce(func(a, b) => a ++ ', ' ++ b)
         ) ++
         '}'
       ];
-    }
-
-    assert false;
-    return null;
+    };
   }
 
   if (type in expressionTypes.nameAccess) {
