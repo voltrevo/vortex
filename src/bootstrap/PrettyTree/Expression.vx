@@ -153,13 +153,11 @@ func Expression(expression) {
       topLine ++= ' ' ++ name[1];
     }
 
-    topLine ++= '(';
-
-    for (arg of args) {
-      topLine ++= oneLine(Expression(arg));
-    }
-
-    topLine ++= ')';
+    topLine ++= (
+      '(' ++
+      Join(', ')(args:map(func(a) => oneLine(Expression(a)))) ++
+      ')'
+    );
 
     [bodyType, bodyData, _] := body;
 
