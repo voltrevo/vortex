@@ -526,6 +526,11 @@ func Eval(op, inputs) {
           }],
         };
       }
+
+      return {
+        inputs: [left, right],
+        output: ['kinds', sharedKinds],
+      };
     }
 
     if (left[0] == 'never') {
