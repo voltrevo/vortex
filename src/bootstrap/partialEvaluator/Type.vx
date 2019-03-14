@@ -431,7 +431,7 @@ return {
           return ['never', null];
         }
 
-        for (i := 0; i < typeLiteral[1]:Length(); i++) {
+        for (i := 0u64; i < typeLiteral[1]:Length(); i++) {
           elType := Type.Intersection(['literal', typeLiteral[1][i]], typeOther[1][i]);
 
           if (elType[0] == 'never') {
@@ -517,7 +517,7 @@ return {
       return ['array', newTypes];
     }
 
-    assert cats ~ #['set', 'object', 'func'] == #[];
+    assert (cats ~ #['set', 'object', 'func']) == #[];
 
     return ['never', null];
   },
@@ -659,10 +659,13 @@ return {
         return ['array', newData];
       }
 
-      assert (
-        typeA[0] == 'array' &&
-        typeB[0] == 'array'
-      );
+      if (typeA[0] == 'literal') {
+        typeA = Type.DemoteArrayLiteral(typeA);
+      }
+
+      if (typeB[0] == 'literal') {
+        typeB = Type.DemoteArrayLiteral(typeB);
+      }
 
       len := typeA[1]:Length();
 
@@ -678,6 +681,8 @@ return {
         if (subType[0] == 'never') {
           return Type.NeverPath(i, subType);
         }
+
+        newData ++= [subType];
       }
 
       return ['array', newData];
