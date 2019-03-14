@@ -2,12 +2,14 @@ import p from '@/util/parse.vx';
 
 import @/parser/CommaSequence.vx;
 import @/parser/Identifier.vx;
+import @/parser/W.vx;
 
 import ./DeferExpression.vx;
 
 RawSuffix := p.Select([
   p.Transform(
     p.SequenceOne([
+      [W.Optional],
       [p.Exact('.')],
       Identifier,
     ]),
@@ -15,6 +17,7 @@ RawSuffix := p.Select([
   ),
   p.Transform(
     p.SequenceOne([
+      [W.Optional],
       [p.Exact(':')],
       Identifier,
     ]),
@@ -22,6 +25,7 @@ RawSuffix := p.Select([
   ),
   p.Transform(
     p.SequenceOne([
+      [W.Optional],
       [p.Exact('[')],
       DeferExpression,
       [p.Exact(']')],
@@ -30,6 +34,7 @@ RawSuffix := p.Select([
   ),
   p.Transform(
     p.SequenceOne([
+      [W.Optional],
       [p.Exact('(')],
       CommaSequence(DeferExpression),
       [p.Exact(')')],

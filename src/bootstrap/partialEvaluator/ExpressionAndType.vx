@@ -990,7 +990,7 @@ return func ExpressionAndType(expression) {
       }
 
       if (left[0] == 'default') {
-        newCases ++= [left, right.exp];
+        newCases ++= [[left, right.exp]];
         resType = Type.Union(resType, right.type);
 
         // TODO: Errors from unreachable cases might still be valuable. How

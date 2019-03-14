@@ -96,6 +96,14 @@ return {
             ];
           }
 
+          if (typeA[0] == 'literal') {
+            typeA = Type.DemoteArrayLiteral(typeA);
+          }
+
+          if (typeB[0] == 'literal') {
+            typeB = Type.DemoteArrayLiteral(typeB);
+          }
+
           return [
             'array',
             ([typeA[1], typeB[1]]
@@ -256,7 +264,7 @@ return {
 
       newData := {};
 
-      for (key of typeA[1]:Keys()) {
+      for (key of typeA[1]:Keys():Values()) {
         newData[key] := Type.Union(typeA[1][key], typeB[1][key]);
       }
 
@@ -410,7 +418,7 @@ return {
         default =>  [typeB, typeA];
       };
 
-      if (!(typeLiteral[1] in Type.Kinds(typeOther))) {
+      if (!(typeLiteral[1]:Kind() in Type.Kinds(typeOther))) {
         return ['never', null];
       }
 

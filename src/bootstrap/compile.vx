@@ -24,6 +24,7 @@ func addTags(notes, tags) => notes:map(func(note) {
 });
 
 return func(lines) {
+  log.info 'parsing...';
   tree := parse(lines);
   notes := [];
 
@@ -34,6 +35,7 @@ return func(lines) {
     return {notes, tree: null};
   }
 
+  log.info 'validating...';
   validationNotes := addTags(validate(tree), #['validation']);
   notes ++= validationNotes;
 
@@ -41,6 +43,7 @@ return func(lines) {
     return {notes, tree: null};
   }
 
+  log.info 'scope validating...';
   scopeValidationNotes := addTags(scopeValidate(tree), #['scope']);
   notes ++= scopeValidationNotes;
 
@@ -48,6 +51,7 @@ return func(lines) {
     return {notes, tree: null};
   }
 
+  log.info 'partially evaluating...';
   tree = partiallyEvaluate(tree);
   partialEvaluationNotes := addTags(TreeNotes(tree), #['partial-evaluation']);
   notes ++= partialEvaluationNotes;
