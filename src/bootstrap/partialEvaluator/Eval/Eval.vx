@@ -391,13 +391,94 @@ func Eval(op, inputs) {
           return {inputs: [index, index], output: index};
         }
 
-        return {inputs: [container, index], output: container[1]};
       }
 
-      if (container[0] in #['array', 'object', 'literal']) {
-        // TODO: This is unfinished, there are definitely more intersections
-        // available here.
-        return {inputs: [container, index], output: Type.Any};
+      if (containerKind == 'array') {
+        index = Type.Intersection(index, ['kinds', #['i32', 'u64']]);
+
+        if (index[0] == 'never') {
+          return {inputs: [index, index], output: index};
+        }
+
+        if (container[0] == 'array-uniform') {
+          return {inputs: [container, index], output: container[1]};
+        }
+
+        if (container[1]:Length() == 0u64) {
+          // 'array' is a somewhat meaningful possibility but the type algebra
+          // should always narrow a zero-length array into []
+          assert container[0] == 'literal';
+
+          type := ['never', null];
+          return {inputs: [type, type], output: type};
+        }
+
+        if (index[0] != 'literal') {
+          containerArray := switch (container[0]) {
+            'array' => container;
+            'literal' => Type.DemoteArrayLiteral(container);
+          };
+
+          element := containerArray[1]:reduce(Type.Union);
+
+          return {inputs: [container, index], output: element};
+        }
+
+        if (index[1] >= container[1]:Length()) {
+          type := ['never', null];
+          return {inputs: [type, type], output: type};
+        }
+
+        return {
+          inputs: [container, index],
+          output: switch (container[0]) {
+            'array' => container[1][index[1]];
+            'literal' => ['literal', container[1][index[1]]];
+          },
+        };
+      }
+
+      if (containerKind == 'object') {
+        index = Type.Intersection(index, ['kinds', #['string']]);
+
+        if (index[0] == 'never') {
+          return {inputs: [index, index], output: index};
+        }
+
+        keys := container[1]:Keys();
+
+        if (keys == #[]) {
+          // 'object' is a somewhat meaningful possibility but the type algebra
+          // should always narrow an empty object into {}
+          assert container[0] == 'literal';
+
+          type := ['never', null];
+          return {inputs: [type, type], output: type};
+        }
+
+        if (index[0] != 'literal') {
+          containerObject := switch (container[0]) {
+            'object' => container;
+            'literal' => Type.DemoteObjectLiteral(container);
+          };
+
+          element := containerObject[1]:Values():reduce(Type.Union);
+
+          return {inputs: [container, index], output: element};
+        }
+
+        if (!(index[1] in keys)) {
+          type := ['never', null];
+          return {inputs: [type, type], output: type};
+        }
+
+        return {
+          inputs: [container, index],
+          output: switch (container[0]) {
+            'object' => container[1][index[1]];
+            'literal' => ['literal', container[1][index[1]]];
+          },
+        };
       }
 
       return switch{};
