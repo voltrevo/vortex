@@ -114,7 +114,14 @@ return {
         }
 
         if (sameKind == 'set') {
-          return ['set', (typeA[1] | typeB[1]):Values():reduce(Type.Union)];
+          return [
+            'set',
+            ((typeA[1] | typeB[1])
+              :Values()
+              :map(func(v) => ['literal', v])
+              :reduce(Type.Union)
+            ),
+          ];
         }
 
         if (sameKind == 'object') {
