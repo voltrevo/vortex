@@ -484,8 +484,93 @@ func Eval(op, inputs) {
       return switch{};
     }
 
-    // TODO: '**', '*', '/', '%', '<<', '>>', '~', '&', '^', '|'
-    return {inputs, output: Type.Any};
+    [leftAllowedKinds, rightAllowedKinds] := switch {
+      (op == '**') => [kinds.float, kinds.float];
+      (op == '*') => [kinds.arithmetic, kinds.arithmetic];
+      (op == '/') => [kinds.arithmetic, kinds.number];
+      (op == '%') => [kinds.number, kinds.number];
+      (op in #['<<', '>>']) => [kinds.integer, kinds.integer];
+
+      (op in #['~', '&', '^', '|']) => [
+        kinds.integer | #['set'],
+        kinds.integer | #['set'],
+      ];
+    };
+
+    [left, right] := inputs;
+
+    left = Type.Intersection(left, ['kinds', leftAllowedKinds]);
+    right = Type.Intersection(right, ['kinds', rightAllowedKinds]);
+
+    if (op in #['**', '%', '<<', '>>', '~', '&', '^', '|']) {
+      // TODO: ** should include possibility of exponentiation by squaring
+
+      sharedKinds := Type.Kinds(left) & Type.Kinds(right);
+
+      if (sharedKinds == #[]) {
+        type := ['never', null];
+        return {inputs: [type, type], output: type};
+      }
+
+      if (#[left[0], right[0]] == #['literal']) {
+        return {
+          inputs: [left, right],
+          output: ['literal', switch (op) {
+            '**' => left[1] ** right[1];
+            '%' => left[1] % right[1];
+            '<<' => left[1] << right[1];
+            '>>' => left[1] >> right[1];
+            '~' => left[1] ~ right[1];
+            '&' => left[1] & right[1];
+            '^' => left[1] ^ right[1];
+          }],
+        };
+      }
+    }
+
+    if (left[0] == 'never') {
+      return {inputs: [left, left], output: left};
+    }
+
+    if (right[0] == 'never') {
+      return {inputs: [right, right], output: right};
+    }
+
+    assert op in #['*', '/'];
+
+    if (
+      op == '/' ||
+      (op == '*' && ((Type.Kinds(right) ~ kinds.number) == #[]))
+    ) {
+      left = Type.IntersectKindsDeep(
+        left,
+        Type.Kinds(right) | #['object', 'array'],
+      );
+
+      if (left[0] == 'never') {
+        return {inputs: [left, left], output: left};
+      }
+
+      if (left[0] == 'literal' && right[0] == 'literal') {
+        return {
+          inputs: [left, right],
+          output: ['literal', switch (op) {
+            '/' => left[1] / right[1];
+            '*' => left[1] * right[1];
+          }],
+        };
+      }
+
+      // TODO: Partial literals
+
+      return {inputs: [left, right], output: Type.Shape(left)};
+    }
+
+    if (op == '*') {
+      // TODO: Dimensions checking etc, lots to do here but leaving it until
+      // later
+      return {inputs: [left, right], output: ['kinds', Type.Kinds(left)]};
+    }
   }
 
   return switch{};

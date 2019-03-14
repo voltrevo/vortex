@@ -31,6 +31,36 @@ kinds := {
     'f32',
     'f64',
   ],
+
+  integer: #[
+    'u8',
+    'u16',
+    'u32',
+    'u64',
+    'i8',
+    'i16',
+    'i32',
+    'i64',
+  ],
+
+  unsignedInteger: #[
+    'u8',
+    'u16',
+    'u32',
+    'u64',
+  ],
+
+  signedInteger: #[
+    'i8',
+    'i16',
+    'i32',
+    'i64',
+  ],
+
+  float: #[
+    'f32',
+    'f64',
+  ],
 };
 
 kinds.arithmetic := kinds.number | #['array', 'object'];
