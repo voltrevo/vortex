@@ -43,6 +43,8 @@ func ReturnAnalysis([_, statements, pos]) {
           level: 'error',
           message: 'if statement lacks else clause needed to guarantee return',
           pos: tail[2],
+          subnotes: [],
+          tags: #['control-flow', 'return-analysis', 'no-else-for-return'],
         }];
 
         'block' => ReturnAnalysis(tail);
