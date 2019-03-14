@@ -521,17 +521,17 @@ return func ExpressionAndType(expression) {
         }
 
         func KeyType() {
-          res := #[];
+          keyKinds := #[];
 
           if ('array' in baseKinds) {
-            res |= #['u64'];
+            keyKinds |= #['u64'];
           }
 
           if ('object' in baseKinds) {
-            res |= #['string'];
+            keyKinds |= #['string'];
           }
 
-          return res;
+          return ['kinds', keyKinds];
         };
 
         if (name == 'Keys') {
@@ -549,7 +549,7 @@ return func ExpressionAndType(expression) {
             exp: ['methodLookup', [base.exp, name], pos],
             type: ['func', {
               args: [],
-              output: KeyType(),
+              output: ['set', KeyType()],
             }],
           };
         }
