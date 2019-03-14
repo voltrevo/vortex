@@ -1042,10 +1042,10 @@ return func ExpressionAndType(expression) {
 
       if (specType[0] == 'literal') {
         if (specType[1]) {
-          newCases ++= [
+          newCases ++= [[
             ['default', null, left.exp[2]],
             right.exp,
-          ];
+          ]];
 
           resType = Type.Union(resType, right.type);
 
