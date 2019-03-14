@@ -445,6 +445,17 @@ return func ExpressionAndType(expression) {
       };
 
       if (name == 'Kind') {
+        baseKindsValues := baseKinds:Values();
+
+        if (baseKindsValues:Length() == 1u64) {
+          [kind] := baseKindsValues;
+
+          return {
+            exp: ['methodLookup', [base.exp, name], pos],
+            type: ['func', {args: [], output: ['literal', kind]}],
+          };
+        }
+
         return {
           exp: ['methodLookup', [base.exp, name], pos],
           type: ['func', {args: [], output: ['kinds', #['string']]}],
@@ -487,11 +498,18 @@ return func ExpressionAndType(expression) {
           return BadMethod();
         }
 
-        // TODO: more return type inference
-
         return {
           exp: ['methodLookup', [base.exp, name], pos],
-          type: ['func', {args: [], output: ['kinds', #['u64']]}],
+          type: ['func', {
+            args: [],
+            output: switch {
+              (base.type[0] in #['array', 'literal']) => (
+                ['literal', base.type[1]:Length()]
+              );
+
+              default => ['kinds', #['u64']];
+            },
+          }],
         };
       }
 
@@ -502,17 +520,104 @@ return func ExpressionAndType(expression) {
           return BadMethod();
         }
 
-        // TODO: more return type inference
+        func KeyType() {
+          res := #[];
 
-        outputKind := switch (name) {
-          'Keys' => 'set';
-          default => 'array';
+          if ('array' in baseKinds) {
+            res |= #['u64'];
+          }
+
+          if ('object' in baseKinds) {
+            res |= #['string'];
+          }
+
+          return res;
         };
 
-        return {
-          exp: ['methodLookup', [base.exp, name], pos],
-          type: ['func', {args: [], output: ['kinds', #[outputKind]]}],
-        };
+        if (name == 'Keys') {
+          if (base.type[0] in #['array', 'object', 'literal']) {
+            return {
+              exp: ['methodLookup', [base.exp, name], pos],
+              type: ['func', {
+                args: [],
+                output: ['literal', base.type[1]:Keys()],
+              }],
+            };
+          }
+
+          return {
+            exp: ['methodLookup', [base.exp, name], pos],
+            type: ['func', {
+              args: [],
+              output: KeyType(),
+            }],
+          };
+        }
+
+        if (name == 'Entries') {
+          output := switch {
+            (base.type[0] in #['literal']) => (
+              ['literal', base.type[1]:Entries()]
+            );
+
+            (base.type[0] in #['array', 'object']) => (
+              ['array',
+                base.type[1]:Entries():map(func([key, valueType]) => (
+                  switch (valueType[0]) {
+                    'literal' => ['literal', [key, valueType[1]]];
+
+                    default => ['array', [
+                      ['literal', key],
+                      valueType,
+                    ]];
+                  }
+                )),
+              ]
+            );
+
+            (base.type[0] in #['array-uniform']) => (
+              ['array-uniform',
+                ['array', [
+                  ['kinds', #['u64']],
+                  [base.type[1]],
+                ]],
+              ]
+            );
+
+            (base.type[0] in #['kinds']) => (
+              ['array-uniform', ['array', [KeyType(), Type.Any]]]
+            );
+          };
+
+          return {
+            exp: ['methodLookup', [base.exp, name], pos],
+            type: ['func', {args: [], output}],
+          };
+        }
+
+        if (name == 'Row') {
+          return {
+            exp: ['methodLookup', [base.exp, name], pos],
+            type: ['func', {
+              args: [],
+              output: switch (base.type[0]) {
+                'literal' => ['literal', [base.type[1]]];
+                default => ['array', [base.type]];
+              },
+            }],
+          };
+        }
+
+        if (name in #['Column', 'Transpose']) {
+          // TODO: more return type inference
+
+          return {
+            exp: ['methodLookup', [base.exp, name], pos],
+            type: ['func', {args: [], output: ['kinds', #['array', 'object']]}],
+          };
+        }
+
+        return switch{};
       }
 
       if (name == 'Values') {
@@ -520,12 +625,41 @@ return func ExpressionAndType(expression) {
           return BadMethod();
         }
 
-        // TODO: more return type inference
+        if (base.type[0] == 'kinds') {
+          return {
+            exp: ['methodLookup', [base.exp, name], pos],
+            type: ['func', {args: [], output: ['kinds', #['array']]}],
+          };
+        }
 
-        return {
-          exp: ['methodLookup', [base.exp, name], pos],
-          type: ['func', {args: [], output: ['kinds', #['array']]}],
-        };
+        if (base.type[0] == 'array') {
+          return {
+            exp: ['methodLookup', [base.exp, name], pos],
+            type: ['func', {args: [], output: base.type}],
+          };
+        }
+
+        if (base.type[0] == 'object') {
+          return {
+            exp: ['methodLookup', [base.exp, name], pos],
+            type: ['func', {
+              args: [],
+              output: ['array', base.type[1]:Values()],
+            }],
+          };
+        }
+
+        if (base.type[0] in #['array-uniform', 'set']) {
+          return {
+            exp: ['methodLookup', [base.exp, name], pos],
+            type: ['func', {
+              args: [],
+              output: ['array-uniform', base.type[1]],
+            }],
+          };
+        }
+
+        return switch{};
       }
 
       if (name in #['Front', 'Back', 'map', 'reduce']) {
@@ -534,6 +668,15 @@ return func ExpressionAndType(expression) {
         }
 
         // TODO: more return type inference
+
+        return {
+          exp: ['methodLookup', [base.exp, name], pos],
+          type: Type.Any,
+        };
+      }
+
+      if (name == 'bind') {
+        // TODO
 
         return {
           exp: ['methodLookup', [base.exp, name], pos],
