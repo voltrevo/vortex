@@ -165,7 +165,7 @@ return func ExpressionAndType(expression) {
               }
             ),
             pos,
-            subNotes: [],
+            subnotes: [],
             tags: #['type-error'],
           }],
         };
@@ -207,7 +207,7 @@ return func ExpressionAndType(expression) {
               Type.String(target.type)
             ),
             pos,
-            subNotes: [],
+            subnotes: [],
             tags: #['type-error'],
           }],
         };
@@ -252,7 +252,7 @@ return func ExpressionAndType(expression) {
             Type.String(right.type)
           ),
           pos,
-          subNotes: [],
+          subnotes: [],
           tags: #['type-error'],
         }],
       };
@@ -324,7 +324,7 @@ return func ExpressionAndType(expression) {
               level: 'error',
               message: 'Invalid set element type: ' ++ Type.String(type),
               pos: exp[2],
-              subNotes: [],
+              subnotes: [],
               tags: #['type-error'],
             }],
           };
@@ -411,7 +411,7 @@ return func ExpressionAndType(expression) {
               Type.String(base.type)
             ),
             pos,
-            subNotes: [],
+            subnotes: [],
             tags: #['type-error'],
           }],
         };
@@ -439,7 +439,7 @@ return func ExpressionAndType(expression) {
             name
           ),
           pos,
-          subNotes: [],
+          subnotes: [],
           tags: #['type-error'],
         }],
       };
@@ -667,21 +667,293 @@ return func ExpressionAndType(expression) {
           return BadMethod();
         }
 
-        // TODO: more return type inference
+        if (name in #['Front', 'Back']) {
+          if (base.type[0] == 'kinds') {
+            return {
+              exp: ['methodLookup', [base.exp, name], pos],
+              type: ['func', {
+                args: [],
+                output: Type.Any,
+              }],
+            };
+          }
 
-        return {
-          exp: ['methodLookup', [base.exp, name], pos],
-          type: Type.Any,
-        };
+          if (base.type[0] == 'array') {
+            return {
+              exp: ['methodLookup', [base.exp, name], pos],
+              type: ['func', {
+                args: [],
+                output: switch (name) {
+                  'Front' => base.type[1]:Front();
+                  'Back' => base.type[1]:Back();
+                },
+              }],
+            };
+          }
+
+          if (base.type[0] == 'array-uniform') {
+            return {
+              exp: ['methodLookup', [base.exp, name], pos],
+              type: ['func', {
+                args: [],
+                output: base.type[1],
+              }],
+            };
+          }
+
+          if (base.type[0] == 'literal') {
+            if (base.type[1]:Length() == 0u64) {
+              return {
+                exp: ['methodLookup', [base.exp, name], pos],
+                type: ['func', {
+                  args: [],
+                  output: ['never', {
+                    level: 'error',
+                    message: 'Can\'t access :' ++ name ++ '() of empty array',
+                    pos,
+                    subnotes: [],
+                    tags: #['type-error'],
+                  }],
+                }],
+              };
+            }
+
+            return {
+              exp: ['methodLookup', [base.exp, name], pos],
+              type: ['func', {
+                args: [],
+                output: switch (name) {
+                  'Front' => base.type[1]:Front();
+                  'Back' => base.type[1]:Back();
+                },
+              }],
+            };
+          }
+
+          return switch{};
+        }
+
+        if (name == 'map') {
+          // TODO: Element typing of the array output depends on the mapper
+          // function passed in, which is inaccessible from here and requires
+          // more context. It might be worth specializing on :map() expressions
+          // rather than simply :map being done here, which doesn't necessarily
+          // know that it's going to be immediately called.
+
+          if (base.type[0] == 'kinds') {
+            return {
+              exp: ['methodLookup', [base.exp, name], pos],
+              type: ['func', {
+                args: [['func', {
+                  args: [Type.Any],
+                  output: Type.Any,
+                }]],
+                output: ['kinds', #['array']],
+              }],
+            };
+          }
+
+          if (base.type[0] in #['array', 'literal']) {
+            if (base.type[1]:Length() == 0u64) {
+              return {
+                exp: ['methodLookup', [base.exp, name], pos],
+                type: ['func', {
+                  args: [['func', {
+                    args: [Type.Any],
+                    output: Type.Any,
+                  }]],
+                  output: ['literal', []],
+                }],
+              };
+            }
+
+            elType := switch (base.type[0]) {
+              'array' => base.type[1]:reduce(Type.Union);
+
+              'literal' => (base.type[1]
+                :map(func(v) => ['literal', v])
+                :reduce(Type.Union)
+              );
+            };
+
+            return {
+              exp: ['methodLookup', [base.exp, name], pos],
+              type: ['func', {
+                args: [['func', {
+                  args: [elType],
+                  output: Type.Any,
+                }]],
+                output: ['array', base.type[1]:map(func(_) => Type.Any)],
+              }],
+            };
+          }
+
+          if (base.type[0] == 'array-uniform') {
+            return {
+              exp: ['methodLookup', [base.exp, name], pos],
+              type: ['func', {
+                args: [['func', {
+                  args: [base.type[1]],
+                  output: Type.Any,
+                }]],
+                output: ['array-uniform', Type.Any],
+              }],
+            };
+          }
+
+          return switch{};
+        }
+
+        if (name == 'reduce') {
+          // TODO: Similar to :map, it might be worth specializing on
+          // :reduce().
+
+          if (base.type[0] == 'kinds') {
+            return {
+              exp: ['methodLookup', [base.exp, name], pos],
+              type: ['func', {
+                args: [['func', {
+                  args: [Type.Any, Type.Any],
+                  output: Type.Any,
+                }]],
+                output: Type.Any,
+              }],
+            };
+          }
+
+          if (base.type[0] in #['array', 'literal']) {
+            if (base.type[1]:Length() == 0u64) {
+              return {
+                exp: ['methodLookup', [base.exp, name], pos],
+                type: ['func', {
+                  args: [['func', {
+                    args: [Type.Any, Type.Any],
+                    output: Type.Any,
+                  }]],
+                  output: ['never', {
+                    level: 'error',
+                    message: 'Can\'t :reduce on an empty array',
+                    pos,
+                    subnotes: [],
+                    tags: #['type-error'],
+                  }],
+                }],
+              };
+            }
+
+            elType := switch (base.type[0]) {
+              'array' => base.type[1]:reduce(Type.Union);
+
+              'literal' => (base.type[1]
+                :map(func(v) => ['literal', v])
+                :reduce(Type.Union)
+              );
+            };
+
+            if (base.type[1]:Length() == 1u64) {
+              return {
+                exp: ['methodLookup', [base.exp, name], pos],
+                type: ['func', {
+                  args: [['func', {
+                    // TODO: Is the reducer actually required to accept elType
+                    // if it's already just one value and the reducer never
+                    // actually gets called? This is also relevant to the
+                    // array-uniform case!
+                    args: [elType, elType],
+                    output: Type.Any,
+                  }]],
+                  output: elType,
+                }],
+              };
+            }
+
+            return {
+              exp: ['methodLookup', [base.exp, name], pos],
+              type: ['func', {
+                args: [['func', {
+                  args: [elType, elType],
+                  output: Type.Any,
+                }]],
+                output: Type.Any,
+              }],
+            };
+          }
+
+          if (base.type[0] == 'array-uniform') {
+            return {
+              exp: ['methodLookup', [base.exp, name], pos],
+              type: ['func', {
+                args: [['func', {
+                  args: [base.type[1], base.type[1]],
+                  output: Type.Any,
+                }]],
+                output: Type.Any,
+              }],
+            };
+          }
+
+          return switch{};
+        }
+
+        return switch{};
       }
 
       if (name == 'bind') {
-        // TODO
+        if (!('func' in baseKinds)) {
+          return BadMethod();
+        }
 
-        return {
-          exp: ['methodLookup', [base.exp, name], pos],
-          type: Type.Any,
-        };
+        if (base.type[0] == 'kinds') {
+          return {
+            exp: ['methodLookup', [base.exp, name], pos],
+            type: ['func', {
+              args: [Type.Any],
+              output: ['kinds', #['func']],
+            }],
+          };
+        }
+
+        if (base.type[0] == 'func') {
+          if (base.type[1].args:Length() == 0u64) {
+            output := ['never', {
+              level: 'error',
+              message: (
+                'Can\'t bind function that doesn\'t take any arguments: ' ++
+                Type.String(base.type)
+              ),
+              pos,
+              subnotes: [],
+              tags: #['type-error'],
+            }];
+
+            return {
+              exp: ['methodLookup', [base.exp, name], pos],
+              type: ['func', {args: [output], output}],
+            };
+          }
+
+          args := [base.type[1].args[0]];
+
+          nextArgs := [];
+
+          // TODO: Really need to add slice operations
+          for (i := 1u64; i < base.type[1].args:Length(); i++) {
+            nextArgs ++= [base.type[1].args[i]];
+          }
+
+          return {
+            exp: ['methodLookup', [base.exp, name], pos],
+            type: ['func', {
+              args,
+              output: ['func', {
+                args: nextArgs,
+                output: base.type[1].output,
+              }],
+            }],
+          };
+        }
+
+        return switch{};
       }
 
       return BadMethod();
@@ -749,7 +1021,7 @@ return func ExpressionAndType(expression) {
               Type.String(left.type)
             ),
             pos: left.exp[2],
-            subNotes: [],
+            subnotes: [],
             tags: #['type-error'],
           }],
         };
@@ -762,7 +1034,7 @@ return func ExpressionAndType(expression) {
             level: 'error',
             message: 'Non-bool test case: ' ++ Type.String(specType),
             pos: left.exp[2],
-            subNotes: [],
+            subnotes: [],
             tags: #['type-error'],
           }],
         };
