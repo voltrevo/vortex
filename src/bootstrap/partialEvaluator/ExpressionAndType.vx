@@ -171,6 +171,13 @@ return func ExpressionAndType(expression) {
         };
       }
 
+      if (resType[0] == 'literal') {
+        return {
+          exp: ['literal', resType[1], pos],
+          type: resType,
+        };
+      }
+
       for (i := 0u64; i < args:Length(); i++) {
         if (args[i].type[0] == 'literal') {
           args[i].exp = ['literal', args[i].type[1], args[i].exp[2]];
@@ -447,6 +454,16 @@ return func ExpressionAndType(expression) {
       if (name == 'String') {
         if (baseKinds == #['func']) {
           return BadMethod();
+        }
+
+        if (base.type[0] == 'literal') {
+          return {
+            exp: ['methodLookup', [base.exp, name], pos],
+            type: ['func', {
+              args: [],
+              output: ['literal', base.type[1]:String()]
+            }],
+          };
         }
 
         hasFunc := (
