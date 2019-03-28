@@ -1,5 +1,3 @@
-#include <cassert>
-
 #include <immer/flex_vector_transient.hpp>
 
 #include "Array.hpp"
@@ -23,7 +21,7 @@ namespace Vortex {
         throw InternalError("Should not be here with NONE");
 
       case BuiltInMethod::LENGTH: {
-        assert(!machine.calc.empty());
+        Assert(!machine.calc.empty());
         auto& base = machine.calc.back();
 
         switch (base.type) {
@@ -36,7 +34,7 @@ namespace Vortex {
       }
 
       case BuiltInMethod::KEYS: {
-        assert(!machine.calc.empty());
+        Assert(!machine.calc.empty());
         auto& base = machine.calc.back();
 
         switch (base.type) {
@@ -64,7 +62,7 @@ namespace Vortex {
       }
 
       case BuiltInMethod::VALUES: {
-        assert(!machine.calc.empty());
+        Assert(!machine.calc.empty());
         auto& base = machine.calc.back();
 
         switch (base.type) {
@@ -89,7 +87,7 @@ namespace Vortex {
       }
 
       case BuiltInMethod::ENTRIES: {
-        assert(!machine.calc.empty());
+        Assert(!machine.calc.empty());
         auto& base = machine.calc.back();
 
         switch (base.type) {
@@ -131,7 +129,7 @@ namespace Vortex {
       }
 
       case BuiltInMethod::STRING: {
-        assert(!machine.calc.empty());
+        Assert(!machine.calc.empty());
         auto& base = machine.calc.back();
 
         base = Value(new String(toString(base)));
@@ -139,7 +137,7 @@ namespace Vortex {
       }
 
       case BuiltInMethod::KIND: {
-        assert(!machine.calc.empty());
+        Assert(!machine.calc.empty());
         auto& base = machine.calc.back();
 
         switch (base.type) {
@@ -232,7 +230,7 @@ namespace Vortex {
       }
 
       case BuiltInMethod::FRONT: {
-        assert(!machine.calc.empty());
+        Assert(!machine.calc.empty());
         auto& base = machine.calc.back();
 
         if (base.type != ARRAY) {
@@ -244,7 +242,7 @@ namespace Vortex {
       }
 
       case BuiltInMethod::BACK: {
-        assert(!machine.calc.empty());
+        Assert(!machine.calc.empty());
         auto& base = machine.calc.back();
 
         if (base.type != ARRAY) {
@@ -256,7 +254,7 @@ namespace Vortex {
       }
 
       case BuiltInMethod::ROW: {
-        assert(!machine.calc.empty());
+        Assert(!machine.calc.empty());
         auto& base = machine.calc.back();
 
         if (base.type != ARRAY && base.type != OBJECT) {
@@ -268,7 +266,7 @@ namespace Vortex {
       }
 
       case BuiltInMethod::COLUMN: {
-        assert(!machine.calc.empty());
+        Assert(!machine.calc.empty());
         auto& base = machine.calc.back();
 
         switch (base.type) {
@@ -291,7 +289,7 @@ namespace Vortex {
         // TODO: Previously transpose failed on method lookup, but in many
         // cases here we're failing when called instead.
 
-        assert(!machine.calc.empty());
+        Assert(!machine.calc.empty());
         auto& base = machine.calc.back();
 
         switch (base.type) {

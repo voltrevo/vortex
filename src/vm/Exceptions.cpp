@@ -18,4 +18,10 @@ namespace Vortex {
   Error BadIndexError(std::string desc) { return Error(Error::BadIndex, std::move(desc)); }
   Error SyntaxError(std::string desc) { return Error(Error::Syntax, std::move(desc)); }
   Error ModuleError(std::string desc) { return Error(Error::Module, std::move(desc)); }
+
+  void Assert(bool exp) {
+    if (!exp) {
+      throw InternalError("VM assertion failed");
+    }
+  }
 }

@@ -1,6 +1,5 @@
 #pragma once
 
-#include <cassert>
 #include <deque>
 #include <iostream>
 #include <vector>
@@ -74,7 +73,7 @@ namespace Vortex {
       }
 
       MFunc& mfunc = mfuncs[i];
-      assert(mfunc.code.func.def.size() > 0ul);
+      Assert(mfunc.code.func.def.size() > 0ul);
 
       if (mfunc.entered && !mfunc.completed) {
         throw ModuleError("Infinite mfunc loop");
@@ -109,14 +108,14 @@ namespace Vortex {
     void push(Value v) { calc.push_back(std::move(v)); }
 
     Value pop() {
-      assert(!calc.empty());
+      Assert(!calc.empty());
       auto v = std::move(calc.back());
       calc.pop_back();
       return v;
     }
 
     std::pair<Value*, Value*> BackPair() {
-      assert(calc.size() >= 2);
+      Assert(calc.size() >= 2);
       auto iter = calc.end();
       Value* right = &*(--iter);
       Value* left = &*(--iter);
@@ -229,7 +228,7 @@ namespace Vortex {
             }
 
             case TERNARY_OPERATOR: {
-              assert(calc.size() >= 3);
+              Assert(calc.size() >= 3);
               auto iter = calc.end();
               Value* right = &*(--iter);
               Value* middle = &*(--iter);

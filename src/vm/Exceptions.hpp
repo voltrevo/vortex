@@ -1,6 +1,5 @@
 #pragma once
 
-#include <cassert>
 #include <exception>
 #include <sstream>
 
@@ -45,4 +44,6 @@ namespace Vortex {
   Error BadIndexError(std::string desc);
   Error SyntaxError(std::string desc);
   Error ModuleError(std::string desc);
+
+  void Assert(bool exp);
 }

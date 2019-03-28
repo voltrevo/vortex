@@ -1,5 +1,4 @@
 #include <algorithm>
-#include <cassert>
 #include <cmath>
 #include <map>
 #include <string>
@@ -40,7 +39,7 @@ namespace Vortex {
   }
 
   void Value::dealloc() {
-    assert(GetClass(type) == TOP_TYPE || type == INVALID);
+    Assert(GetClass(type) == TOP_TYPE || type == INVALID);
 
     if (type == ARRAY) {
       delete data.ARRAY;
@@ -158,7 +157,7 @@ namespace Vortex {
   }
 
   void Value::copyConstruct(const Value& other) {
-    assert(other.type != INVALID);
+    Assert(other.type != INVALID);
     type = other.type;
 
     if (other.type == STRING) {
