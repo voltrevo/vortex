@@ -55,7 +55,7 @@ func Expression(expression) {
       subExps ++= [test];
     }
 
-    if (subExps:Length() > 0u64) {
+    if (cases:Length() > 0u64) {
       subExps ++= cases:reduce(++);
     }
   } else if (type in #['import', 'default', 'literal', 'identifier', 'op', 'note']) {
