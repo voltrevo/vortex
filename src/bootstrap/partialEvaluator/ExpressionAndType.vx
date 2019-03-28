@@ -8,7 +8,7 @@ import ./FunctionAndType.vx;
 import ./Scope.vx;
 import ./Type.vx;
 
-return func ExpressionAndType(scope, expression) {
+func ExpressionAndType(scope, expression) {
   [xType, data, pos] := expression;
 
   if (xType == 'literal') {
@@ -62,7 +62,7 @@ return func ExpressionAndType(scope, expression) {
 
         targetName := target[1];
 
-        targetType := Scope.lookup(scope, targetName, Type.Any);
+        targetType := Scope.lookup(scope, targetName);
 
         if (targetType in #[null]) {
           // TODO: This should become unnecessary with full scope tracking
@@ -105,76 +105,53 @@ return func ExpressionAndType(scope, expression) {
         };
       }
 
-      target := data[0];
-      scopeCapture := scope;
-      [left, right] := data:map(func(sub) => ExpressionAndType(scopeCapture, sub));
+      [left, right] := data;
 
-      if (left.type[0] == 'never') {
-        return left;
+      {scope, target: left} = MutationTarget(scope, left);
+
+      if (xType in operatorTypes.compound) {
+        op := switch (xType) {
+          '**=' => '**';
+          '+=' => '+';
+          '++=' => '++';
+          '-=' => '-';
+          '*=' => '*';
+          '/=' => '/';
+          '%=' => '%';
+          '<<=' => '<<';
+          '>>=' => '>>';
+          '&=' => '&';
+          '|=' => '|';
+          '^=' => '^';
+          '&&=' => '&&';
+          '||=' => '||';
+          '~=' => '~';
+        };
+
+        right = [op, [left, right], right[2]];
+        xType = '=';
       }
+
+      right = ExpressionAndType(scope, right);
 
       if (right.type[0] == 'never') {
         return right;
       }
 
-      if (xType in #[':=', '=']) {
-        // TODO: Destructure type checking
-        return {
-          scope,
-          expression: [xType, [target, right.expression], pos],
-          type: ['na', null],
-        };
-      }
+      scope = right.scope;
 
-      assert target[0] != 'literal';
-
-      op := switch (xType) {
-        '**=' => '**';
-        '+=' => '+';
-        '++=' => '++';
-        '-=' => '-';
-        '*=' => '*';
-        '/=' => '/';
-        '%=' => '%';
-        '<<=' => '<<';
-        '>>=' => '>>';
-        '&=' => '&';
-        '|=' => '|';
-        '^=' => '^';
-        '&&=' => '&&';
-        '||=' => '||';
-        '~=' => '~';
-      };
-
-      resType := Eval(op, [left.type, right.type]).output;
-
-      if (resType[0] == 'never') {
-        return {
-          scope,
-          expression: null,
-          type: ['never', {
-            level: 'error',
-            message: (
-              'Invalid operands of ' ++
-              xType ++
-              ': left is ' ++
-              Type.String(left.type) ++
-              ', right is ' ++
-              Type.String(right.type)
-            ),
-            pos,
-            subnotes: [],
-            tags: #['type-error'],
-          }],
-        };
-      }
-
-      // TODO: Scope update for lhs -> resType
+      notes := null;
+      {scope, notes} = Mutate(scope, xType, left, right.type);
 
       return {
         scope,
-        expression: [xType, [target, right.expression], pos],
-        type: ['na', null],
+        expression: switch (notes:Length()) {
+          0u64 => [xType, [left, right.expression], pos];
+
+          // TODO: Inventing an array here to emit multiple notes isn't great
+          default => ['array', notes, pos];
+        },
+        type: null,
       };
     }
 
@@ -340,7 +317,8 @@ return func ExpressionAndType(scope, expression) {
 
       // TODO: fix incorrect unused warning
       for ([i, [key, value]] of data:Entries()) {
-        {expression: exp, type} := ExpressionAndType(scope, value);
+        {scope: scopeNext, expression: exp, type} := ExpressionAndType(scope, value);
+        scope = scopeNext;
 
         if (type[0] == 'never') {
           return {scope, expression: null, type};
@@ -1189,3 +1167,255 @@ return func ExpressionAndType(scope, expression) {
 
   return switch{};
 };
+
+func Mutate(scope, xType, target, srcType) {
+  if (target[0] in #['array', 'object']) {
+    notes := [];
+
+    for ([key, subTarget] of target[1]:Entries()) {
+      subSrcType := Eval('subscript', [srcType, ['literal', key]]);
+      subNotes := [];
+
+      {scope, notes: subNotes} = Mutate(
+        scope,
+        xType,
+        subTarget,
+        subSrcType,
+      );
+
+      notes ++= subNotes;
+    }
+
+    return {scope, notes};
+  }
+
+  if (target[0] == 'identifier') {
+    return {
+      scope: switch (xType) {
+        ':=' => Scope.add(scope, target[1], srcType);
+        '=' => Scope.update(scope, target[1], srcType);
+      },
+      notes: [],
+    };
+  }
+
+  return switch (xType) {
+    '=' => MutateAccess(scope, target, srcType);
+    ':=' => MutateInsert(scope, target, srcType);
+  };
+};
+
+func MutateInsert(scope, target, srcType) {
+  [subTarget, key] := target[1];
+
+  keyType := switch (target[0]) {
+    '.' => ['literal', key[1]];
+    'subscript' => ExpressionAndType(scope, key).type;
+  };
+
+  keyKinds := Type.Kinds(keyType);
+
+  subTargetType := ExpressionAndType(scope, subTarget).type;
+  subTargetKinds := Type.Kinds(subTargetType);
+
+  subTargetTypeCapture := subTargetType;
+
+  func BadInsert() => {
+    scope,
+    notes: [{
+      level: 'error',
+      message: (
+        'Can\'t insert ' ++
+        Type.String(keyType) ++
+        ' into ' ++
+        Type.String(subTargetTypeCapture)
+      ),
+      pos: target[2],
+      subnotes: [],
+      tags: #['mutation', 'subscript', 'insertion'],
+    }],
+  };
+
+  if (!('string' in keyKinds) || !('object' in subTargetKinds)) {
+    return BadInsert();
+  }
+
+  if (!(subTargetType[0] in #['literal', 'object'])) {
+    return {scope, notes: []};
+  }
+
+  if (keyType[0] != 'literal') {
+    return MutateAccess(scope, subTarget, ['kinds', #['object']]);
+  }
+
+  if (keyType[1] in subTarget[1]:Keys()) {
+    return BadInsert();
+  }
+
+  if (subTargetType[0] == 'literal') {
+    if (srcType[0] == 'literal') {
+
+      subTargetType[1][keyType[1]] := srcType[1];
+      return MutateAccess(scope, subTarget, subTargetType);
+    }
+
+    subTargetType = Type.DemoteObjectLiteral(subTargetType);
+  }
+
+  subTargetType[1][keyType[1]] := srcType;
+  return MutateAccess(scope, subTarget, subTargetType);
+};
+
+func MutateAccess(scope, target, srcType) {
+  if (target[0] == 'identifier') {
+    return {
+      scope: Scope.update(scope, target[1], srcType),
+      notes: [],
+    };
+  }
+
+  [subTarget, key] := target[1];
+
+  keyType := switch (target[0]) {
+    '.' => ['literal', key[1]];
+    'subscript' => ExpressionAndType(scope, key).type;
+  };
+
+  keyKinds := Type.Kinds(keyType);
+
+  subTargetType := ExpressionAndType(scope, subTarget).type;
+  subTargetKinds := Type.Kinds(subTargetType);
+
+  allowedSubTargetKinds := #[];
+
+  if ((keyKinds & #['i32', 'u64']) != #[]) {
+    allowedSubTargetKinds |= #['array'];
+  }
+
+  if ('string' in keyKinds) {
+    allowedSubTargetKinds |= #['object'];
+  }
+
+  subTargetTypeCapture := subTargetType;
+
+  func BadSubscript() => {
+    scope,
+    notes: [{
+      level: 'error',
+      message: (
+        'Cannot subscript ' ++
+        Type.String(subTargetTypeCapture) ++
+        ' with ' ++
+        Type.String(keyType)
+      ),
+      pos: target[2],
+      subnotes: [],
+      tags: #['mutation', 'subscript'],
+    }],
+  };
+
+  if ((subTargetKinds & allowedSubTargetKinds) == #[]) {
+    return BadSubscript();
+  }
+
+  if (!(subTargetType[0] in #['literal', 'array', 'array-uniform', 'object'])) {
+    return {scope, notes: []};
+  }
+
+  if (subTargetType[0] == 'array-uniform') {
+    subTargetType[1] = Type.Union(subTargetType[1], srcType);
+    return MutateAccess(scope, subTarget, subTargetType);
+  }
+
+  if (keyType[0] != 'literal') {
+    if (subTargetType[0] == 'literal') {
+      subTargetType = switch (subTargetType[1]:Kind()) {
+        'array' => Type.DemoteArrayLiteral(subTargetType);
+        'object' => Type.DemoteObjectLiteral(subTargetType);
+      };
+    }
+
+    for (k of subTargetType[1]:Keys():Values()) {
+      subTargetType[1][k] = Type.Union(subTargetType[1][k], srcType);
+    }
+
+    return MutateAccess(scope, subTarget, subTargetType);
+  }
+
+  if (!(keyType[1] in subTargetType[1]:Keys())) {
+    return BadSubscript();
+  }
+
+  if (subTargetType[0] == 'literal') {
+    if (srcType[0] == 'literal') {
+      subTargetType[1][keyType[1]] = srcType[1];
+      return MutateAccess(scope, subTarget, subTargetType);
+    }
+
+    subTargetType = switch (subTargetType[1]:Kind()) {
+      'array' => Type.DemoteArrayLiteral(subTargetType);
+      'object' => Type.DemoteObjectLiteral(subTargetType);
+    };
+  }
+
+  subTargetType[1][keyType[1]] = srcType;
+  return MutateAccess(scope, subTarget, subTargetType);
+};
+
+func MutationTarget(scope, target) => switch (target[0]) {
+  'identifier' => {scope, target};
+  'array' => DestructureMutationTarget(scope, target);
+  'object' => DestructureMutationTarget(scope, target);
+  '.' => AccessMutationTarget(scope, target);
+  'subscript' => AccessMutationTarget(scope, target);
+};
+
+func AccessMutationTarget(scope, target) {
+  [type, data, pos] := target;
+
+  assert type in #['.', 'subscript'];
+
+  [subTarget, index] := data;
+
+  if (type == 'subscript') {
+    {scope, expression: index, type: _} = ExpressionAndType(scope, index);
+  } else if (type == '.') {
+    // Nothing to do
+  } else {
+    assert false;
+  }
+
+  {scope, target: subTarget} = MutationTarget(scope, subTarget);
+
+  return {scope, target: [type, [subTarget, index], pos]};
+};
+
+func DestructureMutationTarget(scope, target) {
+  [type, data, pos] := target;
+
+  if (type == 'array') {
+    newData := [];
+
+    for (el of data) {
+      {scope, target: el} = MutationTarget(scope, el);
+      newData ++= [el];
+    }
+
+    return {scope, target: [type, newData, pos]};
+  }
+
+  if (type == 'object') {
+    newData := {};
+
+    for ([key, el] of data:Entries()) {
+      {scope, target: el} = MutationTarget(scope, el);
+      newData[key] := el;
+    }
+
+    return {scope, target: [type, newData, pos]};
+  }
+
+  return switch{};
+};
+
+return ExpressionAndType;

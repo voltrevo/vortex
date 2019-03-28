@@ -4,9 +4,11 @@ return func(scope, expression) {
   type := null;
   {scope, expression, type} = ExpressionAndType(scope, expression);
 
-  if (expression:Kind() == 'null' && type[0] == 'never') {
-    assert type[1]:Kind() != 'null';
-    return {scope, expression: ['note', type[1]]};
+  if (expression:Kind() == 'null' && type:Kind() == 'array') {
+    if (type[0] == 'never') {
+      assert type[1]:Kind() != 'null';
+      return {scope, expression: ['note', type[1]]};
+    }
   }
 
   return {scope, expression};
