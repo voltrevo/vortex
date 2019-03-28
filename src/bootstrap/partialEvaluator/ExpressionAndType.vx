@@ -1184,7 +1184,7 @@ func Mutate(scope, xType, target, srcType) {
     };
 
     for ([key, subTarget] of entries) {
-      subSrcType := Eval('subscript', [srcType, ['literal', key]]);
+      subSrcType := Eval('subscript', [srcType, ['literal', key]]).output;
       subNotes := [];
 
       {scope, notes: subNotes} = Mutate(
