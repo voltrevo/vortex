@@ -30,7 +30,10 @@ return func(scope, [type, statements, pos]) {
 
   for (statement of nonHoists) {
     {scope, statement} = Statement(scope, statement);
-    newStatements ++= [statement];
+
+    if (!(statement in #[null])) {
+      newStatements ++= [statement];
+    }
 
     if (statement[0] in #['break', 'continue', 'return']) {
       break;

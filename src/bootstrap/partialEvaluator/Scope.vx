@@ -32,14 +32,14 @@ return {
     return default_;
   },
 
-  update: func(scope, name, data) {
-    if (name in scope.variables:Keys()) {
-      scope.variables[name] = data;
+  update: func({parent, variables}, name, data) {
+    if (name in variables:Keys()) {
+      variables[name] = data;
     } else {
-      scope.variables[name] := data;
+      parent = Scope.update(parent, name, data);
     }
 
-    return scope;
+    return {parent, variables};
   },
 
   push: func(scope) => { parent: scope, variables: {} },

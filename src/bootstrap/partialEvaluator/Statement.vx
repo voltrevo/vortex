@@ -32,26 +32,37 @@ func Statement(scope, [type, data, pos]) {
 
     if (condition[0] == 'literal' && condition[1]:Kind() == 'bool') {
       if (condition[1]) {
-        // TODO: Still analyze tail? Warn about unreachable code?
+        {scope, block: body} = Block(scope, body);
         tail = ['nothing', null, tail[2]];
-      } else {
-        {scope, statement: tail} = switch (tail[0]) {
-          'block' => ScopeBlock(tail[1]);
-          'nothing' => {scope, statement: tail};
-          'if' => Statement(tail);
+
+        return {
+          scope,
+          statement: [type, {condition, body, tail}, pos],
         };
+
+        // TODO: Still analyze tail? Warn about unreachable code?
       }
+
+      return switch (tail[0]) {
+        'nothing' => {scope, statement: null};
+        'block' => ScopeBlock(scope, tail[1]);
+        'if' => Statement(tail);
+      };
     }
 
     bodyScope := null;
     tailScope := null;
     {scope: bodyScope, block: body} = Block(scope, body);
 
-    {scope: tailScope, tail} = switch (tail[0]) {
-      'nothing' => {tail, scope};
-      'block' => Block(scope, tail);
-      'if' => Statement(scope, tail);
-    };
+    if (tail[0] == 'nothing') {
+      tailScope = scope;
+    } else if (tail[0] == 'block') {
+      {scope: tailScope, block: tail} = Block(scope, tail);
+    } else if (tail[0] == 'if') {
+      {scope: tailScope, statement: tail} = Statement(scope, tail);
+    } else {
+      assert false;
+    }
 
     return {
       scope: Scope.combine(bodyScope, tailScope, Type.Union),
@@ -97,7 +108,7 @@ func Statement(scope, [type, data, pos]) {
       if (condition[0] == 'literal' && condition[1]:Kind() == 'bool') {
         if (!condition[1]) {
           // Only interested in the possibility of this being an exception
-          return ScopeBlock([['expression', setup, setup[2]]]);
+          return ScopeBlock(scope, [['expression', setup, setup[2]]]);
         }
       }
 
@@ -193,16 +204,22 @@ func NonBoolConditionNote(condition, conditionKinds) {
   }];
 };
 
-func ScopeBlock(statements) {
+func ScopeBlock(scope, statements) {
   assert statements:Length() > 0u64;
 
   pos := [statements:Front()[2][0], statements:Back()[2][1]];
 
-  return ['if', {
-    condition: ['literal', true, pos],
-    body: Block(['block', statements, pos]),
-    tail: ['nothing', null, pos],
-  }, pos];
+  block := null;
+  {scope, block} = Block(scope, ['block', statements, pos]);
+
+  return {
+    scope,
+    statement: ['if', {
+      condition: ['literal', true, pos],
+      body: block,
+      tail: ['nothing', null, pos],
+    }, pos]
+  };
 };
 
 return Statement;
