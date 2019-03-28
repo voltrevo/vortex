@@ -1413,7 +1413,7 @@ func DestructureMutationTarget(scope, target) {
   if (type == 'object') {
     newData := {};
 
-    for ([key, el] of data:Entries()) {
+    for ([key, el] of data) {
       {scope, target: el} = MutationTarget(scope, el);
       newData[key] := el;
     }
