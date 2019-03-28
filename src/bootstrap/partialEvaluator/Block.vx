@@ -1,3 +1,4 @@
+import ./FunctionAndType.vx;
 import ./Scope.vx;
 import ./Statement.vx;
 
@@ -7,7 +8,27 @@ return func(scope, [type, statements, pos]) {
   scope = Scope.push(scope);
   newStatements := [];
 
+  nonHoists := [];
+
   for (statement of statements) {
+    hoist := false;
+    if (statement[0] == 'expression') {
+      if (statement[1][0] == 'func') {
+        hoist = true;
+        {name, args: _, body: _} := statement[1][1];
+        assert name[0] == 'identifier';
+        fnType := null;
+        {expression: _, type: fnType, scope} = FunctionAndType(scope, statement[1]);
+        scope = Scope.add(scope, name[1], fnType);
+      }
+    }
+
+    if (!hoist) {
+      nonHoists ++= [statement];
+    }
+  }
+
+  for (statement of nonHoists) {
     {scope, statement} = Statement(scope, statement);
     newStatements ++= [statement];
 

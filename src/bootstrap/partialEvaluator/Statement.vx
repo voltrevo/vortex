@@ -17,6 +17,10 @@ func Statement(scope, [type, data, pos]) {
 
     {scope, expression: condition} = Expression(scope, condition);
 
+    if (condition[0] == 'note') {
+      return {scope, statement: condition};
+    }
+
     conditionKinds := KindSet(condition);
 
     if (!('bool' in conditionKinds)) {

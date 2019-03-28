@@ -5,6 +5,7 @@ import @/util/Join.vx;
 
 import ./Eval/Eval.vx;
 import ./FunctionAndType.vx;
+import ./Scope.vx;
 import ./Type.vx;
 
 return func ExpressionAndType(scope, expression) {
@@ -15,6 +16,21 @@ return func ExpressionAndType(scope, expression) {
       scope,
       expression,
       type: ['literal', expression[1]],
+    };
+  }
+
+  if (xType == 'identifier') {
+    type := Scope.lookup(scope, expression[1]);
+
+    if (type in #[null]) {
+      // TODO: When scope tracking is complete this should never happen
+      type = Type.Any;
+    }
+
+    return {
+      scope,
+      expression,
+      type,
     };
   }
 
