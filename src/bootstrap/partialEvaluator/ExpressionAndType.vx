@@ -20,17 +20,12 @@ return func ExpressionAndType(scope, expression) {
   }
 
   if (xType == 'identifier') {
-    type := Scope.lookup(scope, expression[1]);
-
-    if (type in #[null]) {
-      // TODO: When scope tracking is complete this should never happen
-      type = Type.Any;
-    }
-
     return {
       scope,
       expression,
-      type,
+      // TODO: When scope tracking is complete, defaulting to Type.Any
+      // should not be necessary
+      type: Scope.lookupDefault(scope, expression[1], Type.Any),
     };
   }
 
@@ -48,28 +43,43 @@ return func ExpressionAndType(scope, expression) {
     if (xType in operatorTypes.mutation) {
       if (xType in #['unary ++', 'unary --']) {
         [target] := data;
-        left := ExpressionAndType(scope, target);
 
-        if (left.type[0] == 'never') {
-          return left;
-        }
-
-        // Preserve the original target
-        left.expression = target;
-
-        assert left.expression[0] != 'literal';
-
-        leftType := left.type;
-        left.type = Type.Intersection(left.type, ['kinds', kinds.number]);
-
-        if (left.type[0] == 'never') {
+        if (target[0] != 'identifier') {
           return {
             scope,
             expression: null,
             type: ['never', {
               level: 'error',
               message: (
-                'operand of ' ++ xType ++ ' is a ' ++ Type.String(leftType)
+                'operand of ' ++ xType ++ ' is not an identifier'
+              ),
+              pos: target[2],
+              subnotes: [],
+              tags: #['type-error'],
+            }],
+          };
+        }
+
+        targetName := target[1];
+
+        targetType := Scope.lookup(scope, targetName, Type.Any);
+
+        if (targetType in #[null]) {
+          // TODO: This should become unnecessary with full scope tracking
+          targetType = Type.Any;
+          scope = Scope.add(scope, targetName, Type.Any);
+        }
+
+        targetType = Type.Intersection(targetType, ['kinds', kinds.number]);
+
+        if (targetType[0] == 'never') {
+          return {
+            scope,
+            expression: null,
+            type: ['never', {
+              level: 'error',
+              message: (
+                'operand of ' ++ xType ++ ' is a ' ++ Type.String(targetType)
               ),
               pos,
               subnotes: [],
@@ -78,11 +88,26 @@ return func ExpressionAndType(scope, expression) {
           };
         }
 
-        return {scope, expression: [xType, [left.expression], pos], type: left.type};
+        func inc(x) { x++; return x; };
+        func dec(x) { x--; return x; };
+
+        if (targetType[0] == 'literal') {
+          targetType[1] = switch (xType) {
+            'unary ++' => inc(targetType[1]);
+            'unary --' => dec(targetType[1]);
+          };
+        }
+
+        return {
+          scope: Scope.update(scope, targetName, targetType),
+          expression: [xType, [target], pos],
+          type: null,
+        };
       }
 
       target := data[0];
-      [left, right] := data:map(func(sub) => ExpressionAndType(scope, sub));
+      scopeCapture := scope;
+      [left, right] := data:map(func(sub) => ExpressionAndType(scopeCapture, sub));
 
       if (left.type[0] == 'never') {
         return left;
@@ -157,7 +182,8 @@ return func ExpressionAndType(scope, expression) {
       [fn, args] := data;
 
       fn = ExpressionAndType(scope, fn);
-      args = args:map(func(a) => ExpressionAndType(scope, a));
+      scopeCapture := scope;
+      args = args:map(func(a) => ExpressionAndType(scopeCapture, a));
 
       for (input of [fn] ++ args) {
         if (input.type[0] == 'never') {
@@ -219,7 +245,8 @@ return func ExpressionAndType(scope, expression) {
     }
 
     if (xType in operatorTypes.unary) {
-      [target] := data:map(func(sub) => ExpressionAndType(scope, sub));
+      scopeCapture := scope;
+      [target] := data:map(func(sub) => ExpressionAndType(scopeCapture, sub));
 
       resType := Eval(xType, [target.type]).output;
 
@@ -257,7 +284,8 @@ return func ExpressionAndType(scope, expression) {
       };
     }
 
-    [left, right] := data:map(func(sub) => ExpressionAndType(scope, sub));
+    scopeCapture := scope;
+    [left, right] := data:map(func(sub) => ExpressionAndType(scopeCapture, sub));
 
     if (left.type[0] == 'never') {
       return left;
@@ -348,7 +376,8 @@ return func ExpressionAndType(scope, expression) {
 
       elType := ['never', null];
 
-      for ([i, {expression: exp, type}] of data:map(func(sub) => ExpressionAndType(scope, sub)):Entries()) {
+      scopeCapture := scope;
+      for ([i, {expression: exp, type}] of data:map(func(sub) => ExpressionAndType(scopeCapture, sub)):Entries()) {
         if (type[0] == 'never') {
           return {scope, expression: null, type};
         }
@@ -396,7 +425,8 @@ return func ExpressionAndType(scope, expression) {
       literal := [];
       typeData := [];
 
-      for ([i, {expression: exp, type}] of data:map(func(sub) => ExpressionAndType(scope, sub)):Entries()) {
+      scopeCapture := scope;
+      for ([i, {expression: exp, type}] of data:map(func(sub) => ExpressionAndType(scopeCapture, sub)):Entries()) {
         if (type[0] == 'never') {
           return {scope, expression: null, type};
         }

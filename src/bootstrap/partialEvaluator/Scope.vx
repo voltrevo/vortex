@@ -20,6 +20,18 @@ return {
     return null;
   },
 
+  lookupDefault: func(scope, name, default_) {
+    if (name in scope.variables:Keys()) {
+      return scope.variables[name];
+    }
+
+    if (scope.parent:Kind() != 'null') {
+      return Scope.lookupDefault(scope.parent, name, default_);
+    }
+
+    return default_;
+  },
+
   update: func(scope, name, data) {
     if (name in scope.variables:Keys()) {
       scope.variables[name] = data;
