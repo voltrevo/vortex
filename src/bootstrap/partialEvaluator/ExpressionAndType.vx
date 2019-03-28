@@ -20,12 +20,18 @@ func ExpressionAndType(scope, expression) {
   }
 
   if (xType == 'identifier') {
+    type := Scope.lookupDefault(scope, expression[1], Type.Any);
+
+    if (type[0] == 'literal') {
+      expression = ['literal', type[1], expression[2]];
+    }
+
     return {
       scope,
       expression,
       // TODO: When scope tracking is complete, defaulting to Type.Any
       // should not be necessary
-      type: Scope.lookupDefault(scope, expression[1], Type.Any),
+      type,
     };
   }
 
