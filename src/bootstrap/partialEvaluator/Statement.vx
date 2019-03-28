@@ -2,25 +2,28 @@ import ./Block.vx;
 import ./Expression.vx;
 import ./KindSet.vx;
 import ./KindsString.vx;
+import ./Scope.vx;
+import ./Type.vx;
 
-func Statement([type, data, pos]) {
+func Statement(scope, [type, data, pos]) {
   if (type in #['return', 'assert', 'log.info', 'log.warn', 'log.error']) {
-    return [type, Expression(data), pos];
+    expression := null;
+    {scope, expression} = Expression(scope, data);
+    return {scope, statement: [type, expression, pos]};
   }
 
   if (type == 'if') {
     {condition, body, tail} := data;
 
-    condition = Expression(condition);
-
-    if (condition[0] == 'note') {
-      return condition;
-    }
+    {scope, expression: condition} = Expression(scope, condition);
 
     conditionKinds := KindSet(condition);
 
     if (!('bool' in conditionKinds)) {
-      return NonBoolConditionNote(condition, conditionKinds);
+      return {
+        scope,
+        statement: NonBoolConditionNote(condition, conditionKinds),
+      };
     }
 
     if (condition[0] == 'literal' && condition[1]:Kind() == 'bool') {
@@ -28,36 +31,44 @@ func Statement([type, data, pos]) {
         // TODO: Still analyze tail? Warn about unreachable code?
         tail = ['nothing', null, tail[2]];
       } else {
-        return switch (tail[0]) {
+        {scope, statement: tail} = switch (tail[0]) {
           'block' => ScopeBlock(tail[1]);
-          'nothing' => tail;
+          'nothing' => {scope, statement: tail};
           'if' => Statement(tail);
         };
       }
     }
 
-    body = Block(body);
+    bodyScope := null;
+    tailScope := null;
+    {scope: bodyScope, block: body} = Block(scope, body);
 
-    tail = switch (tail[0]) {
-      'nothing' => tail;
-      'block' => Block(tail);
-      'if' => Statement(tail);
+    {scope: tailScope, tail} = switch (tail[0]) {
+      'nothing' => {tail, scope};
+      'block' => Block(scope, tail);
+      'if' => Statement(scope, tail);
     };
 
-    return [type, {condition, body, tail}, pos];
+    return {
+      scope: Scope.combine(bodyScope, tailScope, Type.Union),
+      statement: [type, {condition, body, tail}, pos],
+    };
   }
 
   if (type == 'for') {
     {control: [controlType, controlData, controlPos], body} := data;
 
     if (controlType == 'condition') {
-      controlData = Expression(controlData);
+      {scope, expression: controlData} = Expression(scope, controlData);
       condition := controlData;
 
       conditionKinds := KindSet(condition);
 
       if (!('bool' in conditionKinds)) {
-        return NonBoolConditionNote(condition, conditionKinds);
+        return {
+          scope,
+          statement: NonBoolConditionNote(condition, conditionKinds),
+        };
       }
 
       if (condition[0] == 'literal' && condition[1]:Kind() == 'bool') {
@@ -65,10 +76,11 @@ func Statement([type, data, pos]) {
           controlType = 'nothing';
           controlData = null;
         } else {
-          return ['nothing', null, pos];
+          return {scope, statement: ['expression', controlData, pos]};
         }
       }
     } else if (controlType == 'traditional') {
+      /* TODO: update with scope
       {setup, condition, next} := controlData;
 
       condition = Expression(condition);
@@ -88,7 +100,9 @@ func Statement([type, data, pos]) {
       setup = Expression(setup);
       next = Expression(next);
       controlData = {setup, condition, next};
+      */
     } else if (controlType == 'range') {
+      /* TODO: update with scope
       {element, container} := controlData;
       container = Expression(container);
 
@@ -118,27 +132,48 @@ func Statement([type, data, pos]) {
       }
 
       controlData = {element, container};
+      */
     } else if (controlType == 'nothing') {
       // Nothing to do
     } else {
       assert false;
     }
 
-    body = Block(body);
+    // TODO: Process scope possibilities from running unknown iterations
+    // TODO: Not updating the scope will actually break things like this:
+    // x := 3;
+    // for (true) {
+    //   x = 'foo';
+    //   break;
+    // }
+    // return x ++ 'bar';
+    body = Block(scope, body).block;
 
-    return [
-      type,
-      {control: [controlType, controlData, controlPos], body},
-      pos
-    ];
+    return {
+      scope,
+      statement: [
+        'for',
+        {control: [controlType, controlData, controlPos], body},
+        pos
+      ],
+    };
   }
 
   if (type == 'expression') {
-    return [type, Expression(data), pos];
+    expression := null;
+    {scope, expression} = Expression(scope, data);
+    return {scope, statement: [type, expression, pos]};
   }
 
-  assert type in #['break', 'continue', 'note', 'import', 'breakpoint'];
-  return [type, data, pos];
+  if (type == 'import') {
+    return {
+      scope: Scope.add(scope, data.name[1], Type.Any),
+      statement: [type, data, pos],
+    };
+  }
+
+  assert type in #['break', 'continue', 'note', 'breakpoint'];
+  return {scope, statement: [type, data, pos]};
 };
 
 func NonBoolConditionNote(condition, conditionKinds) {

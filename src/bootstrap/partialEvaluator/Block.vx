@@ -1,11 +1,14 @@
+import ./Scope.vx;
 import ./Statement.vx;
 
-return func([type, statements, pos]) {
+return func(scope, [type, statements, pos]) {
   assert type == 'block'; // TODO: Destructure exact matches using literals
 
+  scope = Scope.push(scope);
   newStatements := [];
 
-  for (statement of statements:map(Statement)) {
+  for (statement of statements) {
+    {scope, statement} = Statement(scope, statement);
     newStatements ++= [statement];
 
     if (statement[0] in #['break', 'continue', 'return']) {
@@ -13,5 +16,7 @@ return func([type, statements, pos]) {
     }
   }
 
-  return [type, newStatements, pos];
+  scope = Scope.pop(scope);
+
+  return {scope, block: [type, newStatements, pos]};
 };

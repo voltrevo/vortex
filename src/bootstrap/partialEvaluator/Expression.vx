@@ -1,12 +1,13 @@
 import ./ExpressionAndType.vx;
 
-return func(expression) {
-  {exp, type} := ExpressionAndType(expression);
+return func(scope, expression) {
+  type := null;
+  {scope, expression, type} = ExpressionAndType(scope, expression);
 
-  if (exp:Kind() == 'null' && type[0] == 'never') {
+  if (expression:Kind() == 'null' && type[0] == 'never') {
     assert type[1]:Kind() != 'null';
-    return ['note', type[1]];
+    return {scope, expression: ['note', type[1]]};
   }
 
-  return exp;
+  return {scope, expression};
 };

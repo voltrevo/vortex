@@ -1,3 +1,3 @@
 import ./Block.vx;
 
-return Block;
+return func(block) => Block(null, block).block;

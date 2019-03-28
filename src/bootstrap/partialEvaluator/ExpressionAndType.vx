@@ -7,12 +7,13 @@ import ./Eval/Eval.vx;
 import ./FunctionAndType.vx;
 import ./Type.vx;
 
-return func ExpressionAndType(expression) {
+return func ExpressionAndType(scope, expression) {
   [xType, data, pos] := expression;
 
   if (xType == 'literal') {
     return {
-      exp: expression,
+      scope,
+      expression,
       type: ['literal', expression[1]],
     };
   }
@@ -21,7 +22,8 @@ return func ExpressionAndType(expression) {
     'import', 'default', 'identifier', 'op',
   ]) {
     return {
-      exp: expression,
+      scope,
+      expression,
       type: Type.Any, // TODO: More inference here
     };
   }
@@ -30,23 +32,24 @@ return func ExpressionAndType(expression) {
     if (xType in operatorTypes.mutation) {
       if (xType in #['unary ++', 'unary --']) {
         [target] := data;
-        left := ExpressionAndType(target);
+        left := ExpressionAndType(scope, target);
 
         if (left.type[0] == 'never') {
           return left;
         }
 
         // Preserve the original target
-        left.exp = target;
+        left.expression = target;
 
-        assert left.exp[0] != 'literal';
+        assert left.expression[0] != 'literal';
 
         leftType := left.type;
         left.type = Type.Intersection(left.type, ['kinds', kinds.number]);
 
         if (left.type[0] == 'never') {
           return {
-            exp: null,
+            scope,
+            expression: null,
             type: ['never', {
               level: 'error',
               message: (
@@ -59,11 +62,11 @@ return func ExpressionAndType(expression) {
           };
         }
 
-        return {exp: [xType, [left.exp], pos], type: left.type};
+        return {scope, expression: [xType, [left.expression], pos], type: left.type};
       }
 
       target := data[0];
-      [left, right] := data:map(ExpressionAndType);
+      [left, right] := data:map(func(sub) => ExpressionAndType(scope, sub));
 
       if (left.type[0] == 'never') {
         return left;
@@ -76,7 +79,8 @@ return func ExpressionAndType(expression) {
       if (xType in #[':=', '=']) {
         // TODO: Destructure type checking
         return {
-          exp: [xType, [target, right.exp], pos],
+          scope,
+          expression: [xType, [target, right.expression], pos],
           type: ['na', null],
         };
       }
@@ -105,7 +109,8 @@ return func ExpressionAndType(expression) {
 
       if (resType[0] == 'never') {
         return {
-          exp: null,
+          scope,
+          expression: null,
           type: ['never', {
             level: 'error',
             message: (
@@ -126,7 +131,8 @@ return func ExpressionAndType(expression) {
       // TODO: Scope update for lhs -> resType
 
       return {
-        exp: [xType, [target, right.exp], pos],
+        scope,
+        expression: [xType, [target, right.expression], pos],
         type: ['na', null],
       };
     }
@@ -134,8 +140,8 @@ return func ExpressionAndType(expression) {
     if (xType == 'functionCall') {
       [fn, args] := data;
 
-      fn = ExpressionAndType(fn);
-      args = args:map(ExpressionAndType);
+      fn = ExpressionAndType(scope, fn);
+      args = args:map(func(a) => ExpressionAndType(scope, a));
 
       for (input of [fn] ++ args) {
         if (input.type[0] == 'never') {
@@ -152,7 +158,8 @@ return func ExpressionAndType(expression) {
 
       if (resType[0] == 'never') {
         return {
-          exp: null,
+          scope,
+          expression: null,
           type: ['never', {
             level: 'error',
             message: (
@@ -173,31 +180,37 @@ return func ExpressionAndType(expression) {
 
       if (resType[0] == 'literal') {
         return {
-          exp: ['literal', resType[1], pos],
+          scope,
+          expression: ['literal', resType[1], pos],
           type: resType,
         };
       }
 
       for (i := 0u64; i < args:Length(); i++) {
         if (args[i].type[0] == 'literal') {
-          args[i].exp = ['literal', args[i].type[1], args[i].exp[2]];
+          args[i].expression = ['literal', args[i].type[1], args[i].expression[2]];
         }
       }
 
       return {
-        exp: ['functionCall', [fn.exp, args:map(func(a) => a.exp)], pos],
+        scope,
+        expression: ['functionCall',
+          [fn.expression, args:map(func(a) => a.expression)],
+          pos,
+        ],
         type: resType,
       };
     }
 
     if (xType in operatorTypes.unary) {
-      [target] := data:map(ExpressionAndType);
+      [target] := data:map(func(sub) => ExpressionAndType(scope, sub));
 
       resType := Eval(xType, [target.type]).output;
 
       if (resType[0] == 'never') {
         return {
-          exp: null,
+          scope,
+          expression: null,
           type: ['never', {
             level: 'error',
             message: (
@@ -215,18 +228,20 @@ return func ExpressionAndType(expression) {
 
       if (resType[0] == 'literal') {
         return {
-          exp: ['literal', resType[1], pos],
+          scope,
+          expression: ['literal', resType[1], pos],
           type: resType,
         };
       }
 
       return {
-        exp: [xType, [target.exp], pos],
+        scope,
+        expression: [xType, [target.expression], pos],
         type: resType,
       };
     }
 
-    [left, right] := data:map(ExpressionAndType);
+    [left, right] := data:map(func(sub) => ExpressionAndType(scope, sub));
 
     if (left.type[0] == 'never') {
       return left;
@@ -240,7 +255,8 @@ return func ExpressionAndType(expression) {
 
     if (resType[0] == 'never') {
       return {
-        exp: null,
+        scope,
+        expression: null,
         type: ['never', {
           level: 'error',
           message: (
@@ -260,13 +276,15 @@ return func ExpressionAndType(expression) {
 
     if (resType[0] == 'literal') {
       return {
-        exp: ['literal', resType[1], pos],
+        scope,
+        expression: ['literal', resType[1], pos],
         type: resType,
       };
     }
 
     return {
-      exp: [xType, [left.exp, right.exp], pos],
+      scope,
+      expression: [xType, [left.expression, right.expression], pos],
       type: resType,
     };
   }
@@ -278,10 +296,10 @@ return func ExpressionAndType(expression) {
 
       // TODO: fix incorrect unused warning
       for ([i, [key, value]] of data:Entries()) {
-        {exp, type} := ExpressionAndType(value);
+        {expression: exp, type} := ExpressionAndType(scope, value);
 
         if (type[0] == 'never') {
-          return {exp: null, type};
+          return {scope, expression: null, type};
         }
 
         if (type[0] != 'literal') {
@@ -296,12 +314,14 @@ return func ExpressionAndType(expression) {
 
       return switch (literal:Kind()) {
         'object' => {
-          exp: ['literal', literal, pos],
+          scope,
+          expression: ['literal', literal, pos],
           type: ['literal', literal],
         };
 
         'null' => {
-          exp: ['object', data, pos],
+          scope,
+          expression: ['object', data, pos],
           type: ['object', typeData],
         };
       };
@@ -312,14 +332,15 @@ return func ExpressionAndType(expression) {
 
       elType := ['never', null];
 
-      for ([i, {exp, type}] of data:map(ExpressionAndType):Entries()) {
+      for ([i, {expression: exp, type}] of data:map(func(sub) => ExpressionAndType(scope, sub)):Entries()) {
         if (type[0] == 'never') {
-          return {exp: null, type};
+          return {scope, expression: null, type};
         }
 
         if (Type.Kinds(type) == #['func']) {
           return {
-            exp: null,
+            scope,
+            expression: null,
             type: ['never', {
               level: 'error',
               message: 'Invalid set element type: ' ++ Type.String(type),
@@ -342,12 +363,14 @@ return func ExpressionAndType(expression) {
 
       return switch (literal:Kind()) {
         'set' => {
-          exp: ['literal', literal, pos],
+          scope,
+          expression: ['literal', literal, pos],
           type: ['literal', literal],
         };
 
         'null' => {
-          exp: ['set', data, pos],
+          scope,
+          expression: ['set', data, pos],
           type: ['set', elType],
         };
       };
@@ -357,9 +380,9 @@ return func ExpressionAndType(expression) {
       literal := [];
       typeData := [];
 
-      for ([i, {exp, type}] of data:map(ExpressionAndType):Entries()) {
+      for ([i, {expression: exp, type}] of data:map(func(sub) => ExpressionAndType(scope, sub)):Entries()) {
         if (type[0] == 'never') {
-          return {exp: null, type};
+          return {scope, expression: null, type};
         }
 
         if (type[0] != 'literal') {
@@ -374,12 +397,14 @@ return func ExpressionAndType(expression) {
 
       return switch (literal:Kind()) {
         'array' => {
-          exp: ['literal', literal, pos],
+          scope,
+          expression: ['literal', literal, pos],
           type: ['literal', literal],
         };
 
         'null' => {
-          exp: ['array', data, pos],
+          scope,
+          expression: ['array', data, pos],
           type: ['array', typeData],
         };
       };
@@ -390,7 +415,7 @@ return func ExpressionAndType(expression) {
 
   if (xType in expressionTypes.nameAccess) {
     [base, name] := data;
-    base = ExpressionAndType(base);
+    base = ExpressionAndType(scope, base);
 
     if (base.type[0] == 'never') {
       return base;
@@ -401,7 +426,8 @@ return func ExpressionAndType(expression) {
 
       if (resType[0] == 'never') {
         return {
-          exp: null,
+          scope,
+          expression: null,
           type: ['never', {
             level: 'error',
             message: (
@@ -418,7 +444,8 @@ return func ExpressionAndType(expression) {
       }
 
       return {
-        exp: ['.', [base.exp, name], pos],
+        scope,
+        expression: ['.', [base.expression, name], pos],
         type: resType,
       };
     }
@@ -427,9 +454,11 @@ return func ExpressionAndType(expression) {
       baseKinds := Type.Kinds(base.type);
 
       baseCapture := base;
+      scopeCapture := scope;
 
       func BadMethod() => {
-        exp: null,
+        scope: scopeCapture,
+        expression: null,
         type: ['never', {
           level: 'error',
           message: (
@@ -451,13 +480,15 @@ return func ExpressionAndType(expression) {
           [kind] := baseKindsValues;
 
           return {
-            exp: ['methodLookup', [base.exp, name], pos],
+            scope,
+            expression: ['methodLookup', [base.expression, name], pos],
             type: ['func', {args: [], output: ['literal', kind]}],
           };
         }
 
         return {
-          exp: ['methodLookup', [base.exp, name], pos],
+          scope,
+          expression: ['methodLookup', [base.expression, name], pos],
           type: ['func', {args: [], output: ['kinds', #['string']]}],
         };
       }
@@ -469,7 +500,8 @@ return func ExpressionAndType(expression) {
 
         if (base.type[0] == 'literal') {
           return {
-            exp: ['methodLookup', [base.exp, name], pos],
+            scope,
+            expression: ['methodLookup', [base.expression, name], pos],
             type: ['func', {
               args: [],
               output: ['literal', base.type[1]:String()]
@@ -488,7 +520,8 @@ return func ExpressionAndType(expression) {
         };
 
         return {
-          exp: ['methodLookup', [base.exp, name], pos],
+          scope,
+          expression: ['methodLookup', [base.expression, name], pos],
           type: ['func', {args: [], output: outputType}],
         };
       }
@@ -499,7 +532,8 @@ return func ExpressionAndType(expression) {
         }
 
         return {
-          exp: ['methodLookup', [base.exp, name], pos],
+          scope,
+          expression: ['methodLookup', [base.expression, name], pos],
           type: ['func', {
             args: [],
             output: switch {
@@ -537,7 +571,8 @@ return func ExpressionAndType(expression) {
         if (name == 'Keys') {
           if (base.type[0] in #['array', 'object', 'literal']) {
             return {
-              exp: ['methodLookup', [base.exp, name], pos],
+              scope,
+              expression: ['methodLookup', [base.expression, name], pos],
               type: ['func', {
                 args: [],
                 output: ['literal', base.type[1]:Keys()],
@@ -546,7 +581,8 @@ return func ExpressionAndType(expression) {
           }
 
           return {
-            exp: ['methodLookup', [base.exp, name], pos],
+            scope,
+            expression: ['methodLookup', [base.expression, name], pos],
             type: ['func', {
               args: [],
               output: ['set', KeyType()],
@@ -590,14 +626,16 @@ return func ExpressionAndType(expression) {
           };
 
           return {
-            exp: ['methodLookup', [base.exp, name], pos],
+            scope,
+            expression: ['methodLookup', [base.expression, name], pos],
             type: ['func', {args: [], output}],
           };
         }
 
         if (name == 'Row') {
           return {
-            exp: ['methodLookup', [base.exp, name], pos],
+            scope,
+            expression: ['methodLookup', [base.expression, name], pos],
             type: ['func', {
               args: [],
               output: switch (base.type[0]) {
@@ -612,7 +650,8 @@ return func ExpressionAndType(expression) {
           // TODO: more return type inference
 
           return {
-            exp: ['methodLookup', [base.exp, name], pos],
+            scope,
+            expression: ['methodLookup', [base.expression, name], pos],
             type: ['func', {args: [], output: ['kinds', #['array', 'object']]}],
           };
         }
@@ -627,21 +666,24 @@ return func ExpressionAndType(expression) {
 
         if (base.type[0] == 'kinds') {
           return {
-            exp: ['methodLookup', [base.exp, name], pos],
+            scope,
+            expression: ['methodLookup', [base.expression, name], pos],
             type: ['func', {args: [], output: ['kinds', #['array']]}],
           };
         }
 
         if (base.type[0] == 'array') {
           return {
-            exp: ['methodLookup', [base.exp, name], pos],
+            scope,
+            expression: ['methodLookup', [base.expression, name], pos],
             type: ['func', {args: [], output: base.type}],
           };
         }
 
         if (base.type[0] == 'object') {
           return {
-            exp: ['methodLookup', [base.exp, name], pos],
+            scope,
+            expression: ['methodLookup', [base.expression, name], pos],
             type: ['func', {
               args: [],
               output: ['array', base.type[1]:Values()],
@@ -651,7 +693,8 @@ return func ExpressionAndType(expression) {
 
         if (base.type[0] in #['array-uniform', 'set']) {
           return {
-            exp: ['methodLookup', [base.exp, name], pos],
+            scope,
+            expression: ['methodLookup', [base.expression, name], pos],
             type: ['func', {
               args: [],
               output: ['array-uniform', base.type[1]],
@@ -670,7 +713,8 @@ return func ExpressionAndType(expression) {
         if (name in #['Front', 'Back']) {
           if (base.type[0] == 'kinds') {
             return {
-              exp: ['methodLookup', [base.exp, name], pos],
+              scope,
+              expression: ['methodLookup', [base.expression, name], pos],
               type: ['func', {
                 args: [],
                 output: Type.Any,
@@ -680,7 +724,8 @@ return func ExpressionAndType(expression) {
 
           if (base.type[0] == 'array') {
             return {
-              exp: ['methodLookup', [base.exp, name], pos],
+              scope,
+              expression: ['methodLookup', [base.expression, name], pos],
               type: ['func', {
                 args: [],
                 output: switch (name) {
@@ -693,7 +738,8 @@ return func ExpressionAndType(expression) {
 
           if (base.type[0] == 'array-uniform') {
             return {
-              exp: ['methodLookup', [base.exp, name], pos],
+              scope,
+              expression: ['methodLookup', [base.expression, name], pos],
               type: ['func', {
                 args: [],
                 output: base.type[1],
@@ -704,7 +750,8 @@ return func ExpressionAndType(expression) {
           if (base.type[0] == 'literal') {
             if (base.type[1]:Length() == 0u64) {
               return {
-                exp: ['methodLookup', [base.exp, name], pos],
+                scope,
+                expression: ['methodLookup', [base.expression, name], pos],
                 type: ['func', {
                   args: [],
                   output: ['never', {
@@ -719,7 +766,8 @@ return func ExpressionAndType(expression) {
             }
 
             return {
-              exp: ['methodLookup', [base.exp, name], pos],
+              scope,
+              expression: ['methodLookup', [base.expression, name], pos],
               type: ['func', {
                 args: [],
                 output: switch (name) {
@@ -742,7 +790,8 @@ return func ExpressionAndType(expression) {
 
           if (base.type[0] == 'kinds') {
             return {
-              exp: ['methodLookup', [base.exp, name], pos],
+              scope,
+              expression: ['methodLookup', [base.expression, name], pos],
               type: ['func', {
                 args: [['func', {
                   args: [Type.Any],
@@ -756,7 +805,8 @@ return func ExpressionAndType(expression) {
           if (base.type[0] in #['array', 'literal']) {
             if (base.type[1]:Length() == 0u64) {
               return {
-                exp: ['methodLookup', [base.exp, name], pos],
+                scope,
+                expression: ['methodLookup', [base.expression, name], pos],
                 type: ['func', {
                   args: [['func', {
                     args: [Type.Any],
@@ -777,7 +827,8 @@ return func ExpressionAndType(expression) {
             };
 
             return {
-              exp: ['methodLookup', [base.exp, name], pos],
+              scope,
+              expression: ['methodLookup', [base.expression, name], pos],
               type: ['func', {
                 args: [['func', {
                   args: [elType],
@@ -790,7 +841,8 @@ return func ExpressionAndType(expression) {
 
           if (base.type[0] == 'array-uniform') {
             return {
-              exp: ['methodLookup', [base.exp, name], pos],
+              scope,
+              expression: ['methodLookup', [base.expression, name], pos],
               type: ['func', {
                 args: [['func', {
                   args: [base.type[1]],
@@ -810,7 +862,8 @@ return func ExpressionAndType(expression) {
 
           if (base.type[0] == 'kinds') {
             return {
-              exp: ['methodLookup', [base.exp, name], pos],
+              scope,
+              expression: ['methodLookup', [base.expression, name], pos],
               type: ['func', {
                 args: [['func', {
                   args: [Type.Any, Type.Any],
@@ -824,7 +877,8 @@ return func ExpressionAndType(expression) {
           if (base.type[0] in #['array', 'literal']) {
             if (base.type[1]:Length() == 0u64) {
               return {
-                exp: ['methodLookup', [base.exp, name], pos],
+                scope,
+                expression: ['methodLookup', [base.expression, name], pos],
                 type: ['func', {
                   args: [['func', {
                     args: [Type.Any, Type.Any],
@@ -852,7 +906,8 @@ return func ExpressionAndType(expression) {
 
             if (base.type[1]:Length() == 1u64) {
               return {
-                exp: ['methodLookup', [base.exp, name], pos],
+                scope,
+                expression: ['methodLookup', [base.expression, name], pos],
                 type: ['func', {
                   args: [['func', {
                     // TODO: Is the reducer actually required to accept elType
@@ -868,7 +923,8 @@ return func ExpressionAndType(expression) {
             }
 
             return {
-              exp: ['methodLookup', [base.exp, name], pos],
+              scope,
+              expression: ['methodLookup', [base.expression, name], pos],
               type: ['func', {
                 args: [['func', {
                   args: [elType, elType],
@@ -881,7 +937,8 @@ return func ExpressionAndType(expression) {
 
           if (base.type[0] == 'array-uniform') {
             return {
-              exp: ['methodLookup', [base.exp, name], pos],
+              scope,
+              expression: ['methodLookup', [base.expression, name], pos],
               type: ['func', {
                 args: [['func', {
                   args: [base.type[1], base.type[1]],
@@ -905,7 +962,8 @@ return func ExpressionAndType(expression) {
 
         if (base.type[0] == 'kinds') {
           return {
-            exp: ['methodLookup', [base.exp, name], pos],
+            scope,
+            expression: ['methodLookup', [base.expression, name], pos],
             type: ['func', {
               args: [Type.Any],
               output: ['kinds', #['func']],
@@ -927,7 +985,8 @@ return func ExpressionAndType(expression) {
             }];
 
             return {
-              exp: ['methodLookup', [base.exp, name], pos],
+              scope,
+              expression: ['methodLookup', [base.expression, name], pos],
               type: ['func', {args: [output], output}],
             };
           }
@@ -942,7 +1001,8 @@ return func ExpressionAndType(expression) {
           }
 
           return {
-            exp: ['methodLookup', [base.exp, name], pos],
+            scope,
+            expression: ['methodLookup', [base.expression, name], pos],
             type: ['func', {
               args,
               output: ['func', {
@@ -968,14 +1028,14 @@ return func ExpressionAndType(expression) {
     resType := ['never', null];
 
     if (test[0] != 'nothing') {
-      test = ExpressionAndType(test);
+      test = ExpressionAndType(scope, test);
 
       if (test.type[0] == 'never') {
         return test;
       }
     } else {
       test = {
-        exp: test,
+        expression: test,
         type: null,
       };
     }
@@ -983,14 +1043,14 @@ return func ExpressionAndType(expression) {
     newCases := [];
 
     for ([left, right] of cases) {
-      right = ExpressionAndType(right);
+      right = ExpressionAndType(scope, right);
 
       if (right.type[0] == 'never') {
         return right;
       }
 
       if (left[0] == 'default') {
-        newCases ++= [[left, right.exp]];
+        newCases ++= [[left, right.expression]];
         resType = Type.Union(resType, right.type);
 
         // TODO: Errors from unreachable cases might still be valuable. How
@@ -998,20 +1058,21 @@ return func ExpressionAndType(expression) {
         break;
       }
 
-      left = ExpressionAndType(left);
+      left = ExpressionAndType(scope, left);
 
       if (left.type[0] == 'never') {
         return left;
       }
 
-      specType := switch (test.exp[0]) {
+      specType := switch (test.expression[0]) {
         'nothing' => left.type;
         default => Eval('==', [test.type, left.type]).output;
       };
 
       if (specType[0] == 'never') {
         return {
-          exp: null,
+          scope,
+          expression: null,
           type: ['never', {
             level: 'error',
             message: (
@@ -1020,7 +1081,7 @@ return func ExpressionAndType(expression) {
               ', case: ' ++
               Type.String(left.type)
             ),
-            pos: left.exp[2],
+            pos: left.expression[2],
             subnotes: [],
             tags: #['type-error'],
           }],
@@ -1029,11 +1090,12 @@ return func ExpressionAndType(expression) {
 
       if (!('bool' in Type.Kinds(specType))) {
         return {
-          exp: null,
+          scope,
+          expression: null,
           type: ['never', {
             level: 'error',
             message: 'Non-bool test case: ' ++ Type.String(specType),
-            pos: left.exp[2],
+            pos: left.expression[2],
             subnotes: [],
             tags: #['type-error'],
           }],
@@ -1043,8 +1105,8 @@ return func ExpressionAndType(expression) {
       if (specType[0] == 'literal') {
         if (specType[1]) {
           newCases ++= [[
-            ['default', null, left.exp[2]],
-            right.exp,
+            ['default', null, left.expression[2]],
+            right.expression,
           ]];
 
           resType = Type.Union(resType, right.type);
@@ -1054,7 +1116,7 @@ return func ExpressionAndType(expression) {
           // Don't include unreachable case (TODO: warn?)
         }
       } else {
-        newCases ++= [[left.exp, right.exp]];
+        newCases ++= [[left.expression, right.expression]];
         resType = Type.Union(resType, right.type);
       }
     }
@@ -1064,18 +1126,19 @@ return func ExpressionAndType(expression) {
     if (cases:Length() == 1u64) {
       [[[leftType, _, _], right]] := cases;
       if (leftType == 'default') {
-        return {exp: right, type: resType};
+        return {scope, expression: right, type: resType};
       }
     }
 
     return {
-      exp: ['switch', {test: test.exp, cases}, pos],
+      scope,
+      expression: ['switch', {test: test.expression, cases}, pos],
       type: resType,
     };
   }
 
   if (xType == 'func') {
-    return FunctionAndType(expression);
+    return FunctionAndType(scope, expression);
   }
 
   return switch{};

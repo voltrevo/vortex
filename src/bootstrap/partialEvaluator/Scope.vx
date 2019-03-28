@@ -31,4 +31,28 @@ return {
   },
 
   push: func(scope) => { parent: scope, variables: {} },
+  pop: func(scope) => scope.parent,
+
+  combine: func(leftScope, rightScope, combiner) {
+    if (leftScope in #[null]) {
+      assert rightScope in #[null];
+      return null;
+    }
+
+    variables := leftScope.variables;
+    varNames := variables:Keys();
+    assert rightScope.variables:Keys() == varNames;
+
+    for (name of varNames:Values()) {
+      variables[name] = combiner(
+        leftScope.variables[name],
+        rightScope.variables[name],
+      );
+    }
+
+    return {
+      parent: Scope.combine(leftScope.parent, rightScope.parent, combiner),
+      variables,
+    };
+  },
 };

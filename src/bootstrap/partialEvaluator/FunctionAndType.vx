@@ -3,7 +3,7 @@ import ./DestructureType.vx;
 import ./ExpressionAndType.vx;
 import ./Type.vx;
 
-return func([xType, {name, args, body}, pos]) {
+return func(scope, [xType, {name, args, body}, pos]) {
   assert xType == 'func';
 
   argsType := args:map(DestructureType);
@@ -12,23 +12,25 @@ return func([xType, {name, args, body}, pos]) {
     // TODO: Need to get type information from block partial evaluation
 
     return {
-      exp: ['func', {name, args, body: Block(body)}, pos],
+      scope,
+      expression: ['func', {name, args, body: Block(scope, body).block}, pos],
       type: ['func', {args: argsType, output: Type.Any}],
     };
   }
 
   if (body[0] == 'expression') {
     bodyPos := body[2];
-    body = ExpressionAndType(body[1]);
+    body = ExpressionAndType(scope, body[1]);
 
     if (body.type[0] == 'never') {
       return body;
     }
 
     return {
-      exp: [
+      scope,
+      expression: [
         'func',
-        {name, args, body: ['expression', body.exp, bodyPos]},
+        {name, args, body: ['expression', body.expression, bodyPos]},
         pos
       ],
       type: ['func', {args: argsType, output: body.type}],
