@@ -3,7 +3,7 @@ import Syntax from './parser/Syntax';
 import traverse from './traverse';
 
 export default function CapturedNames(func: Syntax.FunctionExpression) {
-  return ProcessScope({ root: {} }, func).closure;
+  return ProcessScope({ root: {} }, func).closure.filter(name => name !== '_');
 }
 
 type Closure = string[];
