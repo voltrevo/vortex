@@ -1178,7 +1178,12 @@ func Mutate(scope, xType, target, srcType) {
   if (target[0] in #['array', 'object']) {
     notes := [];
 
-    for ([key, subTarget] of target[1]:Entries()) {
+    entries := switch (target[0]) {
+      'array' => target[1]:Entries();
+      'object' => target[1];
+    };
+
+    for ([key, subTarget] of entries) {
       subSrcType := Eval('subscript', [srcType, ['literal', key]]);
       subNotes := [];
 
@@ -1411,11 +1416,11 @@ func DestructureMutationTarget(scope, target) {
   }
 
   if (type == 'object') {
-    newData := {};
+    newData := [];
 
     for ([key, el] of data) {
       {scope, target: el} = MutationTarget(scope, el);
-      newData[key] := el;
+      newData ++= [[key, el]];
     }
 
     return {scope, target: [type, newData, pos]};
