@@ -1,6 +1,9 @@
+import @/scopeValidator/Argument.vx;
+
 import ./Block.vx;
 import ./DestructureType.vx;
 import ./ExpressionAndType.vx;
+import ./Scope.vx;
 import ./Type.vx;
 
 return func(scope, [xType, {name, args, body}, pos]) {
@@ -8,23 +11,37 @@ return func(scope, [xType, {name, args, body}, pos]) {
 
   argsType := args:map(DestructureType);
 
+  fnScope := Scope.push(scope);
+  
+  for (arg of args) {
+    for ([evtType, identifier, _] of Argument(arg)) {
+      if (evtType == 'create') {
+        fnScope = Scope.add(fnScope, identifier[1], Type.Any);
+      }
+    }
+  }
+
   if (body[0] == 'block') {
     // TODO: Need to get type information from block partial evaluation
 
     return {
       scope,
-      expression: ['func', {name, args, body: Block(scope, body).block}, pos],
+      expression: ['func', {name, args, body: Block(fnScope, body).block}, pos],
       type: ['func', {args: argsType, output: Type.Any}],
     };
   }
 
   if (body[0] == 'expression') {
     bodyPos := body[2];
-    body = ExpressionAndType(scope, body[1]);
+    body = ExpressionAndType(fnScope, body[1]);
 
-    if (body.type[0] == 'never') {
-      return body;
-    }
+    type := switch (body.type[0]) {
+      // TODO: This `never` would still be included in the output type, is it
+      // necessary to escalate it?
+      'never' => body.type;
+
+      default => ['func', {args: argsType, output: body.type}];
+    };
 
     return {
       scope,
@@ -33,7 +50,7 @@ return func(scope, [xType, {name, args, body}, pos]) {
         {name, args, body: ['expression', body.expression, bodyPos]},
         pos
       ],
-      type: ['func', {args: argsType, output: body.type}],
+      type,
     };
   }
 
