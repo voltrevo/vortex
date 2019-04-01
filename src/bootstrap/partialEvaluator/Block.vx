@@ -33,10 +33,10 @@ return func(scope, [type, statements, pos]) {
 
     if (!(statement in #[null])) {
       newStatements ++= [statement];
-    }
 
-    if (statement[0] in #['break', 'continue', 'return']) {
-      break;
+      if (statement[0] in #['break', 'continue', 'return']) {
+        break;
+      }
     }
   }
 
