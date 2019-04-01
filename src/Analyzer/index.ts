@@ -1371,7 +1371,9 @@ namespace Analyzer {
           // of index typing.
           const oldSubValue = oldValue.v[index];
 
-          if (oldSubValue === undefined && op !== ':=') {
+          const mode = op === ':=' && chain.length === 1 ? 'insert' : 'update';
+
+          if (oldSubValue === undefined && mode === 'update') {
             return Outcome.Exception(leftExp,
               ['key-not-found'],
               // TODO: Better message, location
@@ -1379,7 +1381,7 @@ namespace Analyzer {
             );
           }
 
-          if (oldSubValue !== undefined && op === ':=') {
+          if (oldSubValue !== undefined && mode === 'insert') {
             return Outcome.Exception(leftExp,
               ['duplicate', 'duplicate-key'],
               `Trying to add key ${index} that already exists`,
