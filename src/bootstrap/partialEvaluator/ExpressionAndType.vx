@@ -409,8 +409,10 @@ func ExpressionAndType(scope, expression) {
       literal := [];
       typeData := [];
 
-      scopeCapture := scope;
-      for ([i, {expression: exp, type}] of data:map(func(sub) => ExpressionAndType(scopeCapture, sub)):Entries()) {
+      for ([i, exp] of data:Entries()) {
+        type := null;
+        {scope, expression: exp, type} = ExpressionAndType(scope, exp);
+
         if (type[0] == 'never') {
           return {scope, expression: null, type};
         }
