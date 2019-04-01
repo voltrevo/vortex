@@ -6,7 +6,7 @@ import ./Type.vx;
 return func(scope, arg) {
   for ([evtType, identifier, _] of Argument(arg)) {
     if (evtType == 'create') {
-      scope = Scope.add(scope, identifier[1], Type.Any);
+      scope = Scope.add(scope, identifier[1], Type.any);
     }
   }
 

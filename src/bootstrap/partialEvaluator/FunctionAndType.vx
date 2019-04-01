@@ -22,7 +22,7 @@ return func(scope, [xType, {name, args, body}, pos]) {
     return {
       scope,
       expression: ['func', {name, args, body: Block(fnScope, body).block}, pos],
-      type: ['func', {args: argsType, output: Type.Any}],
+      type: ['func', {args: argsType, output: Type.any}],
     };
   }
 

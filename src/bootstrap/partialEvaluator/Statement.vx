@@ -241,7 +241,7 @@ func Statement(scope, [type, data, pos]) {
 
   if (type == 'import') {
     return {
-      scope: Scope.add(scope, data.name[1], Type.Any),
+      scope: Scope.add(scope, data.name[1], Type.any),
       statement: [type, data, pos],
     };
   }

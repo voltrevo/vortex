@@ -20,7 +20,7 @@ func ExpressionAndType(scope, expression) {
   }
 
   if (xType == 'identifier') {
-    type := Scope.lookupDefault(scope, expression[1], Type.Any);
+    type := Scope.lookupDefault(scope, expression[1], Type.any);
 
     if (type[0] == 'literal') {
       expression = ['literal', type[1], expression[2]];
@@ -29,7 +29,7 @@ func ExpressionAndType(scope, expression) {
     return {
       scope,
       expression,
-      // TODO: When scope tracking is complete, defaulting to Type.Any
+      // TODO: When scope tracking is complete, defaulting to Type.any
       // should not be necessary
       type,
     };
@@ -41,7 +41,7 @@ func ExpressionAndType(scope, expression) {
     return {
       scope,
       expression,
-      type: Type.Any, // TODO: More inference here
+      type: Type.any, // TODO: More inference here
     };
   }
 
@@ -72,8 +72,8 @@ func ExpressionAndType(scope, expression) {
 
         if (targetType in #[null]) {
           // TODO: This should become unnecessary with full scope tracking
-          targetType = Type.Any;
-          scope = Scope.add(scope, targetName, Type.Any);
+          targetType = Type.any;
+          scope = Scope.add(scope, targetName, Type.any);
         }
 
         targetType = Type.Intersection(targetType, ['kinds', kinds.number]);
@@ -653,7 +653,7 @@ func ExpressionAndType(scope, expression) {
             );
 
             (base.type[0] in #['kinds']) => (
-              ['array-uniform', ['array', [KeyType(), Type.Any]]]
+              ['array-uniform', ['array', [KeyType(), Type.any]]]
             );
           };
 
@@ -749,7 +749,7 @@ func ExpressionAndType(scope, expression) {
               expression: ['methodLookup', [base.expression, name], pos],
               type: ['func', {
                 args: [],
-                output: Type.Any,
+                output: Type.any,
               }],
             };
           }
@@ -826,8 +826,8 @@ func ExpressionAndType(scope, expression) {
               expression: ['methodLookup', [base.expression, name], pos],
               type: ['func', {
                 args: [['func', {
-                  args: [Type.Any],
-                  output: Type.Any,
+                  args: [Type.any],
+                  output: Type.any,
                 }]],
                 output: ['kinds', #['array']],
               }],
@@ -841,8 +841,8 @@ func ExpressionAndType(scope, expression) {
                 expression: ['methodLookup', [base.expression, name], pos],
                 type: ['func', {
                   args: [['func', {
-                    args: [Type.Any],
-                    output: Type.Any,
+                    args: [Type.any],
+                    output: Type.any,
                   }]],
                   output: ['literal', []],
                 }],
@@ -864,9 +864,9 @@ func ExpressionAndType(scope, expression) {
               type: ['func', {
                 args: [['func', {
                   args: [elType],
-                  output: Type.Any,
+                  output: Type.any,
                 }]],
-                output: ['array', base.type[1]:map(func(_) => Type.Any)],
+                output: ['array', base.type[1]:map(func(_) => Type.any)],
               }],
             };
           }
@@ -878,9 +878,9 @@ func ExpressionAndType(scope, expression) {
               type: ['func', {
                 args: [['func', {
                   args: [base.type[1]],
-                  output: Type.Any,
+                  output: Type.any,
                 }]],
-                output: ['array-uniform', Type.Any],
+                output: ['array-uniform', Type.any],
               }],
             };
           }
@@ -898,10 +898,10 @@ func ExpressionAndType(scope, expression) {
               expression: ['methodLookup', [base.expression, name], pos],
               type: ['func', {
                 args: [['func', {
-                  args: [Type.Any, Type.Any],
-                  output: Type.Any,
+                  args: [Type.any, Type.any],
+                  output: Type.any,
                 }]],
-                output: Type.Any,
+                output: Type.any,
               }],
             };
           }
@@ -913,8 +913,8 @@ func ExpressionAndType(scope, expression) {
                 expression: ['methodLookup', [base.expression, name], pos],
                 type: ['func', {
                   args: [['func', {
-                    args: [Type.Any, Type.Any],
-                    output: Type.Any,
+                    args: [Type.any, Type.any],
+                    output: Type.any,
                   }]],
                   output: ['never', {
                     level: 'error',
@@ -947,7 +947,7 @@ func ExpressionAndType(scope, expression) {
                     // actually gets called? This is also relevant to the
                     // array-uniform case!
                     args: [elType, elType],
-                    output: Type.Any,
+                    output: Type.any,
                   }]],
                   output: elType,
                 }],
@@ -960,9 +960,9 @@ func ExpressionAndType(scope, expression) {
               type: ['func', {
                 args: [['func', {
                   args: [elType, elType],
-                  output: Type.Any,
+                  output: Type.any,
                 }]],
-                output: Type.Any,
+                output: Type.any,
               }],
             };
           }
@@ -974,9 +974,9 @@ func ExpressionAndType(scope, expression) {
               type: ['func', {
                 args: [['func', {
                   args: [base.type[1], base.type[1]],
-                  output: Type.Any,
+                  output: Type.any,
                 }]],
-                output: Type.Any,
+                output: Type.any,
               }],
             };
           }
@@ -997,7 +997,7 @@ func ExpressionAndType(scope, expression) {
             scope,
             expression: ['methodLookup', [base.expression, name], pos],
             type: ['func', {
-              args: [Type.Any],
+              args: [Type.any],
               output: ['kinds', #['func']],
             }],
           };

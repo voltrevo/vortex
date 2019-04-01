@@ -248,7 +248,7 @@ func Eval(op, inputs) {
       }
 
       if (fn[0] != 'func') {
-        return {inputs: [fn, args], output: Type.Any};
+        return {inputs: [fn, args], output: Type.any};
       }
 
       if (fn[1].args:Length() != args:Length()) {
@@ -366,7 +366,7 @@ func Eval(op, inputs) {
 
         container = ['kinds', containerKinds];
 
-        return {inputs: [container, index], output: Type.Any};
+        return {inputs: [container, index], output: Type.any};
       }
 
       [containerKind] := containerKinds:Values();
@@ -381,7 +381,7 @@ func Eval(op, inputs) {
           return {inputs: [index, index], output: index};
         }
 
-        return {inputs: [container, index], output: Type.Any};
+        return {inputs: [container, index], output: Type.any};
       }
 
       if (container[0] == 'array-uniform') {

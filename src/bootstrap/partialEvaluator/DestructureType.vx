@@ -2,7 +2,7 @@ import ./Type.vx;
 
 return func DestructureType([xType, data, _]) {
   if (xType == 'identifier') {
-    return Type.Any;
+    return Type.any;
   }
 
   if (xType == 'array') {
