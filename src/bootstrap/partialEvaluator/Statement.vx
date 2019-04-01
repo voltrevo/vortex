@@ -1,8 +1,7 @@
 import ./Argument.vx;
 import ./Block.vx;
 import ./Expression.vx;
-import ./KindSet.vx;
-import ./KindsString.vx;
+import ./ExpressionAndType.vx;
 import ./Scope.vx;
 import ./Type.vx;
 
@@ -16,18 +15,20 @@ func Statement(scope, [type, data, pos]) {
   if (type == 'if') {
     {condition, body, tail} := data;
 
-    {scope, expression: condition} = Expression(scope, condition);
+    condType := null;
+    {scope, expression: condition, type: condType} = ExpressionAndType(
+      scope,
+      condition,
+    );
 
     if (condition[0] == 'note') {
       return {scope, statement: condition};
     }
 
-    conditionKinds := KindSet(condition);
-
-    if (!('bool' in conditionKinds)) {
+    if (!('bool' in Type.Kinds(condType))) {
       return {
         scope,
-        statement: NonBoolConditionNote(condition, conditionKinds),
+        statement: NonBoolConditionNote(condition, condType),
       };
     }
 
@@ -76,15 +77,18 @@ func Statement(scope, [type, data, pos]) {
     {control: [controlType, controlData, controlPos], body} := data;
 
     if (controlType == 'condition') {
-      {scope, expression: controlData} = Expression(scope, controlData);
+      condType := null;
+      {scope, expression: controlData, type: condType} = ExpressionAndType(
+        scope,
+        controlData,
+      );
+
       condition := controlData;
 
-      conditionKinds := KindSet(condition);
-
-      if (!('bool' in conditionKinds)) {
+      if (!('bool' in Type.Kinds(condType))) {
         return {
           scope: Scope.pop(scope),
-          statement: NonBoolConditionNote(condition, conditionKinds),
+          statement: NonBoolConditionNote(condition, condType),
         };
       }
 
@@ -100,14 +104,17 @@ func Statement(scope, [type, data, pos]) {
       {setup, condition, next: _} := controlData;
 
       {scope, expression: setup} = Expression(scope, setup);
-      {scope: _, expression: condition} = Expression(scope, condition);
 
-      conditionKinds := KindSet(condition);
+      condType := null;
+      {scope: _, expression: condition, type: condType} = ExpressionAndType(
+        scope,
+        condition,
+      );
 
-      if (!('bool' in conditionKinds)) {
+      if (!('bool' in Type.Kinds(condType))) {
         return {
           scope: Scope.pop(scope),
-          statement: NonBoolConditionNote(condition, conditionKinds),
+          statement: NonBoolConditionNote(condition, condType),
         };
       }
 
@@ -127,14 +134,13 @@ func Statement(scope, [type, data, pos]) {
       // TODO: Use type information from container to narrow the element type
       scope = Argument(scope, element);
 
-      {scope, expression: container} = Expression(
+      containerType := null;
+      {scope, expression: container, type: containerType} = ExpressionAndType(
         scope,
         container,
       );
 
-      containerKinds := KindSet(container);
-
-      if (!('array' in containerKinds)) {
+      if (!('array' in Type.Kinds(containerType))) {
         return {
           scope: Scope.pop(scope),
           statement: ['note', {
@@ -142,7 +148,7 @@ func Statement(scope, [type, data, pos]) {
             message: (
               'Container of for control clause needs to be an array but ' ++
               'instead is a ' ++
-              KindsString(containerKinds)
+              Type.String(containerType)
             ),
             pos: container[2],
             subnotes: [],
@@ -244,12 +250,12 @@ func Statement(scope, [type, data, pos]) {
   return {scope, statement: [type, data, pos]};
 };
 
-func NonBoolConditionNote(condition, conditionKinds) {
+func NonBoolConditionNote(condition, type) {
   return ['note', {
     level: 'error',
     message: (
       'Condition needs to be a bool but instead is a ' ++
-      KindsString(conditionKinds)
+      Type.String(type)
     ),
     pos: condition[2],
     subnotes: [],
