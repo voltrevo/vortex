@@ -176,12 +176,12 @@ func ExpressionAndType(scope, expression) {
 
       argTypes := args:map(func(a) => a.type);
 
-      resType := Eval('functionCall', [
+      res := Eval('functionCall', [
         fn.type,
         argTypes,
-      ]).output;
+      ]);
 
-      if (resType[0] == 'never') {
+      if (res.output[0] == 'never') {
         return {
           scope,
           expression: null,
@@ -203,11 +203,38 @@ func ExpressionAndType(scope, expression) {
         };
       }
 
-      if (resType[0] == 'literal') {
+      if (fn.expression[0] == 'identifier') {
+        fn.type = Type.Intersection(fn.type, res.inputs[0]);
+
+        if (Scope.lookup(scope, fn.expression[1]) in #[null]) {
+          log.info ['looking for', fn.expression[1], 'in', scope];
+          assert false;
+        }
+
+        scope = Scope.update(
+          scope,
+          fn.expression[1],
+          fn.type,
+        );
+      }
+
+      for (i := 0u64; i < args:Length(); i++) {
+        if (args[i].expression[0] == 'identifier') {
+          args[i].type = Type.Intersection(args[i].type, res.inputs[1][i]);
+
+          scope = Scope.update(
+            scope,
+            args[i].expression[1],
+            args[i].type,
+          );
+        }
+      }
+
+      if (res.output[0] == 'literal') {
         return {
           scope,
-          expression: ['literal', resType[1], pos],
-          type: resType,
+          expression: ['literal', res.output[1], pos],
+          type: res.output,
         };
       }
 
@@ -223,7 +250,7 @@ func ExpressionAndType(scope, expression) {
           [fn.expression, args:map(func(a) => a.expression)],
           pos,
         ],
-        type: resType,
+        type: res.output,
       };
     }
 
@@ -1170,7 +1197,7 @@ func ExpressionAndType(scope, expression) {
   }
 
   if (xType == 'func') {
-    return FunctionAndType(scope, expression);
+    return {scope} ++ FunctionAndType(scope, expression);
   }
 
   return switch{};

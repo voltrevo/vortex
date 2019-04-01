@@ -20,7 +20,6 @@ return func(scope, [xType, {name, args, body}, pos]) {
     // TODO: Need to get type information from block partial evaluation
 
     return {
-      scope,
       expression: ['func', {name, args, body: Block(fnScope, body).block}, pos],
       type: ['func', {args: argsType, output: Type.any}],
     };
@@ -39,7 +38,6 @@ return func(scope, [xType, {name, args, body}, pos]) {
     };
 
     return {
-      scope,
       expression: [
         'func',
         {name, args, body: ['expression', body.expression, bodyPos]},

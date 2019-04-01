@@ -1,3 +1,4 @@
+import ./FuncSignature.vx;
 import ./FunctionAndType.vx;
 import ./Scope.vx;
 import ./Statement.vx;
@@ -19,14 +20,12 @@ return func(scope, [type, statements, pos]) {
   scope = Scope.push(scope);
   newStatements := [];
 
-  for ([i, statement] of statements:Entries()) { // TODO: Fix unused warning
+  for (statement of statements) {
     if (IsHoist(statement)) {
-      {name, args: _, body: _} := statement[1][1];
-      assert name[0] == 'identifier';
-      [expression, fnType] := [null, null];
-      {expression, type: fnType, scope} = FunctionAndType(scope, statement[1]);
-      statements[i][1] = expression;
-      scope = Scope.add(scope, name[1], fnType);
+      fn := statement[1];
+      assert fn[1].name[0] == 'identifier';
+      // TODO: Need to add special 'hoist' pseudotype to the scope.
+      scope = Scope.add(scope, fn[1].name[1], FuncSignature(fn));
     }
   }
 
@@ -37,6 +36,12 @@ return func(scope, [type, statements, pos]) {
 
     if (!isHoist) {
       {scope, statement} = Statement(scope, statement);
+    } else {
+      statement = [
+        'expression',
+        FunctionAndType(scope, statement[1]).expression,
+        statement[2],
+      ];
     }
 
     if (reachable) {
