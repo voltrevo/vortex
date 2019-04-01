@@ -155,7 +155,7 @@ func ExpressionAndType(scope, expression) {
           0u64 => [xType, [left, right.expression], pos];
 
           // TODO: Inventing an array here to emit multiple notes isn't great
-          default => ['array', notes, pos];
+          default => ['array', notes:map(func(n) => ['note', n]), pos];
         },
         type: null,
       };
