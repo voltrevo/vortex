@@ -1273,7 +1273,7 @@ func MutateInsert(scope, target, srcType) {
       return MutateAccess(scope, subTarget, subTargetType);
     }
 
-    subTargetType = Type.DemoteObjectLiteral(subTargetType);
+    subTargetType = Type.demoteObjectLiteral(subTargetType);
   }
 
   subTargetType[1][keyType[1]] := srcType;
@@ -1344,8 +1344,8 @@ func MutateAccess(scope, target, srcType) {
   if (keyType[0] != 'literal') {
     if (subTargetType[0] == 'literal') {
       subTargetType = switch (subTargetType[1]:Kind()) {
-        'array' => Type.DemoteArrayLiteral(subTargetType);
-        'object' => Type.DemoteObjectLiteral(subTargetType);
+        'array' => Type.demoteArrayLiteral(subTargetType);
+        'object' => Type.demoteObjectLiteral(subTargetType);
       };
     }
 
@@ -1367,8 +1367,8 @@ func MutateAccess(scope, target, srcType) {
     }
 
     subTargetType = switch (subTargetType[1]:Kind()) {
-      'array' => Type.DemoteArrayLiteral(subTargetType);
-      'object' => Type.DemoteObjectLiteral(subTargetType);
+      'array' => Type.demoteArrayLiteral(subTargetType);
+      'object' => Type.demoteObjectLiteral(subTargetType);
     };
   }
 

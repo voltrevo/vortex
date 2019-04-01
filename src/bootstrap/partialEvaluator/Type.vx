@@ -99,11 +99,11 @@ return {
           }
 
           if (typeA[0] == 'literal') {
-            typeA = Type.DemoteArrayLiteral(typeA);
+            typeA = Type.demoteArrayLiteral(typeA);
           }
 
           if (typeB[0] == 'literal') {
-            typeB = Type.DemoteArrayLiteral(typeB);
+            typeB = Type.demoteArrayLiteral(typeB);
           }
 
           return [
@@ -533,11 +533,11 @@ return {
 
   Literal: func(value) => ['literal', value],
 
-  DemoteArrayLiteral: func(type) {
+  demoteArrayLiteral: func(type) {
     return ['array', type[1]:map(Type.Literal)];
   },
 
-  DemoteObjectLiteral: func(type) => [
+  demoteObjectLiteral: func(type) => [
     'object',
     mapValues(type[1], Type.Literal),
   ],
@@ -615,11 +615,11 @@ return {
       }
 
       if (typeA[0] == 'literal') {
-        typeA = Type.DemoteObjectLiteral(typeA);
+        typeA = Type.demoteObjectLiteral(typeA);
       }
 
       if (typeB[0] == 'literal') {
-        typeB = Type.DemoteObjectLiteral(typeB);
+        typeB = Type.demoteObjectLiteral(typeB);
       }
 
       newData := {};
@@ -650,7 +650,7 @@ return {
         };
 
         if (typeArray[0] == 'literal') {
-          typeArray = Type.DemoteArrayLiteral(typeArray);
+          typeArray = Type.demoteArrayLiteral(typeArray);
         }
 
         newData := [];
@@ -669,11 +669,11 @@ return {
       }
 
       if (typeA[0] == 'literal') {
-        typeA = Type.DemoteArrayLiteral(typeA);
+        typeA = Type.demoteArrayLiteral(typeA);
       }
 
       if (typeB[0] == 'literal') {
-        typeB = Type.DemoteArrayLiteral(typeB);
+        typeB = Type.demoteArrayLiteral(typeB);
       }
 
       len := typeA[1]:Length();
@@ -732,7 +732,7 @@ return {
 
       typeArray := switch (type[0]) {
         'array' => type;
-        'literal' => Type.DemoteArrayLiteral(type);
+        'literal' => Type.demoteArrayLiteral(type);
       };
 
       newData := [];
@@ -756,7 +756,7 @@ return {
     if (kind == 'object') {
       typeObject := switch (type[0]) {
         'object' => type;
-        'literal' => Type.DemoteObjectLiteral(type);
+        'literal' => Type.demoteObjectLiteral(type);
       };
 
       newData := {};

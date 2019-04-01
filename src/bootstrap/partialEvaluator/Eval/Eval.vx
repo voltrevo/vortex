@@ -133,7 +133,7 @@ func Eval(op, inputs) {
         }
 
         func SubTypes(type) => switch (type[0]) {
-          'literal' => Type.DemoteObjectLiteral(type)[1];
+          'literal' => Type.demoteObjectLiteral(type)[1];
           'object' => type[1];
         };
 
@@ -156,7 +156,7 @@ func Eval(op, inputs) {
         }
 
         func SubTypes(type) => switch (type[0]) {
-          'literal' => Type.DemoteArrayLiteral(type)[1];
+          'literal' => Type.demoteArrayLiteral(type)[1];
           'array' => type[1];
           'array-uniform' => [type[1]];
         };
@@ -416,7 +416,7 @@ func Eval(op, inputs) {
         if (index[0] != 'literal') {
           containerArray := switch (container[0]) {
             'array' => container;
-            'literal' => Type.DemoteArrayLiteral(container);
+            'literal' => Type.demoteArrayLiteral(container);
           };
 
           element := containerArray[1]:reduce(Type.Union);
@@ -459,7 +459,7 @@ func Eval(op, inputs) {
         if (index[0] != 'literal') {
           containerObject := switch (container[0]) {
             'object' => container;
-            'literal' => Type.DemoteObjectLiteral(container);
+            'literal' => Type.demoteObjectLiteral(container);
           };
 
           element := containerObject[1]:Values():reduce(Type.Union);
