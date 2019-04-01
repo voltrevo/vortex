@@ -36,7 +36,7 @@ func ExpressionAndType(scope, expression) {
   }
 
   if (xType in #[
-    'import', 'default', 'identifier', 'op',
+    'import', 'default', 'op',
   ]) {
     return {
       scope,
