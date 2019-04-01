@@ -372,7 +372,7 @@ return {
           return ['never', null];
         }
 
-        newData := [];
+        newData := {};
 
         for (key of typeA[1]:Keys()) {
           subType := Type.Intersection(typeA[1][key], typeB[1][key]);
