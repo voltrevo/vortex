@@ -72,19 +72,18 @@ func Statement(scope, [type, data, pos]) {
   }
 
   if (type == 'for') {
-    forScope := scope;
+    scope = Scope.push(scope);
     {control: [controlType, controlData, controlPos], body} := data;
 
     if (controlType == 'condition') {
       {scope, expression: controlData} = Expression(scope, controlData);
-      forScope = scope; // hmm
       condition := controlData;
 
       conditionKinds := KindSet(condition);
 
       if (!('bool' in conditionKinds)) {
         return {
-          scope,
+          scope: Scope.pop(scope),
           statement: NonBoolConditionNote(condition, conditionKinds),
         };
       }
@@ -98,18 +97,18 @@ func Statement(scope, [type, data, pos]) {
         }
       }
     } else if (controlType == 'traditional') {
-      {setup, condition: _, next: _} := controlData;
+      {setup, condition, next: _} := controlData;
 
-      {scope: forScope, expression: _} = Expression(forScope, setup);
-      
-      /* TODO: update with scope
-      {setup, condition, next} := controlData;
+      {scope, expression: setup} = Expression(scope, setup);
+      {scope: _, expression: condition} = Expression(scope, condition);
 
-      condition = Expression(condition);
       conditionKinds := KindSet(condition);
 
       if (!('bool' in conditionKinds)) {
-        return NonBoolConditionNote(condition, conditionKinds);
+        return {
+          scope: Scope.pop(scope),
+          statement: NonBoolConditionNote(condition, conditionKinds),
+        };
       }
 
       if (condition[0] == 'literal' && condition[1]:Kind() == 'bool') {
@@ -119,36 +118,42 @@ func Statement(scope, [type, data, pos]) {
         }
       }
 
-      setup = Expression(setup);
-      next = Expression(next);
-      controlData = {setup, condition, next};
-      */
+      // setup is the only one we can actually update since the other parts
+      // will run under different scopes / not exactly once
+      controlData.setup = setup;
     } else if (controlType == 'range') {
-      {element, container: _} := controlData;
-      forScope = Argument(forScope, element);
-      /* TODO: update with scope
       {element, container} := controlData;
-      container = Expression(container);
+
+      // TODO: Use type information from container to narrow the element type
+      scope = Argument(scope, element);
+
+      {scope, expression: container} = Expression(
+        scope,
+        container,
+      );
 
       containerKinds := KindSet(container);
 
       if (!('array' in containerKinds)) {
-        return ['note', {
-          level: 'error',
-          message: (
-            'Container of for control clause needs to be an array but ' ++
-            'instead is a ' ++
-            KindsString(containerKinds)
-          ),
-          pos: container[2],
-          subnotes: [],
-          tags: #['type-error', 'non-array-container'],
-        }];
+        return {
+          scope: Scope.pop(scope),
+          statement: ['note', {
+            level: 'error',
+            message: (
+              'Container of for control clause needs to be an array but ' ++
+              'instead is a ' ++
+              KindsString(containerKinds)
+            ),
+            pos: container[2],
+            subnotes: [],
+            tags: #['type-error', 'non-array-container'],
+          }],
+        };
       }
 
       if (container[0] == 'literal' && container[1]:Kind() == 'array') {
         if (container[1]:Length() == 0u64) {
-          return ['nothing', null, pos];
+          return {scope, statement: null};
         }
 
         // TODO: Loop unrolling for small arrays? Includes array expressions,
@@ -156,22 +161,61 @@ func Statement(scope, [type, data, pos]) {
       }
 
       controlData = {element, container};
-      */
     } else if (controlType == 'nothing') {
       // Nothing to do
     } else {
       assert false;
     }
 
-    // TODO: Process scope possibilities from running unknown iterations
-    // TODO: Not updating the scope will actually break things like this:
-    // x := 3;
-    // for (true) {
-    //   x = 'foo';
-    //   break;
-    // }
-    // return x ++ 'bar';
-    body = Block(forScope, body).block;
+    cap := {body, controlData, controlType};
+
+    func NextScope(forScope) {
+      forScope = Block(forScope, cap.body).scope;
+
+      if (cap.controlType == 'condition') {
+        forScope = Scope.combine(
+          forScope,
+          Expression(forScope, cap.controlData).scope,
+          Type.Union,
+        );
+      } else if (cap.controlType == 'traditional') {
+        forScope0 := forScope;
+
+        // TODO: Disallow break/return in controlData.next? Otherwise need
+        // another branch here
+        forScope = Expression(forScope, cap.controlData.next).scope;
+        forScope = Expression(forScope, cap.controlData.condition).scope;
+
+        forScope = Scope.combine(forScope0, forScope, Type.Union);
+      }
+
+      return forScope;
+    };
+
+    for (i := 0; true; i++) {
+      nextScope := NextScope(scope);
+
+      if (i > 2) {
+        log.info {scope, body, ouput: Block(scope, body).scope};
+        assert false;
+      }
+
+      if (nextScope in #[scope]) {
+        break;
+      }
+
+      if (i == 7) {
+        // TODO: Need to widen types as needed to accommodate the operations
+        // of the loop. This is not yet implemented, halting instead.
+        log.info {scope, nextScope};
+        assert false;
+      }
+
+      scope = Scope.combine(scope, nextScope, Type.Union);
+    }
+
+    body = Block(scope, body).block;
+    scope = Scope.pop(scope);
 
     return {
       scope,

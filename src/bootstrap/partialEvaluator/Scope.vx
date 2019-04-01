@@ -1,7 +1,7 @@
 import ./Scope.vx;
 
 return {
-  create: func() => { parent: null, variables: {} },
+  create: func() => {parent: null, variables: {}},
 
   add: func(scope, name, data) {
     scope.variables[name] := data;
@@ -66,5 +66,19 @@ return {
       parent: Scope.combine(leftScope.parent, rightScope.parent, combiner),
       variables,
     };
+  },
+
+  map: func(scope, mapper) {
+    if (scope in #[null]) {
+      return null;
+    }
+
+    {parent, variables} := scope;
+
+    for (key of variables:Keys():Values()) {
+      variables[key] = mapper(variables[key]);
+    }
+
+    return {parent: Scope.map(parent, mapper), variables};
   },
 };
