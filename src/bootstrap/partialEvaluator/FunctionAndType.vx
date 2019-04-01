@@ -1,5 +1,4 @@
-import @/scopeValidator/Argument.vx;
-
+import ./Argument.vx;
 import ./Block.vx;
 import ./DestructureType.vx;
 import ./ExpressionAndType.vx;
@@ -12,13 +11,9 @@ return func(scope, [xType, {name, args, body}, pos]) {
   argsType := args:map(DestructureType);
 
   fnScope := Scope.push(scope);
-  
+
   for (arg of args) {
-    for ([evtType, identifier, _] of Argument(arg)) {
-      if (evtType == 'create') {
-        fnScope = Scope.add(fnScope, identifier[1], Type.Any);
-      }
-    }
+    fnScope = Argument(fnScope, arg);
   }
 
   if (body[0] == 'block') {

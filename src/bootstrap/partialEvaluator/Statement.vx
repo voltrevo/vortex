@@ -1,3 +1,4 @@
+import ./Argument.vx;
 import ./Block.vx;
 import ./Expression.vx;
 import ./KindSet.vx;
@@ -71,10 +72,12 @@ func Statement(scope, [type, data, pos]) {
   }
 
   if (type == 'for') {
+    forScope := scope;
     {control: [controlType, controlData, controlPos], body} := data;
 
     if (controlType == 'condition') {
       {scope, expression: controlData} = Expression(scope, controlData);
+      forScope = scope; // hmm
       condition := controlData;
 
       conditionKinds := KindSet(condition);
@@ -95,6 +98,10 @@ func Statement(scope, [type, data, pos]) {
         }
       }
     } else if (controlType == 'traditional') {
+      {setup, condition: _, next: _} := controlData;
+
+      {scope: forScope, expression: _} = Expression(forScope, setup);
+      
       /* TODO: update with scope
       {setup, condition, next} := controlData;
 
@@ -117,6 +124,8 @@ func Statement(scope, [type, data, pos]) {
       controlData = {setup, condition, next};
       */
     } else if (controlType == 'range') {
+      {element, container: _} := controlData;
+      forScope = Argument(forScope, element);
       /* TODO: update with scope
       {element, container} := controlData;
       container = Expression(container);
@@ -162,7 +171,7 @@ func Statement(scope, [type, data, pos]) {
     //   break;
     // }
     // return x ++ 'bar';
-    body = Block(scope, body).block;
+    body = Block(forScope, body).block;
 
     return {
       scope,

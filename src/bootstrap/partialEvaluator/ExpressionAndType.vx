@@ -1201,13 +1201,14 @@ func Mutate(scope, xType, target, srcType) {
   }
 
   if (target[0] == 'identifier') {
-    return {
-      scope: switch (xType) {
+    if (target[1] != '_') {
+      scope = switch (xType) {
         ':=' => Scope.add(scope, target[1], srcType);
         '=' => Scope.update(scope, target[1], srcType);
-      },
-      notes: [],
-    };
+      };
+    }
+
+    return {scope, notes: []};
   }
 
   return switch (xType) {
