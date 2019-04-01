@@ -131,7 +131,7 @@ return {
 
           newData := {};
 
-          for (key of typeA[1]:Keys()) {
+          for (key of typeA[1]:Keys():Values()) {
             newData[key] := Type.Union(typeA[1][key], typeB[1][key]);
           }
 
@@ -206,7 +206,7 @@ return {
 
         newData := {};
 
-        for (key of typeLiteral[1]:Keys()) {
+        for (key of typeLiteral[1]:Keys():Values()) {
           newData[key] := Type.Union(
             ['literal', typeLiteral[1][key]],
             typeOther[1][key],
@@ -374,7 +374,7 @@ return {
 
         newData := {};
 
-        for (key of typeA[1]:Keys()) {
+        for (key of typeA[1]:Keys():Values()) {
           subType := Type.Intersection(typeA[1][key], typeB[1][key]);
 
           if (subType[0] == 'never') {
@@ -478,7 +478,7 @@ return {
           return ['never', null];
         }
 
-        for (key of typeLiteral[1]:Keys()) {
+        for (key of typeLiteral[1]:Keys():Values()) {
           elType := Type.Intersection(
             ['literal', typeLiteral[1][key]],
             typeOther[1][key],
@@ -759,7 +759,7 @@ return {
 
       newData := {};
 
-      for (key of type[1]:Keys()) {
+      for (key of type[1]:Keys():Values()) {
         subType := Type.IntersectKindsDeep(typeObject[1][key], allowedKinds);
 
         if (subType[0] == 'never') {
