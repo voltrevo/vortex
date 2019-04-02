@@ -16,7 +16,7 @@ return func(scope, fn) {
 
   if (name[0] == 'identifier') {
     // Prevent recursive type evaluation / TODO: find a way to handle this
-    fnScope = Scope.addOrUpdate(fnScope, name[1], FuncSignature(fn));
+    fnScope = Scope.set(fnScope, name[1], FuncSignature(fn));
   }
 
   for (arg of args) {

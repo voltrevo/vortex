@@ -42,8 +42,8 @@ return {
     return {parent, variables};
   },
 
-  addOrUpdate: func(scope, name, data) {
-    exists := Scope.lookup(scope, name) in #[null];
+  set: func(scope, name, data) {
+    exists := !(Scope.lookup(scope, name) in #[null]);
 
     return switch (exists) {
       true => Scope.update(scope, name, data);

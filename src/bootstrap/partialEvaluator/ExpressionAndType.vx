@@ -4,7 +4,6 @@ import @/util/kinds.vx;
 import @/util/Join.vx;
 
 import ./Eval/Eval.vx;
-import ./FuncSignature.vx;
 import ./FunctionAndType.vx;
 import ./Scope.vx;
 import ./Type.vx;
@@ -31,21 +30,6 @@ func ExpressionAndType(scope, expression) {
 
     if (type[0] == 'literal') {
       expression = ['literal', type[1], expression[2]];
-    } else if (type[0] == 'hoist') {
-      // Demote other hoists to function signatures to prevent excessive
-      // recursion (for now).
-      resolveScope := Scope.map(scope, func(t) {
-        if (t[0] == 'hoist') {
-          return FuncSignature(t[1]);
-        }
-
-        return t;
-      });
-
-      // TODO: Even though recursion is prevented above, this is still super
-      // expensive. Need to reduce unnecessary calls through here. Also not
-      // sure passing caller's scope is correct.
-      type = FunctionAndType(resolveScope, type[1]).type;
     }
 
     return {scope, expression, type};
@@ -87,7 +71,6 @@ func ExpressionAndType(scope, expression) {
         targetType := Scope.lookup(scope, targetName);
 
         if (targetType in #[null]) {
-          // TODO: This should become unnecessary with full scope tracking
           targetType = Type.any;
           scope = Scope.add(scope, targetName, Type.any);
         }
@@ -222,12 +205,7 @@ func ExpressionAndType(scope, expression) {
       if (fn.expression[0] == 'identifier') {
         fn.type = Type.Intersection(fn.type, res.inputs[0]);
 
-        if (Scope.lookup(scope, fn.expression[1]) in #[null]) {
-          log.info ['looking for', fn.expression[1], 'in', scope];
-          assert false;
-        }
-
-        scope = Scope.update(
+        scope = Scope.set(
           scope,
           fn.expression[1],
           fn.type,
@@ -238,7 +216,7 @@ func ExpressionAndType(scope, expression) {
         if (args[i].expression[0] == 'identifier') {
           args[i].type = Type.Intersection(args[i].type, res.inputs[1][i]);
 
-          scope = Scope.update(
+          scope = Scope.set(
             scope,
             args[i].expression[1],
             args[i].type,
@@ -1267,7 +1245,7 @@ func Mutate(scope, xType, target, srcType) {
     if (target[1] != '_') {
       scope = switch (xType) {
         ':=' => Scope.add(scope, target[1], srcType);
-        '=' => Scope.update(scope, target[1], srcType);
+        '=' => Scope.set(scope, target[1], srcType);
       };
     }
 

@@ -18,12 +18,16 @@ return func(scope, [type, statements, pos]) {
 
   scope = Scope.push(scope);
   newStatements := [];
+  hoists := {};
 
   for (statement of statements) {
     if (IsHoist(statement)) {
       fn := statement[1];
       assert fn[1].name[0] == 'identifier';
-      scope = Scope.add(scope, fn[1].name[1], ['hoist', fn]);
+      name := fn[1].name[1];
+      fn = FunctionAndType(scope, fn);
+      hoists[name] := fn.expression;
+      scope = Scope.add(scope, name, fn.type);
     }
   }
 
@@ -35,9 +39,11 @@ return func(scope, [type, statements, pos]) {
     if (!isHoist) {
       {scope, statement} = Statement(scope, statement);
     } else {
+      name := statement[1][1].name[1];
+
       statement = [
         'expression',
-        FunctionAndType(scope, statement[1]).expression,
+        hoists[name],
         statement[2],
       ];
     }
