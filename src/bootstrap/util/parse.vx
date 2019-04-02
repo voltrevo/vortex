@@ -393,4 +393,16 @@ return {
 
     return null;
   },
+
+  Stats: func(arg) => func(lines, pos) {
+    [[name, parser]] := arg:Entries();
+    output := parser(lines, pos);
+
+    log.info name ++ switch (output:Kind()) {
+      'null' => ' failed';
+      default => ' succeeded';
+    };
+
+    return output;
+  },
 };

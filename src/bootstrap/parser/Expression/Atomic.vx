@@ -2,7 +2,8 @@ import p from '@/util/parse.vx';
 
 import @/parser/AppendPos.vx;
 import @/parser/Identifier.vx;
-import @/parser/Primitive/Primitive.vx;
+import @/parser/Primitive/Number.vx;
+import @/parser/Primitive/String.vx;
 import @/parser/W.vx;
 
 import ./Array.vx;
@@ -24,8 +25,20 @@ ParenExp := p.SequenceOne([
 
 return p.Select([
   AppendPos(p.Select([
-    Primitive,
-    Identifier,
+    // Identifiers are the most common match and easy to parse, so they come
+    // first, just need to convert the ones that overlap with primitives into
+    // primitives (literals)
+    p.Transform(Identifier, func(ident) => switch (ident[1]) {
+      'null' => ['literal', null];
+      'true' => ['literal', true];
+      'false' => ['literal', false];
+      default => ident;
+    }),
+
+    // Primitives not covered by identifier-like cases above
+    Number,
+    String,
+
     Array,
     Set,
     Object,
