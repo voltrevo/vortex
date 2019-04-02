@@ -255,12 +255,12 @@ func ExpressionAndType(scope, expression) {
     }
 
     if (xType in operatorTypes.unary) {
-      scopeCapture := scope;
-      [target] := data:map(func(sub) => ExpressionAndType(scopeCapture, sub));
+      [target] := data;
+      target = ExpressionAndType(scope, target);
 
-      resType := Eval(xType, [target.type]).output;
+      res := Eval(xType, [target.type]);
 
-      if (resType[0] == 'never') {
+      if (res.output[0] == 'never') {
         return {
           scope,
           expression: null,
@@ -279,18 +279,26 @@ func ExpressionAndType(scope, expression) {
         };
       }
 
-      if (resType[0] == 'literal') {
+      if (target.expression[0] == 'identifier') {
+        scope = Scope.update(
+          scope,
+          target.expression[1],
+          Type.Intersection(target.type, res.inputs[0]),
+        );
+      }
+
+      if (res.output[0] == 'literal') {
         return {
           scope,
-          expression: ['literal', resType[1], pos],
-          type: resType,
+          expression: ['literal', res.output[1], pos],
+          type: res.output,
         };
       }
 
       return {
         scope,
         expression: [xType, [target.expression], pos],
-        type: resType,
+        type: res.output,
       };
     }
 
@@ -305,9 +313,9 @@ func ExpressionAndType(scope, expression) {
       return right;
     }
 
-    resType := Eval(xType, [left.type, right.type]).output;
+    res := Eval(xType, [left.type, right.type]);
 
-    if (resType[0] == 'never') {
+    if (res.output[0] == 'never') {
       return {
         scope,
         expression: null,
@@ -328,18 +336,28 @@ func ExpressionAndType(scope, expression) {
       };
     }
 
-    if (resType[0] == 'literal') {
+    for ([i, side] of [left, right]:Entries()) {
+      if (side.expression[0] == 'identifier') {
+        scope = Scope.update(
+          scope,
+          side.expression[1],
+          Type.Intersection(side.type, res.inputs[i]),
+        );
+      }
+    }
+
+    if (res.output[0] == 'literal') {
       return {
         scope,
-        expression: ['literal', resType[1], pos],
-        type: resType,
+        expression: ['literal', res.output[1], pos],
+        type: res.output,
       };
     }
 
     return {
       scope,
       expression: [xType, [left.expression, right.expression], pos],
-      type: resType,
+      type: res.output,
     };
   }
 
