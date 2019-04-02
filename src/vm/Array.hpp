@@ -1,14 +1,20 @@
 #pragma once
 
-#include <immer/flex_vector.hpp>
+#include <immer/flex_vector_transient.hpp>
 
 #include "Codes.hpp"
 #include "types.hpp"
 #include "Value.hpp"
 
 namespace Vortex {
+  void TransientInsert(
+    immer::flex_vector_transient<Value>& arr,
+    Uint64 pos,
+    Value&& val
+  );
+
   struct Array {
-    immer::flex_vector<Value> values;
+    immer::flex_vector_transient<Value> values;
     using iterator = decltype(values)::iterator;
 
     bool operator==(const Array& right) const;
@@ -18,12 +24,12 @@ namespace Vortex {
     friend int ArrayValueOrderUnchecked(const Array& left, const Array& right);
     bool isFunctionless() const;
 
-    Array pushBack(Value&& value) const;
-    Array pushFront(Value&& value) const;
-    Array update(Uint64 i, Value&& value) const;
+    void pushBack(Value&& value);
+    void pushFront(Value&& value);
+    void update(Uint64 i, Value&& value);
     Value at(Uint64 i) const;
     bool hasIndex(Uint64 i) const;
-    Array concat(Array&& right) const;
+    void concat(Array&& right);
     void plus(const Array& right);
     void minus(const Array& right);
 

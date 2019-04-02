@@ -693,13 +693,13 @@ namespace Vortex {
             throw BadIndexError("Attempt to update array with non-existing index");
           }
 
-          *target.data.ARRAY = target.data.ARRAY->update(key.data.UINT64, std::move(value));
+          target.data.ARRAY->update(key.data.UINT64, std::move(value));
 
           break;
         }
 
         case OBJECT: {
-          *target.data.OBJECT = target.data.OBJECT->update(key, std::move(value));
+          target.data.OBJECT->update(key, std::move(value));
           break;
         }
 
@@ -716,7 +716,7 @@ namespace Vortex {
         }
 
         case OBJECT: {
-          *target.data.OBJECT = target.data.OBJECT->insert(std::move(key), std::move(value));
+          target.data.OBJECT->insert(std::move(key), std::move(value));
           break;
         }
 
@@ -1360,7 +1360,7 @@ namespace Vortex {
 
       switch (type) {
         case ARRAY: {
-          *left.data.ARRAY = left.data.ARRAY->concat(std::move(*right.data.ARRAY));
+          left.data.ARRAY->concat(std::move(*right.data.ARRAY));
           return;
         }
 
@@ -1370,7 +1370,7 @@ namespace Vortex {
         }
 
         case OBJECT: {
-          *left.data.OBJECT = left.data.OBJECT->concat(std::move(*right.data.OBJECT));
+          left.data.OBJECT->concat(std::move(*right.data.OBJECT));
           return;
         }
 
@@ -1383,7 +1383,7 @@ namespace Vortex {
         throw TypeError("pushBack on non-array");
       }
 
-      *left.data.ARRAY = left.data.ARRAY->pushBack(std::move(right));
+      left.data.ARRAY->pushBack(std::move(right));
     }
 
     void pushFront(Value& left, Value&& right) {
@@ -1391,7 +1391,7 @@ namespace Vortex {
         throw TypeError("pushFront on non-array");
       }
 
-      *left.data.ARRAY = left.data.ARRAY->pushFront(std::move(right));
+      left.data.ARRAY->pushFront(std::move(right));
     }
 
     void setInsert(Value& left, Value&& right) {

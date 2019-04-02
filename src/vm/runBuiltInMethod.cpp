@@ -46,7 +46,7 @@ namespace Vortex {
               items.push_back(Value(i));
             }
 
-            base = Value(new Set{.values = items.persistent()});
+            base = Value(new Set{.values = std::move(items)});
 
             return;
           }
@@ -96,13 +96,13 @@ namespace Vortex {
             auto items = immer::flex_vector_transient<Value>();
 
             for (auto i = 0ul; i != len; ++i) {
-              items.push_back(Value(new Array{.values = {
-                Value(i),
-                base.data.ARRAY->values[i],
-              }}));
+              auto pair = Array();
+              pair.values.push_back(Value(i));
+              pair.values.push_back(base.data.ARRAY->values[i]);
+              items.push_back(Value(new Array(std::move(pair))));
             }
 
-            base = Value(new Array{.values = items.persistent()});
+            base = Value(new Array{.values = std::move(items)});
 
             return;
           }
@@ -112,13 +112,13 @@ namespace Vortex {
             auto items = immer::flex_vector_transient<Value>();
 
             for (auto i = 0ul; i != len; ++i) {
-              items.push_back(Value(new Array{.values = {
-                base.data.OBJECT->keys.values[i],
-                base.data.OBJECT->values.values[i],
-              }}));
+              auto pair = Array();
+              pair.values.push_back(base.data.OBJECT->keys.values[i]);
+              pair.values.push_back(base.data.OBJECT->values.values[i]);
+              items.push_back(Value(new Array(std::move(pair))));
             }
 
-            base = Value(new Array{.values = items.persistent()});
+            base = Value(new Array{.values = std::move(items)});
 
             return;
           }
@@ -192,7 +192,7 @@ namespace Vortex {
           items.push_back(machine.pop());
         }
 
-        machine.calc.push_back(Value(new Array{.values = items.persistent()}));
+        machine.calc.push_back(Value(new Array{.values = std::move(items)}));
         return;
       }
 
@@ -237,7 +237,7 @@ namespace Vortex {
           throw InternalError("Invalid base type");
         }
 
-        base = base.data.ARRAY->values.front();
+        base = base.data.ARRAY->values[0];
         return;
       }
 
@@ -249,7 +249,9 @@ namespace Vortex {
           throw InternalError("Invalid base type");
         }
 
-        base = base.data.ARRAY->values.back();
+        auto sz = base.data.ARRAY->Length();
+        sz--;
+        base = base.data.ARRAY->values[sz];
         return;
       }
 
@@ -261,7 +263,10 @@ namespace Vortex {
           throw InternalError("Invalid base type");
         }
 
-        base = Value(new Array{.values = { base }});
+        Array res;
+        res.values.push_back(base);
+
+        base = Value(new Array(std::move(res)));
         return;
       }
 
@@ -336,10 +341,12 @@ namespace Vortex {
     auto items = immer::flex_vector_transient<Value>();
 
     for (const Value& v: array.values) {
-      items.push_back(Value(new Array{.values = { v }}));
+      Array row;
+      row.values.push_back(v);
+      items.push_back(Value(new Array(std::move(row))));
     }
 
-    array.values = items.persistent();
+    array.values = std::move(items);
   }
 
   void TransposeArrayArray(Array& array) {
@@ -355,10 +362,10 @@ namespace Vortex {
         row.push_back(array.values[j].data.ARRAY->values[i]);
       }
 
-      items.push_back(Value(new Array{.values = std::move(row).persistent()}));
+      items.push_back(Value(new Array{.values = std::move(row)}));
     }
 
-    array.values = std::move(items).persistent();
+    array.values = std::move(items);
   }
 
   void TransposeObjectArray(Value& object) {
@@ -377,11 +384,11 @@ namespace Vortex {
 
       items.push_back(Value(new Object{
         .keys = obj.keys,
-        .values = Array{.values = std::move(row).persistent()},
+        .values = Array{.values = std::move(row)},
       }));
     }
 
-    object = Value(new Array{.values = std::move(items).persistent()});
+    object = Value(new Array{.values = std::move(items)});
   }
 
   void TransposeArrayObject(Value& array) {
@@ -400,13 +407,13 @@ namespace Vortex {
       }
 
       items.push_back(Value(new Array{
-        .values = std::move(row).persistent(),
+        .values = std::move(row),
       }));
     }
 
     array = Value(new Object{
       .keys = std::move(keys),
-      .values = Array{.values = std::move(items).persistent()}
+      .values = Array{.values = std::move(items)}
     });
   }
 
@@ -425,12 +432,12 @@ namespace Vortex {
 
       items.push_back(Value(new Object{
         .keys = object.keys,
-        .values = Array{.values = std::move(row).persistent()},
+        .values = Array{.values = std::move(row)},
       }));
     }
 
     object.keys = object.values.values[0].data.OBJECT->keys;
-    object.values.values = std::move(items).persistent();
+    object.values.values = std::move(items);
   }
 
   template <typename T>

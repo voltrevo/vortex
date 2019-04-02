@@ -77,27 +77,24 @@ namespace Vortex {
     return keys.isFunctionless() && values.isFunctionless();
   }
 
-  Object Object::insert(Value key, Value value) const {
+  void Object::insert(Value key, Value value) {
     Uint64 pos = binarySearch(key);
 
     if (pos == keys.Length()) {
-      return Object{
-        .keys = Array{keys.pushBack(std::move(key))},
-        .values = values.pushBack(std::move(value)),
-      };
+      keys.pushBack(std::move(key));
+      values.pushBack(std::move(value));
+      return;
     }
 
     if (*keys.at(pos).data.STRING == *key.data.STRING) {
       throw BadIndexError("Attempt to insert duplicate key");
     }
 
-    return Object{
-      .keys = Array{.values = keys.values.insert(pos, std::move(key))},
-      .values = Array{.values = values.values.insert(pos, std::move(value))},
-    };
+    TransientInsert(keys.values, pos, std::move(key));
+    TransientInsert(values.values, pos, std::move(value));
   }
 
-  Object Object::update(const Value& key, Value value) const {
+  void Object::update(const Value& key, Value value) {
     Uint64 pos = binarySearch(key);
 
     if (
@@ -107,10 +104,7 @@ namespace Vortex {
       throw BadIndexError("Attempt to update key that does not exist");
     }
 
-    return Object{
-      .keys = keys,
-      .values = values.update(pos, std::move(value)),
-    };
+    values.update(pos, std::move(value));
   }
 
   Value Object::at(const Value& key) const {
@@ -140,16 +134,14 @@ namespace Vortex {
     return true;
   }
 
-  Object Object::concat(const Object& right) const {
+  void Object::concat(const Object& right) {
     auto sz = right.keys.Length();
     Object res = *this;
 
     // TODO: There is a more efficient way to do this.
     for (Uint64 pos = 0; pos < sz; pos++) {
-      res = res.insert(right.keys.at(pos), right.values.at(pos));
+      this->insert(right.keys.at(pos), right.values.at(pos));
     }
-
-    return res;
   }
 
   void Object::plus(const Object& right) {

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <immer/flex_vector.hpp>
+#include <immer/flex_vector_transient.hpp>
 
 #include "Value.hpp"
 
@@ -8,7 +8,7 @@ namespace Vortex {
   struct Value;
 
   struct Set {
-    immer::flex_vector<Value> values;
+    immer::flex_vector_transient<Value> values;
     using iterator = decltype(values)::iterator;
 
     bool operator==(const Set& right) const;

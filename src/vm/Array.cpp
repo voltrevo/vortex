@@ -6,6 +6,15 @@
 #include "Value.hpp"
 
 namespace Vortex {
+  void TransientInsert(
+    immer::flex_vector_transient<Value>& arr,
+    Uint64 pos,
+    Value&& val
+  ) {
+    auto p = arr.persistent().insert(pos, val);
+    arr = p.transient();
+  }
+
   bool Array::operator==(const Array& right) const {
     if (!isFunctionless() || !right.isFunctionless()) {
       throw TypeError("== on arrays that contain functions");
@@ -48,16 +57,17 @@ namespace Vortex {
     return true;
   }
 
-  Array Array::pushBack(Value&& value) const {
-    return Array{.values = values.push_back(std::move(value))};
+  void Array::pushBack(Value&& value) {
+    values.push_back(std::move(value));
   }
 
-  Array Array::pushFront(Value&& value) const {
-    return Array{.values = values.push_front(std::move(value))};
+  void Array::pushFront(Value&& value) {
+    auto p = values.persistent().push_front(std::move(value));
+    values = p.transient();
   }
 
-  Array Array::update(Uint64 i, Value&& value) const {
-    return Array{.values = values.set(i, std::move(value))};
+  void Array::update(Uint64 i, Value&& value) {
+    values.set(i, std::move(value));
   }
 
   Value Array::at(Uint64 i) const {
@@ -72,8 +82,8 @@ namespace Vortex {
     return i < values.size();
   }
 
-  Array Array::concat(Array&& right) const {
-    return Array{.values = values + std::move(right.values)};
+  void Array::concat(Array&& right) {
+    values.append(std::move(right.values));
   }
 
   void Array::plus(const Array& right) {
@@ -83,20 +93,19 @@ namespace Vortex {
       throw TypeError("Length mismatch in Array + Array");
     }
 
-    auto newItems = decltype(values)().transient();
-
-    auto leftIter = values.begin();
     auto rightIter = right.values.begin();
 
     for (auto i = 0ul; i < len; ++i) {
-      Value v = *leftIter;
-      BinaryOperators::plus(v, *rightIter);
-      newItems.push_back(std::move(v));
-      ++leftIter;
+      values.update(
+        i,
+        [&](Value&& v) {
+          BinaryOperators::plus(v, *rightIter);
+          return v;
+        }
+      );
+
       ++rightIter;
     }
-
-    values = newItems.persistent();
   }
 
   void Array::minus(const Array& right) {
@@ -106,20 +115,19 @@ namespace Vortex {
       throw TypeError("Length mismatch in Array - Array");
     }
 
-    auto newItems = decltype(values)().transient();
-
-    auto leftIter = values.begin();
     auto rightIter = right.values.begin();
 
     for (auto i = 0ul; i < len; ++i) {
-      Value v = *leftIter;
-      BinaryOperators::minus(v, *rightIter);
-      newItems.push_back(std::move(v));
-      ++leftIter;
+      values.update(
+        i,
+        [&](Value&& v) {
+          BinaryOperators::minus(v, *rightIter);
+          return v;
+        }
+      );
+
       ++rightIter;
     }
-
-    values = newItems.persistent();
   }
 
   void Array::multiply(const Value& right) {
@@ -137,12 +145,10 @@ namespace Vortex {
       throw TypeError("Attempt to multiply Array by invalid type");
     }
 
-    auto items = std::move(values).transient();
-
-    auto len = items.size();
+    auto len = values.size();
 
     for (auto i = 0ul; i < len; i++) {
-      items.update(
+      values.update(
         i,
         [&](Value&& v) {
           BinaryOperators::scalarMultiply(v, right);
@@ -150,8 +156,6 @@ namespace Vortex {
         }
       );
     }
-
-    values = std::move(items).persistent();
   }
 
   void Array::multiplyArray(const Array& right) {
@@ -192,10 +196,10 @@ namespace Vortex {
           row.push_back(std::move(sum));
         }
 
-        matrix.push_back(Value(new Array{.values = row.persistent()}));
+        matrix.push_back(Value(new Array{.values = std::move(row)}));
       }
 
-      values = matrix.persistent();
+      values = std::move(matrix);
       return;
     }
 
@@ -229,11 +233,11 @@ namespace Vortex {
 
         matrix.push_back(Value(new Object{
           .keys = rightInnerKeys,
-          .values = Array{.values = row.persistent()}
+          .values = Array{.values = std::move(row)}
         }));
       }
 
-      values = matrix.persistent();
+      values = std::move(matrix);
       return;
     }
 
@@ -284,10 +288,10 @@ namespace Vortex {
           row.push_back(std::move(sum));
         }
 
-        matrix.push_back(Value(new Array{.values = row.persistent()}));
+        matrix.push_back(Value(new Array{.values = std::move(row)}));
       }
 
-      values = matrix.persistent();
+      values = std::move(matrix);
       return;
     }
 
@@ -325,11 +329,11 @@ namespace Vortex {
 
         matrix.push_back(Value(new Object{
           .keys = rightInnerKeys,
-          .values = Array{.values = row.persistent()}
+          .values = Array{.values = std::move(row)}
         }));
       }
 
-      values = matrix.persistent();
+      values = std::move(matrix);
       return;
     }
 

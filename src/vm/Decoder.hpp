@@ -4,7 +4,6 @@
 #include <string>
 
 #include <immer/flex_vector.hpp>
-#include <immer/flex_vector_transient.hpp>
 
 #include "Array.hpp"
 #include "Func.hpp"
@@ -357,18 +356,18 @@ namespace Vortex {
         }
 
         case ARRAY: {
-          auto items = Array().values.transient();
+          Array res;
 
           while (true) {
             auto itemType = get();
 
             switch (itemType) {
               case END: {
-                return Value(new Array{.values = items.persistent()});
+                return Value(new Array(std::move(res)));
               }
 
               default: {
-                items.push_back(getValue(itemType));
+                res.values.push_back(getValue(itemType));
                 continue;
               }
             }
@@ -411,7 +410,7 @@ namespace Vortex {
                 // be any type
                 Value key = getValue(STRING);
 
-                *items.data.OBJECT = items.data.OBJECT->insert(
+                items.data.OBJECT->insert(
                   key,
                   getValue(get())
                 );

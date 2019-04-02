@@ -2,6 +2,7 @@
 
 #include <immer/flex_vector_transient.hpp>
 
+#include "Array.hpp"
 #include "Set.hpp"
 #include "Value.hpp"
 
@@ -99,7 +100,7 @@ namespace Vortex {
       }
     }
 
-    values = newValues.persistent();
+    values = std::move(newValues);
   }
 
   void Set::unify(const Set& right) {
@@ -146,7 +147,7 @@ namespace Vortex {
       left = mid + 1;
     }
 
-    values = values.insert(left, element);
+    TransientInsert(values, left, std::move(element));
   }
 
   bool Set::contains(const Value& element) const {

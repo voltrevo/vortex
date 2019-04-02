@@ -16,11 +16,11 @@ namespace Vortex {
     friend int ObjectValueOrderUnchecked(const Object& left, const Object& right);
     bool isFunctionless() const;
 
-    Object insert(Value key, Value value) const;
-    Object update(const Value& key, Value value) const;
+    void insert(Value key, Value value);
+    void update(const Value& key, Value value);
     Value at(const Value& key) const;
     bool hasIndex(const Value& key) const;
-    Object concat(const Object& right) const;
+    void concat(const Object& right);
     void plus(const Object& right);
     void minus(const Object& right);
     void multiply(const Value& right);

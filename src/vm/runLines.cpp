@@ -58,7 +58,7 @@ int main(int argc, char** argv) {
     }
   }
 
-  machine.push(Vortex::Value(new Vortex::Array{.values = lines.persistent()}));
+  machine.push(Vortex::Value(new Vortex::Array{.values = std::move(lines)}));
 
   Vortex::Value result = machine.eval(*program.data.FUNC);
 
