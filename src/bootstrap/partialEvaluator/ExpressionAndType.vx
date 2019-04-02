@@ -4,6 +4,7 @@ import @/util/kinds.vx;
 import @/util/Join.vx;
 
 import ./Eval/Eval.vx;
+import ./FuncSignature.vx;
 import ./FunctionAndType.vx;
 import ./Scope.vx;
 import ./Type.vx;
@@ -20,19 +21,34 @@ func ExpressionAndType(scope, expression) {
   }
 
   if (xType == 'identifier') {
+    // TODO: When scope tracking is complete, defaulting to Type.any
+    // should not be necessary
+    // TODO: ... or not... in some cases it may be advantageous to analyze
+    // eg functions without capture information, and in these cases we should
+    // add any missing names to the scope as they are found so that we can
+    // do type inference on them
     type := Scope.lookupDefault(scope, expression[1], Type.any);
 
     if (type[0] == 'literal') {
       expression = ['literal', type[1], expression[2]];
+    } else if (type[0] == 'hoist') {
+      // Demote other hoists to function signatures to prevent excessive
+      // recursion (for now).
+      resolveScope := Scope.map(scope, func(t) {
+        if (t[0] == 'hoist') {
+          return FuncSignature(t[1]);
+        }
+
+        return t;
+      });
+
+      // TODO: Even though recursion is prevented above, this is still super
+      // expensive. Need to reduce unnecessary calls through here. Also not
+      // sure passing caller's scope is correct.
+      type = FunctionAndType(resolveScope, type[1]).type;
     }
 
-    return {
-      scope,
-      expression,
-      // TODO: When scope tracking is complete, defaulting to Type.any
-      // should not be necessary
-      type,
-    };
+    return {scope, expression, type};
   }
 
   if (xType in #[

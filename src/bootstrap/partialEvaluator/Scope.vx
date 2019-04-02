@@ -42,6 +42,15 @@ return {
     return {parent, variables};
   },
 
+  addOrUpdate: func(scope, name, data) {
+    exists := Scope.lookup(scope, name) in #[null];
+
+    return switch (exists) {
+      true => Scope.update(scope, name, data);
+      false => Scope.add(scope, name, data);
+    };
+  },
+
   push: func(scope) => { parent: scope, variables: {} },
   pop: func(scope) => scope.parent,
 

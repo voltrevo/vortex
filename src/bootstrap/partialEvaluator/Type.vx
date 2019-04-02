@@ -45,8 +45,7 @@ return {
     'set' => #['set'];
     'object' => #['object'];
     'func' => #['func'];
-    'func-bound' => #['func'];
-    'func-unbound' => #['func'];
+    'hoist' => #['func'];
     'never' => #[];
   },
 

@@ -1,4 +1,3 @@
-import ./FuncSignature.vx;
 import ./FunctionAndType.vx;
 import ./Scope.vx;
 import ./Statement.vx;
@@ -24,8 +23,7 @@ return func(scope, [type, statements, pos]) {
     if (IsHoist(statement)) {
       fn := statement[1];
       assert fn[1].name[0] == 'identifier';
-      // TODO: Need to add special 'hoist' pseudotype to the scope.
-      scope = Scope.add(scope, fn[1].name[1], FuncSignature(fn));
+      scope = Scope.add(scope, fn[1].name[1], ['hoist', fn]);
     }
   }
 

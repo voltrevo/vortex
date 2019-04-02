@@ -2,15 +2,22 @@ import ./Argument.vx;
 import ./Block.vx;
 import ./DestructureType.vx;
 import ./ExpressionAndType.vx;
+import ./FuncSignature.vx;
 import ./Scope.vx;
 import ./Type.vx;
 
-return func(scope, [xType, {name, args, body}, pos]) {
+return func(scope, fn) {
+  [xType, {name, args, body}, pos] := fn;
   assert xType == 'func';
 
   argsType := args:map(DestructureType);
 
   fnScope := Scope.push(scope);
+
+  if (name[0] == 'identifier') {
+    // Prevent recursive type evaluation / TODO: find a way to handle this
+    fnScope = Scope.addOrUpdate(fnScope, name[1], FuncSignature(fn));
+  }
 
   for (arg of args) {
     fnScope = Argument(fnScope, arg);
