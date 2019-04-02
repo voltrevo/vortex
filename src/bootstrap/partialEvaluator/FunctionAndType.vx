@@ -37,6 +37,10 @@ return func(scope, [xType, {name, args, body}, pos]) {
       default => ['func', {args: argsType, output: body.type}];
     };
 
+    if (body.type[0] == 'never') {
+      body.expression = ['note', body.type[1]];
+    }
+
     return {
       expression: [
         'func',
