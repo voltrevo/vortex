@@ -137,18 +137,26 @@ return {
       }
 
       line := lines[i];
+      lineLen := line:Length();
 
-      for (strPos := 0u64; strPos < str:Length(); strPos++) {
-        if (j + strPos >= line:Length()) {
-          return null;
-        }
+      jLimit := j + str:Length();
 
-        if (line[j + strPos] != str[strPos]) {
-          return null;
-        }
+      if (jLimit > lineLen) {
+        return null;
       }
 
-      return [str, [i, j + str:Length()]];
+      strPos := 0u64;
+
+      for (j < jLimit) {
+        if (line[j] != str[strPos]) {
+          return null;
+        }
+
+        j++;
+        strPos++;
+      }
+
+      return [str, [i, j]];
     };
   },
 
