@@ -1,6 +1,7 @@
+import ./DestructureType.vx;
 import ./Type.vx;
 
 return func([_, {name: _, args, body: _}, _]) {
   // TODO: Need to make use of argument destructuring for argument inference
-  return ['func', {args: args:map(func(_) => Type.any), output: Type.any}];
+  return ['func', {args: args:map(DestructureType), output: Type.any}];
 };
