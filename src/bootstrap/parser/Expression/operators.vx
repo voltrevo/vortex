@@ -30,7 +30,7 @@ precedenceList := [
 // It's important that longer operators always come first so that it is always
 // parsed preferentially rather than a shorter one which happens to be a prefix
 // Note: . and : are processed as suffixes rather than operators
-all := [
+allExceptIn := [
   '==', '!=',
 
   ':=', '=', '**=', '+=', '++=', '-=', '*=', '/=', '%=', '<<=', '>>=', '&=',
@@ -50,8 +50,9 @@ all := [
   '&',
   '||',
   '|',
-  'in',
 ];
+
+all := allExceptIn ++ ['in'];
 
 allSet := SetFromArray(all);
 
@@ -66,25 +67,26 @@ assert (
   SetFromArray(all)
 );
 
+parseIn := (func() {
+  identChar := p.Filter(p.Char, func(c) => (
+    ('a' <= c && c <= 'z') ||
+    ('A' <= c && c <= 'Z') ||
+    c == '_'
+  ));
+
+  return p.SequenceOne([p.Exact('in'), [p.Peek(p.Not(identChar))]]);
+})();
+
 return {
   all: allSet,
   assignment,
   prefix,
   postfix,
   precedenceList,
-  Operator: p.Select(all:map(func(op) {
-    if (op == 'in') {
-      identChar := p.Filter(p.Char, func(c) => (
-        ('a' <= c && c <= 'z') ||
-        ('A' <= c && c <= 'Z') ||
-        c == '_'
-      ));
-
-      return p.SequenceOne([p.Exact('in'), [p.Peek(p.Not(identChar))]]);
-    }
-
-    return p.Exact(op);
-  })),
+  Operator: p.Select([
+    p.SelectExact(allExceptIn),
+    parseIn,
+  ]),
   LeadingOperator: p.Select(prefix:Values():map(p.Exact)),
   TrailingOperator: p.Select(postfix:Values():map(p.Exact)),
 };

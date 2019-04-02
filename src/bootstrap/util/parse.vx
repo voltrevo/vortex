@@ -160,6 +160,71 @@ return {
     };
   },
 
+  SelectExact: func(strs) {
+    table := {};
+    leaders := #[];
+
+    for (str of strs) {
+      c := str[0];
+
+      if (c in leaders) {
+        table[c] ++= [str];
+      } else {
+        table[c] := [str];
+        leaders |= #[c];
+      }
+    }
+
+    tableCap := table;
+    leadersCap := leaders;
+
+    return func(lines, [i, j]) {
+      if (i >= lines:Length()) {
+        return null;
+      }
+
+      line := lines[i];
+      lineLen := line:Length();
+
+      if (j >= lineLen) {
+        return null;
+      }
+
+      leader := line[j];
+
+      if (!(leader in leadersCap)) {
+        return null;
+      }
+
+      jStart := j;
+
+      for (str of tableCap[leader]) {
+        j = jStart;
+        jLimit := j + str:Length();
+
+        if (jLimit <= lineLen) {
+          strPos := 1u64;
+          j++; // Already checked leader char
+
+          for (j < jLimit) {
+            if (line[j] != str[strPos]) {
+              break;
+            }
+
+            j++;
+            strPos++;
+          }
+
+          if (j == jLimit) {
+            return [str, [i, j]];
+          }
+        }
+      }
+
+      return null;
+    };
+  },
+
   DataPos: func(parser) => func(lines, pos) {
     output := parser(lines, pos);
 
