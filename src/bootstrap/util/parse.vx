@@ -33,7 +33,7 @@ func ExactChar(c) => func(lines, [i, j]) {
 return {
   Nothing: func(_, pos) => [['nothing', null, [pos, pos]], pos],
 
-  Sequence: func(parsers) => func(lines, [i, j]) {
+  Sequence: func(parsers) => func(lines, pos) {
     res := [];
 
     for (parser of parsers) {
@@ -43,25 +43,25 @@ return {
         [parser] = parser;
       }
 
-      output := parser(lines, [i, j]);
+      output := parser(lines, pos);
 
       if (output:Kind() == 'null') {
         return null;
       }
 
       value := null;
-      [value, [i, j]] = output;
+      [value, pos] = output;
 
       if (keep) {
         res ++= [value];
       }
     }
 
-    return [res, [i, j]];
+    return [res, pos];
   },
 
-  SequenceOne: func(parsers) => func(lines, [i, j]) {
-    output := parse.Sequence(parsers)(lines, [i, j]);
+  SequenceOne: func(parsers) => func(lines, pos) {
+    output := parse.Sequence(parsers)(lines, pos);
 
     if (output:Kind() == 'null') {
       return null;
@@ -72,7 +72,7 @@ return {
     return output;
   },
 
-  Repeat: func(parser, range) => func(lines, [i, j]) {
+  Repeat: func(parser, range) => func(lines, pos) {
     res := [];
 
     min := range:Front();
@@ -86,14 +86,14 @@ return {
     count := 0u64;
 
     for {
-      output := parser(lines, [i, j]);
+      output := parser(lines, pos);
 
       if (output:Kind() == 'null') {
         break;
       }
 
       value := null;
-      [value, [i, j]] = output;
+      [value, pos] = output;
 
       res ++= [value];
       count++;
@@ -110,15 +110,15 @@ return {
       return null;
     }
 
-    return [res, [i, j]];
+    return [res, pos];
   },
 
   Optional: func(parser) => parse.Repeat(parser, [0u64, 1u64]),
   Many: func(parser) => parse.Repeat(parser, [0u64, null]),
 
-  Select: func(parsers) => func(lines, [i, j]) {
+  Select: func(parsers) => func(lines, pos) {
     for (parser of parsers) {
-      output := parser(lines, [i, j]);
+      output := parser(lines, pos);
 
       if (output:Kind() != 'null') {
         return output;
@@ -152,16 +152,16 @@ return {
     };
   },
 
-  DataPos: func(parser) => func(lines, [i, j]) {
-    output := parser(lines, [i, j]);
+  DataPos: func(parser) => func(lines, pos) {
+    output := parser(lines, pos);
 
     if (output:Kind() == 'null') {
       return null;
     }
 
-    [data, ijNext] := output;
+    [data, posNext] := output;
 
-    return [{data, pos: [[i, j], ijNext]}, ijNext];
+    return [{data, pos: [pos, posNext]}, posNext];
   },
 
   Complete: func(parser) => func(lines) {
@@ -183,8 +183,8 @@ return {
     return null;
   },
 
-  Transform: func(parser, transform) => func(lines, [i, j]) {
-    output := parser(lines, [i, j]);
+  Transform: func(parser, transform) => func(lines, pos) {
+    output := parser(lines, pos);
 
     if (output:Kind() == 'null') {
       return null;
@@ -214,8 +214,8 @@ return {
     return [line[j], [i, j + 1u64]];
   },
 
-  Filter: func(parser, filter) => func(lines, [i, j]) {
-    output := parser(lines, [i, j]);
+  Filter: func(parser, filter) => func(lines, pos) {
+    output := parser(lines, pos);
 
     if (output:Kind() == 'null') {
       return null;
