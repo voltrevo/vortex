@@ -8,35 +8,36 @@
 #include "Decoder.hpp"
 #include "Machine.hpp"
 
+Vortex::Func CodeBlock(std::istream& in);
+Vortex::Func assembleCodeBlock(std::istream& in);
+
+int usage();
+
+int eval();
+int lines(int argc, char** argv);
+int asm_();
+int dasm();
+int args_(int argc, char** argv);
+
+int main(int argc, char** argv) {
+  if (argc < 2) {
+    return usage();
+  }
+
+  std::string prog(argv[1]);
+
+  if (prog == "eval") { return eval(); }
+  if (prog == "lines") { return lines(argc - 1, argv + 1); }
+  if (prog == "asm") { return asm_(); }
+  if (prog == "dasm") { return dasm(); }
+  if (prog == "args") { return args_(argc - 1, argv + 1); }
+
+  return usage();
+}
+
 int usage() {
   std::cerr << "Usage: vxvm [eval|lines|asm|dasm|args] [...]" << std::endl;
   return 1;
-}
-
-Vortex::Func CodeBlock(std::istream& in) {
-  auto bytes = immer::flex_vector_transient<Vortex::byte>();
-
-  while (true) {
-    Vortex::byte b = in.get();
-
-    if (in.eof()) {
-      break;
-    }
-
-    bytes.push_back(b);
-  }
-
-  return Vortex::Func{ .def = bytes.persistent() };
-}
-
-Vortex::Func assembleCodeBlock(std::istream& in) {
-  auto oss = std::ostringstream();
-  Vortex::assemble(in, oss);
-  std::string s = oss.str();
-
-  return Vortex::Func{
-    .def = decltype(Vortex::Func().def)(s.begin(), s.end())
-  };
 }
 
 int eval() {
@@ -163,18 +164,28 @@ int args_(int argc, char** argv) {
   return 0;
 }
 
-int main(int argc, char** argv) {
-  if (argc < 2) {
-    return usage();
+Vortex::Func CodeBlock(std::istream& in) {
+  auto bytes = immer::flex_vector_transient<Vortex::byte>();
+
+  while (true) {
+    Vortex::byte b = in.get();
+
+    if (in.eof()) {
+      break;
+    }
+
+    bytes.push_back(b);
   }
 
-  std::string prog(argv[1]);
+  return Vortex::Func{ .def = bytes.persistent() };
+}
 
-  if (prog == "eval") { return eval(); }
-  if (prog == "lines") { return lines(argc - 1, argv + 1); }
-  if (prog == "asm") { return asm_(); }
-  if (prog == "dasm") { return dasm(); }
-  if (prog == "args") { return args_(argc - 1, argv + 1); }
+Vortex::Func assembleCodeBlock(std::istream& in) {
+  auto oss = std::ostringstream();
+  Vortex::assemble(in, oss);
+  std::string s = oss.str();
 
-  return usage();
+  return Vortex::Func{
+    .def = decltype(Vortex::Func().def)(s.begin(), s.end())
+  };
 }
