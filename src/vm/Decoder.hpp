@@ -466,6 +466,8 @@ namespace Vortex {
     void disassemble(std::ostream& os, std::string indent, Code code) {
       switch (GetClass(code)) {
         case SPECIAL: {
+          os << indent;
+
           if (code == GFUNC || code == MFUNC) {
             // TODO: Deduplicate with loop, if
             // TODO: Move disassemble to its own file
@@ -506,7 +508,11 @@ namespace Vortex {
           if (code == SWAP) { os << "swap" << std::endl; break; }
           if (code == ASSERT) { os << "assert" << std::endl; break; }
           if (code == LOG_INFO) { os << "logInfo" << std::endl; break; }
-          if (code == LOCATION) { os << "location "; break; }
+
+          if (code == LOCATION) {
+            os << "location " << getValue(get()) << std::endl; break;
+          }
+
           if (code == DISCARD) { os << "discard" << std::endl; break; }
           if (code == GUARD) { os << "guard" << std::endl; break; }
           if (code == UNGUARD) { os << "unguard" << std::endl; break; }
@@ -515,6 +521,8 @@ namespace Vortex {
         }
 
         case TOP_TYPE: {
+          os << indent;
+
           if (code == FUNC) {
             // TODO: Deduplicate with loop, if
             // TODO: Move disassemble to its own file
@@ -535,7 +543,7 @@ namespace Vortex {
             os << indent << "}" << std::endl;
           } else {
             auto v = getValue(code);
-            os << indent << v << std::endl;
+            os << v << std::endl;
           }
 
           return;
@@ -660,8 +668,8 @@ namespace Vortex {
               return;
             }
 
-            case GCALL: os << "gcall" << std::endl; return;
-            case MCALL: os << "mcall" << std::endl; return;
+            case GCALL: os << "gcall " << (int)getByte() << std::endl; return;
+            case MCALL: os << "mcall " << (int)getByte() << std::endl; return;
             case CALL: os << "call" << std::endl; return;
             case RETURN: os << "return" << std::endl; return;
             case EMIT: os << "emit" << std::endl; return;
