@@ -190,6 +190,38 @@ namespace Vortex {
     out.put(END);
   }
 
+  std::string parseIdentifier(std::istream& in) {
+    std::string res;
+
+    char c = in.peek();
+
+    bool firstValid = (
+      c == '_' ||
+      ('a' <= c && c <= 'z') ||
+      ('A' <= c && c <= 'Z')
+    );
+
+    if (!firstValid) {
+      return res;
+    }
+
+    res += in.get();
+
+    c = in.peek();
+
+    while (
+      c == '_' ||
+      ('a' <= c && c <= 'z') ||
+      ('A' <= c && c <= 'Z') ||
+      ('0' <= c && c <= '9')
+    ) {
+      res += in.get();
+      c = in.peek();
+    }
+
+    return res;
+  }
+
   void skipWhitespace(std::istream& in) {
     while (true) {
       char c = in.peek();
@@ -470,12 +502,19 @@ namespace Vortex {
           break;
         }
 
-        if (c != '\'') {
-          // TODO: Actually, need to preferentially parse identifiers here
-          throw SyntaxError("' expected");
-        }
+        if (c == '\'') {
+          parse(in, out);
+        } else {
+          auto ident = parseIdentifier(in);
 
-        parse(in, out);
+          if (ident == "") {
+            throw SyntaxError("object key expected");
+          }
+
+          out.put(STRING);
+          out << ident;
+          out.put(END);
+        }
 
         skipWhitespace(in);
         c = in.get();

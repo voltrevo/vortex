@@ -51,6 +51,7 @@ namespace Vortex {
 
     Code get() { return (Code)(*pos++); };
     byte getByte() { return *pos++; }
+    bool end() { return pos == func.def.end(); }
 
     int location() const { return pos - func.def.begin(); }
 
@@ -491,7 +492,7 @@ namespace Vortex {
           }
 
           if (code == PROGRAM) {
-            while (true) {
+            while (!end()) {
               auto instr = get();
 
               if (instr == END) {
