@@ -5,10 +5,11 @@
 #include <immer/flex_vector_transient.hpp>
 
 #include "assemble.hpp"
+#include "Decoder.hpp"
 #include "Machine.hpp"
 
 int usage() {
-  std::cerr << "Usage: vxvm [eval|lines] [...]" << std::endl;
+  std::cerr << "Usage: vxvm [eval|lines|asm|dasm] [...]" << std::endl;
   return 1;
 }
 
@@ -102,17 +103,51 @@ int lines(int argc, char** argv) {
   return 0;
 }
 
+int asm_() {
+  Vortex::assemble(std::cin, std::cout);
+  return 0;
+}
+
+int dasm() {
+  auto bytes = immer::flex_vector_transient<Vortex::byte>();
+
+  while (true) {
+    Vortex::byte b = std::cin.get();
+
+    if (std::cin.eof()) {
+      break;
+    }
+
+    bytes.push_back(b);
+  }
+
+  auto decoder = Vortex::Decoder(Vortex::Func{ .def = bytes.persistent() });
+  decoder.disassemble(std::cout, "", Vortex::PROGRAM);
+
+  return 0;
+}
+
 int main(int argc, char** argv) {
   if (argc < 2) {
     return usage();
   }
 
-  if (std::string(argv[1]) == "eval") {
+  std::string prog(argv[1]);
+
+  if (prog == "eval") {
     return eval();
   }
 
-  if (std::string(argv[1]) == "lines") {
+  if (prog == "lines") {
     return lines(argc - 1, argv + 1);
+  }
+
+  if (prog == "asm") {
+    return asm_();
+  }
+
+  if (prog == "dasm") {
+    return dasm();
   }
 
   return usage();
