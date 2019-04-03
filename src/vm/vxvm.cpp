@@ -13,6 +13,22 @@ int usage() {
   return 1;
 }
 
+Vortex::Func CodeBlock(std::istream& in) {
+  auto bytes = immer::flex_vector_transient<Vortex::byte>();
+
+  while (true) {
+    Vortex::byte b = in.get();
+
+    if (in.eof()) {
+      break;
+    }
+
+    bytes.push_back(b);
+  }
+
+  return Vortex::Func{ .def = bytes.persistent() };
+}
+
 int eval() {
   auto oss = std::ostringstream();
   Vortex::assemble(std::cin, oss);
@@ -25,10 +41,6 @@ int eval() {
   auto machine = Vortex::Machine();
   Vortex::Value result = machine.eval(codeBlock);
   std::cout << result << std::endl;
-
-  if (machine.calc.size() != 0) {
-    throw Vortex::InternalError("Excess values left on stack");
-  }
 
   return 0;
 }
@@ -51,10 +63,6 @@ int lines(int argc, char** argv) {
 
   auto machine = Vortex::Machine();
   Vortex::Value program = machine.eval(codeBlock);
-
-  if (machine.calc.size() != 0) {
-    throw Vortex::InternalError("Excess values left on stack");
-  }
 
   if (program.type != Vortex::FUNC) {
     std::cerr << "Function expected from initial eval" << std::endl;
@@ -88,10 +96,6 @@ int lines(int argc, char** argv) {
 
   Vortex::Value result = machine.eval(*program.data.FUNC);
 
-  if (machine.calc.size() != 0) {
-    throw Vortex::InternalError("Excess values left on stack");
-  }
-
   if (result.type == Vortex::STRING) {
     for (char c: *result.data.STRING) {
       std::cout << c;
@@ -109,19 +113,7 @@ int asm_() {
 }
 
 int dasm() {
-  auto bytes = immer::flex_vector_transient<Vortex::byte>();
-
-  while (true) {
-    Vortex::byte b = std::cin.get();
-
-    if (std::cin.eof()) {
-      break;
-    }
-
-    bytes.push_back(b);
-  }
-
-  auto decoder = Vortex::Decoder(Vortex::Func{ .def = bytes.persistent() });
+  auto decoder = Vortex::Decoder(CodeBlock(std::cin));
   decoder.disassemble(std::cout, "", Vortex::PROGRAM);
 
   return 0;
@@ -146,10 +138,6 @@ int args_(int argc, char** argv) {
   auto machine = Vortex::Machine();
   Vortex::Value program = machine.eval(codeBlock);
 
-  if (machine.calc.size() != 0) {
-    throw Vortex::InternalError("Excess values left on stack");
-  }
-
   if (program.type != Vortex::FUNC) {
     std::cerr << "Function expected from initial eval" << std::endl;
     return 1;
@@ -173,10 +161,6 @@ int args_(int argc, char** argv) {
   machine.push(Vortex::Value(new Vortex::Array{.values = std::move(args)}));
 
   Vortex::Value result = machine.eval(*program.data.FUNC);
-
-  if (machine.calc.size() != 0) {
-    throw Vortex::InternalError("Excess values left on stack");
-  }
 
   if (result.type == Vortex::STRING) {
     for (char c: *result.data.STRING) {
