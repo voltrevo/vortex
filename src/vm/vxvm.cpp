@@ -9,7 +9,7 @@
 #include "Machine.hpp"
 
 int usage() {
-  std::cerr << "Usage: vxvm [eval|lines|asm|dasm] [...]" << std::endl;
+  std::cerr << "Usage: vxvm [eval|lines|asm|dasm|args] [...]" << std::endl;
   return 1;
 }
 
@@ -127,6 +127,68 @@ int dasm() {
   return 0;
 }
 
+int args_(int argc, char** argv) {
+  if (argc < 2) {
+    std::cerr << "Usage: vxvm args <program.vx> [...args]" << std::endl;
+    return 1;
+  }
+
+  std::ifstream ifs(argv[1]);
+
+  auto oss = std::ostringstream();
+  Vortex::assemble(ifs, oss);
+  std::string s = oss.str();
+
+  auto codeBlock = Vortex::Func{
+    .def = decltype(Vortex::Func().def)(s.begin(), s.end())
+  };
+
+  auto machine = Vortex::Machine();
+  Vortex::Value program = machine.eval(codeBlock);
+
+  if (machine.calc.size() != 0) {
+    throw Vortex::InternalError("Excess values left on stack");
+  }
+
+  if (program.type != Vortex::FUNC) {
+    std::cerr << "Function expected from initial eval" << std::endl;
+    return 1;
+  }
+
+  immer::flex_vector_transient<Vortex::Value> args;
+
+  for (int i = 2; i < argc; i++) {
+    immer::flex_vector_transient<char> arg;
+
+    char* p = argv[i];
+
+    while (*p != '\0') {
+      arg.push_back(*p);
+      p++;
+    }
+
+    args.push_back(Vortex::Value(new immer::flex_vector<char>(arg.persistent())));
+  }
+
+  machine.push(Vortex::Value(new Vortex::Array{.values = std::move(args)}));
+
+  Vortex::Value result = machine.eval(*program.data.FUNC);
+
+  if (machine.calc.size() != 0) {
+    throw Vortex::InternalError("Excess values left on stack");
+  }
+
+  if (result.type == Vortex::STRING) {
+    for (char c: *result.data.STRING) {
+      std::cout << c;
+    }
+  } else {
+    std::cout << result << std::endl;
+  }
+
+  return 0;
+}
+
 int main(int argc, char** argv) {
   if (argc < 2) {
     return usage();
@@ -148,6 +210,10 @@ int main(int argc, char** argv) {
 
   if (prog == "dasm") {
     return dasm();
+  }
+
+  if (prog == "args") {
+    return args_(argc - 1, argv + 1);
   }
 
   return usage();
