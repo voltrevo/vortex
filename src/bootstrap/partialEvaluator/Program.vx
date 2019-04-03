@@ -1,3 +1,8 @@
 import ./Block.vx;
+import ./Scope.vx;
 
-return func(block) => Block(null, block).block;
+return func(block) {
+  scope := Scope.create();
+  scope.variables['.return'] := ['never', null];
+  return Block(scope, block).block;
+};

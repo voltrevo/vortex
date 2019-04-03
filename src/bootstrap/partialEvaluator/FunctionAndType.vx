@@ -1,10 +1,8 @@
 import ./Argument.vx;
 import ./Block.vx;
 import ./DestructureType.vx;
-import ./ExpressionAndType.vx;
 import ./FuncSignature.vx;
 import ./Scope.vx;
-import ./Type.vx;
 
 return func(scope, fn) {
   [xType, {name, args, body}, pos] := fn;
@@ -13,9 +11,10 @@ return func(scope, fn) {
   argsType := args:map(DestructureType);
 
   fnScope := Scope.push(scope);
+  fnScope.variables['.return'] := ['never', null]; // TODO: Scope.addShallow?
 
   if (name[0] == 'identifier') {
-    // Prevent recursive type evaluation / TODO: find a way to handle this
+    // TODO: Fix only using Type.any for recursion calls here.
     fnScope = Scope.set(fnScope, name[1], FuncSignature(fn));
   }
 
@@ -23,40 +22,14 @@ return func(scope, fn) {
     fnScope = Argument(fnScope, arg);
   }
 
-  if (body[0] == 'block') {
-    // TODO: Need to get type information from block partial evaluation
-
-    return {
-      expression: ['func', {name, args, body: Block(fnScope, body).block}, pos],
-      type: ['func', {args: argsType, output: Type.any}],
-    };
-  }
-
   if (body[0] == 'expression') {
-    bodyPos := body[2];
-    body = ExpressionAndType(fnScope, body[1]);
-
-    type := switch (body.type[0]) {
-      // TODO: This `never` would still be included in the output type, is it
-      // necessary to escalate it?
-      'never' => body.type;
-
-      default => ['func', {args: argsType, output: body.type}];
-    };
-
-    if (body.type[0] == 'never') {
-      body.expression = ['note', body.type[1]];
-    }
-
-    return {
-      expression: [
-        'func',
-        {name, args, body: ['expression', body.expression, bodyPos]},
-        pos
-      ],
-      type,
-    };
+    body = ['block', [['return', body[1], body[2]]], body[2]];
   }
 
-  return switch{};
+  {scope: fnScope, block: body} = Block(fnScope, body);
+
+  return {
+    expression: ['func', {name, args, body}, pos],
+    type: ['func', {args: argsType, output: fnScope.variables['.return']}],
+  };
 };

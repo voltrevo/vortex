@@ -5,14 +5,40 @@ import ./ExpressionAndType.vx;
 import ./Scope.vx;
 import ./Type.vx;
 
-func Statement(scope, [type, data, pos]) {
-  if (type in #['return', 'assert', 'log.info', 'log.warn', 'log.error']) {
-    expression := null;
-    {scope, expression} = Expression(scope, data);
-    return {scope, statement: [type, expression, pos]};
+// TODO: Empty switches need to be replaced with a dedicated exception
+// statement
+func IsEmptySwitch(exp) {
+  if (exp[0] != 'switch') {
+    return false;
   }
 
-  if (type == 'if') {
+  return exp[1].cases:Length() == 0u64;
+};
+
+func Statement(scope, [xType, data, pos]) {
+  if (xType in #['return', 'assert', 'log.info', 'log.warn', 'log.error']) {
+    [expression, type] := [null, null];
+    {scope, expression, type} = ExpressionAndType(scope, data);
+
+    if (xType == 'return') {
+      scope = Scope.update(
+        scope,
+        '.return',
+        Type.Union(
+          Scope.lookup(scope, '.return'),
+          type,
+        ),
+      );
+    }
+
+    if (type[0] == 'never' && !IsEmptySwitch(data)) {
+      expression = ['note', type[1]];
+    }
+
+    return {scope, statement: [xType, expression, pos]};
+  }
+
+  if (xType == 'if') {
     {condition, body, tail} := data;
 
     condType := null;
@@ -39,7 +65,7 @@ func Statement(scope, [type, data, pos]) {
 
         return {
           scope,
-          statement: [type, {condition, body, tail}, pos],
+          statement: [xType, {condition, body, tail}, pos],
         };
 
         // TODO: Still analyze tail? Warn about unreachable code?
@@ -68,11 +94,11 @@ func Statement(scope, [type, data, pos]) {
 
     return {
       scope: Scope.combine(bodyScope, tailScope, Type.Union),
-      statement: [type, {condition, body, tail}, pos],
+      statement: [xType, {condition, body, tail}, pos],
     };
   }
 
-  if (type == 'for') {
+  if (xType == 'for') {
     scope = Scope.push(scope);
     {control: [controlType, controlData, controlPos], body} := data;
 
@@ -140,6 +166,13 @@ func Statement(scope, [type, data, pos]) {
         container,
       );
 
+      if (containerType[0] == 'never') {
+        return {
+          scope: Scope.pop(scope),
+          statement: ['expression', ['note', containerType[1], pos], pos],
+        };
+      }
+
       if (!('array' in Type.Kinds(containerType))) {
         return {
           scope: Scope.pop(scope),
@@ -201,11 +234,6 @@ func Statement(scope, [type, data, pos]) {
     for (i := 0; true; i++) {
       nextScope := NextScope(scope);
 
-      if (i > 2) {
-        log.info {scope, body, ouput: Block(scope, body).scope};
-        assert false;
-      }
-
       if (nextScope in #[scope]) {
         break;
       }
@@ -233,21 +261,21 @@ func Statement(scope, [type, data, pos]) {
     };
   }
 
-  if (type == 'expression') {
+  if (xType == 'expression') {
     expression := null;
     {scope, expression} = Expression(scope, data);
-    return {scope, statement: [type, expression, pos]};
+    return {scope, statement: [xType, expression, pos]};
   }
 
-  if (type == 'import') {
+  if (xType == 'import') {
     return {
       scope: Scope.add(scope, data.name[1], Type.any),
-      statement: [type, data, pos],
+      statement: [xType, data, pos],
     };
   }
 
-  assert type in #['break', 'continue', 'note', 'breakpoint'];
-  return {scope, statement: [type, data, pos]};
+  assert xType in #['break', 'continue', 'note', 'breakpoint'];
+  return {scope, statement: [xType, data, pos]};
 };
 
 func NonBoolConditionNote(condition, type) {
