@@ -178,6 +178,7 @@ To run the vm, you'll have to build the C++ project:
 ```sh
 cd src/vm
 git submodule update --init --recursive
+cmake .
 make
 export PATH="$PATH:$(pwd)/bin"
 ```
@@ -185,13 +186,13 @@ export PATH="$PATH:$(pwd)/bin"
 Then you can expand the previous command with:
 
 ```sh
-echo 'return 1 + 1;' | vxc - --code | run
+echo 'return 1 + 1;' | vxc - --code | vxvm eval
 ```
 
 The VM is a stack machine. You can try a simpler implementation of the above program with:
 
 ```sh
-echo '1 1 + return' | run
+echo '1 1 + return' | vxvm eval
 ```
 
 For a more readable format that's one step further away from the bytecode, use `--vasm` instead of `--code` when compiling.

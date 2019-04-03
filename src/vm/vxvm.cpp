@@ -7,9 +7,34 @@
 #include "assemble.hpp"
 #include "Machine.hpp"
 
-int main(int argc, char** argv) {
+int usage() {
+  std::cerr << "Usage: vxvm [eval|lines] [...]" << std::endl;
+  return 1;
+}
+
+int eval() {
+  auto oss = std::ostringstream();
+  Vortex::assemble(std::cin, oss);
+  std::string s = oss.str();
+
+  auto codeBlock = Vortex::Func{
+    .def = decltype(Vortex::Func().def)(s.begin(), s.end())
+  };
+
+  auto machine = Vortex::Machine();
+  Vortex::Value result = machine.eval(codeBlock);
+  std::cout << result << std::endl;
+
+  if (machine.calc.size() != 0) {
+    throw Vortex::InternalError("Excess values left on stack");
+  }
+
+  return 0;
+}
+
+int lines(int argc, char** argv) {
   if (argc != 2) {
-    std::cerr << "Usage: " << argv[0] << " <program.vx>" << std::endl;
+    std::cerr << "Usage: vxvm lines <program.vx>" << std::endl;
     return 1;
   }
 
@@ -75,4 +100,20 @@ int main(int argc, char** argv) {
   }
 
   return 0;
+}
+
+int main(int argc, char** argv) {
+  if (argc < 2) {
+    return usage();
+  }
+
+  if (std::string(argv[1]) == "eval") {
+    return eval();
+  }
+
+  if (std::string(argv[1]) == "lines") {
+    return lines(argc - 1, argv + 1);
+  }
+
+  return usage();
 }

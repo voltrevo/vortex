@@ -70,7 +70,7 @@ namespace Vortex {
     // This is necessary to avoid the possibility that type happens to get
     // ARRAY and causes invalid memory access when deallocating.
     type = INVALID;
-  };
+  }
 
   Value::Value(null v) {
     type = NULL_;

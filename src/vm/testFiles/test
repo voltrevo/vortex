@@ -4,6 +4,6 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 
 for filename in "$DIR"/*.vat; do
   echo "$filename: "
-  run <"$filename"
+  vxvm eval <"$filename"
   echo
 done
