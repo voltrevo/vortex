@@ -29,14 +29,18 @@ Vortex::Func CodeBlock(std::istream& in) {
   return Vortex::Func{ .def = bytes.persistent() };
 }
 
-int eval() {
+Vortex::Func assembleCodeBlock(std::istream& in) {
   auto oss = std::ostringstream();
-  Vortex::assemble(std::cin, oss);
+  Vortex::assemble(in, oss);
   std::string s = oss.str();
 
-  auto codeBlock = Vortex::Func{
+  return Vortex::Func{
     .def = decltype(Vortex::Func().def)(s.begin(), s.end())
   };
+}
+
+int eval() {
+  auto codeBlock = assembleCodeBlock(std::cin);
 
   auto machine = Vortex::Machine();
   Vortex::Value result = machine.eval(codeBlock);
@@ -52,14 +56,7 @@ int lines(int argc, char** argv) {
   }
 
   std::ifstream ifs(argv[1]);
-
-  auto oss = std::ostringstream();
-  Vortex::assemble(ifs, oss);
-  std::string s = oss.str();
-
-  auto codeBlock = Vortex::Func{
-    .def = decltype(Vortex::Func().def)(s.begin(), s.end())
-  };
+  auto codeBlock = assembleCodeBlock(ifs);
 
   auto machine = Vortex::Machine();
   Vortex::Value program = machine.eval(codeBlock);
@@ -126,14 +123,7 @@ int args_(int argc, char** argv) {
   }
 
   std::ifstream ifs(argv[1]);
-
-  auto oss = std::ostringstream();
-  Vortex::assemble(ifs, oss);
-  std::string s = oss.str();
-
-  auto codeBlock = Vortex::Func{
-    .def = decltype(Vortex::Func().def)(s.begin(), s.end())
-  };
+  auto codeBlock = assembleCodeBlock(ifs);
 
   auto machine = Vortex::Machine();
   Vortex::Value program = machine.eval(codeBlock);
@@ -180,25 +170,11 @@ int main(int argc, char** argv) {
 
   std::string prog(argv[1]);
 
-  if (prog == "eval") {
-    return eval();
-  }
-
-  if (prog == "lines") {
-    return lines(argc - 1, argv + 1);
-  }
-
-  if (prog == "asm") {
-    return asm_();
-  }
-
-  if (prog == "dasm") {
-    return dasm();
-  }
-
-  if (prog == "args") {
-    return args_(argc - 1, argv + 1);
-  }
+  if (prog == "eval") { return eval(); }
+  if (prog == "lines") { return lines(argc - 1, argv + 1); }
+  if (prog == "asm") { return asm_(); }
+  if (prog == "dasm") { return dasm(); }
+  if (prog == "args") { return args_(argc - 1, argv + 1); }
 
   return usage();
 }
