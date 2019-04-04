@@ -1,3 +1,21 @@
+import parse from './parser/Program.vx';
+import TreeNotes from './TreeNotes/Program.vx';
+
+func HasError(notes) {
+  for (note of notes) {
+    if (note.level == 'error') {
+      return true;
+    }
+  }
+
+  return false;
+};
+
+func AddFileInfo(file, note) {
+  note.pos = [file, note.pos];
+  return note;
+};
+
 return func(state, replies) {
   if (state:Kind() == 'null') {
     [[_, args]] := replies;
@@ -13,10 +31,23 @@ return func(state, replies) {
         files: {},
         entry,
       },
-      filesRequested: [entry],
+      fileRequests: [entry],
+      allFileRequests: #[entry],
+      notes: [],
     };
 
     return [state, [['read', entry]]];
+  }
+
+  for ([file, lines] of [state.fileRequests, replies]:Transpose()) {
+    tree := parse(lines);
+    state.notes ++= TreeNotes(tree):map(AddFileInfo:bind(file));
+
+    state.package.files[file] := tree;
+  }
+
+  if (HasError(state.notes)) {
+    return [null, [['output', state.notes]]];
   }
 
   return [state, [['output', {state, replies}]]];
