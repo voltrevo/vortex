@@ -13,12 +13,14 @@ add_executable(
 
   vxvm.cpp
 
-  Codes.cpp
-  Value.cpp
-  Object.cpp
   Array.cpp
-  Func.cpp
+  assemble.cpp
+  Codes.cpp
   Exceptions.cpp
+  frontendUtil.cpp
+  Func.cpp
+  Object.cpp
   runBuiltInMethod.cpp
   Set.cpp
+  Value.cpp
 )

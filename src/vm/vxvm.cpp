@@ -6,10 +6,8 @@
 
 #include "assemble.hpp"
 #include "Decoder.hpp"
+#include "frontendUtil.hpp"
 #include "Machine.hpp"
-
-Vortex::Func CodeBlock(std::istream& in);
-Vortex::Func assembleCodeBlock(std::istream& in);
 
 int usage();
 
@@ -162,30 +160,4 @@ int args_(int argc, char** argv) {
   }
 
   return 0;
-}
-
-Vortex::Func CodeBlock(std::istream& in) {
-  auto bytes = immer::flex_vector_transient<Vortex::byte>();
-
-  while (true) {
-    Vortex::byte b = in.get();
-
-    if (in.eof()) {
-      break;
-    }
-
-    bytes.push_back(b);
-  }
-
-  return Vortex::Func{ .def = bytes.persistent() };
-}
-
-Vortex::Func assembleCodeBlock(std::istream& in) {
-  auto oss = std::ostringstream();
-  Vortex::assemble(in, oss);
-  std::string s = oss.str();
-
-  return Vortex::Func{
-    .def = decltype(Vortex::Func().def)(s.begin(), s.end())
-  };
 }
