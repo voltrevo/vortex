@@ -1,6 +1,4 @@
 #include <iostream>
-#include <fstream>
-#include <sstream>
 
 #include <immer/flex_vector_transient.hpp>
 
@@ -54,9 +52,7 @@ int lines(int argc, char** argv) {
     return 1;
   }
 
-  std::ifstream ifs(argv[1]);
-  auto codeBlock = assembleCodeBlock(ifs);
-
+  auto codeBlock = FileCodeBlock(argv[1]);
   auto machine = Vortex::Machine();
   Vortex::Value program = machine.eval(codeBlock);
 
@@ -65,31 +61,7 @@ int lines(int argc, char** argv) {
     return 1;
   }
 
-  immer::flex_vector_transient<Vortex::Value> lines;
-  immer::flex_vector_transient<char> line;
-
-  while (true) {
-    char c = std::cin.get();
-
-    if (std::cin.eof()) {
-      if (line.size() > 0u) {
-        lines.push_back(Vortex::Value(new immer::flex_vector<char>(line.persistent())));
-        line = immer::flex_vector_transient<char>();
-      }
-
-      break;
-    }
-
-    if (c == '\n') {
-      lines.push_back(Vortex::Value(new immer::flex_vector<char>(line.persistent())));
-      line = immer::flex_vector_transient<char>();
-    } else {
-      line.push_back(c);
-    }
-  }
-
-  machine.push(Vortex::Value(new Vortex::Array{.values = std::move(lines)}));
-
+  machine.push(LinesFromStream(std::cin));
   Vortex::Value result = machine.eval(*program.data.FUNC);
 
   if (result.type == Vortex::STRING) {
@@ -121,9 +93,7 @@ int args_(int argc, char** argv) {
     return 1;
   }
 
-  std::ifstream ifs(argv[1]);
-  auto codeBlock = assembleCodeBlock(ifs);
-
+  auto codeBlock = FileCodeBlock(argv[1]);
   auto machine = Vortex::Machine();
   Vortex::Value program = machine.eval(codeBlock);
 

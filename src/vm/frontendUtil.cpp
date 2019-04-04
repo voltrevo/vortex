@@ -1,3 +1,5 @@
+#include <fstream>
+
 #include <immer/flex_vector_transient.hpp>
 
 #include "Array.hpp"
@@ -30,6 +32,11 @@ Vortex::Func assembleCodeBlock(std::istream& in) {
   };
 }
 
+Vortex::Func FileCodeBlock(char* fname) {
+  std::ifstream ifs(fname);
+  return assembleCodeBlock(ifs);
+}
+
 Vortex::Value VxArgs(int argc, char** argv) {
   immer::flex_vector_transient<Vortex::Value> args;
 
@@ -47,4 +54,31 @@ Vortex::Value VxArgs(int argc, char** argv) {
   }
 
   return Vortex::Value(new Vortex::Array{.values = std::move(args)});
+}
+
+Vortex::Value LinesFromStream(std::istream& in) {
+  immer::flex_vector_transient<Vortex::Value> lines;
+  immer::flex_vector_transient<char> line;
+
+  while (true) {
+    char c = in.get();
+
+    if (in.eof()) {
+      if (line.size() > 0u) {
+        lines.push_back(Vortex::Value(new immer::flex_vector<char>(line.persistent())));
+        line = immer::flex_vector_transient<char>();
+      }
+
+      break;
+    }
+
+    if (c == '\n') {
+      lines.push_back(Vortex::Value(new immer::flex_vector<char>(line.persistent())));
+      line = immer::flex_vector_transient<char>();
+    } else {
+      line.push_back(c);
+    }
+  }
+
+  return Vortex::Value(new Vortex::Array{.values = std::move(lines)});
 }
