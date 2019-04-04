@@ -20,6 +20,7 @@ add_executable(
   frontendUtil.cpp
   Func.cpp
   Object.cpp
+  readfs.cpp
   runBuiltInMethod.cpp
   Set.cpp
   Value.cpp

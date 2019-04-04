@@ -6,6 +6,7 @@
 #include "Decoder.hpp"
 #include "frontendUtil.hpp"
 #include "Machine.hpp"
+#include "readfs.hpp"
 
 int usage();
 
@@ -27,12 +28,13 @@ int main(int argc, char** argv) {
   if (prog == "asm") { return asm_(); }
   if (prog == "dasm") { return dasm(); }
   if (prog == "args") { return args_(argc - 1, argv + 1); }
+  if (prog == "readfs") { return readfs(argc - 1, argv + 1); }
 
   return usage();
 }
 
 int usage() {
-  std::cerr << "Usage: vxvm [eval|lines|asm|dasm|args] [...]" << std::endl;
+  std::cerr << "Usage: vxvm [eval|lines|asm|dasm|args|readfs] [...]" << std::endl;
   return 1;
 }
 

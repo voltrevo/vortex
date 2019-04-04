@@ -1,4 +1,5 @@
 #include <fstream>
+#include <iostream>
 
 #include <immer/flex_vector_transient.hpp>
 
@@ -81,4 +82,25 @@ Vortex::Value LinesFromStream(std::istream& in) {
   }
 
   return Vortex::Value(new Vortex::Array{.values = std::move(lines)});
+}
+
+void vxPrint(const Vortex::Value& value) {
+  if (value.type == Vortex::STRING) {
+    for (char c: *value.data.STRING) {
+      std::cout << c;
+    }
+  } else if (value.type == Vortex::ARRAY) {
+    for (const auto& v: value.data.ARRAY->values) {
+      if (v.type == Vortex::STRING) {
+        for (char c: *v.data.STRING) {
+          std::cout << c;
+        }
+        std::cout << std::endl;
+      } else {
+        StreamLongString(std::cout, "", v) << std::endl;
+      }
+    }
+  } else {
+    StreamLongString(std::cout, "", value) << std::endl;
+  }
 }

@@ -552,11 +552,16 @@ namespace Vortex {
     std::string word;
 
     while (
+      in.good() &&
       c != ']' && c != '}' && c != ',' &&
       c != ' ' && c != '\n' && c != '\r' && c != '\t'
     ) {
       word += in.get();
       c = in.peek();
+    }
+
+    if (!in.good()) {
+      throw SyntaxError("Unexpected end of input");
     }
 
     if (word == "true") {

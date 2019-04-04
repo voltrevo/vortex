@@ -165,6 +165,12 @@ namespace Vortex {
   bool isNumeric(Code type);
   bool isVector(Code type);
 
+  std::ostream& StreamLongString(
+    std::ostream& os,
+    std::string indent,
+    const Value& value
+  );
+
   int TypeValueOrder(const Value& left, const Value& right);
   int TypeValueOrderUnchecked(const Value& left, const Value& right);
   int TypeOrder(const Value& left, const Value& right);
