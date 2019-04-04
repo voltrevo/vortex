@@ -132,22 +132,7 @@ int args_(int argc, char** argv) {
     return 1;
   }
 
-  immer::flex_vector_transient<Vortex::Value> args;
-
-  for (int i = 2; i < argc; i++) {
-    immer::flex_vector_transient<char> arg;
-
-    char* p = argv[i];
-
-    while (*p != '\0') {
-      arg.push_back(*p);
-      p++;
-    }
-
-    args.push_back(Vortex::Value(new immer::flex_vector<char>(arg.persistent())));
-  }
-
-  machine.push(Vortex::Value(new Vortex::Array{.values = std::move(args)}));
+  machine.push(VxArgs(argc - 2, argv + 2));
 
   Vortex::Value result = machine.eval(*program.data.FUNC);
 
