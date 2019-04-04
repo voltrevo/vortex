@@ -1,22 +1,10 @@
+import @/util/SetFromArray.vx;
+
+import Imports from './Imports/Program.vx';
 import parse from './parser/Program.vx';
 import TreeNotes from './TreeNotes/Program.vx';
 
-func HasError(notes) {
-  for (note of notes) {
-    if (note.level == 'error') {
-      return true;
-    }
-  }
-
-  return false;
-};
-
-func AddFileInfo(file, note) {
-  note.pos = [file, note.pos];
-  return note;
-};
-
-return func(state, replies) {
+func compile(state, replies) {
   if (state:Kind() == 'null') {
     [[_, args]] := replies;
 
@@ -39,16 +27,98 @@ return func(state, replies) {
     return [state, [['read', entry]]];
   }
 
+  nextFileRequests := [];
+
   for ([file, lines] of [state.fileRequests, replies]:Transpose()) {
+    log.info 'Parsing ' ++ file;
     tree := parse(lines);
     state.notes ++= TreeNotes(tree):map(AddFileInfo:bind(file));
 
+    imports := SetFromArray(Imports(tree):map(resolve:bind(Dir(file))));
+    newImports := imports ~ state.allFileRequests;
+    nextFileRequests ++= newImports:Values();
+    state.allFileRequests |= newImports;
+
     state.package.files[file] := tree;
   }
+
+  state.fileRequests = nextFileRequests;
 
   if (HasError(state.notes)) {
     return [null, [['output', state.notes]]];
   }
 
-  return [state, [['output', {state, replies}]]];
+  if (state.fileRequests:Length() == 0u64) {
+    return [
+      null,
+      [
+        ['output', [
+          'Parsed ' ++
+          state.package.files:Keys():Values():Length():String() ++
+          ' files successfully'
+        ]],
+      ],
+    ];
+  }
+
+  return [state, state.fileRequests:map(func(f) => ['read', f])];
 };
+
+func HasError(notes) {
+  for (note of notes) {
+    if (note.level == 'error') {
+      return true;
+    }
+  }
+
+  return false;
+};
+
+func AddFileInfo(file, note) {
+  note.pos = [file, note.pos];
+  return note;
+};
+
+func Dir(file) {
+  res := '';
+  stage := '';
+
+  for (i := 0u64; i < file:Length(); i++) {
+    stage ++= file[i];
+
+    if (file[i] == '/') {
+      res ++= stage;
+      stage = '';
+    }
+  }
+
+  return res;
+};
+
+func resolve(dir, importSrc) => switch(strTake(2u64, importSrc)) {
+  '@/' => strDrop(2u64, importSrc);
+  './' => dir ++ strDrop(2u64, importSrc);
+};
+
+func strTake(n, str) {
+  res := '';
+
+  for (i := 0u64; i < n && i < str:Length(); i++) {
+    res ++= str[i];
+  }
+
+  return res;
+};
+
+func strDrop(n, str) {
+  res := '';
+
+  for (n < str:Length()) {
+    res ++= str[n];
+    n++;
+  }
+
+  return res;
+};
+
+return compile;
