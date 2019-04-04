@@ -66,13 +66,7 @@ int lines(int argc, char** argv) {
   machine.push(LinesFromStream(std::cin));
   Vortex::Value result = machine.eval(*program.data.FUNC);
 
-  if (result.type == Vortex::STRING) {
-    for (char c: *result.data.STRING) {
-      std::cout << c;
-    }
-  } else {
-    std::cout << result << std::endl;
-  }
+  vxPrint(result);
 
   return 0;
 }
@@ -108,13 +102,7 @@ int args_(int argc, char** argv) {
 
   Vortex::Value result = machine.eval(*program.data.FUNC);
 
-  if (result.type == Vortex::STRING) {
-    for (char c: *result.data.STRING) {
-      std::cout << c;
-    }
-  } else {
-    std::cout << result << std::endl;
-  }
+  vxPrint(result);
 
   return 0;
 }
