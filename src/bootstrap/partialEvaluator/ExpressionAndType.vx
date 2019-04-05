@@ -1312,7 +1312,7 @@ func MutateInsert(scope, target, srcType) {
     return MutateAccess(scope, subTarget, ['kinds', #['object']]);
   }
 
-  if (keyType[1] in subTarget[1]:Keys()) {
+  if (keyType[1] in subTargetType[1]:Keys()) {
     return BadInsert();
   }
 
