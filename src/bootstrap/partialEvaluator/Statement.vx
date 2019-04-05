@@ -47,8 +47,8 @@ func Statement(scope, [xType, data, pos]) {
       condition,
     );
 
-    if (condition[0] == 'note') {
-      return {scope, statement: condition};
+    if (condType[0] == 'never') {
+      return {scope, statement: ['note', condType[1]]};
     }
 
     if (!('bool' in Type.Kinds(condType))) {
