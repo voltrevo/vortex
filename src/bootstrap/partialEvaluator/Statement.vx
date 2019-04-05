@@ -233,6 +233,7 @@ func Statement(scope, [xType, data, pos]) {
 
     for (i := 0; true; i++) {
       nextScope := NextScope(scope);
+      nextScope = Scope.combine(scope, nextScope, Type.Union);
 
       if (nextScope in #[scope]) {
         break;
@@ -241,11 +242,11 @@ func Statement(scope, [xType, data, pos]) {
       if (i == 7) {
         // TODO: Need to widen types as needed to accommodate the operations
         // of the loop. This is not yet implemented, halting instead.
-        log.info {scope, nextScope};
+        log.info {scope, nextScope, pos};
         assert false;
       }
 
-      scope = Scope.combine(scope, nextScope, Type.Union);
+      scope = nextScope;
     }
 
     body = Block(scope, body).block;
