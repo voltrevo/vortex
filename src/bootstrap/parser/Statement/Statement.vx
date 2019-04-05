@@ -39,22 +39,20 @@ ExpStatement := p.Transform(
   },
 );
 
+func addSemi(parser) => p.SequenceOne([parser, [W.Optional], [p.Exact(';')]]);
+
 SemiStatement := p.Select([
   Import,
   ExactStatement('breakpoint'),
   ExactStatement('break'),
   ExactStatement('continue'),
   ExpStatement,
-]);
+]:map(addSemi));
 
 Statement := AppendPos(p.Select([
   If,
   For,
-  p.SequenceOne([
-    SemiStatement,
-    [W.Optional],
-    [p.Exact(';')],
-  ]),
+  SemiStatement,
   FailedStatement,
 ]));
 
