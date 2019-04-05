@@ -545,16 +545,7 @@ return {
     'literal' => switch (data:Kind()) {
       'array' => ['array', data:map(Type.Literal):map(Type.Shape)];
 
-      'set' => ['set', switch (data) {
-        // TODO: Remove need for these parentheses: (#[...]) => rhs
-        (#[]) => ['never', null];
-
-        default => Type.Shape(data
-          :Values()
-          :map(Type.Literal)
-          :reduce(Type.ShapeUnion)
-        );
-      }];
+      'set' => ['kinds', #['set']];
 
       'object' => ['object', mapValues(data, Type.Shape)];
 
@@ -564,7 +555,7 @@ return {
     'kinds' => [cat, data];
     'array' => ['array', data:map(Type.Shape)];
     'array-uniform' => ['array-uniform', Type.Shape(data)];
-    'set' => ['set', Type.Shape(data)];
+    'set' => ['kinds', #['set']];
     'object' => ['object', mapValues(data, Type.Shape)];
 
     'func' => ['func', {
