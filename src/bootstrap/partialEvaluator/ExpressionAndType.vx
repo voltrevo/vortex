@@ -743,6 +743,17 @@ func ExpressionAndType(scope, expression) {
           };
         }
 
+        if (base.type[0] == 'literal') {
+          return {
+            scope,
+            expression: ['methodLookup', [base.expression, name], pos],
+            type: [
+              'func',
+              {args: [], output: ['literal', base.type[1]:Values()]}
+            ],
+          };
+        }
+
         if (base.type[0] == 'array') {
           return {
             scope,
