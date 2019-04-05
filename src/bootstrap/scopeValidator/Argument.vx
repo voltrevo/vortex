@@ -2,7 +2,9 @@ return func Argument(target) {
   [type, data, _] := target;
 
   if (type == 'identifier') {
-    return [['create', target, {rightEvents: [], source: target}]];
+    if (target[1] != '_') { // TODO: Lack of short-circuit && strikes again!
+      return [['create', target, {rightEvents: [], source: target}]];
+    }
   }
 
   if (type in #['array', 'object']) {
