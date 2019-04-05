@@ -74,7 +74,7 @@ func Statement(scope, [xType, data, pos]) {
       return switch (tail[0]) {
         'nothing' => {scope, statement: null};
         'block' => ScopeBlock(scope, tail[1]);
-        'if' => Statement(tail);
+        'if' => Statement(scope, tail);
       };
     }
 
