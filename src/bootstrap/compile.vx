@@ -1,8 +1,8 @@
 import @/util/SetFromArray.vx;
 
 import Imports from './Imports/Program.vx';
-import parse from './parser/Program.vx';
-import TreeNotes from './TreeNotes/Program.vx';
+
+import ./isolatedCompile.vx;
 
 func compile(state, replies) {
   if (state:Kind() == 'null') {
@@ -28,11 +28,12 @@ func compile(state, replies) {
   }
 
   nextFileRequests := [];
+  newNotes := [];
 
   for ([file, lines] of [state.fileRequests, replies]:Transpose()) {
-    log.info 'Parsing ' ++ file;
-    tree := parse(lines);
-    state.notes ++= TreeNotes(tree):map(AddFileInfo:bind(file));
+    log.info 'Isolated compile: @/' ++ file;
+    {notes, tree} := isolatedCompile(lines);
+    newNotes ++= notes:map(AddFileInfo:bind(file));
 
     imports := SetFromArray(Imports(tree):map(resolve:bind(Dir(file))));
     newImports := imports ~ state.allFileRequests;
@@ -42,18 +43,19 @@ func compile(state, replies) {
     state.package.files[file] := tree;
   }
 
-  state.fileRequests = nextFileRequests;
-
-  if (HasError(state.notes)) {
+  if (HasError(newNotes)) {
     return [null, [['output', state.notes]]];
   }
+
+  state.fileRequests = nextFileRequests;
+  state.notes ++= newNotes;
 
   if (state.fileRequests:Length() == 0u64) {
     return [
       null,
       [
         ['output', [
-          'Parsed ' ++
+          'Compiled (isolated) ' ++
           state.package.files:Keys():Values():Length():String() ++
           ' files successfully'
         ]],

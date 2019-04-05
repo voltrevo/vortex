@@ -1,0 +1,56 @@
+import parse from './parser/Program.vx';
+import partiallyEvaluate from './partialEvaluator/Program.vx';
+import scopeValidate from './scopeValidator/Program.vx';
+import TreeNotes from './TreeNotes/Program.vx';
+import validate from './validator/Program.vx';
+
+func HasError(notes) {
+  for (note of notes) {
+    if (note.level == 'error') {
+      return true;
+    }
+  }
+
+  return false;
+};
+
+func addTags(notes, tags) => notes:map(func(note) {
+  note.tags |= tags;
+  return note;
+});
+
+return func(lines) {
+  tree := parse(lines);
+  notes := [];
+
+  parseNotes := addTags(TreeNotes(tree), #['parser']);
+  notes ++= parseNotes;
+
+  if (HasError(parseNotes)) {
+    return {notes, tree: null};
+  }
+
+  validationNotes := addTags(validate(tree), #['validation']);
+  notes ++= validationNotes;
+
+  if (HasError(validationNotes)) {
+    return {notes, tree: null};
+  }
+
+  scopeValidationNotes := addTags(scopeValidate(tree), #['scope']);
+  notes ++= scopeValidationNotes;
+
+  if (HasError(scopeValidationNotes)) {
+    return {notes, tree: null};
+  }
+
+  tree = partiallyEvaluate(tree);
+  partialEvaluationNotes := addTags(TreeNotes(tree), #['partial-evaluation']);
+  notes ++= partialEvaluationNotes;
+
+  if (HasError(partialEvaluationNotes)) {
+    return {notes, tree: null};
+  }
+
+  return {notes, tree};
+};
