@@ -199,13 +199,13 @@ return func Expression(coder, exp) {
     indenter := '';
     func indentLevel(prefix) => func(line) => prefix ++ line;
 
-    [testExp, cases] := exp[1];
+    {test, cases} := exp[1];
 
     switchValCode := null;
 
-    if (testExp[0] == 'nothing') {
+    if (test[0] == 'nothing') {
       // do nothing
-    } else if (ByteCoder.shouldUseTemporary(testExp)) {
+    } else if (ByteCoder.shouldUseTemporary(test)) {
       switchValN := null;
       [switchValN, coder] = ByteCoder.getInternalName(coder, 'switchVal');
       switchValCode = 'get $' ++ switchValN;
