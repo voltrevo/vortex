@@ -1,9 +1,10 @@
 import @/files.vx;
 import @/formatLocation.vx;
+import @/util/Join.vx;
 import @/util/kinds.vx;
 import FunctionScopeEvents from '@/scopeValidator/Function.vx';
+import @/parser/operatorTypes.vx;
 import @/util/removeKey.vx;
-import @/util/SetFromArray.vx;
 import @/util/str.vx;
 
 func indent(line) => '  ' ++ line;
@@ -33,7 +34,7 @@ func getName(coder, name) {
 
   entry := coder.names[name];
 
-  switch (entry.t) {
+  return switch (entry.t) {
     'gfunc' => (func() {
       if (entry.captures.length == 0) {
         return ['func { gcall $' ++ name ++ ' }'];
@@ -95,8 +96,8 @@ func Block(coder, program) {
     }
   }
 
-  hoistCaptureMap = {};
-  hoistCaptureMapExt = {};
+  hoistCaptureMap := {};
+  hoistCaptureMapExt := {};
 
   for (hoist of hoists) {
     name := hoist[1].name[1];
@@ -157,7 +158,7 @@ func Block(coder, program) {
       lines ++= ['hoist $' ++ hoistName];
     } else {
       coder = setGFunc(coder, hoistName, captures);
-      lines.push('hoist $.captureless.' ++ hoistName);
+      lines ++= ['hoist $.captureless.' ++ hoistName];
     }
   }
 
@@ -216,11 +217,11 @@ func Block(coder, program) {
 
     for (directCapture of directCaptures) {
       if (directCapture in coder.names:Keys()) {
-        entry := coder.names[directCapture];
+        capEntry := coder.names[directCapture];
 
-        if (entry.t != 'mfunc') {
+        if (capEntry.t != 'mfunc') {
           if (directCapture in hoistNames) {
-            if (entry.captures != #[]) {
+            if (capEntry.captures != #[]) {
               innerCoder.names = removeKey(innerCoder.names, directCapture);
             }
           }
@@ -316,7 +317,7 @@ func If(coder, {condition, body, tail}) {
   lines := Expression(coder, condition);
 
   lines ++= ['if {'];
-  lines ++= Block(coder, block):map(indent);
+  lines ++= Block(coder, body):map(indent);
 
   lines ++= switch (tail[0]) {
     'nothing' => ['}'];
@@ -329,11 +330,10 @@ func If(coder, {condition, body, tail}) {
 
 func For(coder, {control, body}) {
   if (control[0] == 'nothing') {
-    return ['loop {' ++ Block(coder, statement.body):map(indent) ++ '}'];
+    return ['loop {' ++ Block(coder, body):map(indent) ++ '}'];
   }
 
   forLines := null;
-  ll := null;
 
   rangeNames := {
     range: '',
@@ -402,7 +402,7 @@ func For(coder, {control, body}) {
     assert false;
   }
 
-  blockLines := Block(coder, statement.v.block);
+  blockLines := Block(coder, body);
 
   if (control[0] in #['range', 'traditional']) {
     for (line of blockLines) {
@@ -602,7 +602,7 @@ func Expression(coder, exp) {
   }
 
   if (xType in #['=', ':=']) {
-    [leftExp, rightExp] = exp[1];
+    [leftExp, rightExp] := exp[1];
 
     kind := switch (xType) {
       '=' => 'update';
