@@ -13,10 +13,12 @@ return func Expression(coder, exp) {
   if (xType == 'literal') { return [exp[1]:String()]; }
 
   if (xType in #['unary --', 'unary ++']) {
+    [subExp] := exp[1];
+
     return ByteCoder.UpdateInsert(
       coder,
-      exp[1],
-      Expression(coder, exp[1]) ++ [switch (xType) {
+      subExp,
+      Expression(coder, subExp) ++ [switch (xType) {
         'unary ++' => 'inc';
         'unary --' => 'dec';
       }],
