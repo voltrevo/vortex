@@ -8,7 +8,7 @@ import ./TopExpression.vx;
 
 return func(coder, {control, body}) {
   if (control[0] == 'nothing') {
-    return ['loop {' ++ Block(coder, body):map(ByteCoder.indent) ++ '}'];
+    return ['loop {'] ++ Block(coder, body):map(ByteCoder.indent) ++ ['}'];
   }
 
   forLines := null;
