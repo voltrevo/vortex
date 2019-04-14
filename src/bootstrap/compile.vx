@@ -46,7 +46,7 @@ func compile(state, replies) {
       newImports := imports ~ state.allFileRequests;
       nextFileRequests ++= newImports:Values();
       state.allFileRequests |= newImports;
-      state.lines ++= ByteCode(file, tree);
+      state.lines ++= ByteCode(file, tree) ++ [''];
     } else {
       log.info ['got null tree for ' ++ file, notes];
     }
@@ -62,18 +62,8 @@ func compile(state, replies) {
   state.notes ++= newNotes;
 
   if (state.fileRequests:Length() == 0u64) {
-    /*
-    return [
-      null,
-      [
-        ['output', [
-          'Compiled (isolated) ' ++
-          state.package.files:Keys():Values():Length():String() ++
-          ' files successfully'
-        ]],
-      ],
-    ];
-    */
+    state.lines ++= ['mcall $@/' ++ state.package.entry ++ ' return'];
+
     return [
       null,
       [
