@@ -7,9 +7,11 @@ import ./If.vx;
 import ./TopExpression.vx;
 
 return func(coder, statement) {
-  if (statement[0] == 'expression' && statement[1][0] == ['func']) {
-    // TODO
-    assert false;
+  if (statement[0] == 'expression') {
+    if (statement[1][0] == ['func']) {
+      // TODO
+      assert false;
+    }
   }
 
   cat := switch (statement[0]) {

@@ -68,12 +68,12 @@ func Block(coder, block) {
     seen := #[];
     capturesExt := #[];
 
-    for (i := 0; i < deps:Length(); i++) {
+    for (i := 0u64; i < deps:Length(); i++) {
       dep := deps[i];
 
       seen |= #[dep];
 
-      for (capture of hoistCaptureMap[dep]) {
+      for (capture of hoistCaptureMap[dep]:Values()) {
         if (capture in hoistNames) {
           if (!(capture in seen)) {
             deps ++= [capture];
@@ -84,7 +84,7 @@ func Block(coder, block) {
       }
     }
 
-    hoistCaptureMapExt[hoistName] = capturesExt;
+    hoistCaptureMapExt[hoistName] := capturesExt;
   }
 
   for (hoist of hoists) {
@@ -92,7 +92,7 @@ func Block(coder, block) {
     captures := hoistCaptureMapExt[hoist[1].name[1]];
 
     if (captures == #[] || captures == #[hoistName]) {
-      coder = ByteCoder.setGFunc(coder, hoistName, []);
+      coder = ByteCoder.setGFunc(coder, hoistName, #[]);
       lines ++= ['hoist $' ++ hoistName];
     } else {
       coder = ByteCoder.setGFunc(coder, hoistName, captures);
@@ -139,7 +139,7 @@ func Block(coder, block) {
       );
     }
 
-    for (otherHoistName of hoistNames) {
+    for (otherHoistName of hoistNames:Values()) {
       if (otherHoistName != hoistName) {
         otherCaptures := (hoistCaptureMapExt[otherHoistName]
           :Values()
@@ -153,7 +153,7 @@ func Block(coder, block) {
       }
     }
 
-    for (directCapture of directCaptures) {
+    for (directCapture of directCaptures:Values()) {
       if (directCapture in coder.names:Keys()) {
         capEntry := coder.names[directCapture];
 
