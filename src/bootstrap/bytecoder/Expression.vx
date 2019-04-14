@@ -1,0 +1,253 @@
+import @/files.vx;
+import @/parser/operatorTypes.vx;
+import @/util/str.vx;
+
+import ./ByteCoder.vx;
+import ./Destructure.vx;
+import ./Func.vx;
+
+return func Expression(coder, exp) {
+  xType := exp[0];
+
+  if (xType == 'identifier') { return ByteCoder.getName(coder, exp[1]); }
+  if (xType == 'literal') { return [exp[1]:String()]; }
+
+  if (xType in #['unary --', 'unary ++']) {
+    return ByteCoder.UpdateInsert(
+      coder,
+      exp[1],
+      Expression(coder, exp[1]) ++ [switch (xType) {
+        'unary ++' => 'inc';
+        'unary --' => 'dec';
+      }],
+      'update',
+    );
+  }
+
+  if (xType in operatorTypes.unary) {
+    return Expression(coder, exp[1]) ++ [switch (xType) {
+      'unary +' => 'uplus';
+      'unary -' => 'negate';
+      'unary !' => '!';
+      'unary ~' => 'bitNegate';
+    }];
+  }
+
+  if (xType in #[
+    '**', '*', '/', '%', '++', '+', '-', '<<', '>>', '<=', '>=', '<', '>', '~',
+    '&', '^', '|', '&&', '||', 'in',
+  ]) {
+    return (
+      Expression(coder, exp[1][0]) ++
+      Expression(coder, exp[1][1]) ++
+      [xType]
+    );
+  }
+
+  if (xType in #['=', ':=']) {
+    [leftExp, rightExp] := exp[1];
+
+    kind := switch (xType) {
+      '=' => 'update';
+      ':=' => 'insert';
+    };
+
+    if (leftExp[0] in #['subscript', '.']) {
+      return ByteCoder.UpdateInsert(
+        coder,
+        leftExp,
+        Expression(coder, rightExp),
+        kind,
+      );
+    }
+
+    return Expression(coder, rightExp) ++ Destructure(coder, leftExp, kind);
+  }
+
+  if (xType in operatorTypes.compound) {
+    [leftExp, rightExp] := exp[1];
+
+    compoundRightLines := (
+      Expression(coder, leftExp) ++
+      Expression(coder, rightExp) ++
+      [switch (xType:Length()) {
+        2u64 => xType[0];
+        3u64 => xType[0] ++ xType[1];
+      }]
+    );
+
+    if (leftExp[0] in #['subscript', '.']) {
+      return ByteCoder.UpdateInsert(
+        coder,
+        leftExp,
+        compoundRightLines,
+        'update',
+      );
+    }
+
+    return (
+      compoundRightLines ++
+      Destructure(coder, leftExp, 'update')
+    );
+  }
+
+  if (xType == 'func') {
+    return Func(coder, exp);
+  }
+
+  if (xType == 'op') {
+    // TODO: The swap here is an artifact of reversing arguments for
+    // functions but not operators. E.g.
+    // vortex(foo(a, b)) <=> vasm(get $b get $a get $foo call)
+    //
+    // This could be resolved by reversing arguments to operators here and
+    // in the VM, but I'm leaving this for now since it seems to be paired
+    // with the convention of the stack growing down instead of up which
+    // I'm also not doing. This would be a significant change and I need to
+    // weigh things carefully.
+    //
+    // There seems to be precedent for inconsistency however, since if
+    // arguments are reversed, we should have:
+    // postfix(2 1 -) <=> infix(1 - 2)
+    // but instead we have:
+    // postfix(2 1 -) <=> infix(2 - 1)
+    return ['func { swap ' ++ exp[1] ++ ' }'];
+  }
+
+  if (xType == 'array') {
+    lines := ['[]'];
+
+    for (subExp of exp[1]) {
+      lines ++= Expression(coder, subExp) ++ ['pushBack'];
+    }
+
+    return lines;
+  }
+
+  if (xType == 'set') {
+    lines := ['#[]'];
+
+    for (subExp of exp[1]) {
+      lines ++= Expression(coder, subExp) ++ ['setInsert'];
+    }
+
+    return lines;
+  }
+
+  if (xType == 'object') {
+    lines := ['{}'];
+
+    for ([key, val] of exp[1]) {
+      lines ++= [key:String()] ++ Expression(coder, val) ++ ['insert'];
+    }
+
+    return lines;
+  }
+
+  if (xType == '.') {
+    return Expression(coder, exp[1][0]) ++ [exp[1][1]:String(), 'at'];
+  }
+
+  if (xType == 'functionCall') {
+    [fn, args] := exp[1];
+
+    // Temporary special case for :bind().
+    if (fn[0] == 'methodLookup') {
+      [base, method] := fn[1];
+
+      if (method[1] == 'bind' && args:Length() == 1u64) {
+        return Expression(coder, base) ++ Expression(coder, args[0]) ++ ['bind'];
+      }
+    }
+
+    lines := ['guard'];
+
+    i := args:Length();
+
+    for {
+      if (i == 0u64) { break; }
+      i--;
+      lines ++= Expression(coder, args[i]);
+    }
+
+    lines ++= ['call swap unguard'];
+
+    return lines;
+  }
+
+  if (xType == 'methodLookup') {
+    [obj, ident] := exp[1];
+    return Expression(coder, obj) ++ [ident:String() ++ ' methodLookup'];
+  }
+
+  if (xType == 'subscript') {
+    return (
+      Expression(coder, exp[1][0]) ++
+      Expression(coder, exp[1][1]) ++
+      ['at']
+    );
+  }
+
+  if (xType == 'import') {
+    return ['mcall $' ++ files.resolve(coder.dir, exp[1].source)];
+  }
+
+  if (xType == 'switch') {
+    lines := [];
+    indenter := '';
+    func indentLevel(prefix) => func(line) => prefix ++ line;
+
+    [testExp, cases] := exp[1];
+
+    switchValCode := null;
+
+    if (testExp[0] == 'nothing') {
+      // do nothing
+    } else if (ByteCoder.shouldUseTemporary(testExp)) {
+      switchValN := null;
+      [switchValN, coder] = ByteCoder.getInternalName(coder, 'switchVal');
+      switchValCode = 'get $' ++ switchValN;
+    }
+
+    hasDefault := false;
+
+    for ([caseLeft, caseRight] of cases) {
+      if (caseLeft[0] == 'default') {
+        hasDefault = true;
+        lines ++= Expression(coder, caseRight):map(indentLevel(indenter));
+        break;
+      }
+
+      lines ++= switch (switchValCode:Kind()) {
+        'null' => Expression(coder, caseLeft):map(indentLevel(indenter));
+
+        default => (
+          [indenter ++ switchValCode] ++
+          Expression(coder, caseLeft):map(indentLevel(indenter)) ++
+          [indenter ++ '==']
+        );
+      };
+
+      lines ++= (
+        [indenter ++ 'if {'] ++
+        Expression(coder, caseRight):map(indentLevel(indenter ++ '  ')) ++
+        [indenter ++ '} else {']
+      );
+
+      indenter ++= '  ';
+    }
+
+    if (!hasDefault) {
+      lines ++= [indenter ++ 'false assert'];
+    }
+
+    for (indenter:Length() > 0u64) {
+      indenter = str.drop(2, indenter);
+      lines ++= [indenter ++ '}'];
+    }
+
+    return lines;
+  }
+
+  return switch{};
+};

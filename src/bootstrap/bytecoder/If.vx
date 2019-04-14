@@ -1,0 +1,18 @@
+import ./Block.vx;
+import ./ByteCoder.vx;
+import ./Expression.vx;
+
+return func If(coder, {condition, body, tail}) {
+  lines := Expression(coder, condition);
+
+  lines ++= ['if {'];
+  lines ++= Block(coder, body):map(ByteCoder.indent);
+
+  lines ++= switch (tail[0]) {
+    'nothing' => ['}'];
+    'if' => ['} else {'] ++ If(coder, tail[1]);
+    'block' => ['} else {'] ++ Block(coder, tail):map(ByteCoder.indent) ++ ['}'];
+  };
+
+  return lines;
+};

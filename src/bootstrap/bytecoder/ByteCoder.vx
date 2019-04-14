@@ -1,6 +1,9 @@
 import @/files.vx;
+import @/util/Join.vx;
+import @/util/kinds.vx;
 
 import ./ByteCoder.vx;
+import ./Expression.vx;
 
 return {
   indent: func(line) => '  ' ++ line,
@@ -64,5 +67,84 @@ return {
     coder.internalNames[name]++;
 
     return [resName, coder];
+  },
+
+  Set: func(name) => switch (name) {
+    '_' => 'discard';
+    default => 'set $' ++ name;
+  },
+
+  UpdateInsert: func(coder, target, rhsCode, kind) {
+    if (target[0] == 'identifier') {
+      return switch (rhsCode:Length()) {
+        1u64 => [rhsCode[0] ++ ' ' ++ ByteCoder.Set(target[1])];
+        default => rhsCode ++ [ByteCoder.Set(target[1])];
+      };
+    }
+
+    prefix := [];
+    suffix := [];
+
+    first := true;
+
+    for {
+      if (target[0] in #['subscript', '.']) {
+        [nextTarget, key] := target[1];
+
+        if (first) {
+          first = false;
+
+          prefix = (
+            switch (target[0]) {
+              'subscript' => Expression(coder, key);
+              '.' => [key[1]:String];
+            } ++
+            prefix
+          );
+        } else {
+          if (target[0] == 'subscript') {
+            if (ByteCoder.shouldUseTemporary(key)) {
+              tempName := null;
+              [tempName, coder] = ByteCoder.getInternalName(coder, 'key');
+              prefix = ['dup get $' ++ tempName ++ ' at'] ++ prefix;
+              prefix = Expression(coder, key) ++ [ByteCoder.Set(tempName)] ++ prefix;
+              suffix ++= ['get $' ++ tempName ++ ' swap update'];
+            } else {
+              keyCode := Join(' ')(Expression(coder, key));
+              prefix = ['dup ' ++ keyCode ++ ' at'] ++ prefix;
+              suffix ++= [keyCode ++ ' swap update'];
+            }
+          } else {
+            prefix = ['dup ' ++ key:String() ++ ' at'] ++ prefix;
+            suffix ++= [key:String() ++ ' swap update'];
+          }
+        }
+
+        if (nextTarget[0] == 'identifier') {
+          return (
+            ['get $' ++ nextTarget[1]] ++
+            prefix ++
+            rhsCode ++
+            [kind] ++
+            suffix ++
+            [ByteCoder.Set(nextTarget[1])]
+          );
+        }
+
+        target = nextTarget;
+
+        continue;
+      }
+
+      break;
+    }
+
+    return ['\'Invalid update/insert target\' throw'];
+  },
+
+  shouldUseTemporary: func(exp) => switch (exp[0]) {
+    'identifier' => false;
+    'literal' => !(exp[1]:Kind() in #['null', 'bool'] | kinds.number);
+    default => true;
   },
 };

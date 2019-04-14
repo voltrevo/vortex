@@ -1,0 +1,126 @@
+import @/formatLocation.vx;
+import FunctionScopeEvents from '@/scopeValidator/Function.vx';
+import @/util/removeKey.vx;
+
+import ./Block.vx;
+import ./ByteCoder.vx;
+import ./Destructure.vx;
+import ./Expression.vx;
+
+func Captures(coder, fn) {
+  captures := #[];
+
+  for (evt of FunctionScopeEvents(fn)) {
+    if (evt[0] == 'use') {
+      isCapture := true;
+      useName := evt[1][1];
+
+      if (useName in coder.names:Keys()) {
+        if (coder.names[useName].t == 'mfunc') {
+          isCapture = false;
+        }
+      }
+
+      if (isCapture) {
+        captures |= #[useName];
+      }
+    }
+  }
+
+  return captures;
+};
+
+return func(coder, fn) {
+  lines := [];
+
+  captures := [];
+  gfuncCaptures := [];
+
+  for (capture of Captures(coder, fn):Values()) {
+    if (capture in coder.names:Keys()) {
+      entry := coder.names[capture];
+
+      if (entry.t == 'gfunc') {
+        if (entry.captures:Length() > 0u64) {
+          gfuncCaptures ++= [capture];
+        }
+      } else if (entry.t == 'mfunc') {
+        // Don't need to register this capture because mfuncs are tracked
+        // globally
+        break;
+      } else {
+        assert false;
+      }
+    } else {
+      captures ++= [capture];
+    }
+  }
+
+  {name, args, body} := fn;
+
+  if (name[0] == 'identifier') {
+    lines ++= switch (captures:Length() ++ gfuncCaptures:Length()) {
+      0u64 => [
+        'hoist $' ++ name[1],
+        'gfunc $' ++ name[1] ++ ' {',
+      ];
+      default => [
+        'hoist $.captureless.' ++ name[1],
+        'gfunc $.captureless.' ++ name[1] ++ ' {',
+      ];
+    };
+  } else if (name[0] == 'nothing') {
+    lines ++= ['func {'];
+  } else {
+    assert false;
+  }
+
+  for (capture of captures ++ gfuncCaptures) {
+    lines ++= '  ' ++ ByteCoder.Set(capture);
+  }
+
+  for (arg of args) {
+    lines ++= Destructure(coder, arg, 'insert'):map(ByteCoder.indent);
+  }
+
+  innerCoder := coder;
+
+  for (capture of gfuncCaptures) {
+    innerCoder.names = removeKey(innerCoder.names, capture);
+  }
+
+  if (name[0] == 'identifier') {
+    innerCoder.names[name[1]] := {
+      t: 'gfunc',
+      captures: captures ++ gfuncCaptures,
+    };
+  }
+
+  lines ++= (switch (body[0]) {
+    'block' => Block(innerCoder, body);
+
+    'expression' => (
+      ['location ' ++ formatLocation(innerCoder.file, body[2])] ++
+      Expression(innerCoder, body[1])
+    );
+  }):map(ByteCoder.indent);
+
+  lines ++= ['}'];
+
+  if (name[0] == 'identifier') {
+    lines ++= [switch (captures:Length() + gfuncCaptures:Length()) {
+      0u64 => 'func { gcall $' ++ name[1] ++ ' }';
+      default => 'func { gcall $.captureless.' ++ name[1] ++ ' }';
+    }];
+  }
+
+  for (capture of gfuncCaptures) {
+    lines ++= ByteCoder.getName(coder, capture) ++ ['bind'];
+  }
+
+  for (capture of captures) {
+    lines ++= ['get $' ++ capture ++ ' bind'];
+  }
+
+  return lines;
+};

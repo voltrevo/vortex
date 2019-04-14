@@ -1,0 +1,13 @@
+import @/parser/operatorTypes.vx;
+
+import ./Expression.vx;
+
+return func(coder, exp) {
+  lines := Expression(coder, exp);
+
+  if (!(exp[0] in operatorTypes.assignment | #['unary ++', 'unary --'])) {
+    lines ++= ['discard'];
+  }
+
+  return lines;
+};

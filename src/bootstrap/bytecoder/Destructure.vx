@@ -1,0 +1,60 @@
+import ./ByteCoder.vx;
+
+return func Destructure(coder, exp, kind) {
+  if (exp[0] == 'identifier') {
+    return [ByteCoder.Set(exp[1])];
+  }
+
+  if (exp[0] == 'array') {
+    if (exp[1]:Length() == 0u64) {
+      return ['length 0u64 == assert'];
+    }
+
+    res := [];
+
+    res ++= ['dup length ' ++ exp[1]:Length():String() ++ ' == assert'];
+
+    for ([i, subExp] of exp[1]:Entries()) {
+      prefix := switch (i == exp[1]:Length() - 1u64) {
+        false => 'dup ';
+        true => '';
+      };
+
+      res ++= [prefix ++ i:String() ++ ' at'];
+      res ++= Destructure(coder, subExp, kind);
+    }
+
+    return res;
+  }
+
+  if (exp[0] == 'object') {
+    res := [];
+
+    // TODO: Assert no extraneous keys
+
+    for ([i, [key, valExp]] of exp[1]:Entries()) {
+      prefix := switch (i == exp[1]:Length() - 1u64) {
+        false => 'dup ';
+        true => '';
+      };
+
+      res ++= [prefix ++ key:String() ++ ' at'];
+      res ++= Destructure(coder, valExp, kind);
+    }
+
+    return res;
+  }
+
+  destrName := null;
+  [destrName, coder] = ByteCoder.getInternalName(coder, 'destr');
+
+  return [
+    ByteCoder.Set(destrName),
+    ByteCoder.UpdateInsert(
+      coder,
+      exp,
+      ['get $' ++ destrName],
+      kind,
+    ),
+  ];
+};

@@ -1,0 +1,110 @@
+import @/util/str.vx;
+
+import ./Block.vx;
+import ./ByteCoder.vx;
+import ./Destructure.vx;
+import ./Expression.vx;
+import ./TopExpression.vx;
+
+return func(coder, {control, body}) {
+  if (control[0] == 'nothing') {
+    return ['loop {' ++ Block(coder, body):map(ByteCoder.indent) ++ '}'];
+  }
+
+  forLines := null;
+
+  rangeNames := {
+    range: '',
+    i: '',
+    len: '',
+  };
+
+  if (control[0] == 'range') {
+    forLines = [];
+
+    // Note: If the range (aka container) is a variable (which is likely), the
+    // internal name is still needed unless we know that it won't be
+    // modified during the loop (TODO).
+    [rangeNames.range, coder] = ByteCoder.getInternalName(coder, 'range');
+
+    forLines ++= Expression(coder, control[1].container);
+    forLines ++= [ByteCoder.Set(rangeNames.range)];
+
+    [rangeNames.i, coder] = ByteCoder.getInternalName(coder, 'i');
+    forLines ++= ['0u64 ' ++ ByteCoder.Set(rangeNames.i)];
+
+    [rangeNames.len, coder] = ByteCoder.getInternalName(coder, 'len');
+    forLines ++= [
+      'get $' ++
+      rangeNames.range ++
+      ' length ' ++
+      ByteCoder.Set(rangeNames.len)
+    ];
+  } else if (control[0] == 'condition') {
+    forLines = [];
+  } else if (control[0] == 'traditional') {
+    forLines = TopExpression(coder, control[1].setup);
+  } else {
+    assert false;
+  }
+
+  forLines ++= ['loop {'];
+
+  if (control[0] == 'range') {
+    forLines ++= [
+      'get $' ++ rangeNames.i ++ ' get $' ++ rangeNames.len ++ ' == if {',
+      '  break',
+      '}',
+      '',
+      'get $' ++ rangeNames.range ++ ' get $' ++ rangeNames.i ++ ' at',
+      Destructure(coder, control[1].element, 'insert'),
+      '',
+    ];
+  } else if (control[1] == 'condition') {
+    forLines ++= Expression(coder, control[1]);
+    forLines ++= [
+      '! if {',
+      '  break',
+      '}',
+      '',
+    ];
+  } else if (control[1] == 'traditional') {
+    forLines ++= Expression(coder, control[1].condition);
+    forLines ++= [
+      '! if {',
+      '  break',
+      '}',
+      '',
+    ];
+  } else {
+    assert false;
+  }
+
+  blockLines := Block(coder, body);
+
+  if (control[0] in #['range', 'traditional']) {
+    for (line of blockLines) {
+      // TODO: Matching on compiled string line here is not ideal
+      if (str.trim(line) == 'continue') {
+        forLines ++= [
+          '\'Not implemented: continue statement inside iteration ' ++
+          'for loop\' throw'
+        ];
+      } else {
+        forLines ++= ['  ' + line];
+      }
+    }
+
+    if (control[0] == 'traditional') {
+      forLines ++= ['  '] ++ TopExpression(coder, control[1].next):map(ByteCoder.indent);
+    } else {
+      forLines ++= ['  get $' ++ rangeNames.i ++ ' inc ' ++ ByteCoder.Set(rangeNames.i)];
+    }
+  } else if (control[0] == 'condition') {
+    forLines ++= blockLines:map(ByteCoder.indent);
+  }
+
+  forLines ++= ['}'];
+
+  return forLines;
+};

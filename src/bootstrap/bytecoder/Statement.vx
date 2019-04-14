@@ -1,0 +1,58 @@
+import @/files.vx;
+
+import ./ByteCoder.vx;
+import ./Expression.vx;
+import ./For.vx;
+import ./If.vx;
+import ./TopExpression.vx;
+
+return func(coder, statement) {
+  if (statement[0] == 'expression' && statement[1][0] == ['func']) {
+    // TODO
+    assert false;
+  }
+
+  cat := switch (statement[0]) {
+    'expression' => 'expression';
+    'return' => 'prefix-expression';
+    'assert' => 'prefix-expression';
+    'log.info' => 'prefix-expression';
+    'log.warn' => 'prefix-expression';
+    'log.error' => 'prefix-expression';
+    'break' => 'echo';
+    'continue' => 'echo';
+    'breakpoint' => 'echo';
+    'if' => 'if';
+    'for' => 'for';
+    'import' => 'import';
+  };
+
+  return switch (cat) {
+    'expression' => [TopExpression(coder, statement[1]), coder];
+
+    'prefix-expression' => [
+      Expression(coder, statement[1]) ++ [switch (statement[1]) {
+        'return' => 'return';
+        'assert' => 'assert';
+        'log.info' => 'logInfo';
+        'log.warn' => 'logWarn';
+        'log.error' => 'logError';
+      }],
+      coder,
+    ];
+
+    'echo' => [[statement[0]], coder];
+
+    'if' => [If(coder, statement[1]), coder];
+    'for' => [For(coder, statement[1]), coder];
+
+    'import' => [
+      [],
+      ByteCoder.setMFunc(
+        coder,
+        statement[1].name[1],
+        files.resolve(coder.dir, statement[1].source),
+      ),
+    ];
+  };
+};

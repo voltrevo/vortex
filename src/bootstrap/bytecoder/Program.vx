@@ -1,0 +1,7 @@
+import ./Block.vx;
+import ./ByteCoder.vx;
+
+return func(file, program) => Block(
+  ByteCoder.create(file),
+  program,
+);
