@@ -9,7 +9,7 @@ import ./TopExpression.vx;
 return func(coder, statement) {
   if (statement[0] == 'expression') {
     if (statement[1][0] == 'func') {
-      // TODO
+      // function should have been dealt with separately by ./Block.vx
       assert false;
     }
   }
