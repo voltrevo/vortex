@@ -32,7 +32,7 @@ return {
     res := '';
 
     for (i := first; i <= last; i++) {
-      res += str[i];
+      res ++= str[i];
     }
 
     return res;

@@ -91,7 +91,7 @@ return func(coder, {control, body}) {
           'for loop\' throw'
         ];
       } else {
-        forLines ++= ['  ' + line];
+        forLines ++= ['  ' ++ line];
       }
     }
 
