@@ -24,14 +24,14 @@ return {
 
   trim: func(str) {
     first := 0u64;
-    last := str:Length() - 1u64;
+    last := str:Length();
 
-    for (first <= last && str[first] == ' ') { first++; }
-    for (first <= last && str[last] == ' ') { last--; }
+    for (first < last) { if (str[first] != ' ') { break; } first++; }
+    for (first < last) { if (str[last - 1u64] != ' ') { break; } last--; }
 
     res := '';
 
-    for (i := first; i <= last; i++) {
+    for (i := first; i < last; i++) {
       res ++= str[i];
     }
 
