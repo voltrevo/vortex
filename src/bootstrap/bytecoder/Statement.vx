@@ -33,7 +33,7 @@ return func(coder, statement) {
     'expression' => [TopExpression(coder, statement[1]), coder];
 
     'prefix-expression' => [
-      Expression(coder, statement[1]) ++ [switch (statement[1]) {
+      Expression(coder, statement[1]) ++ [switch (statement[0]) {
         'return' => 'return';
         'assert' => 'assert';
         'log.info' => 'logInfo';
