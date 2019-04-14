@@ -4,6 +4,7 @@ import @/util/SetFromArray.vx;
 import Imports from './Imports/Program.vx';
 
 import ./isolatedCompile.vx;
+import ByteCode from './bytecoder/Program.vx';
 
 func compile(state, replies) {
   if (state:Kind() == 'null') {
@@ -22,6 +23,7 @@ func compile(state, replies) {
       },
       fileRequests: [entry],
       allFileRequests: #[entry],
+      lines: [],
       notes: [],
     };
 
@@ -44,6 +46,7 @@ func compile(state, replies) {
       newImports := imports ~ state.allFileRequests;
       nextFileRequests ++= newImports:Values();
       state.allFileRequests |= newImports;
+      state.lines ++= ByteCode(file, tree);
     } else {
       log.info ['got null tree for ' ++ file, notes];
     }
@@ -59,6 +62,7 @@ func compile(state, replies) {
   state.notes ++= newNotes;
 
   if (state.fileRequests:Length() == 0u64) {
+    /*
     return [
       null,
       [
@@ -67,6 +71,13 @@ func compile(state, replies) {
           state.package.files:Keys():Values():Length():String() ++
           ' files successfully'
         ]],
+      ],
+    ];
+    */
+    return [
+      null,
+      [
+        ['output', state.lines],
       ],
     ];
   }
