@@ -1,18 +1,32 @@
+import @/util/str.vx;
+
+func numStr(n) {
+  assert n:Kind() == 'u64';
+  fullStr := n:String();
+  return str.take(fullStr:Length() - 3u64, fullStr);
+};
+
 return func(file, [[line0, col0], [line1, col1]]) {
+  file = '@/' ++ file;
+
+  line0++;
+  line1++;
+  col0++;
+
   if (line0 == line1) {
     if (col0 == col1) {
-      return file ++ ':' ++ line0:String() ++ ':' ++ col0:String();
+      return file ++ ':' ++ numStr(line0) ++ ':' ++ numStr(col0);
     }
 
     return (
       file ++ ':' ++
-      line0:String() ++ ':' ++
-      col0:String() ++ '-' ++ col1:String()
+      numStr(line0) ++ ':' ++
+      numStr(col0) ++ '-' ++ numStr(col1)
     );
   }
 
   return (
-    'L' ++ line0:String() ++ 'C' ++ col0:String() ++ '-' ++
-    'L' ++ line1:String() ++ 'C' ++ col1:String()
+    'L' ++ numStr(line0) ++ 'C' ++ numStr(col0) ++ '-' ++
+    'L' ++ numStr(line1) ++ 'C' ++ numStr(col1)
   );
 };
