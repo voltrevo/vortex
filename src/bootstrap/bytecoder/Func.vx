@@ -56,7 +56,7 @@ return func(coder, fn) {
     }
   }
 
-  {name, args, body} := fn;
+  [_, {name, args, body}, _] := fn;
 
   if (name[0] == 'identifier') {
     lines ++= switch (captures:Length() ++ gfuncCaptures:Length()) {
