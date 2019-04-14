@@ -1,7 +1,12 @@
 import ./Block.vx;
 import ./ByteCoder.vx;
 
-return func(file, program) => Block(
-  ByteCoder.create(file),
-  program,
-);
+return func(file, program) {
+  block := Block(ByteCoder.create(file), program);
+
+  return (
+    ['mfunc $@/' ++ file ++ ' {'] ++
+    block:map(ByteCoder.indent) ++
+    ['}']
+  );
+};
