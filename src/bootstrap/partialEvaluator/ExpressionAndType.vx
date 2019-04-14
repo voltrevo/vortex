@@ -1273,7 +1273,7 @@ func MutateInsert(scope, target, srcType) {
   [subTarget, key] := target[1];
 
   keyType := switch (target[0]) {
-    '.' => ['literal', key[1]];
+    '.' => ['literal', key];
     'subscript' => ExpressionAndType(scope, key).type;
   };
 
