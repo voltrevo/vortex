@@ -36,13 +36,13 @@ return {
 
     return switch (entry.t) {
       'gfunc' => (func() {
-        if (entry.captures.length == 0) {
+        if (entry.captures == #[]) {
           return ['func { gcall $' ++ name ++ ' }'];
         }
 
         lines := ['func { gcall $.captureless.' ++ name ++ ' }'];
 
-        for (capture of entry.captures) {
+        for (capture of entry.captures:Values()) {
           getNameLines := ByteCoder.getName(coder, capture);
 
           lines ++= switch (getNameLines:Length()) {
