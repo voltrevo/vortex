@@ -1,5 +1,6 @@
 import FunctionScopeEvents from '@/scopeValidator/Function.vx';
 import @/util/removeKey.vx;
+import @/util/SetFromArray.vx;
 
 import ./Block.vx;
 import ./ByteCoder.vx;
@@ -59,7 +60,7 @@ return func(coder, fn) {
   [_, {name, args, body}, _] := fn;
 
   if (name[0] == 'identifier') {
-    lines ++= switch (captures:Length() ++ gfuncCaptures:Length()) {
+    lines ++= switch (captures:Length() + gfuncCaptures:Length()) {
       0u64 => [
         'hoist $' ++ name[1],
         'gfunc $' ++ name[1] ++ ' {',
@@ -92,7 +93,7 @@ return func(coder, fn) {
   if (name[0] == 'identifier') {
     innerCoder.names[name[1]] := {
       t: 'gfunc',
-      captures: captures ++ gfuncCaptures,
+      captures: SetFromArray(captures ++ gfuncCaptures),
     };
   }
 
