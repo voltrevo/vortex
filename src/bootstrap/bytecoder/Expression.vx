@@ -27,7 +27,9 @@ return func Expression(coder, exp) {
   }
 
   if (xType in operatorTypes.unary) {
-    return Expression(coder, exp[1]) ++ [switch (xType) {
+    [subExp] := exp[1];
+
+    return Expression(coder, subExp) ++ [switch (xType) {
       'unary +' => 'uplus';
       'unary -' => 'negate';
       'unary !' => '!';
