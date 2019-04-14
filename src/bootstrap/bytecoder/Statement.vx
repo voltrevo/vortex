@@ -8,7 +8,7 @@ import ./TopExpression.vx;
 
 return func(coder, statement) {
   if (statement[0] == 'expression') {
-    if (statement[1][0] == ['func']) {
+    if (statement[1][0] == 'func') {
       // TODO
       assert false;
     }
