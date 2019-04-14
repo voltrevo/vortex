@@ -170,7 +170,7 @@ return func Expression(coder, exp) {
       lines ++= Expression(coder, args[i]);
     }
 
-    lines ++= ['call swap unguard'];
+    lines ++= Expression(coder, fn) ++ ['call swap unguard'];
 
     return lines;
   }
