@@ -5,7 +5,10 @@ import ./Expression.vx;
 return func(coder, exp) {
   lines := Expression(coder, exp);
 
-  if (!(exp[0] in operatorTypes.assignment | #['unary ++', 'unary --'])) {
+  xType := exp[0];
+  topXTypes := operatorTypes.assignment | #['unary ++', 'unary --'];
+
+  if (!(xType in topXTypes)) {
     lines ++= ['discard'];
   }
 
