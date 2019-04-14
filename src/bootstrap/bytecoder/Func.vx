@@ -1,4 +1,3 @@
-import @/formatLocation.vx;
 import FunctionScopeEvents from '@/scopeValidator/Function.vx';
 import @/util/removeKey.vx;
 
@@ -6,6 +5,7 @@ import ./Block.vx;
 import ./ByteCoder.vx;
 import ./Destructure.vx;
 import ./Expression.vx;
+import ./Location.vx;
 
 func Captures(coder, fn) {
   captures := #[];
@@ -100,7 +100,7 @@ return func(coder, fn) {
     'block' => Block(innerCoder, body);
 
     'expression' => (
-      ['location ' ++ formatLocation(innerCoder.file, body[2])] ++
+      Location(innerCoder.file, body[2]) ++
       Expression(innerCoder, body[1])
     );
   }):map(ByteCoder.indent);

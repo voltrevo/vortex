@@ -1,0 +1,3 @@
+import @/formatLocation.vx;
+
+return func(file, pos) => ['location ' ++ formatLocation(file, pos):String()];

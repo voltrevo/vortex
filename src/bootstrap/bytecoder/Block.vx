@@ -1,4 +1,3 @@
-import @/formatLocation.vx;
 import FunctionScopeEvents from '@/scopeValidator/Function.vx';
 import @/util/removeKey.vx;
 import @/util/SetFromArray.vx;
@@ -6,6 +5,7 @@ import @/util/SetFromArray.vx;
 import ./ByteCoder.vx;
 import ./Destructure.vx;
 import ./Expression.vx;
+import ./Location.vx;
 import ./Statement.vx;
 
 func Block(coder, block) {
@@ -171,7 +171,7 @@ func Block(coder, block) {
     bodyLines := switch (hoist[1].body[0]) {
       'block' => Block(innerCoder, hoist[1].body);
       'expression' => (
-        ['location ' ++ formatLocation(coder.file, hoist[1].body[2])] ++
+        Location(coder.file, hoist[1].body[2]) ++
         Expression(innerCoder, hoist[1].body[1])
       );
     };
@@ -191,7 +191,7 @@ func Block(coder, block) {
         lines ++= [''];
       }
 
-      lines ++= ['location ' ++ formatLocation(coder.file, statement[2])];
+      lines ++= Location(coder.file, statement[2]);
       lines ++= slines;
 
       first = false;
