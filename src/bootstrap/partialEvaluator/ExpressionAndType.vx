@@ -50,30 +50,14 @@ func ExpressionAndType(scope, expression) {
       if (xType in #['unary ++', 'unary --']) {
         [target] := data;
 
-        if (target[0] != 'identifier') {
-          return {
-            scope,
-            expression: null,
-            type: ['never', {
-              level: 'error',
-              message: (
-                'operand of ' ++ xType ++ ' is not an identifier'
-              ),
-              pos: target[2],
-              subnotes: [],
-              tags: #['type-error'],
-            }],
-          };
-        }
+        {scope, target} = MutationTarget(scope, target);
 
-        targetName := target[1];
+        targetType := null;
 
-        targetType := Scope.lookup(scope, targetName);
-
-        if (targetType in #[null]) {
-          targetType = Type.any;
-          scope = Scope.add(scope, targetName, Type.any);
-        }
+        {scope, type: targetType, expression: _} = ExpressionAndType(
+          scope,
+          target
+        );
 
         targetType = Type.Intersection(targetType, ['kinds', kinds.number]);
 
@@ -103,9 +87,17 @@ func ExpressionAndType(scope, expression) {
           };
         }
 
+        notes := null;
+        {scope, notes} = Mutate(scope, '=', target, targetType);
+
         return {
-          scope: Scope.update(scope, targetName, targetType),
-          expression: [xType, [target], pos],
+          scope,
+          expression: switch (notes:Length()) {
+            0u64 => [xType, [target], pos];
+
+            // TODO: Inventing an array here to emit multiple notes isn't great
+            default => ['array', notes:map(func(n) => ['note', n]), pos];
+          },
           type: null,
         };
       }
@@ -1341,7 +1333,7 @@ func MutateAccess(scope, target, srcType) {
   [subTarget, key] := target[1];
 
   keyType := switch (target[0]) {
-    '.' => ['literal', key[1]];
+    '.' => ['literal', key];
     'subscript' => ExpressionAndType(scope, key).type;
   };
 
