@@ -57,9 +57,10 @@ return func(coder, {control, body}) {
       '}',
       '',
       'get $' ++ rangeNames.range ++ ' get $' ++ rangeNames.i ++ ' at',
-      Destructure(coder, control[1].element, 'insert'),
-      '',
     ];
+
+    forLines ++= Destructure(coder, control[1].element, 'insert');
+    forLines ++= [''];
   } else if (control[1] == 'condition') {
     forLines ++= Expression(coder, control[1]);
     forLines ++= [

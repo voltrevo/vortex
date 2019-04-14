@@ -176,7 +176,7 @@ func Block(coder, block) {
       );
     };
 
-    lines ++= bodyLines:map(func(line) => '  ' + line);
+    lines ++= bodyLines:map(ByteCoder.indent);
     lines ++= ['}'];
   }
 
