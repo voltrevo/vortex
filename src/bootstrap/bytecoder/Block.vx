@@ -1,6 +1,7 @@
 import @/formatLocation.vx;
 import FunctionScopeEvents from '@/scopeValidator/Function.vx';
 import @/util/removeKey.vx;
+import @/util/SetFromArray.vx;
 
 import ./ByteCoder.vx;
 import ./Destructure.vx;
@@ -149,7 +150,7 @@ func Block(coder, block) {
           })
         );
 
-        innerCoder.names[otherHoistName].captures = otherCaptures;
+        innerCoder.names[otherHoistName].captures = SetFromArray(otherCaptures);
       }
     }
 
