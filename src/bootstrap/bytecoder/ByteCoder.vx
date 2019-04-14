@@ -11,6 +11,7 @@ func indent(line) => '  ' ++ line;
 
 func ByteCoder(file) {
   return {
+    file,
     dir: files.Dir(file),
     names: {},
     internalNames: {},
@@ -196,7 +197,7 @@ func Block(coder, program) {
     lines ++= captureLines;
 
     for (arg of hoist[1].args) {
-      lines ++= (Destructure(coder, arg[1], 'insert')
+      lines ++= (Destructure(coder, arg, 'insert')
         :map(indent)
       );
     }
@@ -437,120 +438,122 @@ func shouldUseTemporary(exp) => switch (exp[0]) {
   default => true;
 };
 
-func Func(coder, {name, args, body}) {
-      /*
-      const lines: string[] = [];
+func Captures(coder, fn) {
+  captures := #[];
 
-      const captures: string[] = [];
-      const gfuncCaptures: string[] = [];
+  for (evt of FunctionScopeEvents(fn)) {
+    if (evt[0] == 'use') {
+      isCapture := true;
+      useName := evt[1][1];
 
-      for (const capture of CapturedNames(exp)) {
-        const entry = coder.names[capture];
-
-        if (entry === undefined) {
-          captures.push(capture);
-          continue;
-        }
-
-        switch (entry.t) {
-          case 'gfunc': {
-            if (entry.captures.length > 0) {
-              gfuncCaptures.push(capture);
-            }
-
-            break;
-          }
-
-          case 'mfunc': {
-            // Don't need to register this capture because mfuncs are tracked
-            // globally
-            break;
-          }
-
-          default:
-            checkNever(entry);
+      if (useName in coder.names:Keys()) {
+        if (coder.names[useName].t == 'mfunc') {
+          isCapture = false;
         }
       }
 
-      if (exp.v.name !== null) {
-        if (captures.length + gfuncCaptures.length > 0) {
-          lines.push(`hoist $.captureless.${exp.v.name.v}`);
-          lines.push(`gfunc $.captureless.${exp.v.name.v} {`);
-        } else {
-          lines.push(`hoist $${exp.v.name.v}`);
-          lines.push(`gfunc $${exp.v.name.v} {`);
+      if (isCapture) {
+        captures |= #[useName];
+      }
+    }
+  }
+
+  return captures;
+};
+
+func Func(coder, fn) {
+  lines := [];
+
+  captures := [];
+  gfuncCaptures := [];
+
+  for (capture of Captures(coder, fn):Values()) {
+    if (capture in coder.names:Keys()) {
+      entry := coder.names[capture];
+
+      if (entry.t == 'gfunc') {
+        if (entry.captures:Length() > 0u64) {
+          gfuncCaptures ++= [capture];
         }
+      } else if (entry.t == 'mfunc') {
+        // Don't need to register this capture because mfuncs are tracked
+        // globally
+        break;
       } else {
-        lines.push(`func {`);
+        assert false;
       }
+    } else {
+      captures ++= [capture];
+    }
+  }
 
-      for (const capture of [...captures, ...gfuncCaptures]) {
-        lines.push(`  ${Set(capture)}`);
-      }
+  {name, args, body} := fn;
 
-      for (const arg of exp.v.args) {
-        lines.push(
-          ...Destructure(coder, arg.v, 'insert').map(line => '  ' + line)
-        );
-      }
+  if (name[0] == 'identifier') {
+    lines ++= switch (captures:Length() ++ gfuncCaptures:Length()) {
+      0u64 => [
+        'hoist $' ++ name[1],
+        'gfunc $' ++ name[1] ++ ' {',
+      ];
+      default => [
+        'hoist $.captureless.' ++ name[1],
+        'gfunc $.captureless.' ++ name[1] ++ ' {',
+      ];
+    };
+  } else if (name[0] == 'nothing') {
+    lines ++= ['func {'];
+  } else {
+    assert false;
+  }
 
-      let innerCoder = coder;
+  for (capture of captures ++ gfuncCaptures) {
+    lines ++= '  ' ++ Set(capture);
+  }
 
-      for (const capture of gfuncCaptures) {
-        innerCoder = { ...innerCoder,
-          names: { ...innerCoder.names,
-            [capture]: undefined,
-          },
-        };
-      }
+  for (arg of args) {
+    lines ++= Destructure(coder, arg, 'insert'):map(indent);
+  }
 
-      if (exp.v.name) {
-        innerCoder = { ...innerCoder,
-          names: { ...innerCoder.names,
-            [exp.v.name.v]: {
-              t: 'gfunc',
-              captures: [...captures, ...gfuncCaptures],
-            },
-          },
-        };
-      }
+  innerCoder := coder;
 
-      const bodyLines = (() => {
-        switch (exp.v.body.t) {
-          case 'block': {
-            return Block(innerCoder, exp.v.body);
-          }
+  for (capture of gfuncCaptures) {
+    innerCoder.names = removeKey(innerCoder.names, capture);
+  }
 
-          case 'expBody': {
-            let ll: string[];
-            [ll, innerCoder] = Expression(innerCoder, exp.v.body.v);
-            return [`location '${formatLocation(exp.v.body.p)}'`, ...ll];
-          }
-        }
-      })();
+  if (name[0] == 'identifier') {
+    innerCoder.names[name[1]] := {
+      t: 'gfunc',
+      captures: captures ++ gfuncCaptures,
+    };
+  }
 
-      lines.push(...bodyLines.map(line => '  ' + line));
+  lines ++= (switch (body[0]) {
+    'block' => Block(innerCoder, body);
 
-      lines.push(`}`);
+    'expression' => (
+      ['location ' ++ formatLocation(innerCoder.file, body[2])] ++
+      Expression(innerCoder, body[1])
+    );
+  }):map(indent);
 
-      if (exp.v.name !== null) {
-        if (captures.length + gfuncCaptures.length > 0) {
-          lines.push(`func { gcall $.captureless.${exp.v.name.v} }`);
-        } else {
-          lines.push(`func { gcall $${exp.v.name.v} }`);
-        }
-      }
+  lines ++= ['}'];
 
-      for (const capture of gfuncCaptures) {
-        lines.push(...getName(coder, capture), 'bind');
-      }
+  if (name[0] == 'identifier') {
+    lines ++= [switch (captures:Length() + gfuncCaptures:Length()) {
+      0u64 => 'func { gcall $' ++ name[1] ++ ' }';
+      default => 'func { gcall $.captureless.' ++ name[1] ++ ' }';
+    }];
+  }
 
-      for (const capture of captures) {
-        lines.push(`get $${capture} bind`);
-      }
+  for (capture of gfuncCaptures) {
+    lines ++= getName(coder, capture) ++ ['bind'];
+  }
 
-      return [lines, coder];
-      */
+  for (capture of captures) {
+    lines ++= ['get $' ++ capture ++ ' bind'];
+  }
+
+  return lines;
 };
 
 func TopExpression(coder, exp) {
