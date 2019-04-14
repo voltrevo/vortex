@@ -61,7 +61,7 @@ return func(coder, {control, body}) {
 
     forLines ++= Destructure(coder, control[1].element, 'insert');
     forLines ++= [''];
-  } else if (control[1] == 'condition') {
+  } else if (control[0] == 'condition') {
     forLines ++= Expression(coder, control[1]);
     forLines ++= [
       '! if {',
@@ -69,7 +69,7 @@ return func(coder, {control, body}) {
       '}',
       '',
     ];
-  } else if (control[1] == 'traditional') {
+  } else if (control[0] == 'traditional') {
     forLines ++= Expression(coder, control[1].condition);
     forLines ++= [
       '! if {',
