@@ -170,7 +170,7 @@ func Block(coder, block) {
     bodyLines := switch (hoist[1].body[0]) {
       'block' => Block(innerCoder, hoist[1].body);
       'expression' => (
-        ['location ' ++ formatLocation(hoist[1].body[2])] ++
+        ['location ' ++ formatLocation(coder.file, hoist[1].body[2])] ++
         Expression(innerCoder, hoist[1].body[1])
       );
     };
@@ -190,7 +190,7 @@ func Block(coder, block) {
         lines ++= [''];
       }
 
-      lines ++= ['location ' ++ formatLocation(statement.p)];
+      lines ++= ['location ' ++ formatLocation(coder.file, statement.p)];
       lines ++= slines;
 
       first = false;
