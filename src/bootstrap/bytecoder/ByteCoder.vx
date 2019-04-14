@@ -97,7 +97,7 @@ return {
           prefix = (
             switch (target[0]) {
               'subscript' => Expression(coder, key);
-              '.' => [key[1]:String];
+              '.' => [key[1]:String()];
             } ++
             prefix
           );
