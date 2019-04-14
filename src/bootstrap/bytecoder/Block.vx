@@ -1,0 +1,886 @@
+import @/files.vx;
+import @/formatLocation.vx;
+import @/util/Join.vx;
+import @/util/kinds.vx;
+import FunctionScopeEvents from '@/scopeValidator/Function.vx';
+import @/parser/operatorTypes.vx;
+import @/util/removeKey.vx;
+import @/util/str.vx;
+
+import ./ByteCoder.vx;
+
+func Block(coder, program) {
+  lines := [];
+
+  hoists := [];
+  statements := [];
+
+  func isHoist(statement) {
+    if (statement[0] != 'expression') {
+      return false;
+    }
+
+    return statement[1][0] == 'func';
+  };
+
+  for (statement of program[1]) {
+    if (isHoist(statement)) {
+      hoist := statement[1];
+      if (!(hoist[1].name in #[null])) { // Anonymous hoist is meaningless. Validation emits a warn about this. TODO: should be error?
+        hoists ++= [hoist];
+      }
+    } else if (statement[0] == 'import') {
+      [_, coder] = Statement(coder, statement);
+    } else {
+      statements ++= [statement];
+    }
+  }
+
+  hoistCaptureMap := {};
+  hoistCaptureMapExt := {};
+
+  for (hoist of hoists) {
+    name := hoist[1].name[1];
+    captures := #[];
+
+    for (evt of FunctionScopeEvents(hoist)) {
+      if (evt[0] == 'use') {
+        isCapture := true;
+        useName := evt[1][1];
+
+        if (useName in coder.names:Keys()) {
+          if (coder.names[useName].t == 'mfunc') {
+            isCapture = false;
+          }
+        }
+
+        if (isCapture) {
+          captures |= #[useName];
+        }
+      }
+    }
+
+    hoistCaptureMap[name] := captures;
+  }
+
+  hoistNames := hoistCaptureMap:Keys();
+
+  for (hoistName of hoistNames:Values()) {
+    deps := [hoistName];
+    seen := #[];
+    capturesExt := #[];
+
+    for (i := 0; i < deps:Length(); i++) {
+      dep := deps[i];
+
+      seen |= #[dep];
+
+      for (capture of hoistCaptureMap[dep]) {
+        if (capture in hoistNames) {
+          if (!(capture in seen)) {
+            deps ++= [capture];
+          }
+        } else {
+          capturesExt |= #[capture];
+        }
+      }
+    }
+
+    hoistCaptureMapExt[hoistName] = capturesExt;
+  }
+
+  for (hoist of hoists) {
+    hoistName := hoist[1].name[1];
+    captures := hoistCaptureMapExt[hoist[1].name[1]];
+
+    if (captures == #[] || captures == #[hoistName]) {
+      coder = ByteCoder.setGFunc(coder, hoistName, []);
+      lines ++= ['hoist $' ++ hoistName];
+    } else {
+      coder = ByteCoder.setGFunc(coder, hoistName, captures);
+      lines ++= ['hoist $.captureless.' ++ hoistName];
+    }
+  }
+
+  for (hoist of hoists) {
+    hoistName := hoist[1].name[1];
+    entry := coder.names[hoistName];
+
+    captures := entry.captures;
+    directCaptures := hoistCaptureMap[hoistName];
+
+    lines ++= [''];
+
+    if (captures == #[] || captures == #[hoistName]) {
+      lines ++= ['gfunc $' ++ hoistName ++ ' {'];
+    } else {
+      lines ++= ['gfunc $.captureless.' ++ hoistName ++ ' {'];
+    }
+
+    captureLines := [];
+    relabelledCaptures := #[];
+
+    for (capture of captures:Values()) {
+      relabel := switch (capture in directCaptures) {
+        true => capture;
+        false => '.indirect.' ++ capture;
+      };
+
+      captureLines ++= [ByteCoder.indent(Set(relabel))];
+      relabelledCaptures |= #[relabel];
+    }
+
+    innerCoder := coder;
+    innerCoder.names[hoistName].captures = relabelledCaptures;
+
+    lines ++= captureLines;
+
+    for (arg of hoist[1].args) {
+      lines ++= (Destructure(coder, arg, 'insert')
+        :map(ByteCoder.indent)
+      );
+    }
+
+    for (otherHoistName of hoistNames) {
+      if (otherHoistName != hoistName) {
+        otherCaptures := (hoistCaptureMapExt[otherHoistName]
+          :Values()
+          :map(func(otherCapture) => switch(otherCapture in directCaptures) {
+            true => otherCapture;
+            false => '.indirect.' ++ otherCapture;
+          })
+        );
+
+        innerCoder.names[otherHoistName].captures = otherCaptures;
+      }
+    }
+
+    for (directCapture of directCaptures) {
+      if (directCapture in coder.names:Keys()) {
+        capEntry := coder.names[directCapture];
+
+        if (capEntry.t != 'mfunc') {
+          if (directCapture in hoistNames) {
+            if (capEntry.captures != #[]) {
+              innerCoder.names = removeKey(innerCoder.names, directCapture);
+            }
+          }
+        }
+      }
+    }
+
+    bodyLines := switch (hoist[1].body[0]) {
+      'block' => Block(innerCoder, hoist[1].body);
+      'expression' => (
+        ['location ' ++ formatLocation(hoist[1].body[2])] ++
+        Expression(innerCoder, hoist[1].body[1])
+      );
+    };
+
+    lines ++= bodyLines:map(func(line) => '  ' + line);
+    lines ++= ['}'];
+  }
+
+  first := hoists:Length() == 0u64;
+
+  for (statement of statements) {
+    slines := null;
+    [slines, coder] = Statement(coder, statement);
+
+    if (slines:Length() > 0u64) {
+      if (!first) {
+        lines ++= [''];
+      }
+
+      lines ++= ['location ' ++ formatLocation(statement.p)];
+      lines ++= slines;
+
+      first = false;
+    }
+  }
+
+  return lines;
+};
+
+func Statement(coder, statement) {
+  if (statement[0] == 'expression' && statement[1][0] == ['func']) {
+    // TODO
+    assert false;
+  }
+
+  cat := switch (statement[0]) {
+    'expression' => 'expression';
+    'return' => 'prefix-expression';
+    'assert' => 'prefix-expression';
+    'log.info' => 'prefix-expression';
+    'log.warn' => 'prefix-expression';
+    'log.error' => 'prefix-expression';
+    'break' => 'echo';
+    'continue' => 'echo';
+    'breakpoint' => 'echo';
+    'if' => 'if';
+    'for' => 'for';
+    'import' => 'import';
+  };
+
+  return switch (cat) {
+    'expression' => [TopExpression(coder, statement[1]), coder];
+
+    'prefix-expression' => [
+      Expression(coder, statement[1]) ++ [switch (statement[1]) {
+        'return' => 'return';
+        'assert' => 'assert';
+        'log.info' => 'logInfo';
+        'log.warn' => 'logWarn';
+        'log.error' => 'logError';
+      }],
+      coder,
+    ];
+
+    'echo' => [[statement[0]], coder];
+
+    'if' => [If(coder, statement[1]), coder];
+    'for' => [For(coder, statement[1]), coder];
+
+    'import' => [
+      [],
+      ByteCoder.setMFunc(
+        coder,
+        statement[1].name[1],
+        files.resolve(coder.dir, statement[1].source),
+      ),
+    ];
+  };
+};
+
+func If(coder, {condition, body, tail}) {
+  lines := Expression(coder, condition);
+
+  lines ++= ['if {'];
+  lines ++= Block(coder, body):map(ByteCoder.indent);
+
+  lines ++= switch (tail[0]) {
+    'nothing' => ['}'];
+    'if' => ['} else {'] ++ If(coder, tail[1]);
+    'block' => ['} else {'] ++ Block(coder, tail):map(ByteCoder.indent) ++ ['}'];
+  };
+
+  return lines;
+};
+
+func For(coder, {control, body}) {
+  if (control[0] == 'nothing') {
+    return ['loop {' ++ Block(coder, body):map(ByteCoder.indent) ++ '}'];
+  }
+
+  forLines := null;
+
+  rangeNames := {
+    range: '',
+    i: '',
+    len: '',
+  };
+
+  if (control[0] == 'range') {
+    forLines = [];
+
+    // Note: If the range (aka container) is a variable (which is likely), the
+    // internal name is still needed unless we know that it won't be
+    // modified during the loop (TODO).
+    [rangeNames.range, coder] = ByteCoder.getInternalName(coder, 'range');
+
+    forLines ++= Expression(coder, control[1].container);
+    forLines ++= [Set(rangeNames.range)];
+
+    [rangeNames.i, coder] = ByteCoder.getInternalName(coder, 'i');
+    forLines ++= ['0u64 ' ++ Set(rangeNames.i)];
+
+    [rangeNames.len, coder] = ByteCoder.getInternalName(coder, 'len');
+    forLines ++= [
+      'get $' ++
+      rangeNames.range ++
+      ' length ' ++
+      Set(rangeNames.len)
+    ];
+  } else if (control[0] == 'condition') {
+    forLines = [];
+  } else if (control[0] == 'traditional') {
+    forLines = TopExpression(coder, control[1].setup);
+  } else {
+    assert false;
+  }
+
+  forLines ++= ['loop {'];
+
+  if (control[0] == 'range') {
+    forLines ++= [
+      'get $' ++ rangeNames.i ++ ' get $' ++ rangeNames.len ++ ' == if {',
+      '  break',
+      '}',
+      '',
+      'get $' ++ rangeNames.range ++ ' get $' ++ rangeNames.i ++ ' at',
+      Destructure(coder, control[1].element, 'insert'),
+      '',
+    ];
+  } else if (control[1] == 'condition') {
+    forLines ++= Expression(coder, control[1]);
+    forLines ++= [
+      '! if {',
+      '  break',
+      '}',
+      '',
+    ];
+  } else if (control[1] == 'traditional') {
+    forLines ++= Expression(coder, control[1].condition);
+    forLines ++= [
+      '! if {',
+      '  break',
+      '}',
+      '',
+    ];
+  } else {
+    assert false;
+  }
+
+  blockLines := Block(coder, body);
+
+  if (control[0] in #['range', 'traditional']) {
+    for (line of blockLines) {
+      // TODO: Matching on compiled string line here is not ideal
+      if (str.trim(line) == 'continue') {
+        forLines ++= [
+          '\'Not implemented: continue statement inside iteration ' ++
+          'for loop\' throw'
+        ];
+      } else {
+        forLines ++= ['  ' + line];
+      }
+    }
+
+    if (control[0] == 'traditional') {
+      forLines ++= ['  '] ++ TopExpression(coder, control[1].next):map(ByteCoder.indent);
+    } else {
+      forLines ++= ['  get $' ++ rangeNames.i ++ ' inc ' ++ Set(rangeNames.i)];
+    }
+  } else if (control[0] == 'condition') {
+    forLines ++= blockLines:map(ByteCoder.indent);
+  }
+
+  forLines ++= ['}'];
+
+  return forLines;
+};
+
+func shouldUseTemporary(exp) => switch (exp[0]) {
+  'identifier' => false;
+  'literal' => !(exp[1]:Kind() in #['null', 'bool'] | kinds.number);
+  default => true;
+};
+
+func Captures(coder, fn) {
+  captures := #[];
+
+  for (evt of FunctionScopeEvents(fn)) {
+    if (evt[0] == 'use') {
+      isCapture := true;
+      useName := evt[1][1];
+
+      if (useName in coder.names:Keys()) {
+        if (coder.names[useName].t == 'mfunc') {
+          isCapture = false;
+        }
+      }
+
+      if (isCapture) {
+        captures |= #[useName];
+      }
+    }
+  }
+
+  return captures;
+};
+
+func Func(coder, fn) {
+  lines := [];
+
+  captures := [];
+  gfuncCaptures := [];
+
+  for (capture of Captures(coder, fn):Values()) {
+    if (capture in coder.names:Keys()) {
+      entry := coder.names[capture];
+
+      if (entry.t == 'gfunc') {
+        if (entry.captures:Length() > 0u64) {
+          gfuncCaptures ++= [capture];
+        }
+      } else if (entry.t == 'mfunc') {
+        // Don't need to register this capture because mfuncs are tracked
+        // globally
+        break;
+      } else {
+        assert false;
+      }
+    } else {
+      captures ++= [capture];
+    }
+  }
+
+  {name, args, body} := fn;
+
+  if (name[0] == 'identifier') {
+    lines ++= switch (captures:Length() ++ gfuncCaptures:Length()) {
+      0u64 => [
+        'hoist $' ++ name[1],
+        'gfunc $' ++ name[1] ++ ' {',
+      ];
+      default => [
+        'hoist $.captureless.' ++ name[1],
+        'gfunc $.captureless.' ++ name[1] ++ ' {',
+      ];
+    };
+  } else if (name[0] == 'nothing') {
+    lines ++= ['func {'];
+  } else {
+    assert false;
+  }
+
+  for (capture of captures ++ gfuncCaptures) {
+    lines ++= '  ' ++ Set(capture);
+  }
+
+  for (arg of args) {
+    lines ++= Destructure(coder, arg, 'insert'):map(ByteCoder.indent);
+  }
+
+  innerCoder := coder;
+
+  for (capture of gfuncCaptures) {
+    innerCoder.names = removeKey(innerCoder.names, capture);
+  }
+
+  if (name[0] == 'identifier') {
+    innerCoder.names[name[1]] := {
+      t: 'gfunc',
+      captures: captures ++ gfuncCaptures,
+    };
+  }
+
+  lines ++= (switch (body[0]) {
+    'block' => Block(innerCoder, body);
+
+    'expression' => (
+      ['location ' ++ formatLocation(innerCoder.file, body[2])] ++
+      Expression(innerCoder, body[1])
+    );
+  }):map(ByteCoder.indent);
+
+  lines ++= ['}'];
+
+  if (name[0] == 'identifier') {
+    lines ++= [switch (captures:Length() + gfuncCaptures:Length()) {
+      0u64 => 'func { gcall $' ++ name[1] ++ ' }';
+      default => 'func { gcall $.captureless.' ++ name[1] ++ ' }';
+    }];
+  }
+
+  for (capture of gfuncCaptures) {
+    lines ++= ByteCoder.getName(coder, capture) ++ ['bind'];
+  }
+
+  for (capture of captures) {
+    lines ++= ['get $' ++ capture ++ ' bind'];
+  }
+
+  return lines;
+};
+
+func TopExpression(coder, exp) {
+  lines := Expression(coder, exp);
+
+  if (!(exp[0] in operatorTypes.assignment | #['unary ++', 'unary --'])) {
+    lines ++= ['discard'];
+  }
+
+  return lines;
+};
+
+func Expression(coder, exp) {
+  xType := exp[0];
+
+  if (xType == 'identifier') { return ByteCoder.getName(coder, exp[1]); }
+  if (xType == 'literal') { return [exp[1]:String()]; }
+
+  if (xType in #['unary --', 'unary ++']) {
+    return UpdateInsert(
+      coder,
+      exp[1],
+      Expression(coder, exp[1]) ++ [switch (xType) {
+        'unary ++' => 'inc';
+        'unary --' => 'dec';
+      }],
+      'update',
+    );
+  }
+
+  if (xType in operatorTypes.unary) {
+    return Expression(coder, exp[1]) ++ [switch (xType) {
+      'unary +' => 'uplus';
+      'unary -' => 'negate';
+      'unary !' => '!';
+      'unary ~' => 'bitNegate';
+    }];
+  }
+
+  if (xType in #[
+    '**', '*', '/', '%', '++', '+', '-', '<<', '>>', '<=', '>=', '<', '>', '~',
+    '&', '^', '|', '&&', '||', 'in',
+  ]) {
+    return (
+      Expression(coder, exp[1][0]) ++
+      Expression(coder, exp[1][1]) ++
+      [xType]
+    );
+  }
+
+  if (xType in #['=', ':=']) {
+    [leftExp, rightExp] := exp[1];
+
+    kind := switch (xType) {
+      '=' => 'update';
+      ':=' => 'insert';
+    };
+
+    if (leftExp[0] in #['subscript', '.']) {
+      return UpdateInsert(
+        coder,
+        leftExp,
+        Expression(coder, rightExp),
+        kind,
+      );
+    }
+
+    return Expression(coder, rightExp) ++ Destructure(coder, leftExp, kind);
+  }
+
+  if (xType in operatorTypes.compound) {
+    [leftExp, rightExp] := exp[1];
+
+    compoundRightLines := (
+      Expression(coder, leftExp) ++
+      Expression(coder, rightExp) ++
+      [switch (xType:Length()) {
+        2u64 => xType[0];
+        3u64 => xType[0] ++ xType[1];
+      }]
+    );
+
+    if (leftExp[0] in #['subscript', '.']) {
+      return UpdateInsert(
+        coder,
+        leftExp,
+        compoundRightLines,
+        'update',
+      );
+    }
+
+    return (
+      compoundRightLines ++
+      Destructure(coder, leftExp, 'update')
+    );
+  }
+
+  if (xType == 'func') {
+    return Func(coder, exp);
+  }
+
+  if (xType == 'op') {
+    // TODO: The swap here is an artifact of reversing arguments for
+    // functions but not operators. E.g.
+    // vortex(foo(a, b)) <=> vasm(get $b get $a get $foo call)
+    //
+    // This could be resolved by reversing arguments to operators here and
+    // in the VM, but I'm leaving this for now since it seems to be paired
+    // with the convention of the stack growing down instead of up which
+    // I'm also not doing. This would be a significant change and I need to
+    // weigh things carefully.
+    //
+    // There seems to be precedent for inconsistency however, since if
+    // arguments are reversed, we should have:
+    // postfix(2 1 -) <=> infix(1 - 2)
+    // but instead we have:
+    // postfix(2 1 -) <=> infix(2 - 1)
+    return ['func { swap ' ++ exp[1] ++ ' }'];
+  }
+
+  if (xType == 'array') {
+    lines := ['[]'];
+
+    for (subExp of exp[1]) {
+      lines ++= Expression(coder, subExp) ++ ['pushBack'];
+    }
+
+    return lines;
+  }
+
+  if (xType == 'set') {
+    lines := ['#[]'];
+
+    for (subExp of exp[1]) {
+      lines ++= Expression(coder, subExp) ++ ['setInsert'];
+    }
+
+    return lines;
+  }
+
+  if (xType == 'object') {
+    lines := ['{}'];
+
+    for ([key, val] of exp[1]) {
+      lines ++= [key:String()] ++ Expression(coder, val) ++ ['insert'];
+    }
+
+    return lines;
+  }
+
+  if (xType == '.') {
+    return Expression(coder, exp[1][0]) ++ [exp[1][1]:String(), 'at'];
+  }
+
+  if (xType == 'functionCall') {
+    [fn, args] := exp[1];
+
+    // Temporary special case for :bind().
+    if (fn[0] == 'methodLookup') {
+      [base, method] := fn[1];
+
+      if (method[1] == 'bind' && args:Length() == 1u64) {
+        return Expression(coder, base) ++ Expression(coder, args[0]) ++ ['bind'];
+      }
+    }
+
+    lines := ['guard'];
+
+    i := args:Length();
+
+    for {
+      if (i == 0u64) { break; }
+      i--;
+      lines ++= Expression(coder, args[i]);
+    }
+
+    lines ++= ['call swap unguard'];
+
+    return lines;
+  }
+
+  if (xType == 'methodLookup') {
+    [obj, ident] := exp[1];
+    return Expression(coder, obj) ++ [ident:String() ++ ' methodLookup'];
+  }
+
+  if (xType == 'subscript') {
+    return (
+      Expression(coder, exp[1][0]) ++
+      Expression(coder, exp[1][1]) ++
+      ['at']
+    );
+  }
+
+  if (xType == 'import') {
+    return ['mcall $' ++ files.resolve(coder.dir, exp[1].source)];
+  }
+
+  if (xType == 'switch') {
+    lines := [];
+    indenter := '';
+    func indentLevel(prefix) => func(line) => prefix ++ line;
+
+    [testExp, cases] := exp[1];
+
+    switchValCode := null;
+
+    if (testExp[0] == 'nothing') {
+      // do nothing
+    } else if (shouldUseTemporary(testExp)) {
+      switchValN := null;
+      [switchValN, coder] = ByteCoder.getInternalName(coder, 'switchVal');
+      switchValCode = 'get $' ++ switchValN;
+    }
+
+    hasDefault := false;
+
+    for ([caseLeft, caseRight] of cases) {
+      if (caseLeft[0] == 'default') {
+        hasDefault = true;
+        lines ++= Expression(coder, caseRight):map(indentLevel(indenter));
+        break;
+      }
+
+      lines ++= switch (switchValCode:Kind()) {
+        'null' => Expression(coder, caseLeft):map(indentLevel(indenter));
+
+        default => (
+          [indenter ++ switchValCode] ++
+          Expression(coder, caseLeft):map(indentLevel(indenter)) ++
+          [indenter ++ '==']
+        );
+      };
+
+      lines ++= (
+        [indenter ++ 'if {'] ++
+        Expression(coder, caseRight):map(indentLevel(indenter ++ '  ')) ++
+        [indenter ++ '} else {']
+      );
+
+      indenter ++= '  ';
+    }
+
+    if (!hasDefault) {
+      lines ++= [indenter ++ 'false assert'];
+    }
+
+    for (indenter:Length() > 0u64) {
+      indenter = str.drop(2, indenter);
+      lines ++= [indenter ++ '}'];
+    }
+
+    return lines;
+  }
+
+  return switch{};
+};
+
+func Destructure(coder, exp, kind) {
+  if (exp[0] == 'identifier') {
+    return [Set(exp[1])];
+  }
+
+  if (exp[0] == 'array') {
+    if (exp[1]:Length() == 0u64) {
+      return ['length 0u64 == assert'];
+    }
+
+    res := [];
+
+    res ++= ['dup length ' ++ exp[1]:Length():String() ++ ' == assert'];
+
+    for ([i, subExp] of exp[1]:Entries()) {
+      prefix := switch (i == exp[1]:Length() - 1u64) {
+        false => 'dup ';
+        true => '';
+      };
+
+      res ++= [prefix ++ i:String() ++ ' at'];
+      res ++= Destructure(coder, subExp, kind);
+    }
+
+    return res;
+  }
+
+  if (exp[0] == 'object') {
+    res := [];
+
+    // TODO: Assert no extraneous keys
+
+    for ([i, [key, valExp]] of exp[1]:Entries()) {
+      prefix := switch (i == exp[1]:Length() - 1u64) {
+        false => 'dup ';
+        true => '';
+      };
+
+      res ++= [prefix ++ key:String() ++ ' at'];
+      res ++= Destructure(coder, valExp, kind);
+    }
+
+    return res;
+  }
+
+  destrName := null;
+  [destrName, coder] = ByteCoder.getInternalName(coder, 'destr');
+
+  return [
+    Set(destrName),
+    UpdateInsert(
+      coder,
+      exp,
+      ['get $' ++ destrName],
+      kind,
+    ),
+  ];
+};
+
+func Set(name) => switch (name) {
+  '_' => 'discard';
+  default => 'set $' ++ name;
+};
+
+func UpdateInsert(coder, target, rhsCode, kind) {
+  if (target[0] == 'identifier') {
+    return switch (rhsCode:Length()) {
+      1u64 => [rhsCode[0] ++ ' ' ++ Set(target[1])];
+      default => rhsCode ++ [Set(target[1])];
+    };
+  }
+
+  prefix := [];
+  suffix := [];
+
+  first := true;
+
+  for {
+    if (target[0] in #['subscript', '.']) {
+      [nextTarget, key] := target[1];
+
+      if (first) {
+        first = false;
+
+        prefix = (
+          switch (target[0]) {
+            'subscript' => Expression(coder, key);
+            '.' => [key[1]:String];
+          } ++
+          prefix
+        );
+      } else {
+        if (target[0] == 'subscript') {
+          if (shouldUseTemporary(key)) {
+            tempName := null;
+            [tempName, coder] = ByteCoder.getInternalName(coder, 'key');
+            prefix = ['dup get $' ++ tempName ++ ' at'] ++ prefix;
+            prefix = Expression(coder, key) ++ [Set(tempName)] ++ prefix;
+            suffix ++= ['get $' ++ tempName ++ ' swap update'];
+          } else {
+            keyCode := Join(' ')(Expression(coder, key));
+            prefix = ['dup ' ++ keyCode ++ ' at'] ++ prefix;
+            suffix ++= [keyCode ++ ' swap update'];
+          }
+        } else {
+          prefix = ['dup ' ++ key:String() ++ ' at'] ++ prefix;
+          suffix ++= [key:String() ++ ' swap update'];
+        }
+      }
+
+      if (nextTarget[0] == 'identifier') {
+        return (
+          ['get $' ++ nextTarget[1]] ++
+          prefix ++
+          rhsCode ++
+          [kind] ++
+          suffix ++
+          [Set(nextTarget[1])]
+        );
+      }
+
+      target = nextTarget;
+
+      continue;
+    }
+
+    break;
+  }
+
+  return ['\'Invalid update/insert target\' throw'];
+};
+
+return Block;
