@@ -1,0 +1,18 @@
+return func(file, [[line0, col0], [line1, col1]]) {
+  if (line0 == line1) {
+    if (col0 == col1) {
+      return file ++ ':' ++ line0:String() ++ ':' ++ col0:String();
+    }
+
+    return (
+      file ++ ':' ++
+      line0:String() ++ ':' ++
+      col0:String() ++ '-' ++ col1:String()
+    );
+  }
+
+  return (
+    'L' ++ line0:String() ++ 'C' ++ col0:String() ++ '-' ++
+    'L' ++ line1:String() ++ 'C' ++ col1:String()
+  );
+};

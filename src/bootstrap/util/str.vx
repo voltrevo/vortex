@@ -1,0 +1,40 @@
+// TODO: Should add builtin methods for these
+
+return {
+  take: func(n, str) {
+    res := '';
+
+    for (i := 0u64; i < n && i < str:Length(); i++) {
+      res ++= str[i];
+    }
+
+    return res;
+  },
+
+  drop: func(n, str) {
+    res := '';
+
+    for (n < str:Length()) {
+      res ++= str[n];
+      n++;
+    }
+
+    return res;
+  },
+
+  trim: func(str) {
+    first := 0u64;
+    last := str:Length() - 1u64;
+
+    for (first <= last && str[first] == ' ') { first++; }
+    for (first <= last && str[last] == ' ') { last--; }
+
+    res := '';
+
+    for (i := first; i <= last; i++) {
+      res += str[i];
+    }
+
+    return res;
+  },
+};

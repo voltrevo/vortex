@@ -1,3 +1,4 @@
+import @/files.vx;
 import @/util/SetFromArray.vx;
 
 import Imports from './Imports/Program.vx';
@@ -35,10 +36,17 @@ func compile(state, replies) {
     {notes, tree} := isolatedCompile(lines);
     newNotes ++= notes:map(AddFileInfo:bind(file));
 
-    imports := SetFromArray(Imports(tree):map(resolve:bind(Dir(file))));
-    newImports := imports ~ state.allFileRequests;
-    nextFileRequests ++= newImports:Values();
-    state.allFileRequests |= newImports;
+    if (tree:Kind() != 'null') {
+      imports := SetFromArray(
+        Imports(tree):map(files.resolve:bind(files.Dir(file)))
+      );
+
+      newImports := imports ~ state.allFileRequests;
+      nextFileRequests ++= newImports:Values();
+      state.allFileRequests |= newImports;
+    } else {
+      log.info ['got null tree for ' ++ file, notes];
+    }
 
     state.package.files[file] := tree;
   }
@@ -79,48 +87,6 @@ func HasError(notes) {
 func AddFileInfo(file, note) {
   note.pos = [file, note.pos];
   return note;
-};
-
-func Dir(file) {
-  res := '';
-  stage := '';
-
-  for (i := 0u64; i < file:Length(); i++) {
-    stage ++= file[i];
-
-    if (file[i] == '/') {
-      res ++= stage;
-      stage = '';
-    }
-  }
-
-  return res;
-};
-
-func resolve(dir, importSrc) => switch(strTake(2u64, importSrc)) {
-  '@/' => strDrop(2u64, importSrc);
-  './' => dir ++ strDrop(2u64, importSrc);
-};
-
-func strTake(n, str) {
-  res := '';
-
-  for (i := 0u64; i < n && i < str:Length(); i++) {
-    res ++= str[i];
-  }
-
-  return res;
-};
-
-func strDrop(n, str) {
-  res := '';
-
-  for (n < str:Length()) {
-    res ++= str[n];
-    n++;
-  }
-
-  return res;
 };
 
 return compile;

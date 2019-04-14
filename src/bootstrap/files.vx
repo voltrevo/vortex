@@ -1,0 +1,24 @@
+import @/util/str.vx;
+
+return {
+  Dir: func(file) {
+    res := '';
+    stage := '';
+
+    for (i := 0u64; i < file:Length(); i++) {
+      stage ++= file[i];
+
+      if (file[i] == '/') {
+        res ++= stage;
+        stage = '';
+      }
+    }
+
+    return res;
+  },
+
+  resolve: func(dir, importSrc) => switch (str.take(2u64, importSrc)) {
+    '@/' => str.drop(2u64, importSrc);
+    './' => dir ++ str.drop(2u64, importSrc);
+  },
+};

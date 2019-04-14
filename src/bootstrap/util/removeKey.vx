@@ -1,0 +1,13 @@
+// TODO: This is inefficient and should be provided natively instead
+
+return func(obj, key) {
+  newObj := {};
+
+  for (k of obj:Keys()) {
+    if (k != key) {
+      newObj[k] = obj[k];
+    }
+  }
+
+  return newObj;
+};
