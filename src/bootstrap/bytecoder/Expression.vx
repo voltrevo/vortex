@@ -244,7 +244,7 @@ return func Expression(coder, exp) {
     }
 
     for (indenter:Length() > 0u64) {
-      indenter = str.drop(2, indenter);
+      indenter = str.drop(2u64, indenter);
       lines ++= [indenter ++ '}'];
     }
 
