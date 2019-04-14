@@ -190,7 +190,7 @@ func Block(coder, block) {
         lines ++= [''];
       }
 
-      lines ++= ['location ' ++ formatLocation(coder.file, statement.p)];
+      lines ++= ['location ' ++ formatLocation(coder.file, statement[2])];
       lines ++= slines;
 
       first = false;
