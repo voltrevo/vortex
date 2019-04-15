@@ -77,7 +77,7 @@ return func(coder, fn) {
   }
 
   for (capture of captures ++ gfuncCaptures) {
-    lines ++= '  ' ++ ByteCoder.Set(capture);
+    lines ++= ['  '] ++ ByteCoder.Set(capture);
   }
 
   for (arg of args) {
