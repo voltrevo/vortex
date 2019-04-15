@@ -66,6 +66,10 @@ return func(lines) {
         }
       } else if (match(line, j, 'get $')) {
         ident := IdentFrom(line, j + 5u64, len);
+        if (!(ident in stack[0].localMap:Keys())) {
+          log.info newLines ++ [[line]];
+          assert false;
+        }
         addStr = 'get ' ++ stack[0].localMap[ident];
         j += 4u64 + ident:Length();
       } else if (match(line, j, 'set $')) {
@@ -78,6 +82,8 @@ return func(lines) {
 
         addStr = 'set ' ++ stack[0].localMap[ident];
         j += 4u64 + ident:Length();
+      } else if (line[j] == '\'') {
+        inString = true;
       }
 
       newLine ++= addStr;
