@@ -48,13 +48,13 @@ return func Destructure(coder, exp, kind) {
   destrName := null;
   [destrName, coder] = ByteCoder.getInternalName(coder, 'destr');
 
-  return [
-    ByteCoder.Set(destrName),
+  return (
+    [ByteCoder.Set(destrName)] ++
     ByteCoder.UpdateInsert(
       coder,
       exp,
       ['get $' ++ destrName],
       kind,
-    ),
-  ];
+    )
+  );
 };
