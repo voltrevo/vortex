@@ -1398,7 +1398,24 @@ func MutateAccess(scope, target, srcType) {
     return MutateAccess(scope, subTarget, subTargetType);
   }
 
-  if (!(keyType[1] in subTargetType[1]:Keys())) {
+  indexValue := keyType[1];
+
+  if (indexValue:Kind() == 'i32') {
+    if (indexValue < 0) {
+      return BadSubscript();
+    }
+
+    next := 0u64;
+
+    // TODO: Fix this bad i32->u64 conversion
+    for (i := 0; i < indexValue; i++) {
+      next++;
+    }
+
+    indexValue = next;
+  }
+
+  if (!(indexValue in subTargetType[1]:Keys())) {
     return BadSubscript();
   }
 
