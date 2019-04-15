@@ -334,7 +334,7 @@ func Eval(op, inputs) {
 
     if (op == 'subscript') {
       [container, index] := inputs;
-      containerKinds := Type.Kinds(container) & #['array', 'object'];
+      containerKinds := Type.Kinds(container) & #['array', 'object', 'string'];
 
       if (containerKinds == #[]) {
         type := ['never', [
@@ -345,8 +345,13 @@ func Eval(op, inputs) {
         return {inputs: [type, type], output: type};
       }
 
-      if (containerKinds == #['array', 'object']) {
-        index = Type.Intersection(index, ['kinds', #['i32', 'u64', 'string']]);
+      if (containerKinds:Values():Length() != 1u64) {
+        allowedIndexKinds := switch ('object' in containerKinds) {
+          true => #['i32', 'u64', 'string'];
+          false => #['i32', 'u64'];
+        };
+
+        index = Type.Intersection(index, ['kinds', allowedIndexKinds]);
 
         if (index[0] == 'never') {
           return {inputs: [index, index], output: index};
@@ -354,17 +359,17 @@ func Eval(op, inputs) {
 
         indexKinds := Type.Kinds(index);
 
-        containerKinds = #[];
+        newContainerKinds := #[];
 
         if ((#['i32', 'u64'] & indexKinds) != #[]) {
-          containerKinds |= #['array'];
+          newContainerKinds |= #['array', 'string'];
         }
 
         if ('string' in indexKinds) {
-          containerKinds |= #['object'];
+          newContainerKinds |= #['object'];
         }
 
-        container = ['kinds', containerKinds];
+        container = ['kinds', containerKinds & newContainerKinds];
 
         return {inputs: [container, index], output: Type.any};
       }
@@ -374,6 +379,7 @@ func Eval(op, inputs) {
       if (container[0] == 'kinds') {
         index = Type.Intersection(index, ['kinds', switch (containerKind) {
           'array' => #['i32', 'u64'];
+          'string' => #['i32', 'u64'];
           'object' => #['string'];
         }]);
 
@@ -390,7 +396,6 @@ func Eval(op, inputs) {
         if (index[0] == 'never') {
           return {inputs: [index, index], output: index};
         }
-
       }
 
       if (containerKind == 'array') {
@@ -435,6 +440,30 @@ func Eval(op, inputs) {
             'array' => container[1][index[1]];
             'literal' => ['literal', container[1][index[1]]];
           },
+        };
+      }
+
+      if (containerKind == 'string') {
+        assert container[0] == 'literal';
+        index = Type.Intersection(index, ['kinds', #['i32', 'u64']]);
+
+        if (index[0] == 'never') {
+          return {inputs: [index, index], output: index};
+        }
+
+        if (index[0] != 'literal') {
+          element := ['kinds', #['string']];
+          return {inputs: [container, index], output: element};
+        }
+
+        if (index[1] >= container[1]:Length()) {
+          type := ['never', null];
+          return {inputs: [type, type], output: type};
+        }
+
+        return {
+          inputs: [container, index],
+          output: ['literal', container[1][index[1]]],
         };
       }
 
