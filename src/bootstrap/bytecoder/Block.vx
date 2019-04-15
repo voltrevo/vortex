@@ -43,7 +43,7 @@ func Block(coder, block) {
     captures := #[];
 
     for (evt of FunctionScopeEvents(hoist)) {
-      if (evt[0] == 'use') {
+      if (evt[0] == 'capture') {
         isCapture := true;
         useName := evt[1][1];
 

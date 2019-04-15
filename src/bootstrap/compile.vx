@@ -4,6 +4,7 @@ import @/util/SetFromArray.vx;
 import Imports from './Imports/Program.vx';
 
 import ./isolatedCompile.vx;
+import ./nameAllocator.vx;
 import ByteCode from './bytecoder/Program.vx';
 
 func compile(state, replies) {
@@ -67,7 +68,7 @@ func compile(state, replies) {
     return [
       null,
       [
-        ['output', state.lines],
+        ['output', nameAllocator(state.lines)],
       ],
     ];
   }

@@ -1,0 +1,90 @@
+func match(str, pos, matchStr) {
+  len := matchStr:Length();
+
+  if (str:Length() - pos < len) {
+    return false;
+  }
+
+  for (i := 0u64; i < len; i++) {
+    if (str[pos + i] != matchStr[i]) {
+      return false;
+    }
+  }
+
+  return true;
+};
+
+func IdentFrom(line, j, len) {
+  res := '';
+
+  for (j < len) {
+    if (line[j] == ' ') {
+      break;
+    }
+
+    res ++= line[j];
+    j++;
+  }
+
+  return res;
+};
+
+return func(lines) {
+  newLines := [];
+
+  stackInit := {localMap: {}, localCount: 0, braceDepth: 0u64};
+  inString := false;
+  escaped := false;
+  stack := [stackInit, null];
+
+  for (line of lines) {
+    len := line:Length();
+    newLine := '';
+
+    for (j := 0u64; j < len; j++) {
+      addStr := line[j];
+
+      if (inString) {
+        if (escaped) {
+          escaped = false;
+        } else if (line[j] == '\\') {
+          escaped = true;
+        } else if (line[j] == '\'') {
+          inString = false;
+        }
+      } else if (match(line, j, 'func {')) {
+        stack = [stackInit, stack];
+        addStr = 'func {';
+        j += 5u64;
+      } else if (line[j] == '{') {
+        stack[0].braceDepth++;
+      } else if (line[j] == '}') {
+        if (stack[0].braceDepth == 0u64) {
+          stack = stack[1];
+        } else {
+          stack[0].braceDepth--;
+        }
+      } else if (match(line, j, 'get $')) {
+        ident := IdentFrom(line, j + 5u64, len);
+        addStr = 'get ' ++ stack[0].localMap[ident];
+        j += 4u64 + ident:Length();
+      } else if (match(line, j, 'set $')) {
+        ident := IdentFrom(line, j + 5u64, len);
+
+        if (!(ident in stack[0].localMap:Keys())) {
+          stack[0].localMap[ident] := stack[0].localCount:String();
+          stack[0].localCount++;
+        }
+
+        addStr = 'set ' ++ stack[0].localMap[ident];
+        j += 4u64 + ident:Length();
+      }
+
+      newLine ++= addStr;
+    }
+
+    newLines ++= [newLine];
+  }
+
+  return newLines;
+};

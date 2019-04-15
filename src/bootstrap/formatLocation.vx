@@ -26,6 +26,7 @@ return func(file, [[line0, col0], [line1, col1]]) {
   }
 
   return (
+    file ++ ':' ++
     'L' ++ numStr(line0) ++ 'C' ++ numStr(col0) ++ '-' ++
     'L' ++ numStr(line1) ++ 'C' ++ numStr(col1)
   );

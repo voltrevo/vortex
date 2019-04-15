@@ -429,7 +429,25 @@ func Eval(op, inputs) {
           return {inputs: [container, index], output: element};
         }
 
-        if (index[1] >= container[1]:Length()) {
+        indexValue := index[1];
+
+        if (indexValue:Kind() == 'i32') {
+          if (indexValue < 0) {
+            type := ['never', null];
+            return {inputs: [type, type], output: type};
+          }
+
+          next := 0u64;
+
+          // TODO: This is not a good way to do i32 -> u64 conversion.
+          for (i := 0; i < indexValue; i++) {
+            next++;
+          }
+
+          indexValue = next;
+        }
+
+        if (indexValue >= container[1]:Length()) {
           type := ['never', null];
           return {inputs: [type, type], output: type};
         }

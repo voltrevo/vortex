@@ -12,7 +12,7 @@ func Captures(coder, fn) {
   captures := #[];
 
   for (evt of FunctionScopeEvents(fn)) {
-    if (evt[0] == 'use') {
+    if (evt[0] == 'capture') {
       isCapture := true;
       useName := evt[1][1];
 
@@ -42,7 +42,7 @@ return func(coder, fn) {
       entry := coder.names[capture];
 
       if (entry.t == 'gfunc') {
-        if (entry.captures:Length() > 0u64) {
+        if (entry.captures != #[]) {
           gfuncCaptures ++= [capture];
         }
       } else if (entry.t == 'mfunc') {
@@ -77,7 +77,7 @@ return func(coder, fn) {
   }
 
   for (capture of captures ++ gfuncCaptures) {
-    lines ++= ['  '] ++ ByteCoder.Set(capture);
+    lines ++= ['  ' ++ ByteCoder.Set(capture)];
   }
 
   for (arg of args) {
