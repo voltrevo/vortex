@@ -52,14 +52,14 @@ return func(lines) {
         } else if (line[j] == '\'') {
           inString = false;
         }
-      } else if (match(line, j, 'func {')) {
+      } else if (match(line, j, 'func ')) {
         stack = [stackInit, stack];
-        addStr = 'func {';
-        j += 5u64;
+        addStr = 'func ';
+        j += 4u64;
       } else if (line[j] == '{') {
         stack[0].braceDepth++;
       } else if (line[j] == '}') {
-        if (stack[0].braceDepth == 0u64) {
+        if (stack[0].braceDepth == 1u64) {
           stack = stack[1];
         } else {
           stack[0].braceDepth--;
@@ -67,7 +67,7 @@ return func(lines) {
       } else if (match(line, j, 'get $')) {
         ident := IdentFrom(line, j + 5u64, len);
         if (!(ident in stack[0].localMap:Keys())) {
-          log.info newLines ++ [[line]];
+          log.info [newLines ++ [[line]], stack[0]];
           assert false;
         }
         addStr = 'get ' ++ stack[0].localMap[ident];
