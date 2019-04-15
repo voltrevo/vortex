@@ -144,7 +144,7 @@ return {
 
   shouldUseTemporary: func(exp) => switch (exp[0]) {
     'identifier' => false;
-    'literal' => !(exp[1]:Kind() in #['null', 'bool'] | kinds.number);
+    'literal' => !(exp[1]:Kind() in (#['null', 'bool'] | kinds.number));
     default => true;
   },
 };
