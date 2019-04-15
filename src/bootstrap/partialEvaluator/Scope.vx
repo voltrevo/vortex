@@ -32,7 +32,18 @@ return {
     return default_;
   },
 
-  update: func({parent, variables}, name, data) {
+  update: func(scope, name, data) {
+    exists := !(Scope.lookup(scope, name) in #[null]);
+
+    if (!exists) {
+      scope.variables[name] := data;
+      return scope;
+    }
+
+    return Scope.updateImpl(scope, name, data);
+  },
+
+  updateImpl: func({parent, variables}, name, data) {
     if (name in variables:Keys()) {
       variables[name] = data;
     } else {
