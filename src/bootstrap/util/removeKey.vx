@@ -3,7 +3,7 @@
 return func(obj, key) {
   newObj := {};
 
-  for (k of obj:Keys()) {
+  for (k of obj:Keys():Values()) {
     if (k != key) {
       newObj[k] = obj[k];
     }
