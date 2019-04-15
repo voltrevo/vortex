@@ -5,7 +5,7 @@ return func(obj, key) {
 
   for (k of obj:Keys():Values()) {
     if (k != key) {
-      newObj[k] = obj[k];
+      newObj[k] := obj[k];
     }
   }
 
