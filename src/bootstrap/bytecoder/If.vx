@@ -10,7 +10,7 @@ return func If(coder, {condition, body, tail}) {
 
   lines ++= switch (tail[0]) {
     'nothing' => ['}'];
-    'if' => ['} else {'] ++ If(coder, tail[1]);
+    'if' => ['} else {'] ++ If(coder, tail[1]):map(ByteCoder.indent) ++ ['}'];
     'block' => ['} else {'] ++ Block(coder, tail):map(ByteCoder.indent) ++ ['}'];
   };
 
