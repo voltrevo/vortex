@@ -159,7 +159,7 @@ func Block(coder, block) {
         capEntry := coder.names[directCapture];
 
         if (capEntry.t != 'mfunc') {
-          if (directCapture in hoistNames) {
+          if (!(directCapture in hoistNames)) {
             if (capEntry.captures != #[]) {
               innerCoder.names = removeKey(innerCoder.names, directCapture);
             }
