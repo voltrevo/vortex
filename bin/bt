@@ -2,5 +2,4 @@
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 
-#exec vxc-lines "$DIR/../src/bootstrap/compile.vx"
-exec vxvm lines "$DIR/../build/bt.code"
+exec vxc-lines "$DIR/../src/bootstrap/compileLines.vx"
