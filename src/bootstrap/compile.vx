@@ -68,7 +68,7 @@ func compile(state, replies) {
     return [
       null,
       [
-        ['output', nameAllocator(state.lines)],
+        ['output', nameAllocator(state.lines, state.allFileRequests)],
       ],
     ];
   }

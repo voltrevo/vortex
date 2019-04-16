@@ -194,7 +194,7 @@ return func Expression(coder, exp) {
   }
 
   if (xType == 'import') {
-    return ['mcall $' ++ files.resolve(coder.dir, exp[1].source)];
+    return ['mcall $@/' ++ files.resolve(coder.dir, exp[1].source)];
   }
 
   if (xType == 'switch') {

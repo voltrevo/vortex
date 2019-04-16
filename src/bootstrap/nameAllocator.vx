@@ -29,10 +29,23 @@ func IdentFrom(line, j, len) {
   return res;
 };
 
-return func(lines) {
+return func(lines, fileSet) {
   newLines := [];
 
-  stackInit := {localMap: {}, localCount: 0, braceDepth: 0u64};
+  stackInit := {
+    localMap: {},
+    localCount: 0,
+    braceDepth: 0u64
+  };
+
+  mfuncMap := {};
+  mfuncCount := 0;
+
+  for (file of fileSet:Values()) {
+    mfuncMap['@/' ++ file] := mfuncCount:String();
+    mfuncCount++;
+  }
+
   inString := false;
   escaped := false;
   stack := [stackInit, null];
@@ -52,6 +65,15 @@ return func(lines) {
         } else if (line[j] == '\'') {
           inString = false;
         }
+      } else if (match(line, j, 'mfunc $')) {
+        stack = [stackInit, stack];
+        ident := IdentFrom(line, j + 7u64, len);
+        addStr = 'mfunc ' ++ mfuncMap[ident];
+        j += 6u64 + ident:Length();
+      } else if (match(line, j, 'mcall $')) {
+        ident := IdentFrom(line, j + 7u64, len);
+        addStr = 'mcall ' ++ mfuncMap[ident];
+        j += 6u64 + ident:Length();
       } else if (match(line, j, 'func ')) {
         stack = [stackInit, stack];
         addStr = 'func ';

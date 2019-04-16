@@ -54,7 +54,7 @@ return {
         return lines;
       })();
 
-      'mfunc' => ['mcall $' ++ entry.fullName];
+      'mfunc' => ['mcall $@/' ++ entry.fullName];
     };
   },
 
