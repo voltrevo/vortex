@@ -160,7 +160,7 @@ return func Expression(coder, exp) {
     if (fn[0] == 'methodLookup') {
       [base, method] := fn[1];
 
-      if (method[1] == 'bind' && args:Length() == 1u64) {
+      if (method == 'bind' && args:Length() == 1u64) {
         return Expression(coder, base) ++ Expression(coder, args[0]) ++ ['bind'];
       }
     }
