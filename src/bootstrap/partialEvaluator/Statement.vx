@@ -104,12 +104,15 @@ func Statement(scope, [xType, data, pos]) {
 
     if (controlType == 'condition') {
       condType := null;
-      {scope, expression: controlData, type: condType} = ExpressionAndType(
+      condition := null;
+      {scope, expression: condition, type: condType} = ExpressionAndType(
         scope,
         controlData,
       );
 
-      condition := controlData;
+      // controlData does not get overwritten with the partially evaluated
+      // condition because the code needs to keep running the same way as each
+      // iteration changes the loop
 
       if (!('bool' in Type.Kinds(condType))) {
         return {
