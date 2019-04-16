@@ -38,6 +38,41 @@ func IdentFrom(line, j, len) {
   return res;
 };
 
+func unindent(lines) {
+  if (lines:Length() == 0u64) {
+    return lines;
+  }
+
+  func IndentSize(line) {
+    for (i := 0u64; i < line:Length(); i++) {
+      if (line[i] != ' ') {
+        return i;
+      }
+    }
+
+    return line:Length();
+  };
+
+  minIndent := IndentSize(lines[0]);
+
+  for (i := 1u64; i < lines:Length(); i++) {
+    if (lines[i] != '') {
+      indentSize := IndentSize(lines[i]);
+
+      if (indentSize < minIndent) {
+        minIndent = indentSize;
+      }
+    }
+  }
+
+  if (minIndent == 0u64) {
+    return lines;
+  }
+
+  capMinIndent := minIndent;
+  return lines:map(func(line) => str.drop(capMinIndent, line));
+};
+
 return func(lines, fileSet) {
   newLines := [];
 
@@ -168,5 +203,5 @@ return func(lines, fileSet) {
     }
   }
 
-  return Join([''])(gfuncList ++ [newLines]);
+  return Join([''])(gfuncList:map(unindent) ++ [newLines]);
 };
