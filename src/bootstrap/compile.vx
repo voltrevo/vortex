@@ -35,7 +35,7 @@ func compile(state, replies) {
   newNotes := [];
 
   for ([file, lines] of [state.fileRequests, replies]:Transpose()) {
-    log.info 'Isolated compile: @/' ++ file;
+    log.info 'Compiling: @/' ++ file;
     {notes, tree} := isolatedCompile(lines);
     newNotes ++= notes:map(AddFileInfo:bind(file));
 
@@ -65,6 +65,7 @@ func compile(state, replies) {
   if (state.fileRequests:Length() == 0u64) {
     state.lines ++= ['mcall $@/' ++ state.package.entry ++ ' return'];
 
+    log.info 'Naming';
     return [
       null,
       [

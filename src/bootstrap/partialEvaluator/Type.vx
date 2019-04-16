@@ -635,8 +635,8 @@ return {
         }
 
         [typeUniform, typeArray] := switch (typeA[0]) {
-          'array-uniform' => [typeA[0], typeB];
-          default => [typeB[0], typeA];
+          'array-uniform' => [typeA, typeB];
+          default => [typeB, typeA];
         };
 
         if (typeArray[0] == 'literal') {
