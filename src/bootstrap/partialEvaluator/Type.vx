@@ -646,7 +646,7 @@ return {
         newData := [];
 
         for (i := 0u64; i < typeArray[1]:Length(); i++) {
-          subType := Type.ShapeIntersection(typeArray[1][i], typeUniform);
+          subType := Type.ShapeIntersection(typeArray[1][i], typeUniform[1]);
 
           if (subType[0] == 'never') {
             return Type.NeverPath(i, subType);
