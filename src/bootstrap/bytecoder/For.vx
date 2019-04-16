@@ -52,30 +52,30 @@ return func(coder, {control, body}) {
 
   if (control[0] == 'range') {
     forLines ++= [
-      'get $' ++ rangeNames.i ++ ' get $' ++ rangeNames.len ++ ' == if {',
-      '  break',
-      '}',
-      '',
-      'get $' ++ rangeNames.range ++ ' get $' ++ rangeNames.i ++ ' at',
+      '  get $' ++ rangeNames.i ++ ' get $' ++ rangeNames.len ++ ' == if {',
+      '    break',
+      '  }',
+      '  ',
+      '  get $' ++ rangeNames.range ++ ' get $' ++ rangeNames.i ++ ' at',
     ];
 
-    forLines ++= Destructure(coder, control[1].element, 'insert');
-    forLines ++= [''];
+    forLines ++= Destructure(coder, control[1].element, 'insert'):map(ByteCoder.indent);
+    forLines ++= ['  '];
   } else if (control[0] == 'condition') {
-    forLines ++= Expression(coder, control[1]);
+    forLines ++= Expression(coder, control[1]):map(ByteCoder.indent);
     forLines ++= [
-      '! if {',
-      '  break',
-      '}',
-      '',
+      '  ! if {',
+      '    break',
+      '  }',
+      '  ',
     ];
   } else if (control[0] == 'traditional') {
-    forLines ++= Expression(coder, control[1].condition);
+    forLines ++= Expression(coder, control[1].condition):map(ByteCoder.indent);
     forLines ++= [
-      '! if {',
-      '  break',
-      '}',
-      '',
+      '  ! if {',
+      '    break',
+      '  }',
+      '  ',
     ];
   } else {
     assert false;
@@ -88,7 +88,7 @@ return func(coder, {control, body}) {
       // TODO: Matching on compiled string line here is not ideal
       if (str.trim(line) == 'continue') {
         forLines ++= [
-          '\'Not implemented: continue statement inside iteration ' ++
+          '  \'Not implemented: continue statement inside iteration ' ++
           'for loop\' throw'
         ];
       } else {
