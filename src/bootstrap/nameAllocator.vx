@@ -1,12 +1,21 @@
-func match(str, pos, matchStr) {
+import @/util/Join.vx;
+import @/util/str.vx;
+
+func numStr(n) {
+  assert n:Kind() == 'u64';
+  fullStr := n:String();
+  return str.take(fullStr:Length() - 3u64, fullStr);
+};
+
+func match(line, pos, matchStr) {
   len := matchStr:Length();
 
-  if (str:Length() - pos < len) {
+  if (line:Length() - pos < len) {
     return false;
   }
 
   for (i := 0u64; i < len; i++) {
-    if (str[pos + i] != matchStr[i]) {
+    if (line[pos + i] != matchStr[i]) {
       return false;
     }
   }
@@ -41,6 +50,10 @@ return func(lines, fileSet) {
   mfuncMap := {};
   mfuncCount := 0;
 
+  gfuncList := [];
+  gfuncMap := {};
+  gfuncStack := null;
+
   for (file of fileSet:Values()) {
     mfuncMap['@/' ++ file] := mfuncCount:String();
     mfuncCount++;
@@ -53,6 +66,7 @@ return func(lines, fileSet) {
   for (line of lines) {
     len := line:Length();
     newLine := '';
+    skipLine := false;
 
     for (j := 0u64; j < len; j++) {
       addStr := line[j];
@@ -74,17 +88,51 @@ return func(lines, fileSet) {
         ident := IdentFrom(line, j + 7u64, len);
         addStr = 'mcall ' ++ mfuncMap[ident];
         j += 6u64 + ident:Length();
+      } else if (match(line, j, 'hoist $')) {
+        ident := IdentFrom(line, j + 7u64, len);
+        j += 6u64 + ident:Length();
+        skipLine = true;
+        if (ident in gfuncMap:Keys()) {
+          gfuncMap[ident] = gfuncList:Length();
+        } else {
+          gfuncMap[ident] := gfuncList:Length();
+        }
+        gfuncList ++= [[]];
+      } else if (match(line, j, 'gfunc $')) {
+        stack = [stackInit, stack];
+        ident := IdentFrom(line, j + 7u64, len);
+        addStr = 'gfunc ' ++ numStr(gfuncMap[ident]);
+        j += 6u64 + ident:Length();
+        gfuncStack = [{braceDepth: 0u64, index: gfuncMap[ident]}, gfuncStack];
+      } else if (match(line, j, 'gcall $')) {
+        ident := IdentFrom(line, j + 7u64, len);
+        addStr = 'gcall ' ++ numStr(gfuncMap[ident]);
+        j += 6u64 + ident:Length();
       } else if (match(line, j, 'func ')) {
         stack = [stackInit, stack];
         addStr = 'func ';
         j += 4u64;
       } else if (line[j] == '{') {
         stack[0].braceDepth++;
+
+        if (gfuncStack:Kind() != 'null') {
+          gfuncStack[0].braceDepth++;
+        }
       } else if (line[j] == '}') {
         if (stack[0].braceDepth == 1u64) {
           stack = stack[1];
         } else {
           stack[0].braceDepth--;
+        }
+
+        if (gfuncStack:Kind() != 'null') {
+          if (gfuncStack[0].braceDepth == 1u64) {
+            gfuncList[gfuncStack[0].index] ++= [line];
+            skipLine = true;
+            gfuncStack = gfuncStack[1];
+          } else {
+            gfuncStack[0].braceDepth--;
+          }
         }
       } else if (match(line, j, 'get $')) {
         ident := IdentFrom(line, j + 5u64, len);
@@ -111,8 +159,14 @@ return func(lines, fileSet) {
       newLine ++= addStr;
     }
 
-    newLines ++= [newLine];
+    if (!skipLine) {
+      if (gfuncStack:Kind() == 'null') {
+        newLines ++= [newLine];
+      } else {
+        gfuncList[gfuncStack[0].index] ++= [newLine];
+      }
+    }
   }
 
-  return newLines;
+  return Join([''])(gfuncList ++ [newLines]);
 };
