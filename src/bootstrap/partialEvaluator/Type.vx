@@ -133,7 +133,10 @@ return {
           newData := {};
 
           for (key of typeA[1]:Keys():Values()) {
-            newData[key] := Type.Union(typeA[1][key], typeB[1][key]);
+            newData[key] := Type.Union(
+              ['literal', typeA[1][key]],
+              ['literal', typeB[1][key]],
+            );
           }
 
           return ['object', newData];
