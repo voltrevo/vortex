@@ -547,7 +547,10 @@ return {
 
       'set' => ['kinds', #['set']];
 
-      'object' => ['object', mapValues(data, Type.Shape)];
+      'object' => ['object', mapValues(
+        Type.demoteObjectLiteral([cat, data])[1],
+        Type.Shape,
+      )];
 
       default => ['kinds', #[data:Kind()]];
     };
