@@ -395,7 +395,7 @@ namespace Vortex {
     Array& arr = *array.data.ARRAY;
     auto len = arr.Length();
     auto innerLength = arr.InnerKeys().Length();
-    auto keys = std::move(arr.values[0].data.OBJECT->keys);
+    auto keys = arr.values[0].data.OBJECT->keys;
 
     auto items = immer::flex_vector_transient<Value>();
 
@@ -403,7 +403,7 @@ namespace Vortex {
       auto row = immer::flex_vector_transient<Value>();
 
       for (auto j = 0ul; j != len; ++j) {
-        row.push_back(arr.values[j].data.ARRAY->values[i]);
+        row.push_back(arr.values[j].data.OBJECT->values.values[i]);
       }
 
       items.push_back(Value(new Array{
