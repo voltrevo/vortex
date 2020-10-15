@@ -2,7 +2,7 @@ use pest::Parser;
 // use error::Error;
 
 #[derive(Parser)]
-#[grammar = "vortex/parser.pest"]
+#[grammar = "vortex/grammar.pest"]
 struct VortexParser;
 
 #[derive(Debug)]
