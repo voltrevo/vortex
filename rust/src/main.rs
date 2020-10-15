@@ -9,9 +9,10 @@ mod vortex;
 fn main() {
     let unparsed_file = fs::read_to_string("example.vx").expect("cannot read file");
 
-    let program = vortex::parse(&unparsed_file)
-        .expect("unsuccessful parse")
-    ;
+    let program_result = vortex::parse(&unparsed_file);
 
-    println!("{:?}", program);
+    match program_result {
+        Ok(program) => println!("{:?}", program),
+        Err(err) => println!("{}", err),
+    }
 }

@@ -15,5 +15,7 @@ pub fn parse(program: &String) -> Result<SyntaxTree, String> {
 
     return parse_result
         .and_then(|_| Ok(SyntaxTree::Program))
-        .map_err(|_| String::from("Parsing failed"));
+        .map_err(|e| {
+            return String::from(e.to_string())
+        });
 }
