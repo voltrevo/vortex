@@ -1,12 +1,17 @@
+extern crate pest;
+#[macro_use]
+extern crate pest_derive;
+
+use std::fs;
+
 mod vortex;
 
 fn main() {
-    let mut x = vortex::Value::U8(37) + vortex::Value::U8(1);
-    x = x + vortex::Value::U8(2);
+    let unparsed_file = fs::read_to_string("example.vx").expect("cannot read file");
 
-    if let vortex::Value::U8(x_) = x {
-        println!("result: {}", x_);
-    }
+    let program = vortex::parse(&unparsed_file)
+        .expect("unsuccessful parse")
+    ;
 
-    println!("Hello, world! {}, {}", x, vortex::Value::Null);
+    println!("{:?}", program);
 }
