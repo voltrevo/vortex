@@ -1,0 +1,7 @@
+WHITESPACE = _{ " "+ }
+
+number = { ASCII_DIGIT+ }
+operator = { "+" | "-" | "*" | "/" }
+expression = { number ~ (operator ~ number)* }
+
+file = { SOI ~ (expression ~ ("\n" ~ expression))* ~ "\n"? ~ EOI }
