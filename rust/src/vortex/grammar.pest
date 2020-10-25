@@ -1,16 +1,20 @@
 WHITESPACE = _{ (" " | "\r\n" | "\n")+ }
 
+null = { "null" }
+bool = { "true" | "false" }
 number = { ASCII_DIGIT+ }
+
 identifier = { (ASCII_ALPHA | "_") ~ (ASCII_ALPHA | ASCII_DIGIT | "_")* }
-atom = { number | identifier }
+atom = { null | bool | number | identifier }
 operator = { "+" | "-" | "*" | "/" }
 expression = { atom ~ (operator ~ atom)* }
 
+functionStatement = { "fn" ~ identifier ~ "()" ~ "{" ~ statement* ~ "}" }
+expressionStatement = { expression ~ ";" }
+
 statement = {
-  (
-    expression
-  ) ~
-  ";"
+  functionStatement |
+  expressionStatement
 }
 
 file = { SOI ~ statement* ~ EOI }
