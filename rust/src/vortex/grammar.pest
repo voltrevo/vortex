@@ -1,7 +1,7 @@
-WHITESPACE = _{ " "+ }
+WHITESPACE = _{ (" " | "\r\n" | "\n")+ }
 
 number = { ASCII_DIGIT+ }
 operator = { "+" | "-" | "*" | "/" }
-expression = { number ~ (operator ~ number)* }
+expression = { number ~ (operator ~ number)* ~ ";" }
 
-file = { SOI ~ (expression ~ ("\n" ~ expression))* ~ "\n"? ~ EOI }
+file = { SOI ~ expression* ~ EOI }
