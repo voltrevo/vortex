@@ -1,7 +1,16 @@
 WHITESPACE = _{ (" " | "\r\n" | "\n")+ }
 
 number = { ASCII_DIGIT+ }
+identifier = { (ASCII_ALPHA | "_") ~ (ASCII_ALPHA | ASCII_DIGIT | "_")* }
+atom = { number | identifier }
 operator = { "+" | "-" | "*" | "/" }
-expression = { number ~ (operator ~ number)* ~ ";" }
+expression = { atom ~ (operator ~ atom)* }
 
-file = { SOI ~ expression* ~ EOI }
+statement = {
+  (
+    expression
+  ) ~
+  ";"
+}
+
+file = { SOI ~ statement* ~ EOI }
