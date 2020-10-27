@@ -29,14 +29,17 @@ binaryOperator = {
   "in"
 }
 
-assignmentTarget = { identifier }
+assignmentTarget = { identifier } // TODO: Destructuring
 
 expression = { atom ~ (binaryOperator ~ atom)* }
 
 block = { "{" ~ statement* ~ "}" }
 
 functionStatement = { "fn" ~ identifier ~ "()" ~ "{" ~ statement* ~ "}" }
-assignmentStatement = { assignmentTarget ~ assignmentOperator ~ expression ~ ";" }
+assignment = { assignmentTarget ~ assignmentOperator ~ expression }
+assignmentStatement = { assignment ~ ";" }
+mutation = { assignment } // TODO: include increment/decrement
+mutationStatement = { mutation ~ ";" }
 
 keywordStatement = {
   (
@@ -62,12 +65,21 @@ elseClause = {
   "else" ~ (ifStatement | block)
 }
 
+forStatement = {
+  "for" ~ "(" ~ (
+    (mutation ~ ";" ~ expression ~ ";" ~ mutation) |
+    expression |
+    (assignmentTarget ~ "of" ~ expression)
+  ) ~ ")" ~ block
+}
+
 statement = {
   functionStatement |
   keywordStatement |
   keywordExpressionStatement |
   ifStatement |
-  assignmentStatement
+  forStatement |
+  mutationStatement
 }
 
 file = { SOI ~ statement* ~ EOI }
