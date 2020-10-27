@@ -8,3 +8,7 @@ break;
 continue;
 breakpoint;
 log.info 1 + 1;
+
+if (true) {
+  log.info 1 + 1;
+}

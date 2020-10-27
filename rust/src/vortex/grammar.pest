@@ -33,6 +33,8 @@ assignmentTarget = { identifier }
 
 expression = { atom ~ (binaryOperator ~ atom)* }
 
+block = { "{" ~ statement* ~ "}" }
+
 functionStatement = { "fn" ~ identifier ~ "()" ~ "{" ~ statement* ~ "}" }
 assignmentStatement = { assignmentTarget ~ assignmentOperator ~ expression ~ ";" }
 
@@ -52,11 +54,20 @@ keywordExpressionStatement = {
   ) ~ expression ~ ";"
 }
 
+ifStatement = {
+  "if" ~ "(" ~ expression ~ ")" ~ block ~ elseClause?
+}
+
+elseClause = {
+  "else" ~ (ifStatement | block)
+}
+
 statement = {
   functionStatement |
-  assignmentStatement |
   keywordStatement |
-  keywordExpressionStatement
+  keywordExpressionStatement |
+  ifStatement |
+  assignmentStatement
 }
 
 file = { SOI ~ statement* ~ EOI }
