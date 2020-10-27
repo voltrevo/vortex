@@ -5,16 +5,39 @@ bool = { "true" | "false" }
 number = { ASCII_DIGIT+ }
 
 identifier = { (ASCII_ALPHA | "_") ~ (ASCII_ALPHA | ASCII_DIGIT | "_")* }
-atom = { null | bool | number | identifier }
-operator = { "+" | "-" | "*" | "/" }
-expression = { atom ~ (operator ~ atom)* }
+atom = { null | bool | number | identifier | ("(" ~ expression ~ ")") }
+
+assignmentOperator = {
+  ":=" | "=" | "**=" | "+=" | "++=" | "-=" | "*=" | "/=" | "%=" | "<<=" | ">>=" | "&=" |
+  "|=" | "^=" | "&&=" | "||=" | "~="
+}
+
+binaryOperator = {
+  "**" |
+  "*" | "/" | "%" |
+  "++" | "+" | "-" |
+  "<<" | ">>" |
+  "<=" | ">=" | "<" | ">" |
+  "==" | "!=" |
+  "~" |
+  "&" |
+  "^" |
+  "|" |
+  "&&" |
+  "||" |
+  "in"
+}
+
+assignmentTarget = { identifier }
+
+expression = { atom ~ (binaryOperator ~ atom)* }
 
 functionStatement = { "fn" ~ identifier ~ "()" ~ "{" ~ statement* ~ "}" }
-expressionStatement = { expression ~ ";" }
+assignmentStatement = { assignmentTarget ~ assignmentOperator ~ expression ~ ";" }
 
 statement = {
   functionStatement |
-  expressionStatement
+  assignmentStatement
 }
 
 file = { SOI ~ statement* ~ EOI }
