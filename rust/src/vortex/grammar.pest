@@ -36,9 +36,27 @@ expression = { atom ~ (binaryOperator ~ atom)* }
 functionStatement = { "fn" ~ identifier ~ "()" ~ "{" ~ statement* ~ "}" }
 assignmentStatement = { assignmentTarget ~ assignmentOperator ~ expression ~ ";" }
 
+keywordStatement = {
+  (
+    "breakpoint" |
+    "break" |
+    "continue"
+  ) ~ ";"
+}
+
+keywordExpressionStatement = {
+  (
+    "return" |
+    "assert" |
+    ("log." ~ ("info" | "warn" | "error"))
+  ) ~ expression ~ ";"
+}
+
 statement = {
   functionStatement |
-  assignmentStatement
+  assignmentStatement |
+  keywordStatement |
+  keywordExpressionStatement
 }
 
 file = { SOI ~ statement* ~ EOI }

@@ -4,3 +4,7 @@ fn example() {
 
 y := 1 + 2 /* another comment */ + 3 + foobar;
 y += 4 + 5 + 6;
+break;
+continue;
+breakpoint;
+log.info 1 + 1;
