@@ -1,4 +1,5 @@
 WHITESPACE = _{ (" " | "\r\n" | "\n")+ }
+COMMENT = _{ ("//" ~ (!"\n" ~ ANY)*) | ("/*" ~ (!"*/" ~ ANY)* ~ "*/") }
 
 null = { "null" }
 bool = { "true" | "false" }

@@ -1,6 +1,6 @@
 fn example() {
-  x := 1 + 2 + 3;
+  x := 1 + 2 + 3; // comment
 }
 
-y := 1 + 2 + 3 + foobar;
+y := 1 + 2 /* another comment */ + 3 + foobar;
 y += 4 + 5 + 6;
